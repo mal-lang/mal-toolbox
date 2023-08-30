@@ -1,0 +1,2 @@
+maltoolbox.ingestors:
+py2neo

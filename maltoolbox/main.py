@@ -1,0 +1,82 @@
+"""
+MAL-Toolbox Main Module
+"""
+
+import sys
+
+import logging
+import json
+
+import maltoolbox
+import maltoolbox.cl_parser
+from maltoolbox.model import model
+from maltoolbox.attackgraph import attackgraph
+from maltoolbox.ingestors import neo4j
+from maltoolbox.language import classes_factory
+from maltoolbox.language import specification
+
+logger = logging.getLogger(__name__)
+
+def main():
+    """Main routine of maltoolbox command line interface."""
+    args = maltoolbox.cl_parser.parse_args(sys.argv[1:])
+    cmd_params = vars(args)
+    logger.info('Received the following command line parameters:\n' +
+        json.dumps(cmd_params, indent = 2))
+
+    match(cmd_params['command']):
+        case 'gen_ag':
+            model_filename = cmd_params['model']
+            langspec_filename = cmd_params['language']
+
+            # Load language specification and generate classes based on it.
+            lang_spec = specification. \
+                load_language_specification_from_mar(langspec_filename)
+            if maltoolbox.log_configs['langspec_file']:
+                logger.debug('Save language specification to ' \
+                    f'{maltoolbox.log_configs["langspec_file"]}.')
+                with open(maltoolbox.log_configs['langspec_file'], 'w') as fp:
+                    json.dump(lang_spec, fp, indent = 2)
+            lang_classes_factory = \
+                classes_factory.LanguageClassesFactory(lang_spec)
+            lang_classes_factory.create_classes()
+
+            # Load instance model.
+            instance_model = model.Model('Test model', lang_spec,
+                lang_classes_factory)
+            instance_model.load_from_file(model_filename)
+            if maltoolbox.log_configs['model_file']:
+                logger.debug('Save model to ' \
+                    f'{maltoolbox.log_configs["model_file"]}.')
+                instance_model.save_to_file( \
+                    maltoolbox.log_configs['model_file'])
+
+            graph = attackgraph.AttackGraph()
+            graph.generate_graph(lang_spec, instance_model)
+            graph.attach_attackers(instance_model)
+
+            if maltoolbox.log_configs['attackgraph_file']:
+                logger.debug('Save attack graph to ' \
+                    f'{maltoolbox.log_configs["attackgraph_file"]}.')
+                graph.save_to_file(
+                    maltoolbox.log_configs['attackgraph_file'])
+
+            if cmd_params['neo4j']:
+                # Injest instance model and attack graph into Neo4J.
+                logger.debug('Ingest model graph into Neo4J database.')
+                neo4j.ingest_model(instance_model,
+                    maltoolbox.neo4j_configs['uri'],
+                    maltoolbox.neo4j_configs['username'],
+                    maltoolbox.neo4j_configs['password'],
+                    maltoolbox.neo4j_configs['dbname'],
+                    delete=True)
+                logger.debug('Ingest attack graph into Neo4J database.')
+                neo4j.ingest_attack_graph(graph,
+                    maltoolbox.neo4j_configs['uri'],
+                    maltoolbox.neo4j_configs['username'],
+                    maltoolbox.neo4j_configs['password'],
+                    maltoolbox.neo4j_configs['dbname'],
+                    delete=False)
+
+        case _:
+            logger.error(f'Received unknown command: {cmd_params["command"]}.')

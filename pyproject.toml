@@ -1,0 +1,38 @@
+[project]
+name = "mal-toolbox"
+version = "0.0.1"
+authors = [
+  { name="Andrei Buhaiu", email="buhaiu@kth.se" },
+  { name="Giuseppe Nebbione", email="nebbione@kth.se" },
+]
+description = "A collection of tools used to create MAL models and attack graphs."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "py2neo>=2021.2.3",
+]
+license = {text = "Apache Software License"}
+keywords = ["mal"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/mal-lang/mal-toolbox"
+"Bug Tracker" = "https://github.com/mal-lang/mal-toolbox/issues"
+"Repository" = "https://github.com/mal-lang/mal-toolbox"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["maltoolbox*"]
+
+[tool.setuptools.package-data]
+maltoolbox = ["*.conf*"]
