@@ -116,35 +116,6 @@ class AttackGraph:
         return next(ag_node for ag_node in self.nodes \
             if ag_node.id == node_id)
 
-    def where(self,
-        node_id = None,
-        node_type = None,
-        cls = None,
-        objid = None,
-        is_reachable = None,
-        is_traversable = None,
-        name = None):
-        def _(ag_node):
-            query = []
-            query.append(node_id == ag_node.id)                    if node_id        is not None else query.append(True)
-            query.append(node_type == ag_node.type)                if node_type      is not None else query.append(True)
-            query.append(cls == ag_node.objclass)                  if cls            is not None else query.append(True)
-            query.append(objid == ag_node.objid)                   if objid          is not None else query.append(True)
-            query.append(name == ag_node.name)                     if name           is not None else query.append(True)
-            query.append(is_reachable == ag_node.is_reachable)     if is_reachable   is not None else query.append(True)
-            query.append(is_traversable == ag_node.is_traversable) if is_traversable is not None else query.append(True)
-            return all(query)
-        return _
-
-
-    def select(self, where_stmt_func):
-        """
-        Return the attack node that matches the id provided.
-
-        Arguments:
-        node_id     - the id of the attack graph none we are looking for
-        """
-        return [ag_node for ag_node in self.nodes if where_stmt_func(ag_node)]
 
     def attach_attackers(self, model: model.Model):
         """
