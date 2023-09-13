@@ -85,8 +85,13 @@ def get_attacks_for_class(lang_spec: dict, asset_type: str) -> dict:
     type of attack, TTC distribution, child attack steps and other information
     """
     attacks = {}
-    asset = next(asset for asset in lang_spec['assets'] if asset['name'] == \
-        asset_type)
+    asset = next((asset for asset in lang_spec['assets'] if asset['name'] == \
+        asset_type), None)
+    if not asset:
+        logger.error(f'Failed to find asset type {asset_type} when '\
+            'looking for attack steps.')
+        return None
+
     if asset['superAsset']:
         attacks = get_attacks_for_class(lang_spec,
             asset['superAsset'])
@@ -120,15 +125,15 @@ def get_variable_for_class_by_name(lang_spec: dict, asset_type: str,
     A dictionary representing the step expressions for the specified variable.
     """
 
-    asset = next(asset for asset in lang_spec['assets'] if asset['name'] == \
-        asset_type)
+    asset = next((asset for asset in lang_spec['assets'] if asset['name'] == \
+        asset_type), None)
     if not asset:
         logger.error(f'Failed to find asset type {asset_type} when '\
             'looking for variable.')
         return None
 
-    variable_dict = next(variable for variable in \
-        asset['variables'] if variable['name'] == variable_name)
+    variable_dict = next((variable for variable in \
+        asset['variables'] if variable['name'] == variable_name), None)
     if not variable_dict:
         logger.error(f'Failed to find variable {variable_name} in '\
             f'{asset_type}\'s language specification.')

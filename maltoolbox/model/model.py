@@ -70,7 +70,8 @@ class Model:
         Return:
         An asset matching the id if it exists in the model.
         """
-        return next(asset for asset in self.assets if asset.id == asset_id)
+        return next((asset for asset in self.assets if asset.id == asset_id),
+            None)
 
     def get_associated_assets_by_field_name(self, asset, field_name):
         """

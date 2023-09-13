@@ -113,8 +113,8 @@ class AttackGraph:
         node_id     - the id of the attack graph none we are looking for
         """
         logger.debug(f'Looking up node with id {node_id}')
-        return next(ag_node for ag_node in self.nodes \
-            if ag_node.id == node_id)
+        return next((ag_node for ag_node in self.nodes \
+            if ag_node.id == node_id), None)
 
 
     def attach_attackers(self, model: model.Model):
@@ -199,21 +199,21 @@ class AttackGraph:
                     case 'union':
                         new_target_assets = lh_targets
                         for ag_node in rh_targets:
-                            if next(lnode for lnode in new_target_assets \
-                                if lnode.id != ag_node.id):
+                            if next((lnode for lnode in new_target_assets \
+                                if lnode.id != ag_node.id), None):
                                 new_target_assets.append(ag_node)
 
                     case 'intersection':
                         for ag_node in rh_targets:
-                            if next(lnode for lnode in new_target_assets \
-                                if lnode.id == ag_node.id):
+                            if next((lnode for lnode in new_target_assets \
+                                if lnode.id == ag_node.id), None):
                                 new_target_assets.append(ag_node)
 
                     case 'difference':
                         new_target_assets = lh_targets
                         for ag_node in lh_targets:
-                            if next(rnode for rnode in rh_target_assets \
-                                if rnode.id != ag_node.id):
+                            if next((rnode for rnode in rh_target_assets \
+                                if rnode.id != ag_node.id), None):
                                 new_target_assets.remove(ag_node)
 
                 return (new_target_assets, None)
