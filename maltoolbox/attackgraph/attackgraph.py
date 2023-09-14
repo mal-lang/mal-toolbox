@@ -20,7 +20,7 @@ class AttackGraph:
 
     def save_to_file(self, filename: str):
         """
-        Save an attack graph to a json file.
+        Save the attack graph to a json file.
 
         Arguments:
         filename        - the name of the output file
@@ -34,7 +34,7 @@ class AttackGraph:
 
     def load_from_file(self, filename: str, model: model.Model = None):
         """
-        Load an attack graph model from a json file.
+        Load the attack graph model from a json file.
 
         Arguments:
         filename        - the name of the input file to parse
