@@ -44,7 +44,7 @@ def load_language_specification_from_json(json_file: str) -> dict:
     return json.loads(data)
 
 
-def save_language_specification(lang_spec: dict, filename: str) -> dict:
+def save_language_specification_to_json(lang_spec: dict, filename: str) -> dict:
     """
     Save a MAL language specification dictionary to a JSON file
 
@@ -56,17 +56,8 @@ def save_language_specification(lang_spec: dict, filename: str) -> dict:
 
     logger.debug(f'Save language specfication to {filename}.')
 
-    lang = {}
-    lang['name'] = lang_spec['defines']['id']
-    lang['assets'] = get_attack_tree(lang_spec)
-    lang['associations'] = []
-    for assoc in lang_spec['associations']:
-        del assoc['meta']
-        lang['associations'].append(assoc)
-
-
     with open(filename, 'w', encoding='utf-8') as file:
-        json.dump(lang, file, indent=4)
+        json.dump(lang_spec, file, indent=4)
 
 
 def get_attacks_for_class(lang_spec: dict, asset_type: str) -> dict:

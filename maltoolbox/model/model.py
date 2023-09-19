@@ -171,7 +171,7 @@ class Model:
             'langVersion': self.lang_spec['defines']['version'],
             'langID': self.lang_spec['defines']['id'],
             'malVersion': '0.1.0-SNAPSHOT',
-            'info': 'Created by the mal-toolbox modeller python module.'
+            'info': 'Created by the mal-toolbox model python module.'
         }
 
         logger.debug('Translating assets to json.')

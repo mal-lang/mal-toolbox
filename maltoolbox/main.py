@@ -35,8 +35,8 @@ def main():
             if maltoolbox.log_configs['langspec_file']:
                 logger.debug('Save language specification to ' \
                     f'{maltoolbox.log_configs["langspec_file"]}.')
-                with open(maltoolbox.log_configs['langspec_file'], 'w') as fp:
-                    json.dump(lang_spec, fp, indent = 2)
+                specification.save_language_specification_to_json(lang_spec,
+                    maltoolbox.log_configs['langspec_file'])
             lang_classes_factory = \
                 classes_factory.LanguageClassesFactory(lang_spec)
             lang_classes_factory.create_classes()
