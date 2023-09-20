@@ -55,7 +55,7 @@ class Model:
         Add an attacker to the model.
         """
         attacker.id = self.latestId
-        if not hasattr(attacker, 'name'):
+        if not hasattr(attacker, 'name') or not attacker.name:
             attacker.name = 'Attacker:' + str(attacker.id)
         self.latestId += 1
         self.attackers.append(attacker)

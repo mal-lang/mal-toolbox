@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class AttackGraph:
     def __init__(self):
         self.nodes = []
+        self.attackers = []
 
     def save_to_file(self, filename: str):
         """
@@ -56,6 +57,7 @@ class AttackGraph:
             ag_node.asset = None
             ag_node.children = []
             ag_node.parents = []
+            ag_node.compromised_by = []
 
             ag_node.defense_status = str(node_dict['defense_status']) if \
                 'defense_status' in node_dict else None
@@ -63,6 +65,18 @@ class AttackGraph:
                 'existence_status' in node_dict else None
             ag_node.mitre_info = str(node_dict['mitre_info']) if \
                 'mitre_info' in node_dict else None
+            if ag_node.name == 'firstSteps':
+                # This is an attacker entry point node, recreate the attacker.
+                attacker_id = ag_node.id.split(':')[1]
+                ag_attacker = attacker.Attacker(
+                    id = str(attacker_id),
+                    entry_points = [],
+                    reached_attack_steps = [],
+                    node = ag_node
+                )
+                self.attackers.append(ag_attacker)
+                ag_node.attacker = ag_attacker
+
             self.nodes.append(ag_node)
 
         # Re-establish links between nodes.
@@ -80,6 +94,14 @@ class AttackGraph:
                     return None
                 ag_node.children.append(child)
 
+                if hasattr(ag_node, 'attacker'):
+                    # Relink the attacker related connections since the node
+                    # is an attacker entry point node.
+                    ag_attacker = ag_node.attacker
+                    ag_attacker.entry_points.append(child)
+                    ag_attacker.reached_attack_steps.append(child)
+                    child.compromised_by.append(ag_attacker)
+
             for parent_id in node_dict['parents']:
                 parent = self.get_node_by_id(parent_id)
                 if parent == None:
@@ -90,7 +112,7 @@ class AttackGraph:
                 ag_node.parents.append(parent)
 
             # Also recreate asset links if model is available.
-            if model:
+            if model and 'asset' in node_dict:
                 asset = model.get_asset_by_id(
                     int(node_dict['asset'].split(':')[1]))
                 if asset == None:
@@ -100,7 +122,9 @@ class AttackGraph:
                     return None
                 ag_node.asset = asset
                 if hasattr(asset, 'attack_step_nodes'):
-                    asset.attack_step_nodes.append(ag_node)
+                    attack_step_nodes = list(asset.attack_step_nodes)
+                    attack_step_nodes.append(ag_node)
+                    asset.attack_step_nodes = attack_step_nodes
                 else:
                     asset.attack_step_nodes = [ag_node]
 
@@ -145,12 +169,18 @@ class AttackGraph:
                 node = attacker_node
             )
             attacker_node.attacker = ag_attacker
+            self.attackers.append(ag_attacker)
 
             for (asset, attack_steps) in attacker_info.entry_points:
                 for attack_step in attack_steps:
                     attack_step_id = asset.metaconcept + ':' \
                         + str(asset.id) + ':' + attack_step
                     ag_node = self.get_node_by_id(attack_step_id)
+                    if not ag_node:
+                        logger.warning('Failed to find attacker entry point '
+                            + attack_step_id + ' for Attacker:'
+                            + ag_attacker.id + '.')
+                        continue
                     ag_node.compromised_by.append(ag_attacker)
                     ag_attacker.entry_points.append(ag_node)
 
