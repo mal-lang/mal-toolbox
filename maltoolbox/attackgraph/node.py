@@ -23,6 +23,7 @@ class AttackGraphNode:
     compromised_by: List[ForwardRef('Attacker')] = None
     extra: dict = None
     mitre_info: str = None
+    observations: dict = None
 
     def to_dict(self):
         node_dict = {
@@ -45,5 +46,7 @@ class AttackGraphNode:
             node_dict['existence_status'] = str(self.existence_status)
         if self.mitre_info != None:
             node_dict['mitre_info'] = str(self.mitre_info)
+        if self.observations != None:
+            node_dict['observations'] = self.observations
 
         return node_dict
