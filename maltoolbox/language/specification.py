@@ -6,6 +6,7 @@ MAL-Toolbox Language Specification Module
 import logging
 import json
 import zipfile
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -83,16 +84,19 @@ def get_attacks_for_class(lang_spec: dict, asset_type: str) -> dict:
             'looking for attack steps.')
         return None
 
+    logger.debug(f'Get attack steps for {asset["name"]} asset from '\
+        'language specification.')
     if asset['superAsset']:
-        attacks = get_attacks_for_class(lang_spec,
-            asset['superAsset'])
+        logger.debug(f'Asset extends another one, fetch the superclass '\
+            'attack steps for it.')
+        attacks = get_attacks_for_class(lang_spec, asset['superAsset'])
 
     for attack in asset['attackSteps']:
         if attack['name'] not in attacks:
-            attacks[attack['name']] = attack
+            attacks[attack['name']] = copy.deepcopy(attack)
         else:
             if attack['reaches']['overrides'] == True:
-                attacks[attack['name']] = attack
+                attacks[attack['name']] = copy.deepcopy(attack)
             else:
                 attacks[attack['name']]['reaches']['stepExpressions'].\
                     extend(attack['reaches']['stepExpressions'])
