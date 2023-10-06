@@ -21,7 +21,7 @@ def load_language_specification_from_mar(mar_archive: str) -> dict:
     A dictionary representing the language specification
     """
 
-    logger.debug(f'Load language specfication from \'{mar_archive}\' mar archive.')
+    logger.info(f'Load language specfication from \'{mar_archive}\' mar archive.')
     with zipfile.ZipFile(mar_archive, 'r') as archive:
         langspec = archive.read('langspec.json')
         return json.loads(langspec)
@@ -38,7 +38,7 @@ def load_language_specification_from_json(json_file: str) -> dict:
     A dictionary representing the language specification
     """
 
-    logger.debug(f'Load language specfication from \'{json_file}\'.')
+    logger.info(f'Load language specfication from \'{json_file}\'.')
     with open(json_file, 'r', encoding='utf-8') as spec:
         data = spec.read()
     return json.loads(data)
@@ -54,7 +54,7 @@ def save_language_specification_to_json(lang_spec: dict, filename: str) -> dict:
                       be written
     """
 
-    logger.debug(f'Save language specfication to {filename}.')
+    logger.info(f'Save language specfication to {filename}.')
 
     with open(filename, 'w', encoding='utf-8') as file:
         json.dump(lang_spec, file, indent=4)

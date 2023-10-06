@@ -85,8 +85,8 @@ class Model:
         A list of assets associated with the asset given that match the
         fieldname.
         """
-        logger.debug(f'Get associated assets for asset {asset.id} by '
-            f'field name {field_name}.')
+        logger.debug(f'Get associated assets for asset '
+            f'{asset.name}(id:{asset.id}) by field name {field_name}.')
         associated_assets = []
         for association in asset.associations:
             # Determine which two of the end points leads away from the asset.
@@ -198,7 +198,7 @@ class Model:
         filename        - the name of the output file
         """
 
-        logger.debug(f'Saving model to {filename} file.')
+        logger.info(f'Saving model to {filename} file.')
         contents = self.model_to_json()
         fp = open(filename, 'w')
         json.dump(contents, fp, indent = 2)
@@ -210,7 +210,7 @@ class Model:
         Arguments:
         filename        - the name of the input file
         """
-        logger.debug(f'Loading model from {filename} file.')
+        logger.info(f'Loading model from {filename} file.')
         with open(filename, 'r', encoding='utf-8') as model_file:
             json_model = json.loads(model_file.read())
         # Reconstruct the assets

@@ -26,6 +26,8 @@ class AttackGraph:
         Arguments:
         filename        - the name of the output file
         """
+
+        logger.info(f'Saving attack graph to {filename} file.')
         serialized_graph = []
         for ag_node in self.nodes:
             serialized_graph.append(ag_node.to_dict())
@@ -45,6 +47,15 @@ class AttackGraph:
                           this argument is not given the attack graph will still
                           be created it will just omit the links to the assets.
         """
+
+        logger.info(f'Loading attack graph from {filename} file.')
+        if model:
+            logger.info(f'Model(\'{model.name}\') was provided will attempt '
+            'to establish links to assets.')
+        else:
+            logger.info('No model was provided therefore asset links will '
+            'not be established.')
+
         with open(filename, 'r', encoding='utf-8') as file:
             serialized_graph = json.load(file)
         # Create all of the nodes in the imported attack graph.
@@ -286,7 +297,7 @@ class AttackGraph:
             case _:
                 logger.error('Unknown attack step type: '
                     f'{step_expression["type"]}')
-                return None
+                return ([], None)
 
 
     def generate_graph(self, lang: dict, model: model.Model):
@@ -360,6 +371,7 @@ class AttackGraph:
             step_expressions = \
                 ag_node.attributes['reaches']['stepExpressions'] if \
                     ag_node.attributes['reaches'] else []
+
             for step_expression in step_expressions:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
@@ -369,5 +381,15 @@ class AttackGraph:
                     target_node_id = target.metaconcept + ':' \
                         + str(target.id) + ':' + attack_step
                     target_node = self.get_node_by_id(target_node_id)
+                    if not target_node:
+                        logger.error('Failed to find targed node ' \
+                        f'{target_node_id} to link with for attack step ' \
+                        f'{ag_node.id} !')
+                        print('Failed to find targed node ' \
+                        f'{target_node_id} to link with for attack step ' \
+                        f'{ag_node.id} !')
+                        return 1
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)
+
+        return 0

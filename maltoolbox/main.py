@@ -33,8 +33,6 @@ def main():
             lang_spec = specification. \
                 load_language_specification_from_mar(langspec_filename)
             if maltoolbox.log_configs['langspec_file']:
-                logger.debug('Save language specification to ' \
-                    f'{maltoolbox.log_configs["langspec_file"]}.')
                 specification.save_language_specification_to_json(lang_spec,
                     maltoolbox.log_configs['langspec_file'])
             lang_classes_factory = \
@@ -46,18 +44,18 @@ def main():
                 lang_classes_factory)
             instance_model.load_from_file(model_filename)
             if maltoolbox.log_configs['model_file']:
-                logger.debug('Save model to ' \
-                    f'{maltoolbox.log_configs["model_file"]}.')
                 instance_model.save_to_file( \
                     maltoolbox.log_configs['model_file'])
 
             graph = attackgraph.AttackGraph()
-            graph.generate_graph(lang_spec, instance_model)
+            result = graph.generate_graph(lang_spec, instance_model)
+            if result > 0:
+                logger.error('Attack graph generation failed!')
+                print('Attack graph generation failed!')
+                exit(result)
             graph.attach_attackers(instance_model)
 
             if maltoolbox.log_configs['attackgraph_file']:
-                logger.debug('Save attack graph to ' \
-                    f'{maltoolbox.log_configs["attackgraph_file"]}.')
                 graph.save_to_file(
                     maltoolbox.log_configs['attackgraph_file'])
 
