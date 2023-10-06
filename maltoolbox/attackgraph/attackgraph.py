@@ -285,6 +285,24 @@ class AttackGraph:
                             step_expression['name']))
                 return (new_target_assets, None)
 
+            case 'transitive':
+                # The transitive expression is very similar to the field
+                # expression, but it proceeds recursively until no target is
+                # found and it and it sets the new targets to the entire list
+                # of assets identified during the entire transitive recursion.
+                new_target_assets = []
+                for target_asset in target_assets:
+                    new_target_assets.extend(model.\
+                        get_associated_assets_by_field_name(target_asset,
+                            step_expression['stepExpression']['name']))
+                if new_target_assets:
+                    (additional_assets, _) = self.process_step_expression(
+                        lang, model, new_target_assets, step_expression)
+                    new_target_assets.extend(additional_assets)
+                    return (new_target_assets, None)
+                else:
+                    return ([], None)
+
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target assets.
