@@ -274,6 +274,7 @@ class AttackGraph:
                         logger.error('Requested variable from non-asset'
                             f'target node: {target_asset} which cannot be'
                             'resolved.')
+                return ([], None)
 
             case 'field':
                 # Change the target assets from the current ones to the associated
