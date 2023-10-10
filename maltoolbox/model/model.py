@@ -113,7 +113,8 @@ class Model:
             defenseValue = getattr(asset, defense)
             logger.debug(f'Translating {defense}: {defenseValue} defense '\
                 'to json.')
-            if defenseValue:
+            if defenseValue != getattr(asset, defense).default():
+            # Save the default values that are not the default ones.
                 defenses[str(defense)] = str(defenseValue)
         return (str(asset.id), {
                 'name': str(asset.name),
