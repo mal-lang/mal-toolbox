@@ -214,6 +214,9 @@ class Model:
         logger.info(f'Loading model from {filename} file.')
         with open(filename, 'r', encoding='utf-8') as model_file:
             json_model = json.loads(model_file.read())
+
+        self.name = json_model['metadata']['name']
+
         # Reconstruct the assets
         for asset_id in json_model['assets']:
             asset_object = json_model['assets'][asset_id]
