@@ -74,6 +74,10 @@ class AttackGraph:
                 'defense_status' in node_dict else None
             ag_node.existence_status = str(node_dict['existence_status']) if \
                 'existence_status' in node_dict else None
+            ag_node.is_viable = str(node_dict['is_viable']) if \
+                'is_viable' in node_dict else True
+            ag_node.is_necessary = str(node_dict['is_necessary']) if \
+                'is_necessary' in node_dict else True
             ag_node.mitre_info = str(node_dict['mitre_info']) if \
                 'mitre_info' in node_dict else None
             if ag_node.name == 'firstSteps':
@@ -169,8 +173,7 @@ class AttackGraph:
                     ttc = None,
                     children = [],
                     parents = [],
-                    compromised_by = [],
-                    is_reachable = True
+                    compromised_by = []
             )
 
             ag_attacker = attacker.Attacker(
@@ -366,17 +369,19 @@ class AttackGraph:
                 mitre_info = attack_step_attribs['meta']['mitre'] if 'mitre' in\
                     attack_step_attribs['meta'] else None
                 ag_node = node.AttackGraphNode(
-                        id = node_id,
-                        type = attack_step_attribs['type'],
-                        asset = asset,
-                        name = attack_step_name,
-                        ttc = attack_step_attribs['ttc'],
-                        children = [],
-                        parents = [],
-                        defense_status = defense_status,
-                        existence_status = existence_status,
-                        mitre_info = mitre_info,
-                        compromised_by = []
+                    id = node_id,
+                    type = attack_step_attribs['type'],
+                    asset = asset,
+                    name = attack_step_name,
+                    ttc = attack_step_attribs['ttc'],
+                    children = [],
+                    parents = [],
+                    defense_status = defense_status,
+                    existence_status = existence_status,
+                    is_viable = True,
+                    is_necessary = True,
+                    mitre_info = mitre_info,
+                    compromised_by = []
                 )
                 ag_node.attributes = attack_step_attribs
                 attack_step_nodes.append(ag_node)

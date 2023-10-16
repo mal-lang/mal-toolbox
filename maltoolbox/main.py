@@ -11,6 +11,7 @@ import maltoolbox
 import maltoolbox.cl_parser
 from maltoolbox.model import model
 from maltoolbox.attackgraph import attackgraph
+from maltoolbox.attackgraph.analyzers import apriori
 from maltoolbox.ingestors import neo4j
 from maltoolbox.language import classes_factory
 from maltoolbox.language import specification
@@ -53,6 +54,9 @@ def main():
                 logger.error('Attack graph generation failed!')
                 print('Attack graph generation failed!')
                 exit(result)
+
+            apriori.calculate_viability_and_necessity(graph)
+
             graph.attach_attackers(instance_model)
 
             if maltoolbox.log_configs['attackgraph_file']:
