@@ -4,8 +4,11 @@ MAL-Toolbox Attack Graph Apriori Analyzer Submodule
 This submodule contains analyzers that are relevant before attackers are even
 connected to the attack graph.
 Currently these are:
-- Viability
-- Necessity
+- Viability = Determine if a node can be traversed under any circumstances or
+  if the model structure makes it unviable.
+- Necessity = Determine if a node is necessary for the attacker or if the
+  model structure means it is not needed(it behaves as if it were already
+  compromised) to compromise children attack steps.
 """
 
 import logging

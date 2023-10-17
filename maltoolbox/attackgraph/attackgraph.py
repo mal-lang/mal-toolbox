@@ -19,6 +19,7 @@ class AttackGraph:
         self.nodes = []
         self.attackers = []
 
+
     def save_to_file(self, filename: str):
         """
         Save the attack graph to a json file.
@@ -151,6 +152,7 @@ class AttackGraph:
         Arguments:
         node_id     - the id of the attack graph none we are looking for
         """
+
         logger.debug(f'Looking up node with id {node_id}')
         return next((ag_node for ag_node in self.nodes \
             if ag_node.id == node_id), None)
@@ -164,6 +166,9 @@ class AttackGraph:
         Arguments:
         model       - the instance model containing the attackers
         """
+
+        logger.info(f'Attach attackers from \'{model.name}\' model to the '
+            'graph.')
         for attacker_info in model.attackers:
             attacker_node = node.AttackGraphNode(
                     id = 'Attacker:' + str(attacker_info.id) + ':firstSteps',
@@ -197,6 +202,8 @@ class AttackGraph:
                         continue
                     ag_node.compromised_by.append(ag_attacker)
                     ag_attacker.entry_points.append(ag_node)
+                    logger.debug(f'Attach Attacker \'{ag_attacker.id}\' to '
+                        f'{ag_node.id}.')
 
             ag_attacker.reached_attack_steps = ag_attacker.entry_points
             attacker_node.children = ag_attacker.entry_points
