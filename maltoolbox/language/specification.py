@@ -95,6 +95,9 @@ def get_attacks_for_class(lang_spec: dict, asset_type: str) -> dict:
         if attack['name'] not in attacks:
             attacks[attack['name']] = copy.deepcopy(attack)
         else:
+            if not attack['reaches']:
+                # This attack step does not lead to any attack steps
+                continue
             if attack['reaches']['overrides'] == True:
                 attacks[attack['name']] = copy.deepcopy(attack)
             else:
@@ -103,6 +106,46 @@ def get_attacks_for_class(lang_spec: dict, asset_type: str) -> dict:
 
     return attacks
 
+def get_associations_for_class(lang_spec: dict, asset_type: str) -> dict:
+    """
+    Get all Associations for a specific Class
+
+    Arguments:
+    lang_spec       - a dictionary containing the MAL language specification
+    asset_type      - a string representing the class for which we want to list
+                      the associations
+
+    Return:
+    A dictionary representing the set of associations for the specified
+    class. Each key in the dictionary is an attack name and is associated
+    with a dictionary containing other characteristics of the attack such as
+    type of attack, TTC distribution, child attack steps and other information
+    """
+    logger.debug(f'Get associations for {asset_type} asset from '\
+        'language specification.')
+    associations = []
+
+    asset = next((asset for asset in lang_spec['assets'] if asset['name'] == \
+        asset_type), None)
+    if not asset:
+        logger.error(f'Failed to find asset type {asset_type} when '\
+            'looking for associations.')
+        return None
+
+    if asset['superAsset']:
+        logger.debug(f'Asset extends another one, fetch the superclass '\
+            'associations for it.')
+        associations.extend(get_associations_for_class(lang_spec,
+            asset['superAsset']))
+    assoc_iter = (assoc for assoc in lang_spec['associations'] \
+        if assoc['leftAsset'] == asset_type or \
+            assoc['rightAsset'] == asset_type)
+    assoc = next(assoc_iter, None)
+    while (assoc):
+        associations.append(assoc)
+        assoc = next(assoc_iter, None)
+
+    return associations
 
 def get_variable_for_class_by_name(lang_spec: dict, asset_type: str,
     variable_name:str) -> dict:
@@ -130,8 +173,14 @@ def get_variable_for_class_by_name(lang_spec: dict, asset_type: str,
     variable_dict = next((variable for variable in \
         asset['variables'] if variable['name'] == variable_name), None)
     if not variable_dict:
-        logger.error(f'Failed to find variable {variable_name} in '\
-            f'{asset_type}\'s language specification.')
+        if asset['superAsset']:
+            variable_dict = get_variable_for_class_by_name(lang_spec,
+                asset['superAsset'], variable_name)
+        if variable_dict:
+            return variable_dict
+        else:
+            logger.error(f'Failed to find variable {variable_name} in '\
+                f'{asset_type}\'s language specification.')
         return None
 
     return variable_dict['stepExpression']

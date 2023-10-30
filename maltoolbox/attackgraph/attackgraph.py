@@ -151,6 +151,9 @@ class AttackGraph:
 
         Arguments:
         node_id     - the id of the attack graph none we are looking for
+
+        Return:
+        The attack step node that matches the given id.
         """
 
         logger.debug(f'Looking up node with id {node_id}')
@@ -317,8 +320,8 @@ class AttackGraph:
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target assets.
-                lh_targets, lh_attack_steps = self.process_step_expression(
-                lang, model, target_assets, step_expression['lhs'])
+                lh_targets, _ = self.process_step_expression(
+                    lang, model, target_assets, step_expression['lhs'])
                 return self.process_step_expression(lang, model, lh_targets,
                     step_expression['rhs'])
 
@@ -415,10 +418,10 @@ class AttackGraph:
                     if not target_node:
                         logger.error('Failed to find targed node ' \
                         f'{target_node_id} to link with for attack step ' \
-                        f'{ag_node.id} !')
+                        f'{ag_node.id}!')
                         print('Failed to find targed node ' \
                         f'{target_node_id} to link with for attack step ' \
-                        f'{ag_node.id} !')
+                        f'{ag_node.id}!')
                         return 1
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)

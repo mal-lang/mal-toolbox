@@ -9,12 +9,12 @@ import json
 
 import maltoolbox
 import maltoolbox.cl_parser
+from maltoolbox.language import classes_factory
+from maltoolbox.language import specification
 from maltoolbox.model import model
 from maltoolbox.attackgraph import attackgraph
 from maltoolbox.attackgraph.analyzers import apriori
 from maltoolbox.ingestors import neo4j
-from maltoolbox.language import classes_factory
-from maltoolbox.language import specification
 
 logger = logging.getLogger(__name__)
 
