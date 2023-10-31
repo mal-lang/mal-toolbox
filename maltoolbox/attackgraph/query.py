@@ -69,3 +69,16 @@ def get_attack_surface(graph: attackgraph.AttackGraph,
                 attack_surface.append(child)
     return attack_surface
 
+def get_defense_surface(graph: attackgraph.AttackGraph):
+    """
+    Get the defense surface. All non-suppressed defense steps that are not
+    already fully enabled.
+
+    Arguments:
+    graph       - the attack graph
+    """
+    logger.debug(f'Get the defense surface.')
+    return (node for node in graph.nodes if node.type == 'defense' and \
+        'suppress' not in node.tags and \
+        node.defense_status != 1.0)
+
