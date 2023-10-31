@@ -82,3 +82,16 @@ def get_defense_surface(graph: attackgraph.AttackGraph):
         'suppress' not in node.tags and \
         node.defense_status != 1.0)
 
+def get_enabled_defenses(graph: attackgraph.AttackGraph):
+    """
+    Get the defenses already enabled. All non-suppressed defense steps that
+    are already fully enabled.
+
+    Arguments:
+    graph       - the attack graph
+    """
+    logger.debug(f'Get the enabled defenses.')
+    return (node for node in graph.nodes if node.type == 'defense' and \
+        'suppress' not in node.tags and \
+        node.defense_status == 1.0)
+
