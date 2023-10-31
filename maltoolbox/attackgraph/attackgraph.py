@@ -391,6 +391,7 @@ class AttackGraph:
                     is_viable = True,
                     is_necessary = True,
                     mitre_info = mitre_info,
+                    tags = attack_step_attribs['tags'],
                     compromised_by = []
                 )
                 ag_node.attributes = attack_step_attribs
