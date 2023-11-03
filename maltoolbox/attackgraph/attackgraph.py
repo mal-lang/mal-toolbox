@@ -317,6 +317,20 @@ class AttackGraph:
                 else:
                     return ([], None)
 
+            case 'subType':
+                new_target_assets = []
+                for target_asset in target_assets:
+                    (assets, _) = self.process_step_expression(
+                        lang, model, target_assets, step_expression['stepExpression'])
+                    new_target_assets.extend(assets)
+
+                selected_new_target_assets = (asset for asset in \
+                    new_target_assets if specification.extends_asset(
+                        lang,
+                        asset.metaconcept,
+                        step_expression['subType']))
+                return (selected_new_target_assets, None)
+
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target assets.
