@@ -129,12 +129,6 @@ class LanguageGraphAttackStep:
                             }
                         }
 
-                    case 'transitive':
-                        return {'transitive':
-                            associations_chain_to_dict(
-                                associations_chain[1])
-                        }
-
                     case 'field':
                         association = associations_chain[2]
                         return {association.name:
@@ -145,7 +139,19 @@ class LanguageGraphAttackStep:
                             }
                         }
 
-                    case '_':
+                    case 'transitive':
+                        return {'transitive':
+                            associations_chain_to_dict(
+                                associations_chain[1])
+                        }
+
+                    case 'subType':
+                        return {'subType': associations_chain[1],
+                            'expression': associations_chain_to_dict(
+                                associations_chain[2])
+                        }
+
+                    case _:
                         logger.error('Unknown associations chain element '
                             f'{associations_chain[0]}!')
                         return None
@@ -153,14 +159,16 @@ class LanguageGraphAttackStep:
                 return None
 
         for child in self.children:
-            (_, associations_chain) = self.children[child]
-            node_dict['children'][child] = \
-                associations_chain_to_dict(associations_chain)
+            node_dict['children'][child] = []
+            for (_, associations_chain) in self.children[child]:
+                node_dict['children'][child].append(
+                    associations_chain_to_dict(associations_chain))
 
         for parent in self.parents:
-            (_, associations_chain) = self.parents[parent]
-            node_dict['parents'][parent] = \
-                associations_chain_to_dict(associations_chain)
+            node_dict['parents'][parent] = []
+            for (_, associations_chain) in self.parents[parent]:
+                node_dict['parents'][parent].append(
+                    associations_chain_to_dict(associations_chain))
 
         return node_dict
 
@@ -322,6 +330,36 @@ class LanguageGraph:
                     ),
                     attack_step)
 
+            case 'subType':
+                # Create a subType tuple entry that applies to the next
+                # component of the step expression and changes the target
+                # asset to the subasset.
+                subtype_name = step_expression['subType']
+                result_target_asset, \
+                result_associations_chain, \
+                attack_step = \
+                    self.process_step_expression(lang,
+                        target_asset,
+                        associations_chain,
+                        step_expression['stepExpression'])
+
+                subtype_asset = next((asset for asset in self.assets \
+                    if asset.name == subtype_name), None)
+                if not subtype_asset:
+                    logger.error('Failed to find subtype attack step '
+                        f'\"{subtype_name}\"')
+                if not subtype_asset.subclasses(result_target_asset):
+                    logger.error(f'Found subtype \"{subtype_name}\" which '
+                        f'does not extend \"{result_target_asset.name}\". '
+                        'Therefore the subtype cannot be resolved.')
+                    return (None, None, None)
+                return (subtype_asset,
+                    ('subType',
+                        subtype_name,
+                        result_associations_chain
+                    ),
+                    attack_step)
+
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target asset and parent associations chain.
@@ -388,7 +426,12 @@ class LanguageGraph:
                     return self.reverse_associations_chain(associations_chain[3],
                         reverse_chain)
 
-                case '_':
+                case 'subType':
+                    return ('subType', associations_chain[1],
+                        self.reverse_associations_chain(
+                        associations_chain[2], reverse_chain))
+
+                case _:
                     logger.error('Unknown associations chain element '
                         f'{associations_chain[0]}!')
                     return None
@@ -561,13 +604,23 @@ class LanguageGraph:
 
                 # It is easier to create the parent associations chain due to
                 # the left-hand first progression.
-                target_attack_step.parents[attack_step.name] = \
-                    (target_attack_step, associations_chain)
+                if attack_step.name in target_attack_step.parents:
+                    target_attack_step.parents[attack_step.name].append(
+                        (target_attack_step, associations_chain))
+                else:
+                    target_attack_step.parents[attack_step.name] = \
+                        [(target_attack_step, associations_chain)]
                 # Reverse the parent associations chain to get the child
                 # associations chain.
-                attack_step.children[target_attack_step.name] = \
-                    (attack_step,
-                    self.reverse_associations_chain(associations_chain,
-                        None))
+                if target_attack_step.name in attack_step.children:
+                    attack_step.children[target_attack_step.name].append(
+                        (attack_step,
+                        self.reverse_associations_chain(associations_chain,
+                            None)))
+                else:
+                    attack_step.children[target_attack_step.name] = \
+                        [(attack_step,
+                        self.reverse_associations_chain(associations_chain,
+                            None))]
 
         return 0
