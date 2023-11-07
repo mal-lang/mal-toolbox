@@ -21,7 +21,7 @@ MAL-Toolbox Framework
 """
 
 __title__ = 'maltoolbox'
-__version__ = '0.0.17'
+__version__ = '0.0.18'
 __authors__ = ['Andrei Buhaiu']
 __license__ = 'Apache 2.0'
 __docformat__ = 'restructuredtext en'
