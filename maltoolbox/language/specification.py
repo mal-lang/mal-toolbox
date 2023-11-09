@@ -147,6 +147,49 @@ def get_associations_for_class(lang_spec: dict, asset_type: str) -> dict:
 
     return associations
 
+def get_association_by_fields_and_assets(lang_spec: dict,
+    first_field: str,
+    second_field: str,
+    first_asset: str,
+    second_asset: str) -> str:
+    """
+    Get an association based on its field names and asset types
+
+    Arguments:
+    lang_spec       - a dictionary containing the MAL language specification
+    first_field     - a string containing the first field
+    second_field    - a string containing the second field
+    first_asset     - a string representing the first asset type
+    second_asset    - a string representing the second asset type
+
+    Return:
+    The name of the association matching the fieldnames and asset types.
+    None if there is no match.
+    """
+    for assoc in lang_spec['associations']:
+        logger.debug(f'Compare (\"{first_asset}\",'
+            f'\"{first_field}\",'
+            f'\"{second_asset}\",'
+            f'\"{second_field}\") to '
+            f'(\"{assoc["leftAsset"]}\",'
+            f'\"{assoc["leftField"]}\",'
+            f'\"{assoc["rightAsset"]}\",'
+            f'\"{assoc["rightField"]}\").')
+
+        # If the asset and fields match either way we accept it as a match.
+        if assoc['leftField'] == first_field and \
+            assoc['rightField'] == second_field and \
+            extends_asset(lang_spec, first_asset, assoc['leftAsset']) and \
+            extends_asset(lang_spec, second_asset, assoc['rightAsset']):
+            return assoc['name']
+        if assoc['leftField'] == second_field and \
+            assoc['rightField'] == first_field and \
+            extends_asset(lang_spec, second_asset, assoc['leftAsset']) and \
+            extends_asset(lang_spec, first_asset, assoc['rightAsset']):
+            return assoc['name']
+
+    return None
+
 def get_variable_for_class_by_name(lang_spec: dict, asset_type: str,
     variable_name:str) -> dict:
     """

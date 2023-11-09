@@ -27,15 +27,19 @@ class Model:
         self.lang_spec = lang_spec
         self.lang_classes_factory = lang_classes_factory
 
-    def add_asset(self, asset):
+    def add_asset(self, asset, asset_id: int = None):
         """
         Add an asset to the model.
         """
-        asset.id = self.latestId
+        if asset_id:
+            asset.id = asset_id
+        else:
+            asset.id = self.latestId
+        self.latestId = max(asset.id + 1, self.latestId)
+
         asset.associations = []
         if not hasattr(asset, 'name'):
             asset.name = asset.metaconcept + ':' + str(asset.id)
-        self.latestId += 1
         self.assets.append(asset)
 
     def add_association(self, association):
@@ -50,14 +54,18 @@ class Model:
                 asset.associations = assocs
         self.associations.append(association)
 
-    def add_attacker(self, attacker):
+    def add_attacker(self, attacker, attacker_id: int = None):
         """
         Add an attacker to the model.
         """
-        attacker.id = self.latestId
+        if attacker_id:
+            attacker.id = attacker_id
+        else:
+            attacker.id = self.latestId
+        self.latestId = max(attacker.id + 1, self.latestId)
+
         if not hasattr(attacker, 'name') or not attacker.name:
             attacker.name = 'Attacker:' + str(attacker.id)
-        self.latestId += 1
         self.attackers.append(attacker)
 
     def get_asset_by_id(self, asset_id):
@@ -72,6 +80,19 @@ class Model:
         """
         return next((asset for asset in self.assets if asset.id == asset_id),
             None)
+
+    def get_attacker_by_id(self, attacker_id):
+        """
+        Find an attacker in the model based on its id.
+
+        Arguments:
+        attacker_id     - the id of the attacker we are looking for
+
+        Return:
+        An attacker matching the id if it exists in the model.
+        """
+        return next((attacker for attacker in self.attackers \
+            if attacker.id == attacker_id), None)
 
     def get_associated_assets_by_field_name(self, asset, field_name):
         """
@@ -227,7 +248,7 @@ class Model:
             for defense in asset_object['defenses']:
                 setattr(asset, defense,
                     float(asset_object['defenses'][defense]))
-            self.add_asset(asset)
+            self.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
         if 'associations' in json_model:
@@ -252,4 +273,4 @@ class Model:
                         (self.get_asset_by_id(int(asset_id)),
                         attackers_info[attacker_id]['entry_points']\
                             [asset_id]['attack_steps']))
-                self.add_attacker(attacker)
+                self.add_attacker(attacker, attacker_id = int(attacker_id))
