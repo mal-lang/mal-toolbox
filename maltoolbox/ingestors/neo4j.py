@@ -43,8 +43,8 @@ def ingest_attack_graph(graph,
             full_name=node_dict['id'],
             type=node_dict['type'],
             ttc=str(node_dict['ttc']),
-            is_traversable = str(node.is_traversable),
-            is_reachable = str(node.is_reachable),
+            is_necessary = str(node.is_necessary),
+            is_viable = str(node.is_viable),
             compromised_by = str(node_dict['compromised_by']))
 
 
