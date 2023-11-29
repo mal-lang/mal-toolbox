@@ -71,16 +71,18 @@ class AttackGraph:
             ag_node.parents = []
             ag_node.compromised_by = []
 
-            ag_node.defense_status = str(node_dict['defense_status']) if \
+            ag_node.defense_status = float(node_dict['defense_status']) if \
                 'defense_status' in node_dict else None
-            ag_node.existence_status = str(node_dict['existence_status']) if \
-                'existence_status' in node_dict else None
-            ag_node.is_viable = str(node_dict['is_viable']) if \
+            ag_node.existence_status = node_dict['existence_status'] \
+                == 'True' if 'existence_status' in node_dict else None
+            ag_node.is_viable = node_dict['is_viable'] == 'True' if \
                 'is_viable' in node_dict else True
-            ag_node.is_necessary = str(node_dict['is_necessary']) if \
+            ag_node.is_necessary = node_dict['is_necessary'] == 'True' if \
                 'is_necessary' in node_dict else True
             ag_node.mitre_info = str(node_dict['mitre_info']) if \
                 'mitre_info' in node_dict else None
+            ag_node.tags = node_dict['tags'] if \
+                'tags' in node_dict else None
             if ag_node.name == 'firstSteps':
                 # This is an attacker entry point node, recreate the attacker.
                 attacker_id = ag_node.id.split(':')[1]
