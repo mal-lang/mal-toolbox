@@ -1,2 +1,13 @@
-langs/
+test_langs/
 .venv/
+
+# antlr generated files we don't need
+malVisitor.py
+malListener.py
+mal.interp
+mal.tokens
+malLexer.interp
+malLexer.tokens
+
+
+*.zip

@@ -1,5 +1,6 @@
+from antlr4 import ParseTreeVisitor
+
 from .malParser import malParser
-from .malVisitor import malVisitor
 
 from collections.abc import MutableMapping, MutableSequence
 
@@ -8,7 +9,7 @@ from collections.abc import MutableMapping, MutableSequence
 #   - ctx.two() would be []
 
 
-class malTreeProcessor(malVisitor):
+class malVisitor(ParseTreeVisitor):
     def __init__(self, compiler, *args, **kwargs):
         self.compiler = compiler
         self.current_file = compiler.current_file  # for debug purposes
@@ -24,6 +25,7 @@ class malTreeProcessor(malVisitor):
             "associations": [],
         }
 
+        # no visitDeclaration method needed, `declaration` is a thin rule
         for declaration in (d.getChild(0) for d in ctx.declaration()):
             if result := self.visit(declaration) or True:
                 key, value = result
@@ -41,7 +43,7 @@ class malTreeProcessor(malVisitor):
                     langspec[key].extend(value)
 
                 if key == "include":
-                    included_file = compiler.compile(value)
+                    included_file = self.compiler.compile(value)
                     for k, v in langspec.items():
                         if isinstance(v, MutableMapping):
                             langspec[k].update(included_file.get(k, {}))
@@ -72,6 +74,9 @@ class malTreeProcessor(malVisitor):
 
         return ("categories", ([category], assets))
 
+    def visitMeta(self, ctx):
+        return ((ctx.ID().getText(), ctx.STRING().getText().strip('"')),)
+
     def visitAsset(self, ctx):
         asset = {}
         asset["name"] = ctx.ID()[0].getText()
@@ -88,13 +93,6 @@ class malTreeProcessor(malVisitor):
 
         return asset
 
-    def visitVariable(self, ctx):
-        ret = {}
-        ret["name"] = ctx.ID().getText()
-        ret["stepExpression"] = self.visit(ctx.expr())
-
-        return ret
-
     def visitStep(self, ctx):
         step = {}
         step["name"] = ctx.ID().getText()
@@ -110,6 +108,116 @@ class malTreeProcessor(malVisitor):
 
         return step
 
+    def visitSteptype(self, ctx):
+        return (
+            "or"
+            if ctx.OR()
+            else "and"
+            if ctx.AND()
+            else "defense"
+            if ctx.HASH()
+            else "exist"
+            if ctx.EXISTS()
+            else "notExist"
+            if ctx.NOTEXISTS()
+            else None  # should never happen, the grammar limits it
+        )
+
+    def visitTag(self, ctx):
+        return ctx.ID().getText()
+
+    def visitCias(self, ctx):
+        risk = {
+            "isConfidentiality": False,
+            "isIntegrity": False,
+            "isAvailability": False,
+        }
+
+        for cia in ctx.cia():
+            risk.update(self.visit(cia))
+
+        return risk
+
+    def visitCia(self, ctx):
+        key = (
+            "isConfidentiality"
+            if ctx.C()
+            else "isIntegrity"
+            if ctx.I()
+            else "isAvailability"
+            if ctx.A()
+            else None
+        )
+
+        return {key: True}
+
+    def visitTtc(self, ctx):
+        ret = self.visit(ctx.ttcexpr())
+
+        return ret
+
+    def visitTtcexpr(self, ctx):
+        if len(terms := ctx.ttcterm()) == 1:
+            return self.visit(terms[0])
+
+        ret = {}
+
+        lhs = self.visit(terms[0])
+        for i in range(1, len(terms)):
+            ret["type"] = (
+                "addition"
+                if ctx.children[2 * i - 1].getText() == "+"
+                else "subtraction"
+            )
+            ret["lhs"] = lhs
+            ret["rhs"] = self.visit(terms[i])
+
+            lhs = ret.copy()
+
+        return ret
+
+    def visitTtcterm(self, ctx):
+        if len(factors := ctx.ttcfact()) == 1:
+            ret = self.visit(factors[0])
+        else:
+            ret = {}
+            ret["type"] = "multiplication" if ctx.STAR() else "division"
+            ret["lhs"] = self.visit(factors[0])
+            ret["rhs"] = self.visit(factors[1])
+
+        return ret
+
+    def visitTtcfact(self, ctx):
+        if len(atoms := ctx.ttcatom()) == 1:
+            ret = self.visit(atoms[0])
+        else:
+            ret = {}
+            ret["type"] = "exponentiation"
+            ret["lhs"] = self.visit(atoms[0])
+            ret["rhs"] = self.visit(atoms[1])
+
+        return ret
+
+    def visitTtcatom(self, ctx):
+        if ctx.ttcdist():
+            ret = self.visit(ctx.ttcdist())
+        elif ctx.ttcexpr():
+            ret = self.visit(ctx.ttcexpr())
+        elif ctx.number():
+            ret = self.visit(ctx.number())
+
+        return ret
+
+    def visitTtcdist(self, ctx):
+        ret = {"type": "function"}
+        ret["name"] = ctx.ID().getText()
+        ret["arguments"] = []
+
+        if ctx.LPAREN():
+            ret["arguments"] = [self.visit(number)["value"] for number in ctx.number()]
+
+        return ret
+
     def visitPrecondition(self, ctx):
         ret = {}
         ret["overrides"] = True
@@ -120,6 +228,19 @@ class malTreeProcessor(malVisitor):
         ret = {}
         ret["overrides"] = ctx.INHERITS() is None
         ret["stepExpressions"] = [self.visit(expr) for expr in ctx.expr()]
+
+        return ret
+
+    def visitNumber(self, ctx):
+        ret = {"type": "number"}
+        ret["value"] = float(ctx.getText())
+
+        return ret
+
+    def visitVariable(self, ctx):
+        ret = {}
+        ret["name"] = ctx.ID().getText()
+        ret["stepExpression"] = self.visit(ctx.expr())
 
         return ret
 
@@ -136,17 +257,6 @@ class malTreeProcessor(malVisitor):
             lhs = ret.copy()
 
         return ret
-
-    def visitSetop(self, ctx):
-        return (
-            "union"
-            if ctx.UNION()
-            else "intersection"
-            if ctx.INTERSECT()
-            else "difference"
-            if ctx.INTERSECT
-            else None
-        )
 
     def visitParts(self, ctx):
         if len(ctx.part()) == 1:
@@ -223,122 +333,21 @@ class malTreeProcessor(malVisitor):
 
         return "attackStep"
 
-    def visitType(self, ctx):
-        return ctx.ID().getText()
-
     def visitVarsubst(self, ctx):
         return ctx.ID().getText()
 
-    def visitTtc(self, ctx):
-        ret = self.visit(ctx.ttcexpr())
-
-        return ret
-
-    def visitTtcexpr(self, ctx):
-        if len(terms := ctx.ttcterm()) == 1:
-            return self.visit(terms[0])
-
-        ret = {}
-
-        lhs = self.visit(terms[0])
-        for i in range(1, len(terms)):
-            ret["type"] = (
-                "addition"
-                if ctx.children[2 * i - 1].getText() == "+"
-                else "subtraction"
-            )
-            ret["lhs"] = lhs
-            ret["rhs"] = self.visit(terms[i])
-
-            lhs = ret.copy()
-
-        return ret
-
-    def visitTtcterm(self, ctx):
-        if len(factors := ctx.ttcfact()) == 1:
-            ret = self.visit(factors[0])
-        else:
-            ret = {}
-            ret["type"] = "multiplication" if ctx.STAR() else "division"
-            ret["lhs"] = self.visit(factors[0])
-            ret["rhs"] = self.visit(factors[1])
-
-        return ret
-
-    def visitTtcfact(self, ctx):
-        if len(atoms := ctx.ttcatom()) == 1:
-            ret = self.visit(atoms[0])
-        else:
-            ret = {}
-            ret["type"] = "exponentiation"
-            ret["lhs"] = self.visit(atoms[0])
-            ret["rhs"] = self.visit(atoms[1])
-
-        return ret
-
-    def visitTtcatom(self, ctx):
-        if ctx.ttcdist():
-            ret = self.visit(ctx.ttcdist())
-        elif ctx.ttcexpr():
-            ret = self.visit(ctx.ttcexpr())
-        elif ctx.number():
-            ret = self.visit(ctx.number())
-
-        return ret
-
-    def visitTtcdist(self, ctx):
-        ret = {"type": "function"}
-        ret["name"] = ctx.ID().getText()
-        ret["arguments"] = []
-
-        if ctx.LPAREN():
-            ret["arguments"] = [self.visit(number)["value"] for number in ctx.number()]
-
-        return ret
-
-    def visitNumber(self, ctx):
-        ret = {"type": "number"}
-        ret["value"] = float(ctx.getText())
-
-        return ret
-
-    def visitCias(self, ctx):
-        risk = {
-            "isConfidentiality": False,
-            "isIntegrity": False,
-            "isAvailability": False,
-        }
-
-        for cia in ctx.cia():
-            key = (
-                "isConfidentiality"
-                if cia.C()
-                else "isIntegrity"
-                if cia.I()
-                else "isAvailability"
-                if cia.A()
-                else None
-            )
-            risk[key] = True
-
-        return risk
-
-    def visitTag(self, ctx):
+    def visitType(self, ctx):
         return ctx.ID().getText()
 
-    def visitSteptype(self, ctx):
+    def visitSetop(self, ctx):
         return (
-            "or"
-            if ctx.OR()
-            else "and"
-            if ctx.AND()
-            else "defense"
-            if ctx.HASH()
-            else "exist"
-            if ctx.EXISTS()
-            else "notExist"
-            if ctx.NOTEXISTS()
-            else None  # should never happen, the grammar limits it
+            "union"
+            if ctx.UNION()
+            else "intersection"
+            if ctx.INTERSECT()
+            else "difference"
+            if ctx.INTERSECT
+            else None
         )
 
     def visitAssociations(self, ctx):
@@ -350,16 +359,19 @@ class malTreeProcessor(malVisitor):
 
     def visitAssociation(self, ctx):
         association = {}
-        association["name"] = ctx.linkname().ID().getText()
+        association["name"] = self.visit(ctx.linkname())
         association["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
         association["leftAsset"] = ctx.ID()[0].getText()
-        association["leftField"] = ctx.field()[0].ID().getText()
+        association["leftField"] = self.visit(ctx.field()[0])
+
+        # no self.visitMult or self.visitMultatom methods, reading them here
+        # directly
         association["leftMultiplicity"] = {
             "min": (multatoms := ctx.mult()[0].multatom()).pop(0).getText(),
             "max": multatoms.pop().getText() if multatoms else None,
         }
         association["rightAsset"] = ctx.ID()[1].getText()
-        association["rightField"] = ctx.field()[1].ID().getText()
+        association["rightField"] = self.visit(ctx.field()[1])
         association["rightMultiplicity"] = {
             "min": (multatoms := ctx.mult()[1].multatom()).pop(0).getText(),
             "max": multatoms.pop().getText() if multatoms else None,
@@ -367,9 +379,6 @@ class malTreeProcessor(malVisitor):
 
         self._post_process_multitudes(association)
         return association
-
-    def visitMeta(self, ctx):
-        return ((ctx.ID().getText(), ctx.STRING().getText().strip('"')),)
 
     def _post_process_multitudes(self, association):
         mult_keys = [
@@ -400,3 +409,9 @@ class malTreeProcessor(malVisitor):
             # cast numerical strings to integers
             if (multatom := association[key][subkey]) and multatom.isdigit():
                 association[key][subkey] = int(association[key][subkey])
+
+    def visitField(self, ctx):
+        return ctx.ID().getText()
+
+    def visitLinkname(self, ctx):
+        return ctx.ID().getText()
