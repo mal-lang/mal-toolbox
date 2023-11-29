@@ -4,7 +4,7 @@ set -euo pipefail
 
 cleanup() {
   if [[ "$?" -eq 0 ]]; then
-    rm -rf malc_result.zip new_langspec.json langspec.json icons/
+    rm -rf malc_result.zip new_langspec.json langspec.json icons/ test_langs/
   fi
 }
 
@@ -19,22 +19,23 @@ langs=(
   "exampleLang"
   "SCL-Lang"
   "vehicleLang"
-  "wiki-example"
   )
 
-mkdir -p langs
+mkdir -p test_langs
 
 for lang in "${langs[@]}"; do
-  mal_dir="langs/$lang/src/main/mal"
+  mal_dir="test_langs/$lang/src/main/mal"
 
   if [[ ! -d "$mal_dir" ]]; then
-    git clone https://github.com/mal-lang/$lang langs/$lang
+    git clone https://github.com/mal-lang/$lang test_langs/$lang
   fi
 
   if [[ -r "$mal_dir/main.mal" ]]; then
     mal_files+=("$mal_dir/main.mal")
   elif [[ -r "$mal_dir/${lang//-}.mal" ]]; then
     mal_files+=("$mal_dir/${lang//-}.mal")
+  elif [[ -r "$mal_dir/${lang,,}.mal" ]]; then
+    mal_files+=("$mal_dir/${lang,,}.mal")
   else
     echo "could not locate entry mal file for $lang"
     exit 1
@@ -51,7 +52,7 @@ for file in "${mal_files[@]}"; do
   unzip -q -o malc_result.zip
   python -m json.tool --indent 2 langspec.json >| langspec.json_
   mv langspec.json_ langspec.json
-  ./run.py "$file"
+  python -m maltoolbox.lexer_parser "$file"
   (python <<HERE
 import json
 import sys
