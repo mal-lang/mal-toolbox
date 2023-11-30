@@ -36,8 +36,8 @@ class LanguageGraphAsset:
 
         for assoc in self.associations:
             node_dict['associations'].append((assoc.name,
-                assoc.fields[0][1],
-                assoc.fields[1][1]))
+                assoc.left_field.fieldname,
+                assoc.right_field.fieldname))
         for attack_step in self.attack_steps:
             node_dict['attack_steps'].append(attack_step.name)
         for super_asset in self.super_assets:
@@ -46,7 +46,7 @@ class LanguageGraphAsset:
             node_dict['sub_assets'].append(sub_asset.name)
         return node_dict
 
-    def subclasses(self, target_asset):
+    def is_subasset_of(self, target_asset):
         """
         Check if an asset extends the target asset through inheritance.
 
@@ -66,35 +66,143 @@ class LanguageGraphAsset:
             current_assets.extend(current_asset.super_assets)
         return False
 
+    def get_all_subassets(self):
+        """
+        Return a list of all of the assets that directly or indirectly extend
+        this asset.
+
+        Return:
+        A list of all of the assets that extend this asset plus itself.
+        """
+        current_assets = [self]
+        subassets = [self]
+        while (current_assets):
+            current_asset = current_assets.pop()
+            current_assets.extend(current_asset.sub_assets)
+            subassets.extend(current_asset.sub_assets)
+        return subassets
+
+    def get_all_superassets(self):
+        """
+        Return a list of all of the assets that this asset directly or
+        indirectly extends.
+
+        Return:
+        A list of all of the assets that this asset extends plus itself.
+        """
+        current_assets = [self]
+        superassets = [self]
+        while (current_assets):
+            current_asset = current_assets.pop()
+            current_assets.extend(current_asset.super_assets)
+            superassets.extend(current_asset.super_assets)
+        return superassets
+
+@dataclass
+class LanguageGraphAssociationField:
+    asset: LanguageGraphAsset
+    fieldname: str
+    minimum: int
+    maximum: int
+
 @dataclass
 class LanguageGraphAssociation:
-    name: str = None
-    # The left and right field of the association are tuples that contain a
-    # reference to the asset type, the field name, minimum, and maximum
-    # cardinality. Together the two form a tuple pair.
-    fields: tuple[tuple[ForwardRef('LanguageGraphAsset'), str, int, int],
-        tuple[ForwardRef('LanguageGraphAsset'), str, int, int]] = ()
+    name: str
+    left_field: LanguageGraphAssociationField
+    right_field: LanguageGraphAssociationField
     description: dict = None
 
     def to_dict(self):
         node_dict = {
             'name': self.name,
             'left': {
-                'asset': self.fields[0][0].name,
-                'fieldname': self.fields[0][1],
-                'min': self.fields[0][2],
-                'max': self.fields[0][3]
+                'asset': self.left_field.asset.name,
+                'fieldname': self.left_field.fieldname,
+                'min': self.left_field.minimum,
+                'max': self.left_field.maximum
             },
             'right': {
-                'asset': self.fields[1][0].name,
-                'fieldname': self.fields[1][1],
-                'min': self.fields[1][2],
-                'max': self.fields[1][3]
+                'asset': self.right_field.asset.name,
+                'fieldname': self.right_field.fieldname,
+                'min': self.right_field.minimum,
+                'max': self.right_field.maximum
             },
             'description': self.description
         }
 
         return node_dict
+
+    def contains_fieldname(self, fieldname):
+        """
+        Check if the association contains the field name given as a parameter.
+
+        Arguments:
+        fieldname   - the field name to look for
+        Return True if either of the two field names matches.
+        False, otherwise.
+        """
+        if self.left_field.fieldname == fieldname:
+            return True
+        if self.right_field.fieldname == fieldname:
+            return True
+        return False
+
+    def contains_asset(self, asset):
+        """
+        Check if the association matches the asset given as a parameter. A
+        match can either be an explicit one or if the asset given subassets
+        either of the two assets that are part of the association.
+
+        Arguments:
+        asset       - the asset to look for
+        Return True if either of the two asset matches.
+        False, otherwise.
+        """
+        if asset.is_subasset_of(self.left_field.asset):
+            return True
+        if asset.is_subasset_of(self.right_field.asset):
+            return True
+        return False
+
+    def get_opposite_fieldname(self, fieldname):
+        """
+        Return the opposite field name if the association contains the field
+        name given as a parameter.
+
+        Arguments:
+        fieldname   - the field name to look for
+        Return the other field name if the parameter matched either of the
+        two. None, otherwise.
+        """
+        if self.left_field.fieldname == fieldname:
+            return self.right_field.fieldname
+        if self.right_field.fieldname == fieldname:
+            return self.left_field.fieldname
+
+        logger.warning(f'Requested fieldname \"{fieldname}\" from '
+            f'association {self.name} which did not contain it!')
+        return None
+
+    def get_opposite_asset(self, asset):
+        """
+        Return the opposite asset if the association matches the asset given
+        as a parameter. A match can either be an explicit one or if the asset
+        given subassets either of the two assets that are part of the
+        association.
+
+        Arguments:
+        asset       - the asset to look for
+        Return the other asset if the parameter matched either of the
+        two. None, otherwise.
+        """
+        if asset.is_subasset_of(self.left_field.asset):
+            return self.right_field.asset
+        if asset.is_subasset_of(self.right_field.asset):
+            return self.left_field.asset
+
+        logger.warning(f'Requested asset \"{asset.name}\" from '
+            f'association {self.name} which did not contain it!')
+        return None
 
 @dataclass
 class LanguageGraphAttackStep:
@@ -117,60 +225,76 @@ class LanguageGraphAttackStep:
             'description': self.description
         }
 
-        def associations_chain_to_dict(associations_chain):
-            if associations_chain:
-                match (associations_chain[0]):
-                    case 'union' | 'intersection' | 'difference':
-                        return {associations_chain[0]: {
-                            'left': associations_chain_to_dict(
-                                associations_chain[1]),
-                            'right': associations_chain_to_dict(
-                                associations_chain[2])
-                            }
-                        }
-
-                    case 'field':
-                        association = associations_chain[2]
-                        return {association.name:
-                            {'fieldname': associations_chain[1],
-                             'next_association':
-                                 associations_chain_to_dict(
-                                     associations_chain[3])
-                            }
-                        }
-
-                    case 'transitive':
-                        return {'transitive':
-                            associations_chain_to_dict(
-                                associations_chain[1])
-                        }
-
-                    case 'subType':
-                        return {'subType': associations_chain[1],
-                            'expression': associations_chain_to_dict(
-                                associations_chain[2])
-                        }
-
-                    case _:
-                        logger.error('Unknown associations chain element '
-                            f'{associations_chain[0]}!')
-                        return None
-            else:
-                return None
-
         for child in self.children:
             node_dict['children'][child] = []
-            for (_, associations_chain) in self.children[child]:
-                node_dict['children'][child].append(
-                    associations_chain_to_dict(associations_chain))
+            for (_, dep_chain) in self.children[child]:
+                if dep_chain:
+                    node_dict['children'][child].append(
+                        dep_chain.to_dict())
+                else:
+                    node_dict['children'][child].append(None)
 
         for parent in self.parents:
             node_dict['parents'][parent] = []
-            for (_, associations_chain) in self.parents[parent]:
-                node_dict['parents'][parent].append(
-                    associations_chain_to_dict(associations_chain))
+            for (_, dep_chain) in self.parents[parent]:
+                if dep_chain:
+                    node_dict['parents'][parent].append(
+                        dep_chain.to_dict())
+                else:
+                    node_dict['parents'][parent].append(None)
 
         return node_dict
+
+
+class DependencyChain:
+    def __init__(self, type, next_link):
+        self.type = type
+        self.next_link = next_link
+
+    def __iter__(self):
+        self.current_link = self
+        return self
+
+    def __next__(self):
+        if self.current_link:
+            dep_chain = self.current_link
+            self.current_link = self.current_link.next_link
+            return dep_chain
+        raise StopIteration
+
+    def to_dict(self):
+        match (self.type):
+            case 'union' | 'intersection' | 'difference':
+                return {self.type: {
+                    'left': self.left_chain.to_dict(),
+                    'right': self.right_chain.to_dict()
+                    }
+                }
+
+            case 'field':
+                association = self.association
+                return {association.name:
+                    {'fieldname': self.fieldname,
+                     'next_association':
+                          self.next_link.to_dict() if self.next_link else None
+                    }
+                }
+
+            case 'transitive':
+                return {'transitive':
+                    self.next_link.to_dict()
+                }
+
+            case 'subType':
+                return {'subType': self.subtype.name,
+                    'expression': self.next_link.to_dict()
+                }
+
+            case _:
+                logger.error('Unknown associations chain element '
+                    f'{self.type}!')
+                return None
+
 
 class LanguageGraph:
     def __init__(self):
@@ -212,7 +336,7 @@ class LanguageGraph:
     def process_step_expression(self,
         lang: dict,
         target_asset,
-        associations_chain,
+        dep_chain,
         step_expression: dict):
         """
         Recursively process an attack step expression.
@@ -223,9 +347,9 @@ class LanguageGraph:
         target_asset        - The asset type that this step expression should
                               apply to. Initially it will contain the asset
                               type to which the attack step belongs.
-        associations_chain  - A chain of nested tuples that specify the
-                              associations and set operations chain from the
-                              attack step to its parent attack step.
+        dep_chain           - A dependency chain of linked of associations and
+                              set operations from the attack step to its
+                              parent attack step.
                               Note: This was done for the parent attack step
                               because it was easier to construct recursively
                               given the left-hand first expansion of the
@@ -245,16 +369,16 @@ class LanguageGraph:
                 # step. All other step expressions only modify the target
                 # asset and parent associations chain.
                 return (target_asset,
-                    associations_chain,
+                    dep_chain,
                     step_expression['name'])
 
             case 'union' | 'intersection' | 'difference':
                 # The set operators are used to combine the left hand and right
                 # hand targets accordingly.
-                lh_target_asset, lh_associations_chain, _ = self.process_step_expression(
-                    lang, target_asset, associations_chain, step_expression['lhs'])
-                rh_target_asset, rh_associations_chain, _ = self.process_step_expression(
-                    lang, target_asset, associations_chain, step_expression['rhs'])
+                lh_target_asset, lh_dep_chain, _ = self.process_step_expression(
+                    lang, target_asset, dep_chain, step_expression['lhs'])
+                rh_target_asset, rh_dep_chain, _ = self.process_step_expression(
+                    lang, target_asset, dep_chain, step_expression['rhs'])
 
                 if lh_target_asset != rh_target_asset:
                     logger.error('Set operation has different target asset '
@@ -262,14 +386,14 @@ class LanguageGraph:
                         f'{lh_target_asset.name} and {rh_target_asset.name}!')
                     return (None, None, None)
 
+                new_dep_chain = DependencyChain(
+                    type = step_expression['type'],
+                    next_link = None)
+                new_dep_chain.left_chain = lh_dep_chain
+                new_dep_chain.right_chain = rh_dep_chain
                 return (lh_target_asset,
-                    (step_expression['type'],
-                        lh_associations_chain,
-                        rh_associations_chain),
+                    new_dep_chain,
                     None)
-
-
-                return (new_target_assets, None)
 
             case 'variable':
                 # Fetch the step expression associated with the variable from
@@ -281,7 +405,7 @@ class LanguageGraph:
                     return self.process_step_expression(
                         lang,
                         target_asset,
-                        associations_chain,
+                        dep_chain,
                         variable_step_expr)
 
                 else:
@@ -298,18 +422,28 @@ class LanguageGraph:
                     logger.error(f'Missing target asset for field \"{fieldname}\"!')
                     return (None, None, None)
 
+                new_target_asset = None
                 for association in target_asset.associations:
-                    for side in range (0, 2):
-                        if association.fields[side][1] == fieldname and \
-                            target_asset.subclasses(
-                                association.fields[1 - side][0]):
-                            return (association.fields[side][0],
-                                ('field',
-                                    association.fields[1 - side][1],
-                                    association,
-                                    associations_chain
-                                ),
-                                None)
+                    if (association.left_field.fieldname == fieldname and \
+                        target_asset.is_subasset_of(
+                            association.right_field.asset)):
+                        new_target_asset = association.left_field.asset
+
+                    if (association.right_field.fieldname == fieldname and \
+                        target_asset.is_subasset_of(
+                            association.left_field.asset)):
+                        new_target_asset = association.right_field.asset
+
+                    if new_target_asset:
+                        new_dep_chain = DependencyChain(
+                            type = 'field',
+                            next_link = dep_chain)
+                        new_dep_chain.fieldname = \
+                            association.get_opposite_fieldname(fieldname)
+                        new_dep_chain.association = association
+                        return (new_target_asset,
+                            new_dep_chain,
+                            None)
                 logger.error(f'Failed to find field \"{fieldname}\" on '
                     f'asset \"{target_asset.name}\"!')
                 return (None, None, None)
@@ -318,16 +452,17 @@ class LanguageGraph:
                 # Create a transitive tuple entry that applies to the next
                 # component of the step expression.
                 result_target_asset, \
-                result_associations_chain, \
+                result_dep_chain, \
                 attack_step = \
                     self.process_step_expression(lang,
                         target_asset,
-                        associations_chain,
+                        dep_chain,
                         step_expression['stepExpression'])
+                new_dep_chain = DependencyChain(
+                    type = 'transitive',
+                    next_link = result_dep_chain)
                 return (result_target_asset,
-                    ('transitive',
-                        result_associations_chain
-                    ),
+                    new_dep_chain,
                     attack_step)
 
             case 'subType':
@@ -336,11 +471,11 @@ class LanguageGraph:
                 # asset to the subasset.
                 subtype_name = step_expression['subType']
                 result_target_asset, \
-                result_associations_chain, \
+                result_dep_chain, \
                 attack_step = \
                     self.process_step_expression(lang,
                         target_asset,
-                        associations_chain,
+                        dep_chain,
                         step_expression['stepExpression'])
 
                 subtype_asset = next((asset for asset in self.assets \
@@ -348,34 +483,36 @@ class LanguageGraph:
                 if not subtype_asset:
                     logger.error('Failed to find subtype attack step '
                         f'\"{subtype_name}\"')
-                if not subtype_asset.subclasses(result_target_asset):
+                if not subtype_asset.is_subasset_of(result_target_asset):
                     logger.error(f'Found subtype \"{subtype_name}\" which '
                         f'does not extend \"{result_target_asset.name}\". '
                         'Therefore the subtype cannot be resolved.')
                     return (None, None, None)
+
+                new_dep_chain = DependencyChain(
+                    type = 'subtype',
+                    next_link = result_dep_chain)
+                new_dep_chain.subtype = subtype_asset
                 return (subtype_asset,
-                    ('subType',
-                        subtype_name,
-                        result_associations_chain
-                    ),
+                    new_dep_chain,
                     attack_step)
 
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target asset and parent associations chain.
-                (lh_target_asset, lh_associations_chain, _) = \
+                (lh_target_asset, lh_dep_chain, _) = \
                     self.process_step_expression(lang,
                         target_asset,
-                        associations_chain,
+                        dep_chain,
                         step_expression['lhs'])
                 (rh_target_asset,
-                    rh_associations_chain,
+                    rh_dep_chain,
                     rh_attack_step_name) = \
                     self.process_step_expression(lang,
                         lh_target_asset,
-                        lh_associations_chain,
+                        lh_dep_chain,
                         step_expression['rhs'])
-                return (rh_target_asset, rh_associations_chain,
+                return (rh_target_asset, rh_dep_chain,
                     rh_attack_step_name)
 
             case _:
@@ -383,13 +520,13 @@ class LanguageGraph:
                     f'{step_expression["type"]}')
                 return (None, None, None)
 
-    def reverse_associations_chain(self, associations_chain, reverse_chain):
+    def reverse_dep_chain(self, dep_chain, reverse_chain):
         """
         Recursively reverse the associations chain. From parent to child or
         vice versa.
 
         Arguments:
-        associations_chain  - A chain of nested tuples that specify the
+        dep_chain  - A chain of nested tuples that specify the
                               associations and set operations chain from an
                               attack step to its connected attack step.
         reverse_chain       - A chain of nested tuples that represents the
@@ -398,42 +535,57 @@ class LanguageGraph:
         Return:
         The resulting reversed associations chain.
         """
-        if not associations_chain:
+        if not dep_chain:
             return reverse_chain
         else:
-            match (associations_chain[0]):
+            match (dep_chain.type):
                 case 'union' | 'intersection' | 'difference':
                     left_reverse_chain = \
-                        self.reverse_associations_chain(associations_chain[1],
+                        self.reverse_dep_chain(dep_chain.left_chain,
                         reverse_chain)
                     right_reverse_chain = \
-                        self.reverse_associations_chain(associations_chain[2],
+                        self.reverse_dep_chain(dep_chain.right_chain,
                         reverse_chain)
-                    return (associations_chain[0], left_reverse_chain,
-                        right_reverse_chain)
+                    new_dep_chain = DependencyChain(
+                        type = dep_chain.type,
+                        next_link = None)
+                    new_dep_chain.left_chain = left_reverse_chain
+                    new_dep_chain.right_chain = right_reverse_chain
+                    return new_dep_chain
 
                 case 'transitive':
-                    return ('transitive',  self.reverse_associations_chain(
-                        associations_chain[1], reverse_chain))
+                    result_reverse_chain = self.reverse_dep_chain(
+                        dep_chain.next_link, reverse_chain)
+                    new_dep_chain = DependencyChain(
+                        type = 'transitive',
+                        next_link = result_reverse_chain)
+                    return new_dep_chain
 
                 case 'field':
-                    association = associations_chain[2]
-                    for side in range (0, 2):
-                        if association.fields[side][1] == associations_chain[1]:
-                            opposite_fieldname = association.fields[1 - side][1]
-                            break
-                    reverse_chain = ('field', opposite_fieldname, association, reverse_chain)
-                    return self.reverse_associations_chain(associations_chain[3],
-                        reverse_chain)
+                    association = dep_chain.association
+                    opposite_fieldname = association.get_opposite_fieldname(
+                        dep_chain.fieldname)
+                    new_dep_chain = DependencyChain(
+                        type = 'field',
+                        next_link = reverse_chain)
+                    new_dep_chain.fieldname = opposite_fieldname
+                    new_dep_chain.association = association
+                    return self.reverse_dep_chain(dep_chain.next_link,
+                        new_dep_chain)
 
                 case 'subType':
-                    return ('subType', associations_chain[1],
-                        self.reverse_associations_chain(
-                        associations_chain[2], reverse_chain))
+                    result_reverse_chain = self.reverse_dep_chain(
+                        new_dep_chain.next_link,
+                        reverse_chain)
+                    new_dep_chain = DependencyChain(
+                        type = 'subtype',
+                        next_link = result_reverse_chain)
+                    new_dep_chain.subtype = dep_chain.subtype
+                    return new_dep_chain
 
                 case _:
                     logger.error('Unknown associations chain element '
-                        f'{associations_chain[0]}!')
+                        f'{dep_chain.type}!')
                     return None
 
 
@@ -500,10 +652,12 @@ class LanguageGraph:
                         f'association \"{association["name"]}\"!')
                     return 1
 
+                # Technically we should be more exhaustive and check the
+                # flipped version too and all of the fieldnames as well.
                 assoc_node = next((assoc for assoc in self.associations \
                     if assoc.name == association['name'] and
-                        assoc.fields[0][0] == left_asset and
-                        assoc.fields[1][0] == right_asset),
+                        assoc.left_field.asset == left_asset and
+                        assoc.right_field.asset == right_asset),
                         None)
                 if assoc_node:
                     # The association was already created, skip it
@@ -511,18 +665,16 @@ class LanguageGraph:
 
                 assoc_node = LanguageGraphAssociation(
                     name = association['name'],
-                    fields = (
-                        (left_asset,
-                            association['leftField'],
-                            association['leftMultiplicity']['min'],
-                            association['leftMultiplicity']['max']
-                        ),
-                        (right_asset,
-                            association['rightField'],
-                            association['rightMultiplicity']['min'],
-                            association['rightMultiplicity']['max']
-                        )
-                    ),
+                    left_field = LanguageGraphAssociationField(
+                        left_asset,
+                        association['leftField'],
+                        association['leftMultiplicity']['min'],
+                        association['leftMultiplicity']['max']),
+                    right_field = LanguageGraphAssociationField(
+                        right_asset,
+                        association['rightField'],
+                        association['rightMultiplicity']['min'],
+                        association['rightMultiplicity']['max']),
                     description = association['meta']
                 )
 
@@ -572,7 +724,7 @@ class LanguageGraph:
             for step_expression in step_expressions:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
-                (target_asset, associations_chain, attack_step_name) = \
+                (target_asset, dep_chain, attack_step_name) = \
                     self.process_step_expression(lang,
                         attack_step.asset,
                         None,
@@ -592,11 +744,13 @@ class LanguageGraph:
                         if attack_step.name == attack_step_fullname), None)
 
                 if not target_attack_step:
-                    logger.error('Failed to find target attack step on '
+                    logger.error('Failed to find target attack step '
+                        f'{attack_step_fullname} on '
                         f'{target_asset.name} to link with for step '
                         'expression:\n' +
                         json.dumps(step_expression, indent = 2))
-                    print('Failed to find target attack step on '
+                    print('Failed to find target attack step '
+                        f'{attack_step_fullname} on '
                         f'{target_asset.name} to link with for step '
                         'expression:\n' +
                         json.dumps(step_expression, indent = 2))
@@ -606,21 +760,21 @@ class LanguageGraph:
                 # the left-hand first progression.
                 if attack_step.name in target_attack_step.parents:
                     target_attack_step.parents[attack_step.name].append(
-                        (target_attack_step, associations_chain))
+                        (target_attack_step, dep_chain))
                 else:
                     target_attack_step.parents[attack_step.name] = \
-                        [(target_attack_step, associations_chain)]
+                        [(target_attack_step, dep_chain)]
                 # Reverse the parent associations chain to get the child
                 # associations chain.
                 if target_attack_step.name in attack_step.children:
                     attack_step.children[target_attack_step.name].append(
                         (attack_step,
-                        self.reverse_associations_chain(associations_chain,
+                        self.reverse_dep_chain(dep_chain,
                             None)))
                 else:
                     attack_step.children[target_attack_step.name] = \
                         [(attack_step,
-                        self.reverse_associations_chain(associations_chain,
+                        self.reverse_dep_chain(dep_chain,
                             None))]
 
         return 0
