@@ -195,6 +195,9 @@ class LanguageGraphAssociation:
         Return the other asset if the parameter matched either of the
         two. None, otherwise.
         """
+        #TODO Should check to see which one is the tightest fit for
+        #     associations between assets on different levels of the same
+        #     inheritance chain.
         if asset.is_subasset_of(self.left_field.asset):
             return self.right_field.asset
         if asset.is_subasset_of(self.right_field.asset):
@@ -760,20 +763,20 @@ class LanguageGraph:
                 # the left-hand first progression.
                 if attack_step.name in target_attack_step.parents:
                     target_attack_step.parents[attack_step.name].append(
-                        (target_attack_step, dep_chain))
+                        (attack_step, dep_chain))
                 else:
                     target_attack_step.parents[attack_step.name] = \
-                        [(target_attack_step, dep_chain)]
+                        [(attack_step, dep_chain)]
                 # Reverse the parent associations chain to get the child
                 # associations chain.
                 if target_attack_step.name in attack_step.children:
                     attack_step.children[target_attack_step.name].append(
-                        (attack_step,
+                        (target_attack_step,
                         self.reverse_dep_chain(dep_chain,
                             None)))
                 else:
                     attack_step.children[target_attack_step.name] = \
-                        [(attack_step,
+                        [(target_attack_step,
                         self.reverse_dep_chain(dep_chain,
                             None))]
 
