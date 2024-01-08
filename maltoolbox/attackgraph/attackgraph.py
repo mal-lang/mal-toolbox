@@ -211,8 +211,8 @@ class AttackGraph:
             attacker_node.children = ag_attacker.entry_points
             self.nodes.append(attacker_node)
 
-
-    def process_step_expression(self, lang: dict, model: model.Model,
+    @classmethod
+    def process_step_expression(cls, lang: dict, model: model.Model,
         target_assets: List, step_expression: dict):
         """
         Recursively process an attack step expression.
@@ -242,9 +242,9 @@ class AttackGraph:
             case 'union' | 'intersection' | 'difference':
                 # The set operators are used to combine the left hand and right
                 # hand targets accordingly.
-                lh_targets, lh_attack_steps = self.process_step_expression(
+                lh_targets, lh_attack_steps = cls.process_step_expression(
                     lang, model, target_assets, step_expression['lhs'])
-                rh_targets, rh_attack_steps = self.process_step_expression(
+                rh_targets, rh_attack_steps = cls.process_step_expression(
                     lang, model, target_assets, step_expression['rhs'])
 
                 new_target_assets = []
@@ -279,7 +279,7 @@ class AttackGraph:
                         variable_step_expr = specification.\
                             get_variable_for_class_by_name(lang,
                             target_asset.metaconcept, step_expression['name'])
-                        return self.process_step_expression(
+                        return cls.process_step_expression(
                             lang, model, target_assets, variable_step_expr)
 
                     else:
@@ -309,7 +309,7 @@ class AttackGraph:
                         get_associated_assets_by_field_name(target_asset,
                             step_expression['stepExpression']['name']))
                 if new_target_assets:
-                    (additional_assets, _) = self.process_step_expression(
+                    (additional_assets, _) = cls.process_step_expression(
                         lang, model, new_target_assets, step_expression)
                     new_target_assets.extend(additional_assets)
                     return (new_target_assets, None)
@@ -319,7 +319,7 @@ class AttackGraph:
             case 'subType':
                 new_target_assets = []
                 for target_asset in target_assets:
-                    (assets, _) = self.process_step_expression(
+                    (assets, _) = cls.process_step_expression(
                         lang, model, target_assets, step_expression['stepExpression'])
                     new_target_assets.extend(assets)
 
@@ -333,9 +333,9 @@ class AttackGraph:
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target assets.
-                lh_targets, _ = self.process_step_expression(
+                lh_targets, _ = cls.process_step_expression(
                     lang, model, target_assets, step_expression['lhs'])
-                return self.process_step_expression(lang, model, lh_targets,
+                return cls.process_step_expression(lang, model, lh_targets,
                     step_expression['rhs'])
 
 
