@@ -14,12 +14,11 @@ Currently these are:
 import logging
 
 from maltoolbox.attackgraph import attackgraph
-from maltoolbox.attackgraph import attacker
-from maltoolbox.attackgraph import node
+from maltoolbox.attackgraph.node import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
-def propagate_viability_from_node(node: node.AttackGraphNode):
+def propagate_viability_from_node(node: AttackGraphNode):
     """
     Arguments:
     node        - the attack graph node from which to propagate the viable
@@ -39,7 +38,7 @@ def propagate_viability_from_node(node: node.AttackGraphNode):
         if child.is_viable != original_value:
             propagate_viability_from_node(child)
 
-def propagate_necessity_from_node(node: node.AttackGraphNode):
+def propagate_necessity_from_node(node: AttackGraphNode):
     """
     Arguments:
     node        - the attack graph node from which to propagate the necessary

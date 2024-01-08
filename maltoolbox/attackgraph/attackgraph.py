@@ -5,7 +5,7 @@ MAL-Toolbox Attack Graph Module
 import logging
 import json
 
-from typing import List
+from typing import List, Optional
 
 from maltoolbox.language import specification
 from maltoolbox.model import model
@@ -36,7 +36,7 @@ class AttackGraph:
             json.dump(serialized_graph, file, indent=4)
 
 
-    def load_from_file(self, filename: str, model: model.Model = None):
+    def load_from_file(self, filename: str, model: Optional[model.Model] = None):
         """
         Load the attack graph model from a json file.
 
@@ -61,15 +61,12 @@ class AttackGraph:
             serialized_graph = json.load(file)
         # Create all of the nodes in the imported attack graph.
         for node_dict in serialized_graph:
-            ag_node = node.AttackGraphNode()
-            ag_node.id = node_dict['id']
-            ag_node.type = node_dict['type']
-            ag_node.name = node_dict['name']
-            ag_node.ttc = node_dict['ttc']
-            ag_node.asset = None
-            ag_node.children = []
-            ag_node.parents = []
-            ag_node.compromised_by = []
+            ag_node = node.AttackGraphNode(
+                id=node_dict['id'],
+                type=node_dict['type'],
+                name=node_dict['name'],
+                ttc=node_dict['ttc']
+            )
 
             ag_node.defense_status = float(node_dict['defense_status']) if \
                 'defense_status' in node_dict else None
@@ -99,55 +96,55 @@ class AttackGraph:
 
         # Re-establish links between nodes.
         for node_dict in serialized_graph:
-            ag_node = self.get_node_by_id(node_dict['id'])
-            if ag_node == None:
+            _ag_node: Optional[node.AttackGraphNode] = self.get_node_by_id(node_dict['id'])
+            if not isinstance(_ag_node, node.AttackGraphNode):
                 logger.error(f'Failed to find node with id {node_dict["id"]}'
                     f' when loading from attack graph from file {filename}')
+            else:
+                for child_id in node_dict['children']:
+                    child = self.get_node_by_id(child_id)
+                    if child is None:
+                        logger.error(f'Failed to find child node with id {child_id}'
+                            f' when loading from attack graph from file {filename}')
+                        return None
+                    _ag_node.children.append(child)
 
-            for child_id in node_dict['children']:
-                child = self.get_node_by_id(child_id)
-                if child == None:
-                    logger.error(f'Failed to find child node with id {child_id}'
-                        f' when loading from attack graph from file {filename}')
-                    return None
-                ag_node.children.append(child)
+                    if isinstance(_ag_node.attacker, attacker.Attacker):
+                        # Relink the attacker related connections since the node
+                        # is an attacker entry point node.
+                        ag_attacker = _ag_node.attacker
+                        ag_attacker.entry_points.append(child)
+                        ag_attacker.reached_attack_steps.append(child)
+                        child.compromised_by.append(ag_attacker)
 
-                if hasattr(ag_node, 'attacker'):
-                    # Relink the attacker related connections since the node
-                    # is an attacker entry point node.
-                    ag_attacker = ag_node.attacker
-                    ag_attacker.entry_points.append(child)
-                    ag_attacker.reached_attack_steps.append(child)
-                    child.compromised_by.append(ag_attacker)
+                for parent_id in node_dict['parents']:
+                    parent = self.get_node_by_id(parent_id)
+                    if parent is None:
+                        logger.error('Failed to find parent node with id '
+                            f'{parent_id} when loading from attack graph from '
+                            f'file {filename}')
+                        return None
+                    _ag_node.parents.append(parent)
 
-            for parent_id in node_dict['parents']:
-                parent = self.get_node_by_id(parent_id)
-                if parent == None:
-                    logger.error('Failed to find parent node with id '
-                        f'{parent_id} when loading from attack graph from '
-                        f'file {filename}')
-                    return None
-                ag_node.parents.append(parent)
-
-            # Also recreate asset links if model is available.
-            if model and 'asset' in node_dict:
-                asset = model.get_asset_by_id(
-                    int(node_dict['asset'].split(':')[1]))
-                if asset == None:
-                    logger.error('Failed to find asset with id '
-                        f'{node_dict["asset"]} when loading from attack graph '
-                        f'from file {filename}')
-                    return None
-                ag_node.asset = asset
-                if hasattr(asset, 'attack_step_nodes'):
-                    attack_step_nodes = list(asset.attack_step_nodes)
-                    attack_step_nodes.append(ag_node)
-                    asset.attack_step_nodes = attack_step_nodes
-                else:
-                    asset.attack_step_nodes = [ag_node]
+                # Also recreate asset links if model is available.
+                if model and 'asset' in node_dict:
+                    asset = model.get_asset_by_id(
+                        int(node_dict['asset'].split(':')[1]))
+                    if asset is None:
+                        logger.error('Failed to find asset with id '
+                            f'{node_dict["asset"]} when loading from attack graph '
+                            f'from file {filename}')
+                        return None
+                    _ag_node.asset = asset
+                    if hasattr(asset, 'attack_step_nodes'):
+                        attack_step_nodes = list(asset.attack_step_nodes)
+                        attack_step_nodes.append(_ag_node)
+                        asset.attack_step_nodes = attack_step_nodes
+                    else:
+                        asset.attack_step_nodes = [_ag_node]
 
 
-    def get_node_by_id(self, node_id: str) -> node.AttackGraphNode:
+    def get_node_by_id(self, node_id: str) -> Optional[node.AttackGraphNode]:
         """
         Return the attack node that matches the id provided.
 
@@ -180,7 +177,7 @@ class AttackGraph:
                     type = 'or',
                     asset = None,
                     name = 'firstSteps',
-                    ttc = None,
+                    ttc = {},
                     children = [],
                     parents = [],
                     compromised_by = []
@@ -214,8 +211,8 @@ class AttackGraph:
             attacker_node.children = ag_attacker.entry_points
             self.nodes.append(attacker_node)
 
-
-    def process_step_expression(self, lang: dict, model: model.Model,
+    @classmethod
+    def process_step_expression(cls, lang: dict, model: model.Model,
         target_assets: List, step_expression: dict):
         """
         Recursively process an attack step expression.
@@ -245,9 +242,9 @@ class AttackGraph:
             case 'union' | 'intersection' | 'difference':
                 # The set operators are used to combine the left hand and right
                 # hand targets accordingly.
-                lh_targets, lh_attack_steps = self.process_step_expression(
+                lh_targets, lh_attack_steps = cls.process_step_expression(
                     lang, model, target_assets, step_expression['lhs'])
-                rh_targets, rh_attack_steps = self.process_step_expression(
+                rh_targets, rh_attack_steps = cls.process_step_expression(
                     lang, model, target_assets, step_expression['rhs'])
 
                 new_target_assets = []
@@ -268,7 +265,7 @@ class AttackGraph:
                     case 'difference':
                         new_target_assets = lh_targets
                         for ag_node in lh_targets:
-                            if next((rnode for rnode in rh_target_assets \
+                            if next((rnode for rnode in rh_targets \
                                 if rnode.id != ag_node.id), None):
                                 new_target_assets.remove(ag_node)
 
@@ -282,7 +279,7 @@ class AttackGraph:
                         variable_step_expr = specification.\
                             get_variable_for_class_by_name(lang,
                             target_asset.metaconcept, step_expression['name'])
-                        return self.process_step_expression(
+                        return cls.process_step_expression(
                             lang, model, target_assets, variable_step_expr)
 
                     else:
@@ -312,7 +309,7 @@ class AttackGraph:
                         get_associated_assets_by_field_name(target_asset,
                             step_expression['stepExpression']['name']))
                 if new_target_assets:
-                    (additional_assets, _) = self.process_step_expression(
+                    (additional_assets, _) = cls.process_step_expression(
                         lang, model, new_target_assets, step_expression)
                     new_target_assets.extend(additional_assets)
                     return (new_target_assets, None)
@@ -322,7 +319,7 @@ class AttackGraph:
             case 'subType':
                 new_target_assets = []
                 for target_asset in target_assets:
-                    (assets, _) = self.process_step_expression(
+                    (assets, _) = cls.process_step_expression(
                         lang, model, target_assets, step_expression['stepExpression'])
                     new_target_assets.extend(assets)
 
@@ -336,9 +333,9 @@ class AttackGraph:
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target assets.
-                lh_targets, _ = self.process_step_expression(
+                lh_targets, _ = cls.process_step_expression(
                     lang, model, target_assets, step_expression['lhs'])
-                return self.process_step_expression(lang, model, lh_targets,
+                return cls.process_step_expression(lang, model, lh_targets,
                     step_expression['rhs'])
 
 
@@ -370,7 +367,7 @@ class AttackGraph:
                     f'{attack_step_name}.')
 
                 defense_status = None
-                existence_status = None
+                existence_status: Optional[bool] = None
                 node_id = asset.metaconcept + ':' + str(asset.id) + ':' + attack_step_name
 
                 match (attack_step_attribs['type']):
@@ -421,7 +418,7 @@ class AttackGraph:
                 f'{ag_node.id}.')
             step_expressions = \
                 ag_node.attributes['reaches']['stepExpressions'] if \
-                    ag_node.attributes['reaches'] else []
+                    isinstance(ag_node.attributes, dict) and ag_node.attributes['reaches'] else []
 
             for step_expression in step_expressions:
                 # Resolve each of the attack step expressions listed for this
