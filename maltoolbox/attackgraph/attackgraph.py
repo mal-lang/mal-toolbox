@@ -149,9 +149,13 @@ def _process_step_expression(lang: dict, model: model.Model,
 
 
 class AttackGraph:
-    def __init__(self):
+    def __init__(self, lang_spec = None, model: model.Model = None):
         self.nodes = []
         self.attackers = []
+        self.model = model
+        self.lang_spec = lang_spec
+        if self.model is not None and self.lang_spec is not None:
+            self.generate_graph(self.lang_spec, self.model)
 
 
     def save_to_file(self, filename: str):
@@ -346,7 +350,7 @@ class AttackGraph:
             self.nodes.append(attacker_node)
 
 
-    def generate_graph(self, lang: dict, model: model.Model):
+    def generate_graph(self, lang: dict = None, model: model.Model = None):
         """
         Generate attack graph starting from a model instance
         and a MAL language specification
@@ -355,6 +359,13 @@ class AttackGraph:
         model           - a maltoolbox.model.Model instance
         lang            - a dictionary representing the MAL language specification
         """
+
+        if model is not None:
+            self.model = model
+        if lang is not None:
+            self.lang_spec = lang
+        if self.model is None or self.lang_spec is None:
+            return
 
         # First, generate all of the nodes of the attack graph.
         for asset in model.assets:
