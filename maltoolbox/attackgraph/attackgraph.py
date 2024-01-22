@@ -14,6 +14,140 @@ from maltoolbox.attackgraph import attacker
 
 logger = logging.getLogger(__name__)
 
+def _process_step_expression(lang: dict, model: model.Model,
+    target_assets: List, step_expression: dict):
+    """
+    Recursively process an attack step expression.
+
+    Arguments:
+    lang            - a dictionary representing the MAL language specification
+    model           - a maltoolbox.model.Model instance from which the attack
+                      graph was generated
+    target_assets   - the list of assets that this step expression should apply
+                      to. Initially it will contain the asset to which the
+                      attack step belongs
+    step_expression - a dictionary containing the step expression
+
+    Return:
+    A tuple pair containing a list of all of the target assets and the name of
+    the attack step.
+    """
+    logger.debug('Processing Step Expression:\n' \
+        + json.dumps(step_expression, indent = 2))
+
+    match (step_expression['type']):
+        case 'attackStep':
+            # The attack step expression just adds the name of the attack
+            # step. All other step expressions only modify the target assets.
+            return (target_assets, step_expression['name'])
+
+        case 'union' | 'intersection' | 'difference':
+            # The set operators are used to combine the left hand and right
+            # hand targets accordingly.
+            lh_targets, lh_attack_steps = _process_step_expression(
+                lang, model, target_assets, step_expression['lhs'])
+            rh_targets, rh_attack_steps = _process_step_expression(
+                lang, model, target_assets, step_expression['rhs'])
+
+            new_target_assets = []
+            match (step_expression['type']):
+                case 'union':
+                    new_target_assets = lh_targets
+                    for ag_node in rh_targets:
+                        if next((lnode for lnode in new_target_assets \
+                            if lnode.id != ag_node.id), None):
+                            new_target_assets.append(ag_node)
+
+                case 'intersection':
+                    for ag_node in rh_targets:
+                        if next((lnode for lnode in new_target_assets \
+                            if lnode.id == ag_node.id), None):
+                            new_target_assets.append(ag_node)
+
+                case 'difference':
+                    new_target_assets = lh_targets
+                    for ag_node in lh_targets:
+                        if next((rnode for rnode in rh_targets \
+                            if rnode.id != ag_node.id), None):
+                            new_target_assets.remove(ag_node)
+
+            return (new_target_assets, None)
+
+        case 'variable':
+            # Fetch the step expression associated with the variable from
+            # the language specification and resolve that.
+            for target_asset in target_assets:
+                if (hasattr(target_asset, 'metaconcept')):
+                    variable_step_expr = specification.\
+                        get_variable_for_class_by_name(lang,
+                        target_asset.metaconcept, step_expression['name'])
+                    return _process_step_expression(
+                        lang, model, target_assets, variable_step_expr)
+
+                else:
+                    logger.error('Requested variable from non-asset'
+                        f'target node: {target_asset} which cannot be'
+                        'resolved.')
+            return ([], None)
+
+        case 'field':
+            # Change the target assets from the current ones to the associated
+            # assets given the specified field name.
+            new_target_assets = []
+            for target_asset in target_assets:
+                new_target_assets.extend(model.\
+                    get_associated_assets_by_field_name(target_asset,
+                        step_expression['name']))
+            return (new_target_assets, None)
+
+        case 'transitive':
+            # The transitive expression is very similar to the field
+            # expression, but it proceeds recursively until no target is
+            # found and it and it sets the new targets to the entire list
+            # of assets identified during the entire transitive recursion.
+            new_target_assets = []
+            for target_asset in target_assets:
+                new_target_assets.extend(model.\
+                    get_associated_assets_by_field_name(target_asset,
+                        step_expression['stepExpression']['name']))
+            if new_target_assets:
+                (additional_assets, _) = _process_step_expression(
+                    lang, model, new_target_assets, step_expression)
+                new_target_assets.extend(additional_assets)
+                return (new_target_assets, None)
+            else:
+                return ([], None)
+
+        case 'subType':
+            new_target_assets = []
+            for target_asset in target_assets:
+                (assets, _) = _process_step_expression(
+                    lang, model, target_assets, step_expression['stepExpression'])
+                new_target_assets.extend(assets)
+
+            selected_new_target_assets = (asset for asset in \
+                new_target_assets if specification.extends_asset(
+                    lang,
+                    asset.metaconcept,
+                    step_expression['subType']))
+            return (selected_new_target_assets, None)
+
+        case 'collect':
+            # Apply the right hand step expression to left hand step
+            # expression target assets.
+            lh_targets, _ = _process_step_expression(
+                lang, model, target_assets, step_expression['lhs'])
+            return _process_step_expression(lang, model, lh_targets,
+                step_expression['rhs'])
+
+
+        case _:
+            logger.error('Unknown attack step type: '
+                f'{step_expression["type"]}')
+            return ([], None)
+
+
+
 class AttackGraph:
     def __init__(self):
         self.nodes = []
@@ -211,139 +345,6 @@ class AttackGraph:
             attacker_node.children = ag_attacker.entry_points
             self.nodes.append(attacker_node)
 
-    @classmethod
-    def process_step_expression(cls, lang: dict, model: model.Model,
-        target_assets: List, step_expression: dict):
-        """
-        Recursively process an attack step expression.
-
-        Arguments:
-        lang            - a dictionary representing the MAL language specification
-        model           - a maltoolbox.model.Model instance from which the attack
-                          graph was generated
-        target_assets   - the list of assets that this step expression should apply
-                          to. Initially it will contain the asset to which the
-                          attack step belongs
-        step_expression - a dictionary containing the step expression
-
-        Return:
-        A tuple pair containing a list of all of the target assets and the name of
-        the attack step.
-        """
-        logger.debug('Processing Step Expression:\n' \
-            + json.dumps(step_expression, indent = 2))
-
-        match (step_expression['type']):
-            case 'attackStep':
-                # The attack step expression just adds the name of the attack
-                # step. All other step expressions only modify the target assets.
-                return (target_assets, step_expression['name'])
-
-            case 'union' | 'intersection' | 'difference':
-                # The set operators are used to combine the left hand and right
-                # hand targets accordingly.
-                lh_targets, lh_attack_steps = cls.process_step_expression(
-                    lang, model, target_assets, step_expression['lhs'])
-                rh_targets, rh_attack_steps = cls.process_step_expression(
-                    lang, model, target_assets, step_expression['rhs'])
-
-                new_target_assets = []
-                match (step_expression['type']):
-                    case 'union':
-                        new_target_assets = lh_targets
-                        for ag_node in rh_targets:
-                            if next((lnode for lnode in new_target_assets \
-                                if lnode.id != ag_node.id), None):
-                                new_target_assets.append(ag_node)
-
-                    case 'intersection':
-                        for ag_node in rh_targets:
-                            if next((lnode for lnode in new_target_assets \
-                                if lnode.id == ag_node.id), None):
-                                new_target_assets.append(ag_node)
-
-                    case 'difference':
-                        new_target_assets = lh_targets
-                        for ag_node in lh_targets:
-                            if next((rnode for rnode in rh_targets \
-                                if rnode.id != ag_node.id), None):
-                                new_target_assets.remove(ag_node)
-
-                return (new_target_assets, None)
-
-            case 'variable':
-                # Fetch the step expression associated with the variable from
-                # the language specification and resolve that.
-                for target_asset in target_assets:
-                    if (hasattr(target_asset, 'metaconcept')):
-                        variable_step_expr = specification.\
-                            get_variable_for_class_by_name(lang,
-                            target_asset.metaconcept, step_expression['name'])
-                        return cls.process_step_expression(
-                            lang, model, target_assets, variable_step_expr)
-
-                    else:
-                        logger.error('Requested variable from non-asset'
-                            f'target node: {target_asset} which cannot be'
-                            'resolved.')
-                return ([], None)
-
-            case 'field':
-                # Change the target assets from the current ones to the associated
-                # assets given the specified field name.
-                new_target_assets = []
-                for target_asset in target_assets:
-                    new_target_assets.extend(model.\
-                        get_associated_assets_by_field_name(target_asset,
-                            step_expression['name']))
-                return (new_target_assets, None)
-
-            case 'transitive':
-                # The transitive expression is very similar to the field
-                # expression, but it proceeds recursively until no target is
-                # found and it and it sets the new targets to the entire list
-                # of assets identified during the entire transitive recursion.
-                new_target_assets = []
-                for target_asset in target_assets:
-                    new_target_assets.extend(model.\
-                        get_associated_assets_by_field_name(target_asset,
-                            step_expression['stepExpression']['name']))
-                if new_target_assets:
-                    (additional_assets, _) = cls.process_step_expression(
-                        lang, model, new_target_assets, step_expression)
-                    new_target_assets.extend(additional_assets)
-                    return (new_target_assets, None)
-                else:
-                    return ([], None)
-
-            case 'subType':
-                new_target_assets = []
-                for target_asset in target_assets:
-                    (assets, _) = cls.process_step_expression(
-                        lang, model, target_assets, step_expression['stepExpression'])
-                    new_target_assets.extend(assets)
-
-                selected_new_target_assets = (asset for asset in \
-                    new_target_assets if specification.extends_asset(
-                        lang,
-                        asset.metaconcept,
-                        step_expression['subType']))
-                return (selected_new_target_assets, None)
-
-            case 'collect':
-                # Apply the right hand step expression to left hand step
-                # expression target assets.
-                lh_targets, _ = cls.process_step_expression(
-                    lang, model, target_assets, step_expression['lhs'])
-                return cls.process_step_expression(lang, model, lh_targets,
-                    step_expression['rhs'])
-
-
-            case _:
-                logger.error('Unknown attack step type: '
-                    f'{step_expression["type"]}')
-                return ([], None)
-
 
     def generate_graph(self, lang: dict, model: model.Model):
         """
@@ -380,7 +381,7 @@ class AttackGraph:
                     case 'exist' | 'notExist':
                         # Resolve step expression associated with (non-)existence
                         # attack steps.
-                        (target_assets, attack_step) = self.process_step_expression(
+                        (target_assets, attack_step) = _process_step_expression(
                             lang,
                             model,
                             [asset],
@@ -423,7 +424,7 @@ class AttackGraph:
             for step_expression in step_expressions:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
-                (target_assets, attack_step) = self.process_step_expression(lang,
+                (target_assets, attack_step) = _process_step_expression(lang,
                      model, [ag_node.asset], step_expression)
                 for target in target_assets:
                     target_node_id = target.metaconcept + ':' \
