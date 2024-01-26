@@ -166,7 +166,8 @@ class AttackGraph:
         filename        - the name of the output file
         """
 
-        logger.info(f'Saving attack graph to {filename} file.')
+        logger.info(f'Saving attack graph with {len(self.nodes)} attack step '
+            f'nodes to {filename} file.')
         serialized_graph = []
         for ag_node in self.nodes:
             serialized_graph.append(ag_node.to_dict())
