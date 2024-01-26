@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 from antlr4 import FileStream, CommonTokenStream
-from .malLexer import malLexer
-from .malParser import malParser
+from .mal_lexer import malLexer
+from .mal_parser import malParser
 from .mal_visitor import malVisitor
 
 import sys

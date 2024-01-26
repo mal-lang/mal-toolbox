@@ -1,6 +1,6 @@
 from antlr4 import ParseTreeVisitor
 
-from .malParser import malParser
+from .mal_parser import malParser
 
 from collections.abc import MutableMapping, MutableSequence
 
