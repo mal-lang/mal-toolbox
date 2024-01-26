@@ -33,8 +33,8 @@ def is_node_traversable_by_attacker(node, attacker) -> bool:
 
         case 'and':
             for parent in node.parents:
-                if parent not in attacker.reached_attack_steps and \
-                     parent.is_necessary:
+                if parent.is_necessary and \
+                    attacker not in parent.compromised_by:
                     # If the parent is not present in the attacks steps
                     # already reached and is necessary.
                     return False
