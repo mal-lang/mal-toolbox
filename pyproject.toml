@@ -1,9 +1,11 @@
 [project]
 name = "mal-toolbox"
-version = "0.0.21"
+version = "0.0.22"
 authors = [
   { name="Andrei Buhaiu", email="buhaiu@kth.se" },
   { name="Giuseppe Nebbione", email="nebbione@kth.se" },
+  { name="Nikolaos Kakouros", email="nkak@kth.se" },
+  { name="Jakob Nyberg", email="jaknyb@kth.se"}
 ]
 description = "A collection of tools used to create MAL models and attack graphs."
 readme = "README.md"

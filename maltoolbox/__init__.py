@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-# MAL Toolbox v0.0.21
+# MAL Toolbox v0.0.22
 # Copyright 2023, Andrei Buhaiu.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +21,11 @@ MAL-Toolbox Framework
 """
 
 __title__ = 'maltoolbox'
-__version__ = '0.0.21'
-__authors__ = ['Andrei Buhaiu']
+__version__ = '0.0.22'
+__authors__ = ['Andrei Buhaiu',
+    'Giuseppe Nebbione',
+    'Nikolaos Kakouros',
+    'Jakob Nyberg']
 __license__ = 'Apache 2.0'
 __docformat__ = 'restructuredtext en'
 
