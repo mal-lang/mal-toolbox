@@ -72,7 +72,7 @@ def load_model_from_scad_archive(scad_archive: str,
     for child in root.iter('associations'):
         logger.debug(f'Load association '
             f'(\"{child.attrib["sourceObject"]}\",'
-            f'\"{child.attrib["targetObject"]}",'
+            f'\"{child.attrib["targetObject"]}\",'
             f'\"{child.attrib["targetProperty"]}\",'
             f'\"{child.attrib["sourceProperty"]}\") '
             f'from \"{scad_archive}\"')
@@ -134,7 +134,7 @@ def load_model_from_scad_archive(scad_archive: str,
         if not assoc_name:
             logger.error(f'Failed to find '
                 f'(\"{left_asset.metaconcept}\",'
-                f'\"{right_asset.metaconcept}",'
+                f'\"{right_asset.metaconcept}\",'
                 f'\"{left_field}\",'
                 f'\"{right_field}\") '
                 'association in language specification!')
