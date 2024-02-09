@@ -32,8 +32,8 @@ class Model:
         Add an asset to the model.
         """
         if asset_id is not None:
-            for asset in self.assets:
-                if asset_id == asset.id:
+            for existing_asset in self.assets:
+                if asset_id == existing_asset.id:
                     raise ValueError(f'Asset index {asset_id} already in use.')
             asset.id = asset_id
         else:
