@@ -1,6 +1,6 @@
-from antlr4 import ParseTreeVisitor
 
 from .mal_parser import malParser
+from .mal_analyzer import malAnalyzer
 
 from collections.abc import MutableMapping, MutableSequence
 
@@ -9,7 +9,7 @@ from collections.abc import MutableMapping, MutableSequence
 #   - ctx.two() would be []
 
 
-class malVisitor(ParseTreeVisitor):
+class malVisitor(malAnalyzer):
     def __init__(self, compiler, *args, **kwargs):
         self.compiler = compiler
         self.current_file = compiler.current_file  # for debug purposes
@@ -61,10 +61,12 @@ class malVisitor(ParseTreeVisitor):
 
     def visitInclude(self, ctx):
         return ("include", ctx.STRING().getText().strip('"'))
-
+    
+    @malAnalyzer.Analyze
     def visitDefine(self, ctx):
         return ("defines", {ctx.ID().getText(): ctx.STRING().getText().strip('"')})
 
+    @malAnalyzer.Analyze
     def visitCategory(self, ctx):
         category = {}
         category["name"] = ctx.ID().getText()
@@ -74,9 +76,11 @@ class malVisitor(ParseTreeVisitor):
 
         return ("categories", ([category], assets))
 
+    @malAnalyzer.Analyze
     def visitMeta(self, ctx):
         return ((ctx.ID().getText(), ctx.STRING().getText().strip('"')),)
 
+    @malAnalyzer.Analyze
     def visitAsset(self, ctx):
         asset = {}
         asset["name"] = ctx.ID()[0].getText()
@@ -92,7 +96,8 @@ class malVisitor(ParseTreeVisitor):
         asset["attackSteps"] = [self.visit(step) for step in ctx.step()]
 
         return asset
-
+    
+    @malAnalyzer.Analyze
     def visitStep(self, ctx):
         step = {}
         step["name"] = ctx.ID().getText()
