@@ -1,15 +1,16 @@
 
 from .mal_parser import malParser
-from .mal_analyzer import malAnalyzer
 
+from antlr4 import ParseTreeVisitor
 from collections.abc import MutableMapping, MutableSequence
+
 
 # In a rule like `rule: one? two* three`:
 #   - ctx.one() would be None if the token was not found on a matching line
 #   - ctx.two() would be []
 
 
-class malVisitor(malAnalyzer):
+class malVisitor(ParseTreeVisitor):
     def __init__(self, compiler, *args, **kwargs):
         self.compiler = compiler
         self.current_file = compiler.current_file  # for debug purposes
@@ -62,11 +63,9 @@ class malVisitor(malAnalyzer):
     def visitInclude(self, ctx):
         return ("include", ctx.STRING().getText().strip('"'))
     
-    @malAnalyzer.Analyze
     def visitDefine(self, ctx):
         return ("defines", {ctx.ID().getText(): ctx.STRING().getText().strip('"')})
 
-    @malAnalyzer.Analyze
     def visitCategory(self, ctx):
         category = {}
         category["name"] = ctx.ID().getText()
@@ -76,11 +75,9 @@ class malVisitor(malAnalyzer):
 
         return ("categories", ([category], assets))
 
-    @malAnalyzer.Analyze
     def visitMeta(self, ctx):
         return ((ctx.ID().getText(), ctx.STRING().getText().strip('"')),)
 
-    @malAnalyzer.Analyze
     def visitAsset(self, ctx):
         asset = {}
         asset["name"] = ctx.ID()[0].getText()
@@ -97,7 +94,6 @@ class malVisitor(malAnalyzer):
 
         return asset
     
-    @malAnalyzer.Analyze
     def visitStep(self, ctx):
         step = {}
         step["name"] = ctx.ID().getText()
