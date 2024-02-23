@@ -40,15 +40,17 @@ def ingest_attack_graph(graph,
     rels = []
     for node in graph.nodes:
         node_dict = node.to_dict()
-        nodes[node.id] = Node(node_dict['asset'] if 'asset' in node_dict else
-            node_dict['id'],
-            name=node_dict['name'],
-            full_name=node_dict['id'],
-            type=node_dict['type'],
-            ttc=str(node_dict['ttc']),
+        nodes[node.id] = Node(
+            node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
+            name = node_dict['name'],
+            full_name = node_dict['id'],
+            type = node_dict['type'],
+            ttc = str(node_dict['ttc']),
             is_necessary = str(node.is_necessary),
             is_viable = str(node.is_viable),
-            compromised_by = str(node_dict['compromised_by']))
+            compromised_by = str(node_dict['compromised_by']),
+            defense_status = node_dict['defense_status'] if 'defense_status'
+                in node_dict else 'N/A')
 
 
     for node in graph.nodes:
