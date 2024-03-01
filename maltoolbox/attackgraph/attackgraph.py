@@ -149,7 +149,7 @@ def _process_step_expression(lang: dict, model: model.Model,
 
 
 class AttackGraph:
-    def __init__(self, lang_spec = None, model: model.Model = None):
+    def __init__(self, lang_spec = None, model: Optional[model.Model] = None):
         self.nodes = []
         self.attackers = []
         self.model = model
@@ -351,7 +351,7 @@ class AttackGraph:
             self.nodes.append(attacker_node)
 
 
-    def generate_graph(self, lang: dict = None, model: model.Model = None):
+    def generate_graph(self, lang: Optional[dict] = None, model: Optional[model.Model] = None):
         """
         Generate attack graph starting from a model instance
         and a MAL language specification
@@ -369,7 +369,7 @@ class AttackGraph:
             return
 
         # First, generate all of the nodes of the attack graph.
-        for asset in model.assets:
+        for asset in self.model.assets:
             logger.debug(f'Generating attack steps for asset {asset.name} which '\
                 f'is of class {asset.metaconcept}.')
             attack_step_nodes = []

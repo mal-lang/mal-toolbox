@@ -16,7 +16,7 @@ class AttackGraphNode:
     asset: Any = None
     children: List['AttackGraphNode'] = field(default_factory=list)
     parents: List['AttackGraphNode'] = field(default_factory=list)
-    defense_status: Optional[dict] = None
+    defense_status: Optional[float] = None
     existence_status: Optional[bool] = None
     is_viable: bool = True
     is_necessary: bool = True
