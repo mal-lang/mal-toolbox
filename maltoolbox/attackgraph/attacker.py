@@ -43,5 +43,5 @@ class Attacker:
                 f'node \"{node.id}\". Do nothing.')
             return
 
-            node.compromised_by.append(self)
-            self.reached_attack_steps.append(node)
+        node.compromised_by.append(self)
+        self.reached_attack_steps.append(node)
