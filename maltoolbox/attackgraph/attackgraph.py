@@ -253,8 +253,7 @@ class AttackGraph:
                         # is an attacker entry point node.
                         ag_attacker = _ag_node.attacker
                         ag_attacker.entry_points.append(child)
-                        ag_attacker.reached_attack_steps.append(child)
-                        child.compromised_by.append(ag_attacker)
+                        ag_attacker.compromise(child)
 
                 for parent_id in node_dict['parents']:
                     parent = self.get_node_by_id(parent_id)
@@ -341,12 +340,9 @@ class AttackGraph:
                             + attack_step_id + ' for Attacker:'
                             + ag_attacker.id + '.')
                         continue
-                    ag_node.compromised_by.append(ag_attacker)
-                    ag_attacker.entry_points.append(ag_node)
-                    logger.debug(f'Attach Attacker \'{ag_attacker.id}\' to '
-                        f'{ag_node.id}.')
+                    ag_attacker.compromise(ag_node)
 
-            ag_attacker.reached_attack_steps = ag_attacker.entry_points
+            ag_attacker.entry_points = ag_attacker.reached_attack_steps
             attacker_node.children = ag_attacker.entry_points
             self.nodes.append(attacker_node)
 

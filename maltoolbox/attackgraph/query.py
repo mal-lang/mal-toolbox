@@ -65,7 +65,8 @@ def get_attack_surface(graph: attackgraph.AttackGraph,
         logger.debug('Determine attack surface stemming from '
             f'{attack_step.id} for Attacker {attacker.id}.')
         for child in attack_step.children:
-            if is_node_traversable_by_attacker(child, attacker):
+            if is_node_traversable_by_attacker(child, attacker) and \
+                    child not in attack_surface:
                 attack_surface.append(child)
     return attack_surface
 

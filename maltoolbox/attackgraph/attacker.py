@@ -2,8 +2,12 @@
 MAL-Toolbox Attack Graph Attacker Class
 """
 
+import logging
+
 from dataclasses import dataclass
 from typing import List, ForwardRef
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Attacker:
@@ -23,3 +27,21 @@ class Attacker:
         }
 
         return attacker_dict
+
+    def compromise(self, node):
+        """
+        Have the attacke compromise the node given as a parameter.
+
+        Arguments:
+        node    - the node that the attacker will compromise
+        """
+
+        logger.debug(f'Attacker \"{self.id}\" is compromising node '
+            f'\"{node.id}\".')
+        if self in node.compromised_by:
+            logger.info(f'Attacker \"{self.id}\" had already compromised '
+                f'node \"{node.id}\". Do nothing.')
+            return
+
+            node.compromised_by.append(self)
+            self.reached_attack_steps.append(node)
