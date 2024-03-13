@@ -157,6 +157,8 @@ class AttackGraph:
         if self.model is not None and self.lang_spec is not None:
             self.generate_graph(self.lang_spec, self.model)
 
+    def __repr__(self) -> str:
+        return f'AttackGraph({len(self.nodes)} nodes)'
 
     def save_to_file(self, filename: str):
         """

@@ -28,6 +28,9 @@ class AttackGraphNode:
     attributes: Optional[dict] = None
     attacker: Optional['Attacker'] = None
 
+    def __repr__(self):
+        return f'AttackGraphNode({self.id}, {self.type}, {self.name})'
+
     def to_dict(self):
         node_dict = {
             'id': self.id,

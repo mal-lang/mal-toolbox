@@ -19,6 +19,9 @@ class Attacker:
 class Model:
     latestId = 0
 
+    def __repr__(self) -> str:
+        return f'Model {self.name}'
+
     def __init__(self, name, lang_spec, lang_classes_factory):
         self.name = name
         self.assets = []
