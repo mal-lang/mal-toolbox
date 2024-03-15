@@ -79,9 +79,9 @@ def get_defense_surface(graph: attackgraph.AttackGraph):
     graph       - the attack graph
     """
     logger.debug(f'Get the defense surface.')
-    return (node for node in graph.nodes if node.type == 'defense' and \
+    return [node for node in graph.nodes if node.type == 'defense' and \
         'suppress' not in node.tags and \
-        node.defense_status != 1.0)
+        node.defense_status != 1.0]
 
 def get_enabled_defenses(graph: attackgraph.AttackGraph):
     """
@@ -92,7 +92,7 @@ def get_enabled_defenses(graph: attackgraph.AttackGraph):
     graph       - the attack graph
     """
     logger.debug(f'Get the enabled defenses.')
-    return (node for node in graph.nodes if node.type == 'defense' and \
+    return [node for node in graph.nodes if node.type == 'defense' and \
         'suppress' not in node.tags and \
-        node.defense_status == 1.0)
+        node.defense_status == 1.0]
 
