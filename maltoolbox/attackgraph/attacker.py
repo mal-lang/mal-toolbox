@@ -38,10 +38,29 @@ class Attacker:
 
         logger.debug(f'Attacker \"{self.id}\" is compromising node '
             f'\"{node.id}\".')
-        if self in node.compromised_by:
+        if node.is_compromised_by(self):
             logger.info(f'Attacker \"{self.id}\" had already compromised '
                 f'node \"{node.id}\". Do nothing.')
             return
 
         node.compromised_by.append(self)
         self.reached_attack_steps.append(node)
+
+    def undo_compromise(self, node):
+        """
+        Remove the attacker from the list of attackers that have compromised
+        the node given as a parameter.
+
+        Arguments:
+        node    - the node that we wish to remove this attacker from.
+        """
+
+        logger.debug(f'Attacker \"{self.id}\" is being removed from the '
+            f'compromised_by list of node \"{node.id}\".')
+        if not node.is_compromised_by(self):
+            logger.info(f'Attacker \"{self.id}\" had not compromised '
+                f'node \"{node.id}\". Do nothing.')
+            return
+
+        node.compromised_by.remove(self)
+        self.reached_attack_steps.remove(node)

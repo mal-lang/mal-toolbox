@@ -62,3 +62,61 @@ class AttackGraphNode:
             node_dict['observations'] = self.observations
 
         return node_dict
+
+    def is_compromised(self):
+        """
+        Return True if any attackers have compromised this node.
+        False, otherwise.
+        """
+        return len(self.compromised_by) > 0
+
+    def is_compromised_by(self, attacker):
+        """
+        Return True if the attacker given as an argument has compromised this
+        node.
+        False, otherwise.
+
+        Arguments:
+        attacker    - the attacker we are interested in
+        """
+        return attacker in self.compromised_by
+
+    def compromise(self, attacker):
+        """
+        Have the attacker given as a parameter compromise this node.
+
+        Arguments:
+        attacker    - the attacker that will compromise the node
+        """
+        attacker.compromise(self)
+
+    def undo_compromise(self, attacker):
+        """
+        Remove the attacker given as a parameter from the list of attackers
+        that have compromised this node.
+
+        Arguments:
+        attacker    - the attacker that we wish to remove from the compromised
+                      list.
+        """
+        attacker.undo_compromise(self)
+
+    def is_enabled_defense(self):
+        """
+        Return True if this node is a defense node and it is enabled and not
+        suppressed via tags.
+        False, otherwise.
+        """
+        return self.type == 'defense' and \
+            'suppress' not in self.tags and \
+            self.defense_status == 1.0
+
+    def is_available_defense(self):
+        """
+        Return True if this node is a defense node and it is not fully enabled
+        and not suppressed via tags.
+        False, otherwise.
+        """
+        return self.type == 'defense' and \
+            'suppress' not in self.tags and \
+            self.defense_status != 1.0

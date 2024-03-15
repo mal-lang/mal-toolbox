@@ -34,7 +34,7 @@ def is_node_traversable_by_attacker(node, attacker) -> bool:
         case 'and':
             for parent in node.parents:
                 if parent.is_necessary and \
-                    attacker not in parent.compromised_by:
+                    not parent.is_compromised_by(attacker):
                     # If the parent is not present in the attacks steps
                     # already reached and is necessary.
                     return False
@@ -79,9 +79,7 @@ def get_defense_surface(graph: attackgraph.AttackGraph):
     graph       - the attack graph
     """
     logger.debug(f'Get the defense surface.')
-    return [node for node in graph.nodes if node.type == 'defense' and \
-        'suppress' not in node.tags and \
-        node.defense_status != 1.0]
+    return [node for node in graph.nodes if node.is_available_defense()]
 
 def get_enabled_defenses(graph: attackgraph.AttackGraph):
     """
@@ -92,7 +90,5 @@ def get_enabled_defenses(graph: attackgraph.AttackGraph):
     graph       - the attack graph
     """
     logger.debug(f'Get the enabled defenses.')
-    return [node for node in graph.nodes if node.type == 'defense' and \
-        'suppress' not in node.tags and \
-        node.defense_status == 1.0]
+    return [node for node in graph.nodes if node.is_enabled_defense()]
 
