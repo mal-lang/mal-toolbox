@@ -1,10 +1,25 @@
 from .mal_parser import malParser
-from .mal_visitor import malVisitor
 
 import logging
 import re
-    
-class malAnalyzer(malVisitor):
+
+class malAnalyzerInterface:
+    def checkMal(self, ctx: malParser.MalContext) -> None:
+        pass
+    def checkDefine(self, ctx: malParser.DefineContext, obj: any) -> None:
+        pass
+    def checkCategory(self, ctx: malParser.CategoryContext, category, assets) -> None:
+        pass
+    def checkAsset(self, ctx: malParser.AssetContext, asset) -> None:
+        pass
+    def checkMeta(self, ctx: malParser.MetaContext, meta_name: str) -> None:
+        pass
+    def checkStep(self, ctx: malParser.StepContext, step) -> None:
+        pass
+    def checkVariable(self, ctx: malParser.VariableContext, var) -> None:
+        pass
+
+class malAnalyzer(malAnalyzerInterface):
     '''
     A class to preform syntax-checks for MAL.
     '''
@@ -16,22 +31,24 @@ class malAnalyzer(malVisitor):
         self._category: dict = {}
         self._metas: dict = {}
         self._steps: dict = {}
+        self._vars: dict = {}
+        self._error = False
         super().__init__(*args, **kwargs)
 
-    def is_valid(self) -> bool:
+    def has_error(self) -> bool:
         return self._error
 
-    def __post_analysis(self) -> None:
+    def _post_analysis(self) -> None:
         '''
         Perform a post-analysis to confirm that the 
         mandatory fields and relations are met.
         '''
-        self.__analyse_defines()
-        self.__analyse_extends()
-        self.__analyse_abstract()
-        self.__analyse_parents()
+        self._analyse_defines()
+        self._analyse_extends()
+        self._analyse_abstract()
+        self._analyse_parents()
     
-    def __analyse_defines(self) -> None:
+    def _analyse_defines(self) -> None:
         '''
         Check for mandatory defines: ID & Version
         '''
@@ -54,7 +71,7 @@ class malAnalyzer(malVisitor):
             logging.error('Missing required define \'#version: ""\'')
             self._error = True
 
-    def __analyse_extends(self) -> None:
+    def _analyse_extends(self) -> None:
         raise_error: bool = False
         extend_asset_name: str = ''
         for asset in self._assets:
@@ -73,7 +90,7 @@ class malAnalyzer(malVisitor):
             self._error = True   # Maybe unnecessary if we raise
             raise SyntaxError(f'Asset \'{extend_asset_name}\' not defined')
 
-    def __analyse_abstract(self) -> None:
+    def _analyse_abstract(self) -> None:
         for parent in self._assets:
             parent_ctx: malParser.AssetContext = self._assets[parent]['ctx']
             if(parent_ctx.ABSTRACT()):
@@ -89,7 +106,7 @@ class malAnalyzer(malVisitor):
                 if not found:
                     logging.warn(f'Asset \'{parent_ctx.ID()[0].getText()}\' is abstract but never extended to')
     
-    def __analyse_parents(self) -> None:
+    def _analyse_parents(self) -> None:
         error: bool = False
         for asset in self._assets:
             parents: list[str] = []
@@ -103,25 +120,20 @@ class malAnalyzer(malVisitor):
                     error = True
                     break
                 parents.append(parent_name)
-                parent_ctx = self.__get_assets_extendee(parent_ctx)
+                parent_ctx = self._get_assets_extendee(parent_ctx)
         if error:
             self._error = True
             raise
     
-    def __get_assets_extendee(self, ctx: malParser.AssetContext) -> malParser.AssetContext:
+    def _get_assets_extendee(self, ctx: malParser.AssetContext) -> malParser.AssetContext:
         if (ctx.EXTENDS()):
             return self._assets[ctx.ID()[1].getText()]['ctx']
         return None
     
-    def visitMal(self, ctx: malParser.MalContext) -> None:
-        result = super().visitMal(ctx)
-        self.__post_analysis()
-        return result
+    def checkMal(self, ctx: malParser.MalContext) -> None:
+        self._post_analysis()
 
-    def visitDefine(self, ctx: malParser.DefineContext) -> None:
-        result = super().visitDefine(ctx)
-        [_, obj] = result
-
+    def checkDefine(self, ctx: malParser.DefineContext, obj: any) -> None:
         if(len(obj.keys()) != 1):
             raise 
         
@@ -130,60 +142,50 @@ class malAnalyzer(malVisitor):
             prev_define_line = self._defines[define_id]['ctx'].start.line
             logging.error(f'Define \'{define_id}\' previously defined at line {prev_define_line}')
             self._error = True
-            return result
+            return 
         
         self._defines[define_id] = {'ctx': ctx, 'obj': obj}
-        return result
     
-    def visitCategory(self, ctx: malParser.CategoryContext) -> None:
-        result = super().visitCategory(ctx)
-
-        category = result[1][0][0]
-        if(category['name'] == '<missing <INVALID>>'):
+    def checkCategory(self, ctx: malParser.CategoryContext, category, assets) -> None:
+        if(str(category['name']) == '<missing <INVALID>>'):
             category_line = ctx.start.line
             logging.error(f'Category has no name at line {category_line}')
             self._error = True
-            return result
+            return 
 
-        if len(category['meta']) == 0 and len(result[1][1]) == 0:
+        if len(category['meta']) == 0 and len(assets) == 0:
             logging.warning(f'Category \'{category["name"]}\' contains no assets or metadata')
-            self._error = True
-            return result
+            # Warning might not be checked as error.
+            # self._error = True
         
-        self._category[category['name']] = {'ctx': ctx, 'obj': result}
-        
-        return result
-        
-    def visitAsset(self, ctx: malParser.AssetContext) -> None:
-        result = super().visitAsset(ctx)
-        asset_name = result['name']
+        self._category[category['name']] = {'ctx': ctx, 'obj': {'category': category, 'assets': assets}}
+
+    def checkAsset(self, ctx: malParser.AssetContext, asset) -> None:
+        asset_name = asset['name']
         category_name = ctx.parentCtx.ID()
 
         # Check if asset was previously defined in same category.
-        if asset_name in self._assets.keys() and self._assets[asset_name]['parent']['name'] == category_name:
+        if asset_name in self._assets.keys() and str(self._assets[asset_name]['parent']['name']) == str(category_name):
             prev_asset_line = self._assets[asset_name]['ctx'].start.line
             logging.error(f"Asset '{asset_name}' previously defined at {prev_asset_line}")
             self._error = True
-            return result
+            return
         else:
-            self._assets[asset_name] = {'ctx': ctx, 'obj': result, 'parent': {'name': ctx.parentCtx.ID() ,'ctx': ctx.parentCtx}}
-        return result
+            self._assets[asset_name] = {'ctx': ctx, 'obj': asset, 'parent': {'name': ctx.parentCtx.ID() ,'ctx': ctx.parentCtx}}
 
-    def visitMeta(self, ctx: malParser.MetaContext) -> None:
-        result = super().visitMeta(ctx)
-        meta_name = result[0][0]
+    def checkMeta(self, ctx: malParser.MetaContext, meta_name: str) -> None:
         parent_name = ''
         location_name = ''
 
         # Finding metadata type
         if isinstance(ctx.parentCtx, malParser.CategoryContext):
-            parent_name = ctx.parentCtx.ID()
+            parent_name = str(ctx.parentCtx.ID())
             location_name = 'category'
         elif isinstance(ctx.parentCtx, malParser.AssetContext):
-            parent_name = ctx.parentCtx.ID()[0]
+            parent_name = str(ctx.parentCtx.ID()[0])
             location_name = 'asset'
         elif isinstance(ctx.parentCtx, malParser.StepContext):
-            parent_name = ctx.parentCtx.ID()
+            parent_name = str(ctx.parentCtx.ID())
             location_name = 'step'
         
         # Validate that the metadata is unique
@@ -199,12 +201,8 @@ class malAnalyzer(malVisitor):
             self._error = True
 
         # TODO: check for Associations
-            
-        return result
 
-
-    def visitStep(self, ctx: malParser.StepContext):
-        step = super().visitStep(ctx)
+    def checkStep(self, ctx: malParser.StepContext, step) -> None:
         step_name = step['name']
 
         if isinstance(ctx.parentCtx, malParser.AssetContext):
@@ -218,7 +216,7 @@ class malAnalyzer(malVisitor):
 
         return step
     
-    def _validate_TTC(self, ctx: malParser.StepContext, step):
+    def _validate_TTC(self, ctx: malParser.StepContext, step) -> None:
         if not step['ttc']:
             return
         
@@ -232,10 +230,7 @@ class malAnalyzer(malVisitor):
             #    ERROR   Defense %s.%s may only have 'Enabled', 'Disabled', or 'Bernoulli(p)' as TTC"
             pass
 
-    def visitTtcexpr(self, ctx: malParser.TtcexprContext):
-       pass
-
-    def _validate_CIA(self, ctx: malParser.StepContext, step):
+    def _validate_CIA(self, ctx: malParser.StepContext, step) -> None:
         if not ctx.cias():
             return
         
@@ -262,3 +257,24 @@ class malAnalyzer(malVisitor):
                     return
                 cias.append(letter)
             index += 1
+
+    def checkVariable(self, ctx: malParser.VariableContext, var) -> None:
+        '''
+        self._vars = {
+            <asset-name>: {
+                <var-name>: <var-ctx>
+            }
+        }
+        '''
+        parent = ctx.parentCtx
+        if (isinstance(parent, malParser.AssetContext)):
+            asset_name: str = str(parent.ID()[0].getText())
+            var_name: str = var['name']
+            if (asset_name not in self._vars.keys()):
+                self._vars[asset_name] = {var_name: ctx} 
+            elif (var_name not in self._vars[asset_name]):
+                self._vars[asset_name][var_name] = ctx
+            else: 
+                prev_define_line = self._vars[asset_name][var_name].start.line
+                logging.error(f'Variable \'{var_name}\' previously defined at line {prev_define_line}')
+                self._error = True

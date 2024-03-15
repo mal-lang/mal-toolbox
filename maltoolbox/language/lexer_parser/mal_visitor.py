@@ -1,5 +1,6 @@
 
 from .mal_parser import malParser
+from .mal_analyzer import malAnalyzerInterface
 
 from antlr4 import ParseTreeVisitor
 from collections.abc import MutableMapping, MutableSequence
@@ -11,10 +12,10 @@ from collections.abc import MutableMapping, MutableSequence
 
 
 class malVisitor(ParseTreeVisitor):
-    def __init__(self, compiler, *args, **kwargs):
+    def __init__(self, compiler, analyzer: malAnalyzerInterface, *args, **kwargs):
         self.compiler = compiler
+        self.analyzer = analyzer
         self.current_file = compiler.current_file  # for debug purposes
-
         super().__init__(*args, **kwargs)
 
     def visitMal(self, ctx):
@@ -58,13 +59,16 @@ class malVisitor(ParseTreeVisitor):
                     unique.append(item)
             langspec[key] = unique
 
+        self.analyzer.checkMal(ctx)
         return langspec
 
     def visitInclude(self, ctx):
         return ("include", ctx.STRING().getText().strip('"'))
     
     def visitDefine(self, ctx):
-        return ("defines", {ctx.ID().getText(): ctx.STRING().getText().strip('"')})
+        define_object = {ctx.ID().getText(): ctx.STRING().getText().strip('"')}
+        self.analyzer.checkDefine(ctx, define_object)
+        return ("defines", define_object)
 
     def visitCategory(self, ctx):
         category = {}
@@ -72,10 +76,12 @@ class malVisitor(ParseTreeVisitor):
         category["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
 
         assets = [self.visit(asset) for asset in ctx.asset()]
-
+        
+        self.analyzer.checkCategory(ctx, category, assets)
         return ("categories", ([category], assets))
 
     def visitMeta(self, ctx):
+        self.analyzer.checkMeta(ctx, ctx.ID().getText())
         return ((ctx.ID().getText(), ctx.STRING().getText().strip('"')),)
 
     def visitAsset(self, ctx):
@@ -92,6 +98,7 @@ class malVisitor(ParseTreeVisitor):
         asset["variables"] = [self.visit(variable) for variable in ctx.variable()]
         asset["attackSteps"] = [self.visit(step) for step in ctx.step()]
 
+        self.analyzer.checkAsset(ctx, asset)
         return asset
     
     def visitStep(self, ctx):
@@ -106,7 +113,8 @@ class malVisitor(ParseTreeVisitor):
             self.visit(ctx.precondition()) if ctx.precondition() else None
         )
         step["reaches"] = self.visit(ctx.reaches()) if ctx.reaches() else None
-
+        
+        self.analyzer.checkStep(ctx, step)
         return step
 
     def visitSteptype(self, ctx):
@@ -242,7 +250,7 @@ class malVisitor(ParseTreeVisitor):
         ret = {}
         ret["name"] = ctx.ID().getText()
         ret["stepExpression"] = self.visit(ctx.expr())
-
+        self.analyzer.checkVariable(ctx, ret)
         return ret
 
     def visitExpr(self, ctx):
