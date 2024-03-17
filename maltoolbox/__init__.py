@@ -36,12 +36,12 @@ import sys
 import configparser
 import logging
 
-from pkg_resources import Requirement, resource_filename
-
 ERROR_INCORRECT_CONFIG = 1
 
-CONFIGFILE = resource_filename(Requirement.parse("mal-toolbox"),
-    "maltoolbox/default.conf")
+CONFIGFILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "default.conf"
+)
 
 config = configparser.ConfigParser()
 config.read(CONFIGFILE)
