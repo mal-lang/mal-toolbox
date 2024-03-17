@@ -47,16 +47,10 @@ config = configparser.ConfigParser()
 config.read(CONFIGFILE)
 
 if 'logging' not in config:
-    print('Config file is missing essential information, cannot proceed.')
-    sys.exit(ERROR_INCORRECT_CONFIG)
+    raise ValueError('Config file is missing essential information, cannot proceed.')
 
-for term in ['output_dir', 'log_file']:
-    if term not in config['logging']:
-        logger.critical('Config file is missing essential '\
-            'information, cannot proceed.')
-        print('Config file is missing essential information, cannot '\
-            'proceed.')
-        sys.exit(ERROR_INCORRECT_CONFIG)
+if 'log_file' not in config['logging']:
+    raise ValueError('Config file is missing a log_file location, cannot proceed.')
 
 log_configs = {
     'output_dir': config['logging']['output_dir'],
@@ -81,9 +75,8 @@ if 'neo4j' in config:
         if term not in config['neo4j']:
             logger.critical('Config file is missing essential '\
                 f'Neo4J information: {term}, cannot proceed.')
-            print('Config file is missing essential '\
+            raise ValueError('Config file is missing essential '\
                 f'Neo4J information: {term}, cannot proceed.')
-            sys.exit(ERROR_INCORRECT_CONFIG)
 
     neo4j_configs = {
         'uri': config['neo4j']['uri'],
