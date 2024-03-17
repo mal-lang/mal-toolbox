@@ -53,14 +53,13 @@ if 'log_file' not in config['logging']:
     raise ValueError('Config file is missing a log_file location, cannot proceed.')
 
 log_configs = {
-    'output_dir': config['logging']['output_dir'],
     'log_file': config['logging']['log_file'],
     'attackgraph_file': config['logging']['attackgraph_file'],
     'model_file': config['logging']['model_file'],
     'langspec_file': config['logging']['langspec_file'],
 }
 
-os.makedirs(log_configs['output_dir'], exist_ok = True)
+os.makedirs(os.path.dirname(log_configs['log_file']), exist_ok = True)
 logging.basicConfig(level=logging.DEBUG,
             format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
             datefmt='%m-%d %H:%M',
