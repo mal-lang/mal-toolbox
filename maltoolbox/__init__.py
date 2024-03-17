@@ -54,20 +54,26 @@ if 'log_file' not in config['logging']:
 
 log_configs = {
     'log_file': config['logging']['log_file'],
+    'log_level': config['logging']['log_level'],
     'attackgraph_file': config['logging']['attackgraph_file'],
     'model_file': config['logging']['model_file'],
     'langspec_file': config['logging']['langspec_file'],
 }
 
 os.makedirs(os.path.dirname(log_configs['log_file']), exist_ok = True)
-logging.basicConfig(level=logging.DEBUG,
-            format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-            datefmt='%m-%d %H:%M',
-            filename=log_configs["log_file"],
-            filemode='w')
-logging.getLogger('python_jsonschema_objects').setLevel(logging.WARNING)
+
+formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M')
+file_handler = logging.FileHandler(log_configs['log_file'], mode='w')
+file_handler.setFormatter(formatter)
 
 logger = logging.getLogger(__name__)
+logger.addHandler(file_handler)
+
+log_level = log_configs['log_level']
+if log_level != '':
+    level = logging.getLevelName(log_level)
+    logger.setLevel(level)
+    logger.info(f'Set loggin level of {__name__} to {log_level}.')
 
 if 'neo4j' in config:
     for term in ['uri', 'username', 'password', 'dbname']:
