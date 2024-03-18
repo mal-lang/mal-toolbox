@@ -359,13 +359,6 @@ class AttackGraph:
         lang            - a dictionary representing the MAL language specification
         """
 
-        if model is not None:
-            self.model = model
-        if lang is not None:
-            self.lang_spec = lang
-        if self.model is None or self.lang_spec is None:
-            return
-
         # First, generate all of the nodes of the attack graph.
         for asset in self.model.assets:
             logger.debug(f'Generating attack steps for asset {asset.name} which '\

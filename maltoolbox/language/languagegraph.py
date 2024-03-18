@@ -617,10 +617,6 @@ class LanguageGraph:
         for asset_info in lang['assets']:
             asset = next((asset for asset in self.assets \
                 if asset.name == asset_info['name']), None)
-            if not asset:
-                logger.error('Failed to find asset '
-                    f'\"{asset_info["name"]}\"!')
-                return 1
             if asset_info['superAsset']:
                 super_asset = next((asset for asset in self.assets \
                     if asset.name == asset_info['superAsset']), None)
