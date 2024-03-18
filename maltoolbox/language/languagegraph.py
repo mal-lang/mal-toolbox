@@ -301,10 +301,12 @@ class DependencyChain:
 
 
 class LanguageGraph:
-    def __init__(self):
+    def __init__(self, lang: dict):
         self.assets = []
         self.associations = []
         self.attack_steps = []
+        self.lang_dict = lang
+        self._generate_graph()
 
     def save_to_file(self, filename: str):
         """
@@ -593,15 +595,13 @@ class LanguageGraph:
                     return None
 
 
-    def generate_graph(self, lang: dict):
+    def _generate_graph(self):
         """
-        Generate language graph starting from a MAL language specification
-
-        Arguments:
-        lang            - a dictionary representing the MAL language specification
+        Generate language graph starting from the MAL language specification
+        given in the constructor.
         """
         # Generate all of the asset nodes of the language graph.
-        for asset in lang['assets']:
+        for asset in self.lang_dict['assets']:
             logger.debug(f'Create asset language graph nodes for asset '
                 f'{asset["name"]}')
             asset_node = LanguageGraphAsset(
@@ -615,7 +615,7 @@ class LanguageGraph:
             self.assets.append(asset_node)
 
         # Link assets based on inheritance
-        for asset_info in lang['assets']:
+        for asset_info in self.lang_dict['assets']:
             asset = next((asset for asset in self.assets \
                 if asset.name == asset_info['name']), None)
             if asset_info['superAsset']:
@@ -635,7 +635,8 @@ class LanguageGraph:
             logger.debug(f'Create association language graph nodes for asset '
                 f'{asset.name}')
             associations_nodes = []
-            associations = specification.get_associations_for_class(lang,
+            associations = specification.get_associations_for_class(
+                self.lang_dict,
                 asset.name)
             for association in associations:
                 left_asset = next((asset for asset in self.assets \
@@ -693,10 +694,10 @@ class LanguageGraph:
 
         # Generate all of the attack step nodes of the language graph.
         for asset in self.assets:
-            logger.debug(f'Create attack steps language graph nodes for asset '
-                f'{asset.name}.')
+            logger.debug(f'Create attack steps language graph nodes for '
+                f'asset {asset.name}.')
             attack_step_nodes = []
-            attack_steps = specification.get_attacks_for_class(lang,
+            attack_steps = specification.get_attacks_for_class(self.lang_dict,
                 asset.name)
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(f'Create attack step language graph nodes for '
@@ -727,13 +728,14 @@ class LanguageGraph:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
                 (target_asset, dep_chain, attack_step_name) = \
-                    self.process_step_expression(lang,
+                    self.process_step_expression(self.lang_dict,
                         attack_step.asset,
                         None,
                         step_expression)
                 if not target_asset:
-                    msg = f'Failed to find target asset to link with for step expression:\n' + \
-                    json.dumps(step_expression, indent = 2)
+                    msg = 'Failed to find target asset to link with for ' \
+                        'step expression:\n' + \
+                        json.dumps(step_expression, indent = 2)
 
                     raise LanguageGraphStepExpressionError(msg)
 
@@ -771,4 +773,13 @@ class LanguageGraph:
                         self.reverse_dep_chain(dep_chain,
                             None))]
 
-        return 0
+    def regenerate_graph(self):
+        """
+        Regenerate language graph starting from the MAL language specification
+        given in the constructor.
+        """
+
+        self.assets = []
+        self.associations = []
+        self.attack_steps = []
+        self._generate_graph()
