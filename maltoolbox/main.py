@@ -48,12 +48,7 @@ def main():
                 instance_model.save_to_file( \
                     maltoolbox.log_configs['model_file'])
 
-            graph = attackgraph.AttackGraph()
-            result = graph.generate_graph(lang_spec, instance_model)
-            if result > 0:
-                logger.error('Attack graph generation failed!')
-                print('Attack graph generation failed!')
-                exit(result)
+            graph = attackgraph.AttackGraph(lang_spec, instance_model)
 
             apriori.calculate_viability_and_necessity(graph)
 

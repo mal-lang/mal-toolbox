@@ -155,7 +155,7 @@ class AttackGraph:
         self.model = model
         self.lang_spec = lang_spec
         if self.model is not None and self.lang_spec is not None:
-            self.generate_graph(self.lang_spec, self.model)
+            self._generate_graph()
 
     def __repr__(self) -> str:
         return f'AttackGraph({len(self.nodes)} nodes)'
@@ -349,14 +349,10 @@ class AttackGraph:
             self.nodes.append(attacker_node)
 
 
-    def generate_graph(self, lang: Optional[dict] = None, model: Optional[model.Model] = None):
+    def _generate_graph(self):
         """
-        Generate attack graph starting from a model instance
-        and a MAL language specification
-
-        Arguments:
-        model           - a maltoolbox.model.Model instance
-        lang            - a dictionary representing the MAL language specification
+        Generate the attack graph based on the original model instance and the
+        MAL language specification provided at initialization.
         """
 
         # First, generate all of the nodes of the attack graph.
@@ -364,8 +360,8 @@ class AttackGraph:
             logger.debug(f'Generating attack steps for asset {asset.name} which '\
                 f'is of class {asset.metaconcept}.')
             attack_step_nodes = []
-            attack_steps = specification.get_attacks_for_class(lang,
-                asset.metaconcept)
+            attack_steps = specification.get_attacks_for_class(
+                self.lang_spec, asset.metaconcept)
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug('Generating attack step node for '\
                     f'{attack_step_name}.')
@@ -385,8 +381,8 @@ class AttackGraph:
                         # Resolve step expression associated with (non-)existence
                         # attack steps.
                         (target_assets, attack_step) = _process_step_expression(
-                            lang,
-                            model,
+                            self.lang_spec,
+                            self.model,
                             [asset],
                             attack_step_attribs['requires']['stepExpressions'][0])
                         # If the step expression resolution yielded the target
@@ -427,8 +423,11 @@ class AttackGraph:
             for step_expression in step_expressions:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
-                (target_assets, attack_step) = _process_step_expression(lang,
-                     model, [ag_node.asset], step_expression)
+                (target_assets, attack_step) = _process_step_expression(
+                    self.lang_spec,
+                    self.model,
+                    [ag_node.asset],
+                    step_expression)
                 for target in target_assets:
                     target_node_id = target.metaconcept + ':' \
                         + str(target.id) + ':' + attack_step
@@ -444,3 +443,13 @@ class AttackGraph:
                     target_node.parents.append(ag_node)
 
         return 0
+
+    def regenerate_graph(self):
+        """
+        Regenerate the attack graph based on the original model instance and
+        the MAL language specification provided at initialization.
+        """
+
+        self.nodes = []
+        self.attackers = []
+        self._generate_graph()
