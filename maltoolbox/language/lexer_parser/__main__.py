@@ -4,6 +4,7 @@ from antlr4 import FileStream, CommonTokenStream
 from .mal_lexer import malLexer
 from .mal_parser import malParser
 from .mal_visitor import malVisitor
+from .mal_analyzer import malAnalyzer
 
 import sys
 import os
@@ -29,7 +30,8 @@ class MalCompiler:
         parser = malParser(stream)
         tree = parser.mal()
 
-        return malVisitor(compiler=self).visit(tree)
+        analyzer = malAnalyzer()
+        return malVisitor(compiler=self, analyzer=analyzer).visit(tree)
 
 
 if __name__ == "__main__":
