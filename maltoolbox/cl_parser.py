@@ -7,7 +7,7 @@ import argparse
 import logging
 from typing import Sequence
 
-from maltoolbox import __version__
+from . import __version__
 
 logger = logging.getLogger(__name__)
 

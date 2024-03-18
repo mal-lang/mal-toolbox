@@ -11,7 +11,7 @@ from typing import List
 logger = logging.getLogger(__name__)
 
 @dataclass
-class Attacker:
+class AttackerAttachment:
     id: str = None
     name: str = None
     entry_points: List[tuple] = None
@@ -272,7 +272,7 @@ class Model:
         if 'attackers' in json_model:
             attackers_info = json_model['attackers']
             for attacker_id in attackers_info:
-                attacker = Attacker(name = attackers_info[attacker_id]['name'])
+                attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
                 attacker.entry_points = []
                 for asset_id in attackers_info[attacker_id]['entry_points']:
                     attacker.entry_points.append(

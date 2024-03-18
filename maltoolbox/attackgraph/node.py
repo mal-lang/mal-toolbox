@@ -5,7 +5,7 @@ MAL-Toolbox Attack Graph Node Dataclass
 from dataclasses import field, dataclass
 from typing import Any, List, Optional
 
-from maltoolbox.attackgraph.attacker import Attacker
+from . import Attacker
 
 @dataclass
 class AttackGraphNode:

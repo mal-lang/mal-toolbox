@@ -7,14 +7,15 @@ import json
 
 from typing import List, Optional
 
-from maltoolbox.language import specification
-from maltoolbox.model import model
-from maltoolbox.attackgraph import node
-from maltoolbox.attackgraph import attacker
+from .node import AttackGraphNode
+from .attacker import Attacker
+from ..exceptions import LanguageGraphStepExpressionError
+from ..language import specification
+from ..model import Model
 
 logger = logging.getLogger(__name__)
 
-def _process_step_expression(lang: dict, model: model.Model,
+def _process_step_expression(lang: dict, model: Model,
     target_assets: List, step_expression: dict):
     """
     Recursively process an attack step expression.
@@ -149,7 +150,7 @@ def _process_step_expression(lang: dict, model: model.Model,
 
 
 class AttackGraph:
-    def __init__(self, lang_spec = None, model: Optional[model.Model] = None):
+    def __init__(self, lang_spec = None, model: Optional[Model] = None):
         self.nodes = []
         self.attackers = []
         self.model = model
@@ -177,7 +178,7 @@ class AttackGraph:
             json.dump(serialized_graph, file, indent=4)
 
 
-    def load_from_file(self, filename: str, model: Optional[model.Model] = None):
+    def load_from_file(self, filename: str, model: Optional[Model] = None):
         """
         Load the attack graph model from a json file.
 
@@ -202,7 +203,7 @@ class AttackGraph:
             serialized_graph = json.load(file)
         # Create all of the nodes in the imported attack graph.
         for node_dict in serialized_graph:
-            ag_node = node.AttackGraphNode(
+            ag_node = AttackGraphNode(
                 id=node_dict['id'],
                 type=node_dict['type'],
                 name=node_dict['name'],
@@ -224,7 +225,7 @@ class AttackGraph:
             if ag_node.name == 'firstSteps':
                 # This is an attacker entry point node, recreate the attacker.
                 attacker_id = ag_node.id.split(':')[1]
-                ag_attacker = attacker.Attacker(
+                ag_attacker = Attacker(
                     id = str(attacker_id),
                     entry_points = [],
                     reached_attack_steps = [],
@@ -237,8 +238,8 @@ class AttackGraph:
 
         # Re-establish links between nodes.
         for node_dict in serialized_graph:
-            _ag_node: Optional[node.AttackGraphNode] = self.get_node_by_id(node_dict['id'])
-            if not isinstance(_ag_node, node.AttackGraphNode):
+            _ag_node: Optional[AttackGraphNode] = self.get_node_by_id(node_dict['id'])
+            if not isinstance(_ag_node, AttackGraphNode):
                 logger.error(f'Failed to find node with id {node_dict["id"]}'
                     f' when loading from attack graph from file {filename}')
             else:
@@ -250,7 +251,7 @@ class AttackGraph:
                         return None
                     _ag_node.children.append(child)
 
-                    if isinstance(_ag_node.attacker, attacker.Attacker):
+                    if isinstance(_ag_node.attacker, Attacker):
                         # Relink the attacker related connections since the node
                         # is an attacker entry point node.
                         ag_attacker = _ag_node.attacker
@@ -284,7 +285,7 @@ class AttackGraph:
                         asset.attack_step_nodes = [_ag_node]
 
 
-    def get_node_by_id(self, node_id: str) -> Optional[node.AttackGraphNode]:
+    def get_node_by_id(self, node_id: str) -> Optional[AttackGraphNode]:
         """
         Return the attack node that matches the id provided.
 
@@ -300,7 +301,7 @@ class AttackGraph:
             if ag_node.id == node_id), None)
 
 
-    def attach_attackers(self, model: model.Model):
+    def attach_attackers(self, model: Model):
         """
         Create attackers and their entry point nodes and attach them to the
         relevant attack step nodes and to the attackers.
@@ -312,7 +313,7 @@ class AttackGraph:
         logger.info(f'Attach attackers from \'{model.name}\' model to the '
             'graph.')
         for attacker_info in model.attackers:
-            attacker_node = node.AttackGraphNode(
+            attacker_node = AttackGraphNode(
                     id = 'Attacker:' + str(attacker_info.id) + ':firstSteps',
                     type = 'or',
                     asset = None,
@@ -323,7 +324,7 @@ class AttackGraph:
                     compromised_by = []
             )
 
-            ag_attacker = attacker.Attacker(
+            ag_attacker = Attacker(
                 id = str(attacker_info.id),
                 entry_points = [],
                 reached_attack_steps = [],
@@ -391,7 +392,7 @@ class AttackGraph:
 
                 mitre_info = attack_step_attribs['meta']['mitre'] if 'mitre' in\
                     attack_step_attribs['meta'] else None
-                ag_node = node.AttackGraphNode(
+                ag_node = AttackGraphNode(
                     id = node_id,
                     type = attack_step_attribs['type'],
                     asset = asset,

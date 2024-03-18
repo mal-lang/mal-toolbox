@@ -8,7 +8,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, List, Optional, ForwardRef
 
-from maltoolbox.language import specification
+from . import specification
+from ..exceptions import *
 
 
 logger = logging.getLogger(__name__)

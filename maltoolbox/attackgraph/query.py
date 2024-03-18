@@ -7,8 +7,8 @@ attack graph, but do not alter the structure or nodes in any way.
 
 import logging
 
-from maltoolbox.attackgraph import attackgraph
-from maltoolbox.attackgraph import attacker
+from .attackgraph import AttackGraph
+from .attacker import Attacker
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +47,8 @@ def is_node_traversable_by_attacker(node, attacker) -> bool:
             logger.error(f'Unknown node type {node.type}.')
             return False
 
-def get_attack_surface(graph: attackgraph.AttackGraph,
-    attacker: attacker.Attacker):
+def get_attack_surface(graph: AttackGraph,
+    attacker: Attacker):
     """
     Get the current attack surface of an attacker. This includes all of the
     viable children nodes of already reached attack steps that are of 'or'
@@ -70,7 +70,7 @@ def get_attack_surface(graph: attackgraph.AttackGraph,
                 attack_surface.append(child)
     return attack_surface
 
-def get_defense_surface(graph: attackgraph.AttackGraph):
+def get_defense_surface(graph: AttackGraph):
     """
     Get the defense surface. All non-suppressed defense steps that are not
     already fully enabled.
@@ -81,7 +81,7 @@ def get_defense_surface(graph: attackgraph.AttackGraph):
     logger.debug(f'Get the defense surface.')
     return [node for node in graph.nodes if node.is_available_defense()]
 
-def get_enabled_defenses(graph: attackgraph.AttackGraph):
+def get_enabled_defenses(graph: AttackGraph):
     """
     Get the defenses already enabled. All non-suppressed defense steps that
     are already fully enabled.

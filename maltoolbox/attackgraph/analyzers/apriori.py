@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 MAL-Toolbox Attack Graph Apriori Analyzer Submodule
 
@@ -13,8 +15,8 @@ Currently these are:
 
 import logging
 
-from maltoolbox.attackgraph import attackgraph
-from maltoolbox.attackgraph.node import AttackGraphNode
+from ..attackgraph import AttackGraph
+from ..node import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,7 @@ def propagate_necessity_from_node(node: AttackGraphNode):
         if child.is_necessary != original_value:
             propagate_necessity_from_node(child)
 
-def calculate_viability_and_necessity(graph: attackgraph.AttackGraph):
+def calculate_viability_and_necessity(graph: AttackGraph):
     """
     Arguments:
     node        - the attack graph for which we wish to determine the
@@ -84,3 +86,4 @@ def calculate_viability_and_necessity(graph: attackgraph.AttackGraph):
             propagate_viability_from_node(node)
         if not node.is_necessary:
             propagate_necessity_from_node(node)
+

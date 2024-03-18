@@ -10,7 +10,7 @@ class LanguageGraphSuperAssetNotFoundError(LanguageGraphException):
     """Asset's super asset not found in language graph during attack graph construction."""
     pass
 
-class LanguageGraphAssociationError(AttackGraphException):
+class LanguageGraphAssociationError(LanguageGraphException):
     """Error in building an association.
 
     For example, right or left-hand side asset of association missing in
@@ -18,7 +18,7 @@ class LanguageGraphAssociationError(AttackGraphException):
     """
     pass
 
-class LanguageGraphStepExpressionError(AttackGraphException):
+class LanguageGraphStepExpressionError(LanguageGraphException):
     """A target asset cannot be linked with for a step expression."""
     pass
 

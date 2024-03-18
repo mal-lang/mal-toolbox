@@ -6,8 +6,8 @@ import logging
 
 from py2neo import Graph, Node, Relationship, Subgraph
 
-from maltoolbox.model import model
-from maltoolbox.language import specification
+from ..model import AttackerAttachment, Model
+from ..language import specification
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +126,11 @@ def get_model(uri,
         dbname,
         lang_spec,
         lang_classes_factory
-) -> model.Model:
+) -> Model:
 
     g = Graph(uri=uri, user=username, password=password, name=dbname)
 
-    instance_model = model.Model('Neo4j imported model', lang_spec,
+    instance_model = Model('Neo4j imported model', lang_spec,
         lang_classes_factory)
     # Get all assets
     assets_results = g.run('MATCH (a) WHERE a.metaconcept IS NOT NULL RETURN DISTINCT a').data()
@@ -140,7 +140,7 @@ def get_model(uri,
             + str(asset_data))
         if asset_data['metaconcept'] == 'Attacker':
             attacker_id = int(asset_data['asset_id'])
-            attacker = model.Attacker()
+            attacker = AttackerAttachment()
             attacker.entry_points = []
             instance_model.add_attacker(attacker, attacker_id = attacker_id)
             continue
