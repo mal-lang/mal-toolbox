@@ -294,8 +294,8 @@ class DependencyChain:
                 }
 
             case _:
-                logger.error('Unknown associations chain element '
-                    f'{self.type}!')
+                msg = f'Unknown associations chain element {self.type}!'
+                raise LanguageGraphAssociationError(msg)
                 return None
 
 
@@ -625,10 +625,11 @@ class LanguageGraph:
                 super_asset = next((asset for asset in self.assets \
                     if asset.name == asset_info['superAsset']), None)
                 if not super_asset:
-                    logger.error('Failed to find super asset '
-                        f'\"{asset_info["superAsset"]}\" '
-                        f'for asset \"{asset_info["name"]}\"!')
-                    return 1
+                    msg = 'Failed to find super asset ' \
+                        f'\"{asset_info["superAsset"]}\" ' \
+                        f'for asset \"{asset_info["name"]}\"!'
+                    logger.error(msg)
+                    raise LanguageGraphSuperAssetNotFoundError(msg)
                 super_asset.sub_assets.append(asset)
                 asset.super_assets.append(super_asset)
 
@@ -643,17 +644,18 @@ class LanguageGraph:
                 left_asset = next((asset for asset in self.assets \
                     if asset.name == association['leftAsset']), None)
                 if not left_asset:
-                    logger.error('Failed to find left hand asset '
-                        f'\"{association["leftAsset"]}\" for '
-                        f'association \"{association["name"]}\"!')
-                    return 1
+                    msg = 'Failed to find left hand asset ' \
+                        f'\"{association["leftAsset"]}\" for ' \
+                        f'association \"{association["name"]}\"!'
+                    logger.error(msg)
+                    raise LanguageGraphAssociationError(msg)
                 right_asset = next((asset for asset in self.assets \
                     if asset.name == association['rightAsset']), None)
                 if not right_asset:
-                    logger.error('Failed to find right hand asset '
-                        f'\"{association["rightAsset"]}\" for '
-                        f'association \"{association["name"]}\"!')
-                    return 1
+                    msg = 'Failed to find right hand asset ' \
+                        f'\"{association["rightAsset"]}\" for ' \
+                        f'association \"{association["name"]}\"!'
+                    raise LanguageGraphAssociationError(msg)
 
                 # Technically we should be more exhaustive and check the
                 # flipped version too and all of the fieldnames as well.
@@ -733,13 +735,10 @@ class LanguageGraph:
                         None,
                         step_expression)
                 if not target_asset:
-                    logger.error('Failed to find target asset ' \
-                    f'to link with for step expression:\n' +
-                    json.dumps(step_expression, indent = 2))
-                    print('Failed to find target asset ' \
-                    f'to link with for step expression:\n' +
-                    json.dumps(step_expression, indent = 2))
-                    return 1
+                    msg = f'Failed to find target asset to link with for step expression:\n' + \
+                    json.dumps(step_expression, indent = 2)
+
+                    raise LanguageGraphStepExpressionError(msg)
 
                 attack_step_fullname = target_asset.name + ':' + attack_step_name
                 target_attack_step = next((attack_step \
@@ -747,17 +746,12 @@ class LanguageGraph:
                         if attack_step.name == attack_step_fullname), None)
 
                 if not target_attack_step:
-                    logger.error('Failed to find target attack step '
-                        f'{attack_step_fullname} on '
-                        f'{target_asset.name} to link with for step '
-                        'expression:\n' +
-                        json.dumps(step_expression, indent = 2))
-                    print('Failed to find target attack step '
-                        f'{attack_step_fullname} on '
-                        f'{target_asset.name} to link with for step '
-                        'expression:\n' +
-                        json.dumps(step_expression, indent = 2))
-                    return 1
+                    msg = 'Failed to find target attack step ' \
+                        f'{attack_step_fullname} on ' \
+                        f'{target_asset.name} to link with for step ' \
+                        'expression:\n' + \
+                        json.dumps(step_expression, indent = 2)
+                    raise LanguageGraphStepExpressionError(msg)
 
                 # It is easier to create the parent associations chain due to
                 # the left-hand first progression.

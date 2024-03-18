@@ -441,13 +441,12 @@ class AttackGraph:
                         + str(target.id) + ':' + attack_step
                     target_node = self.get_node_by_id(target_node_id)
                     if not target_node:
-                        logger.error('Failed to find targed node ' \
+                        msg = 'Failed to find target node ' \
                         f'{target_node_id} to link with for attack step ' \
-                        f'{ag_node.id}!')
-                        print('Failed to find targed node ' \
-                        f'{target_node_id} to link with for attack step ' \
-                        f'{ag_node.id}!')
-                        return 1
+                        f'{ag_node.id}!'
+
+                        logger.error(msg)
+                        raise AttackGraphStepExpressionError(msg)
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)
 
