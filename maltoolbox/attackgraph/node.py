@@ -28,9 +28,6 @@ class AttackGraphNode:
     attributes: Optional[dict] = None
     attacker: Optional['Attacker'] = None
 
-    def __repr__(self):
-        return f'AttackGraphNode({self.id}, {self.type}, {self.name})'
-
     def to_dict(self):
         node_dict = {
             'id': self.id,
@@ -62,6 +59,9 @@ class AttackGraphNode:
             node_dict['observations'] = self.observations
 
         return node_dict
+
+    def __repr__(self):
+        return str(self.to_dict())
 
     def is_compromised(self):
         """

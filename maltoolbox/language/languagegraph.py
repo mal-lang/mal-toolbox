@@ -7,7 +7,7 @@ MAL-Toolbox Language Graph Module
 import logging
 import json
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from . import specification
@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LanguageGraphAsset:
     name: str = None
-    associations: list[LanguageGraphAssociation] = None
-    attack_steps: list[LanguageGraphAttackStep] = None
-    description: dict = None
+    associations: list[LanguageGraphAssociation] = field(default_factory=[])
+    attack_steps: list[LanguageGraphAttackStep] = field(default_factory=[])
+    description: dict = field(default_factory={})
     # MAL languages currently do not support multiple inheritance, but this is
     # futureproofing at its most hopeful.
     super_assets: list = None
@@ -48,6 +48,9 @@ class LanguageGraphAsset:
         for sub_asset in self.sub_assets:
             node_dict['sub_assets'].append(sub_asset.name)
         return node_dict
+
+    def __repr__(self):
+        return str(self.to_dict())
 
     def is_subasset_of(self, target_asset):
         """
@@ -135,6 +138,9 @@ class LanguageGraphAssociation:
 
         return node_dict
 
+    def __repr__(self):
+        return str(self.to_dict())
+
     def contains_fieldname(self, fieldname):
         """
         Check if the association contains the field name given as a parameter.
@@ -214,11 +220,11 @@ class LanguageGraphAssociation:
 class LanguageGraphAttackStep:
     name: str = None
     type: str = None
-    asset: list[LanguageGraphAsset] = None
-    ttc: dict = None
-    children: dict = None
-    parents: dict = None
-    description: dict = None
+    asset: list[LanguageGraphAsset] = field(default_factory = [])
+    ttc: dict = field(default_factory = {})
+    children: dict = field(default_factory = {})
+    parents: dict = field(default_factory = {})
+    description: dict = field(default_factory = {})
 
     def to_dict(self):
         node_dict = {
@@ -250,6 +256,9 @@ class LanguageGraphAttackStep:
                     node_dict['parents'][parent].append(None)
 
         return node_dict
+
+    def __repr__(self):
+        return str(self.to_dict())
 
 
 class DependencyChain:
@@ -300,6 +309,9 @@ class DependencyChain:
                 msg = f'Unknown associations chain element {self.type}!'
                 raise LanguageGraphAssociationError(msg)
                 return None
+
+    def __repr__(self):
+        return str(self.to_dict())
 
 
 class LanguageGraph:

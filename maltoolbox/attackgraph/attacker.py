@@ -29,6 +29,9 @@ class Attacker:
 
         return attacker_dict
 
+    def __repr__(self):
+        return str(self.to_dict())
+
     def compromise(self, node):
         """
         Have the attacke compromise the node given as a parameter.
