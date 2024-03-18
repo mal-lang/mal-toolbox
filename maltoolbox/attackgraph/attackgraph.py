@@ -442,7 +442,6 @@ class AttackGraph:
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)
 
-        return 0
 
     def regenerate_graph(self):
         """
