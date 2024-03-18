@@ -3,7 +3,7 @@ MAL-Toolbox Attack Graph Node Dataclass
 """
 
 from dataclasses import field, dataclass
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from . import Attacker
 
@@ -14,16 +14,16 @@ class AttackGraphNode:
     name: str
     ttc: dict
     asset: Any = None
-    children: List['AttackGraphNode'] = field(default_factory=list)
-    parents: List['AttackGraphNode'] = field(default_factory=list)
+    children: list['AttackGraphNode'] = field(default_factory=list)
+    parents: list['AttackGraphNode'] = field(default_factory=list)
     defense_status: Optional[float] = None
     existence_status: Optional[bool] = None
     is_viable: bool = True
     is_necessary: bool = True
-    compromised_by: List['Attacker'] = field(default_factory=list)
+    compromised_by: list['Attacker'] = field(default_factory=list)
     extra: Optional[dict] = None
     mitre_info: Optional[str] = None
-    tags: Optional[List[str]] = None
+    tags: Optional[list[str]] = None
     observations: Optional[dict] = None
     attributes: Optional[dict] = None
     attacker: Optional['Attacker'] = None

@@ -5,7 +5,7 @@ MAL-Toolbox Attack Graph Module
 import logging
 import json
 
-from typing import List, Optional
+from typing import Optional
 
 from .node import AttackGraphNode
 from .attacker import Attacker
@@ -16,7 +16,7 @@ from ..model import Model
 logger = logging.getLogger(__name__)
 
 def _process_step_expression(lang: dict, model: Model,
-    target_assets: List, step_expression: dict):
+    target_assets: list, step_expression: dict):
     """
     Recursively process an attack step expression.
 

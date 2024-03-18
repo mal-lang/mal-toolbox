@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 MAL-Toolbox Attack Graph Attacker Class
 """
@@ -5,16 +7,15 @@ MAL-Toolbox Attack Graph Attacker Class
 import logging
 
 from dataclasses import dataclass
-from typing import List, ForwardRef
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class Attacker:
     id: str
-    entry_points: List[ForwardRef("node.AttackGraphNode")]
-    reached_attack_steps: List[ForwardRef("node.AttackGraphNode")]
-    node: ForwardRef("node.AttackGraphNode")
+    entry_points: list[node.AttackGraphNode]
+    reached_attack_steps: list[node.AttackGraphNode]
+    node: node.AttackGraphNode
 
     def to_dict(self):
         attacker_dict = {

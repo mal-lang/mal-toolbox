@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 MAL-Toolbox Language Graph Module
 """
@@ -6,7 +8,7 @@ import logging
 import json
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, ForwardRef
+from typing import Any, Optional
 
 from . import specification
 from ..exceptions import *
@@ -17,8 +19,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LanguageGraphAsset:
     name: str = None
-    associations: List[ForwardRef('LanguageGraphAssociation')] = None
-    attack_steps: List[ForwardRef('LanguageGraphAttackStep')] = None
+    associations: list[LanguageGraphAssociation] = None
+    attack_steps: list[LanguageGraphAttackStep] = None
     description: dict = None
     # MAL languages currently do not support multiple inheritance, but this is
     # futureproofing at its most hopeful.
@@ -212,7 +214,7 @@ class LanguageGraphAssociation:
 class LanguageGraphAttackStep:
     name: str = None
     type: str = None
-    asset: List[ForwardRef('LanguageGraphAsset')] = None
+    asset: list[LanguageGraphAsset] = None
     ttc: dict = None
     children: dict = None
     parents: dict = None

@@ -6,7 +6,6 @@ import json
 import logging
 
 from dataclasses import dataclass
-from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 class AttackerAttachment:
     id: str = None
     name: str = None
-    entry_points: List[tuple] = None
+    entry_points: list[tuple] = None
 
 class Model:
     latestId = 0
