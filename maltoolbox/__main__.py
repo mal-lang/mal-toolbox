@@ -13,6 +13,7 @@ from .model import Model
 from .attackgraph import AttackGraph
 from .attackgraph.analyzers.apriori import *
 from .ingestors import neo4j
+from .exceptions import AttackGraphStepExpressionError
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,12 @@ match(cmd_params['command']):
             instance_model.save_to_file( \
                 log_configs['model_file'])
 
-        graph = AttackGraph(lang_spec, instance_model)
+        try:
+            graph = AttackGraph(lang_spec, instance_model)
+        except AttackGraphStepExpressionError:
+            logger.error('Attack graph generation failed when attempting ' \
+                'to resolve attack step expression!')
+            sys.exit(1)
 
         calculate_viability_and_necessity(graph)
 
@@ -72,3 +78,4 @@ match(cmd_params['command']):
 
     case _:
         logger.error(f'Received unknown command: {cmd_params["command"]}.')
+        sys.exit(1)

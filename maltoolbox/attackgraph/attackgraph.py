@@ -9,7 +9,7 @@ from typing import Optional
 
 from .node import AttackGraphNode
 from .attacker import Attacker
-from ..exceptions import LanguageGraphStepExpressionError
+from ..exceptions import AttackGraphStepExpressionError
 from ..language import specification
 from ..model import Model
 
@@ -437,7 +437,6 @@ class AttackGraph:
                         msg = 'Failed to find target node ' \
                         f'{target_node_id} to link with for attack step ' \
                         f'{ag_node.id}!'
-
                         logger.error(msg)
                         raise AttackGraphStepExpressionError(msg)
                     ag_node.children.append(target_node)
