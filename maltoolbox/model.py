@@ -41,11 +41,63 @@ class Model:
         else:
             asset.id = self.latestId
         self.latestId = max(asset.id + 1, self.latestId)
+        logger.debug(f'Add {asset.name}(id:{asset.id}) to model '
+            f'\"{self.name}\".')
 
         asset.associations = []
         if not hasattr(asset, 'name'):
             asset.name = asset.metaconcept + ':' + str(asset.id)
         self.assets.append(asset)
+
+    def remove_asset(self, asset):
+        """
+        Remove an asset from the model.
+        """
+        logger.debug(f'Remove {asset.name}(id:{asset.id}) from model '
+            f'\"{self.name}\".')
+        if asset not in self.assets:
+            raise LookupError(f'Asset {asset.id} is not part of model '
+                f'\"{self.model}\".')
+
+        # First remove all of the associations
+        for association in asset.associations:
+            self.remove_asset_from_association(asset, association)
+
+        self.assets.remove(asset)
+
+    def remove_asset_from_association(self, asset, association):
+        """
+        Remove an asset from an association and remove the association if any
+        of the two sides is now empty.
+        """
+        logger.debug(f'Remove {asset.name}(id:{asset.id}) from association '
+            f'of type \"{type(association)}\".')
+        if asset not in self.assets:
+            raise LookupError(f'Asset {asset.id} is not part of model '
+                f'\"{self.model}\".')
+        if association not in self.associations:
+            raise LookupError(f'Association is not part of model '
+                f'\"{self.model}\".')
+
+        firstElementName = list(vars(association)['_properties'])[0]
+        secondElementName = list(vars(association)['_properties'])[1]
+        firstElements = getattr(association, firstElementName)
+        secondElements = getattr(association, secondElementName)
+        found = False
+        for field in [firstElements, secondElements]:
+            if asset in field:
+                found = True
+                field.remove(asset)
+                if len(field) == 0:
+                    # There are no other assets on this side, we should remove the
+                    # entire association.
+                    self.remove_association(association)
+                    return
+
+        if not found:
+            raise LookupError(f'Asset {asset.id} is not part of the '
+                'association provided.')
+
 
     def add_association(self, association):
         """
@@ -58,6 +110,33 @@ class Model:
                 assocs.append(association)
                 asset.associations = assocs
         self.associations.append(association)
+
+    def remove_association(self, association):
+        """
+        Remove an association from the model.
+        """
+        if association not in self.associations:
+            raise LookupError(f'Association is not part of model '
+                f'\"{self.model}\".')
+
+        firstElementName = list(vars(association)['_properties'])[0]
+        secondElementName = list(vars(association)['_properties'])[1]
+        firstElements = getattr(association, firstElementName)
+        secondElements = getattr(association, secondElementName)
+        for asset in firstElements:
+            assocs = list(asset.associations)
+            assocs.remove(association)
+            asset.associations = assocs
+        for asset in secondElements:
+            # In fringe cases we may have reflexive associations where the
+            # first element removed the association already. But generally the
+            # association should exist for the second element too.
+            if association in asset.associations:
+                assocs = list(asset.associations)
+                assocs.remove(association)
+                asset.associations = assocs
+
+        self.associations.remove(association)
 
     def add_attacker(self, attacker, attacker_id: int = None):
         """
@@ -85,6 +164,20 @@ class Model:
         """
         return next((asset for asset in self.assets if asset.id == asset_id),
             None)
+
+    def get_asset_by_name(self, asset_name):
+        """
+        Find an asset in the model based on its name.
+
+        Arguments:
+        asset_name        - the name of the asset we are looking for
+
+        Return:
+        An asset matching the name if it exists in the model.
+        """
+        return next((asset for asset in self.assets \
+            if asset.name == asset_name), None)
+
 
     def get_attacker_by_id(self, attacker_id):
         """
