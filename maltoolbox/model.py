@@ -162,6 +162,8 @@ class Model:
         Return:
         An asset matching the id if it exists in the model.
         """
+        logger.debug(f'Get asset with id \"{asset_id}\" from model '
+            f'\"{self.name}\".')
         return next((asset for asset in self.assets if asset.id == asset_id),
             None)
 
@@ -175,6 +177,8 @@ class Model:
         Return:
         An asset matching the name if it exists in the model.
         """
+        logger.debug(f'Get asset with name \"{asset_name}\" from model '
+            f'\"{self.name}\".')
         return next((asset for asset in self.assets \
             if asset.name == asset_name), None)
 
@@ -189,6 +193,8 @@ class Model:
         Return:
         An attacker matching the id if it exists in the model.
         """
+        logger.debug(f'Get attacker with id \"{attacker_id}\" from model '
+            f'\"{self.name}\".')
         return next((attacker for attacker in self.attackers \
             if attacker.id == attacker_id), None)
 
