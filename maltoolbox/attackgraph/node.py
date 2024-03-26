@@ -57,6 +57,8 @@ class AttackGraphNode:
             node_dict['tags'] = str(self.tags)
         if self.observations is not None:
             node_dict['observations'] = self.observations
+        if hasattr(self, 'reward') and self.reward is not None:
+            node_dict['reward'] = self.reward
 
         return node_dict
 
