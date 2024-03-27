@@ -319,7 +319,7 @@ class LanguageGraph:
         self.assets = []
         self.associations = []
         self.attack_steps = []
-        self.lang_dict = lang
+        self._lang_spec = lang
         self._generate_graph()
 
     def save_to_file(self, filename: str):
@@ -615,7 +615,7 @@ class LanguageGraph:
         given in the constructor.
         """
         # Generate all of the asset nodes of the language graph.
-        for asset in self.lang_dict['assets']:
+        for asset in self._lang_spec['assets']:
             logger.debug(f'Create asset language graph nodes for asset '
                 f'{asset["name"]}')
             asset_node = LanguageGraphAsset(
@@ -629,7 +629,7 @@ class LanguageGraph:
             self.assets.append(asset_node)
 
         # Link assets based on inheritance
-        for asset_info in self.lang_dict['assets']:
+        for asset_info in self._lang_spec['assets']:
             asset = next((asset for asset in self.assets \
                 if asset.name == asset_info['name']), None)
             if asset_info['superAsset']:
@@ -742,7 +742,7 @@ class LanguageGraph:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
                 (target_asset, dep_chain, attack_step_name) = \
-                    self.process_step_expression(self.lang_dict,
+                    self.process_step_expression(self._lang_spec,
                         attack_step.asset,
                         None,
                         step_expression)
