@@ -385,6 +385,7 @@ class LanguageGraph:
             json.dump(serialized_graph, file, indent=4)
 
 
+    # TODO do we want to keep this around? Seems redundant given the above method
     def save_language_specification_to_json(filename: str) -> dict:
         """
         Save a MAL language specification dictionary to a JSON file
