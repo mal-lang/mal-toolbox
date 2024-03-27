@@ -758,7 +758,7 @@ class LanguageGraph:
                     f'{attack_step_name}.')
 
                 attack_step_node = LanguageGraphAttackStep(
-                    name = asset.name + ':' + attack_step_name,
+                    name = attack_step_name,
                     type = attack_step_attribs['type'],
                     asset = asset,
                     ttc = attack_step_attribs['ttc'],
@@ -793,14 +793,13 @@ class LanguageGraph:
 
                     raise LanguageGraphStepExpressionError(msg)
 
-                attack_step_fullname = target_asset.name + ':' + attack_step_name
                 target_attack_step = next((attack_step \
                     for attack_step in target_asset.attack_steps \
-                        if attack_step.name == attack_step_fullname), None)
+                        if attack_step.name == attack_step_name), None)
 
                 if not target_attack_step:
                     msg = 'Failed to find target attack step ' \
-                        f'{attack_step_fullname} on ' \
+                        f'{attack_step_name} on ' \
                         f'{target_asset.name} to link with for step ' \
                         'expression:\n' + \
                         json.dumps(step_expression, indent = 2)
