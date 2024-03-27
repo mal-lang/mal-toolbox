@@ -3,10 +3,12 @@ Command-line interface for MAL toolbox operations
 
 Usage:
     maltoolbox attack-graph generate [options] <model> <lang_file>
+    maltoolbox compile <lang_file> <output_file>
 
 Arguments:
     <model>         Path to JSON instance model file.
     <lang_file>     Path to .mar or .mal file containing MAL spec.
+    <output_file>   Path to write the JSON result of the compilation.
 
 Options:
     --neo4j         Ingest attack graph and instance model into a Neo4j instance
@@ -25,8 +27,9 @@ import json
 import sys
 import zipfile
 
-from . import cl_parser, log_configs, neo4j_configs
+from . import log_configs, neo4j_configs
 from .language import LanguageClassesFactory, LanguageGraph
+from .language.compiler import MalCompiler
 from .model import Model
 from .attackgraph import AttackGraph
 from .attackgraph.analyzers.apriori import calculate_viability_and_necessity
@@ -87,8 +90,16 @@ def generate_attack_graph(model_file: str, lang_file: str, send_to_neo4j: bool) 
             neo4j_configs['dbname'],
             delete=False)
 
+def compile(lang_file, output_file):
+    compiler = MalCompiler()
+
+    with open(output_file, "w") as f:
+        json.dump(compiler.compile(lang_file), f, indent=2)
+
 
 args = docopt.docopt(__doc__)
 
 if args['attack-graph'] and args['generate']:
     generate_attack_graph(args['<model>'], args['<lang_file>'], args['--neo4j'])
+elif args['compile']:
+    compile(args['<lang_file>'], args['<output_file>'])
