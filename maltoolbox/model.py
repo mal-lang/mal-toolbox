@@ -22,12 +22,11 @@ class Model:
     def __repr__(self) -> str:
         return f'Model {self.name}'
 
-    def __init__(self, name, lang_spec, lang_classes_factory):
+    def __init__(self, name, lang_classes_factory):
         self.name = name
         self.assets = []
         self.associations = []
         self.attackers = []
-        self.lang_spec = lang_spec
         self.lang_classes_factory = lang_classes_factory
 
     def add_asset(
@@ -343,8 +342,8 @@ class Model:
         }
         contents['metadata'] = {
             'name': self.name,
-            'langVersion': self.lang_spec['defines']['version'],
-            'langID': self.lang_spec['defines']['id'],
+            'langVersion': self.lang_class_factory.lang_graph.metadata['version'],
+            'langID': self.lang_class_factory.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
             'info': 'Created by the mal-toolbox model python module.'
         }
