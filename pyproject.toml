@@ -15,7 +15,8 @@ dependencies = [
   "py2neo>=2021.2.3",
   "python-jsonschema-objects>=0.4.1",
   "antlr4-tools",
-  "antlr4-python3-runtime"
+  "antlr4-python3-runtime",
+  "docopt",
 ]
 license = {text = "Apache Software License"}
 keywords = ["mal"]
