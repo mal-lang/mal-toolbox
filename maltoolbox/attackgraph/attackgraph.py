@@ -310,18 +310,15 @@ class AttackGraph:
             if ag_node.id == node_id), None)
 
 
-    def attach_attackers(self, model: Model):
+    def attach_attackers(self):
         """
         Create attackers and their entry point nodes and attach them to the
         relevant attack step nodes and to the attackers.
-
-        Arguments:
-        model       - the instance model containing the attackers
         """
 
-        logger.info(f'Attach attackers from \'{model.name}\' model to the '
+        logger.info(f'Attach attackers from \'{self.model.name}\' model to the '
             'graph.')
-        for attacker_info in model.attackers:
+        for attacker_info in self.model.attackers:
             attacker_node = AttackGraphNode(
                     id = 'Attacker:' + str(attacker_info.id) + ':firstSteps',
                     type = 'or',
