@@ -4,13 +4,16 @@ from __future__ import annotations
 MAL-Toolbox Language Graph Module
 """
 
+import copy
 import logging
 import json
+import zipfile
 
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from . import specification
+from .compiler import MalCompiler
 from ..exceptions import *
 
 
@@ -226,6 +229,10 @@ class LanguageGraphAttackStep:
     parents: dict = field(default_factory = {})
     description: dict = field(default_factory = {})
 
+    @property
+    def qualified_name(self):
+        return f"{self.asset.name}:{self.name}"
+
     def to_dict(self):
         node_dict = {
             'name': self.name,
@@ -319,8 +326,37 @@ class LanguageGraph:
         self.assets = []
         self.associations = []
         self.attack_steps = []
-        self.lang_dict = lang
+        self._lang_spec = lang
+        self.metadata = {
+            "version": lang["defines"]["version"],
+            "id": lang["defines"]["id"],
+        }
         self._generate_graph()
+
+    @classmethod
+    def from_mal_spec(cls, mal_spec_file: str):
+        """
+        Create a language graph from a .mal file (a MAL spec).
+
+        Arguments:
+        mal_spec_file   -   the path to the .mal file
+        """
+        logger.info(f"Loading mal spec {mal_spec_file}.")
+        return LanguageGraph(MalCompiler.compile(mal_spec_file))
+
+    @classmethod
+    def from_mar_archive(cls, mar_archive: str):
+        """
+        Create a language graph from a ".mar" archive provided by malc
+        (https://github.com/mal-lang/malc).
+
+        Arguments:
+        mar_archive     -   the path to a ".mar" archive
+        """
+        logger.info(f'Loading mar archive \'{mar_archive}\'.')
+        with zipfile.ZipFile(mar_archive, 'r') as archive:
+            langspec = archive.read('langspec.json')
+            return LanguageGraph(json.loads(langspec))
 
     def save_to_file(self, filename: str):
         """
@@ -351,6 +387,20 @@ class LanguageGraph:
         }
         with open(filename, 'w', encoding='utf-8') as file:
             json.dump(serialized_graph, file, indent=4)
+
+
+    # TODO do we want to keep this around? Seems redundant given the above method
+    def save_language_specification_to_json(self, filename: str) -> dict:
+        """
+        Save a MAL language specification dictionary to a JSON file
+
+        Arguments:
+        filename        - the JSON filename where the language specification will be written
+        """
+        logger.info(f'Save language specfication to {filename}.')
+
+        with open(filename, 'w', encoding='utf-8') as file:
+            json.dump(self._lang_spec, file, indent=4)
 
 
     def process_step_expression(self,
@@ -418,9 +468,8 @@ class LanguageGraph:
             case 'variable':
                 # Fetch the step expression associated with the variable from
                 # the language specification and resolve that.
-                variable_step_expr = specification.\
-                    get_variable_for_class_by_name(lang,
-                        target_asset.name, step_expression['name'])
+                variable_step_expr = self._get_variable_for_asset_type_by_name(
+                    target_asset.name, step_expression['name'])
                 if variable_step_expr:
                     return self.process_step_expression(
                         lang,
@@ -498,8 +547,7 @@ class LanguageGraph:
                         dep_chain,
                         step_expression['stepExpression'])
 
-                subtype_asset = next((asset for asset in self.assets \
-                    if asset.name == subtype_name), None)
+                subtype_asset = next((asset for asset in self.assets if asset.name == subtype_name), None)
                 if not subtype_asset:
                     logger.error('Failed to find subtype attack step '
                         f'\"{subtype_name}\"')
@@ -615,7 +663,7 @@ class LanguageGraph:
         given in the constructor.
         """
         # Generate all of the asset nodes of the language graph.
-        for asset in self.lang_dict['assets']:
+        for asset in self._lang_spec['assets']:
             logger.debug(f'Create asset language graph nodes for asset '
                 f'{asset["name"]}')
             asset_node = LanguageGraphAsset(
@@ -629,7 +677,7 @@ class LanguageGraph:
             self.assets.append(asset_node)
 
         # Link assets based on inheritance
-        for asset_info in self.lang_dict['assets']:
+        for asset_info in self._lang_spec['assets']:
             asset = next((asset for asset in self.assets \
                 if asset.name == asset_info['name']), None)
             if asset_info['superAsset']:
@@ -649,9 +697,7 @@ class LanguageGraph:
             logger.debug(f'Create association language graph nodes for asset '
                 f'{asset.name}')
             associations_nodes = []
-            associations = specification.get_associations_for_class(
-                self.lang_dict,
-                asset.name)
+            associations = self._get_associations_for_asset_type(asset.name)
             for association in associations:
                 left_asset = next((asset for asset in self.assets \
                     if asset.name == association['leftAsset']), None)
@@ -711,14 +757,13 @@ class LanguageGraph:
             logger.debug(f'Create attack steps language graph nodes for '
                 f'asset {asset.name}.')
             attack_step_nodes = []
-            attack_steps = specification.get_attacks_for_class(self.lang_dict,
-                asset.name)
+            attack_steps = self._get_attacks_for_asset_type(asset.name)
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(f'Create attack step language graph nodes for '
                     f'{attack_step_name}.')
 
                 attack_step_node = LanguageGraphAttackStep(
-                    name = asset.name + ':' + attack_step_name,
+                    name = attack_step_name,
                     type = attack_step_attribs['type'],
                     asset = asset,
                     ttc = attack_step_attribs['ttc'],
@@ -742,7 +787,7 @@ class LanguageGraph:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
                 (target_asset, dep_chain, attack_step_name) = \
-                    self.process_step_expression(self.lang_dict,
+                    self.process_step_expression(self._lang_spec,
                         attack_step.asset,
                         None,
                         step_expression)
@@ -753,14 +798,13 @@ class LanguageGraph:
 
                     raise LanguageGraphStepExpressionError(msg)
 
-                attack_step_fullname = target_asset.name + ':' + attack_step_name
                 target_attack_step = next((attack_step \
                     for attack_step in target_asset.attack_steps \
-                        if attack_step.name == attack_step_fullname), None)
+                        if attack_step.name == attack_step_name), None)
 
                 if not target_attack_step:
                     msg = 'Failed to find target attack step ' \
-                        f'{attack_step_fullname} on ' \
+                        f'{attack_step_name} on ' \
                         f'{target_asset.name} to link with for step ' \
                         'expression:\n' + \
                         json.dumps(step_expression, indent = 2)
@@ -786,6 +830,127 @@ class LanguageGraph:
                         [(target_attack_step,
                         self.reverse_dep_chain(dep_chain,
                             None))]
+
+    def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
+        """
+        Get all Attack Steps for a specific Class
+
+        Arguments:
+        asset_type      - a string representing the class for which we want to list
+                          the possible attack steps
+
+        Return:
+        A dictionary representing the set of possible attacks for the specified
+        class. Each key in the dictionary is an attack name and is associated
+        with a dictionary containing other characteristics of the attack such as
+        type of attack, TTC distribution, child attack steps and other information
+        """
+        attack_steps = {}
+        try:
+            asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == asset_type))
+        except StopIteration:
+            logger.error(f'Failed to find asset type {asset_type} when '\
+                'looking for attack steps.')
+            return None
+
+        logger.debug(f'Get attack steps for {asset["name"]} asset from '\
+            'language specification.')
+        if asset['superAsset']:
+            logger.debug(f'Asset extends another one, fetch the superclass '\
+                'attack steps for it.')
+            attack_steps = self._get_attacks_for_asset_type(asset['superAsset'])
+
+        for step in asset['attackSteps']:
+            if step['name'] not in attack_steps:
+                attack_steps[step['name']] = copy.deepcopy(step)
+            elif not step['reaches']:
+                # This attack step does not lead to any attack steps
+                continue
+            elif step['reaches']['overrides'] == True:
+                attack_steps[step['name']] = copy.deepcopy(step)
+            else:
+                attack_steps[step['name']]['reaches']['stepExpressions'].\
+                    extend(step['reaches']['stepExpressions'])
+
+        return attack_steps
+
+
+    def _get_associations_for_asset_type(self, asset_type: str) -> dict:
+        """
+        Get all Associations for a specific Class
+
+        Arguments:
+        asset_type      - a string representing the class for which we want to list
+                          the associations
+
+        Return:
+        A dictionary representing the set of associations for the specified
+        class. Each key in the dictionary is an attack name and is associated
+        with a dictionary containing other characteristics of the attack such as
+        type of attack, TTC distribution, child attack steps and other information
+        """
+        logger.debug(f'Get associations for {asset_type} asset from '\
+            'language specification.')
+        associations = []
+
+        asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
+            asset_type), None)
+        if not asset:
+            logger.error(f'Failed to find asset type {asset_type} when '\
+                'looking for associations.')
+            return None
+
+        if asset['superAsset']:
+            logger.debug(f'Asset extends another one, fetch the superclass '\
+                'associations for it.')
+            associations.extend(self._get_associations_for_asset_type(asset['superAsset']))
+        assoc_iter = (assoc for assoc in self._lang_spec['associations'] \
+            if assoc['leftAsset'] == asset_type or \
+                assoc['rightAsset'] == asset_type)
+        assoc = next(assoc_iter, None)
+        while (assoc):
+            associations.append(assoc)
+            assoc = next(assoc_iter, None)
+
+        return associations
+
+    def _get_variable_for_asset_type_by_name(self, asset_type: str, variable_name:str) -> dict:
+        """
+        Get a variables for a specific asset type by name.
+        NOTE: Variables are the ones specified in MAL through `let` statements
+
+        Arguments:
+        asset_type      - a string representing the type of asset which contains
+                        the variable
+        variable_name   - the name of the variable to search for
+
+        Return:
+        A dictionary representing the step expressions for the specified variable.
+        """
+
+        asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
+            asset_type), None)
+        if not asset:
+            logger.error(f'Failed to find asset type {asset_type} when '\
+                'looking for variable.')
+            return None
+
+        variable_dict = next((variable for variable in \
+            asset['variables'] if variable['name'] == variable_name), None)
+        if not variable_dict:
+            if asset['superAsset']:
+                variable_dict = self._get_variable_for_asset_type_by_name(asset['superAsset'],
+                                                       variable_name)
+            if variable_dict:
+                return variable_dict
+            else:
+                logger.error(f'Failed to find variable {variable_name} in '\
+                    f'{asset_type}\'s language specification.')
+            return None
+
+        return variable_dict['stepExpression']
+
+
 
     def regenerate_graph(self):
         """

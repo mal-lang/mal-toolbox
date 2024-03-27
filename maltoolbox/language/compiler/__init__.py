@@ -7,8 +7,6 @@ from .mal_visitor import malVisitor
 
 import sys
 import os
-import json
-
 
 class MalCompiler:
     def __init__(self):
@@ -31,9 +29,3 @@ class MalCompiler:
 
         return malVisitor(compiler=self).visit(tree)
 
-
-if __name__ == "__main__":
-    compiler = MalCompiler()
-
-    with open("new_langspec.json", "w") as f:
-        json.dump(compiler.compile(sys.argv[1]), f, indent=2)
