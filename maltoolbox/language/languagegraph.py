@@ -323,6 +323,10 @@ class LanguageGraph:
         self.associations = []
         self.attack_steps = []
         self._lang_spec = lang
+        self.metadata = {
+            "version": lang["defines"]["version"],
+            "id": lang["defines"]["id"],
+        }
         self._generate_graph()
 
     @classmethod

@@ -9,35 +9,35 @@ import logging
 logger = logging.getLogger(__name__)
 
 class LanguageClassesFactory:
-    def __init__(self, langspec):
-        self.langspec = langspec
+    def __init__(self, language_graph):
+        self.language_graph = language_graph
         self.json_schema = {}
 
     def generate_assets(self):
         """
         Generate JSON Schema for the assets in the language specification.
         """
-        for asset in self.langspec['assets']:
-            logger.debug(f'Creating {asset["name"]} asset JSON '\
+        for asset in self.language_graph.assets:
+            logger.debug(f'Creating {asset.name} asset JSON '\
             'schema entry.')
-            asset_json_entry = {'title': asset['name'], 'type': 'object',
+            asset_json_entry = {'title': asset.name, 'type': 'object',
                 'properties': {}}
             asset_json_entry['properties']['metaconcept'] = \
                 {
                     'type' : 'string',
-                    'default': asset['name']
+                    'default': asset.name
                 }
-            if asset['superAsset']:
-                asset_json_entry['allOf'] = [{
-                    '$ref': '#/definitions/LanguageAsset/definitions/' + asset['superAsset']
-                }]
-            for defense in filter(lambda item: item['type'] == 'defense',
-                asset['attackSteps']):
-                if defense['ttc'] and defense['ttc']['name'] == 'Enabled':
+            if asset.super_assets:
+                asset_json_entry['allOf'] = [
+                    {'$ref': '#/definitions/LanguageAsset/definitions/' + superasset.name}
+                    for superasset in asset.super_assets
+                ]
+            for defense in filter(lambda step: step.type == 'defense', asset.attack_steps):
+                if defense.ttc and defense.ttc['name'] == 'Enabled':
                     default_defense_value = 1.0
                 else:
                     default_defense_value = 0.0
-                asset_json_entry['properties'][defense['name']] = \
+                asset_json_entry['properties'][defense.name] = \
                     {
                         'type' : 'number',
                         'minimum' : 0,
@@ -45,75 +45,74 @@ class LanguageClassesFactory:
                         'default': default_defense_value
                     }
             self.json_schema['definitions']['LanguageAsset']['definitions']\
-                [asset['name']] = asset_json_entry
-            self.json_schema['definitions']['LanguageAsset']['oneOf'].\
-                append({'$ref': '#/definitions/LanguageAsset/definitions/'
-                + asset['name']})
+                [asset.name] = asset_json_entry
+            self.json_schema['definitions']['LanguageAsset']['oneOf'].append(
+                {'$ref': '#/definitions/LanguageAsset/definitions/' + asset.name}
+            )
 
     def generate_associations(self):
         """
         Generate JSON Schema for the associations in the language specification.
         """
         def create_association_entry(assoc):
-            logger.debug(f'Creating {assoc["name"]} association JSON '\
-            'schema entry.')
-            assoc_json_entry = {'title': assoc['name'], 'type': 'object',
-                'properties': {}}
+            logger.debug(f'Creating {assoc.name} association JSON schema entry.')
+            assoc_json_entry = {'title': assoc.name, 'type': 'object', 'properties': {}}
 
             create_association_field(assoc, assoc_json_entry, 'left')
             create_association_field(assoc, assoc_json_entry, 'right')
             return assoc_json_entry
 
         def create_association_with_subentries(assoc):
-            if (assoc['name'] not in self.json_schema['definitions']\
+            if (assoc.name not in self.json_schema['definitions']\
                 ['LanguageAssociation']['definitions']):
                 logger.info('Multiple associations with the same '\
-                    f'name, {assoc["name"]}, exist. '\
+                    f'name, {assoc.name}, exist. '\
                     'Creating subentries for each one.')
                 self.json_schema['definitions']['LanguageAssociation']\
-                ['definitions'][assoc['name']] =\
+                ['definitions'][assoc.name] =\
                     {
-                        'title': assoc['name'],
+                        'title': assoc.name,
                         'type': 'object',
                         'oneOf': [],
                         'definitions': {}
                     }
                 self.json_schema['definitions']['LanguageAssociation']['oneOf'].\
                     append({'$ref': '#/definitions/LanguageAssociation/definitions/'
-                    + assoc['name']})
+                    + assoc.name})
 
             assoc_json_subentry = create_association_entry(assoc)
-            subentry_name = assoc['name'] + '_' + assoc['leftAsset'] + '_' \
-                + assoc['rightAsset']
+            subentry_name = assoc.name + '_' + assoc.left_field.asset.name + '_' \
+                + assoc.right_field.asset.name
 
             logger.info(f'Creating {subentry_name} subentry association.')
             assoc_json_subentry['title'] = subentry_name
             self.json_schema['definitions']['LanguageAssociation']\
-                ['definitions'][assoc['name']]['definitions'][subentry_name] = assoc_json_subentry
+                ['definitions'][assoc.name]['definitions'][subentry_name] = assoc_json_subentry
             self.json_schema['definitions']['LanguageAssociation']\
-                ['definitions'][assoc['name']]['oneOf'].append(
+                ['definitions'][assoc.name]['oneOf'].append(
                     {'$ref': '#/definitions/LanguageAssociation/definitions/' \
-                    + assoc['name'] + '/definitions/' + subentry_name})
+                    + assoc.name + '/definitions/' + subentry_name})
 
         def create_association_field(assoc, assoc_json_entry, position):
-            assoc_json_entry['properties'][assoc[position + 'Field']] = \
+            field = getattr(assoc, position + "_field")
+            assoc_json_entry['properties'][field.fieldname] = \
                 {
                     'type' : 'array',
                     'items' :
                         {
                         '$ref':
                         '#/definitions/LanguageAsset/definitions/' +
-                            assoc[position + 'Asset']
+                            field.asset.name
                         }
                 }
-            if assoc[position + 'Multiplicity']['max']:
-                assoc_json_entry['properties'][assoc[position + 'Field']]\
-                    ['maxItems'] = assoc[position + 'Multiplicity']['max']
+            if field.maximum:
+                assoc_json_entry['properties'][field.fieldname]\
+                    ['maxItems'] = field.maximum
 
 
-        for assoc in self.langspec['associations']:
-            count = len(list(filter(lambda temp_assoc: temp_assoc['name'] ==
-                assoc['name'], self.langspec['associations'])))
+        for assoc in self.language_graph.associations:
+            count = len(list(filter(lambda temp_assoc: temp_assoc.name ==
+                assoc.name, self.language_graph.associations)))
             if count > 1:
                 # If there are multiple associations with the same name we
                 # will need to create separate entries for each using their
@@ -122,10 +121,10 @@ class LanguageClassesFactory:
             else:
                 assoc_json_entry = create_association_entry(assoc)
                 self.json_schema['definitions']['LanguageAssociation']\
-                    ['definitions'][assoc['name']] = assoc_json_entry
+                    ['definitions'][assoc.name] = assoc_json_entry
                 self.json_schema['definitions']['LanguageAssociation']['oneOf'].\
                     append({'$ref': '#/definitions/LanguageAssociation/' +
-                    'definitions/' + assoc['name']})
+                    'definitions/' + assoc.name})
 
     def create_classes(self):
         """
