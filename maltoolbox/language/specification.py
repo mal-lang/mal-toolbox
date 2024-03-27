@@ -4,46 +4,9 @@ MAL-Toolbox Language Specification Module
 """
 
 import logging
-import json
-import zipfile
 import copy
 
 logger = logging.getLogger(__name__)
-
-def load_language_specification_from_mar(mar_archive: str) -> dict:
-    """
-    Read a ".mar" archive provided by malc (https://github.com/mal-lang/malc)
-    and return a dictionary representing a MAL language structure
-
-    Arguments:
-    mar_archive     -   the path to a ".mar" archive
-
-    Return:
-    A dictionary representing the language specification
-    """
-
-    logger.info(f'Load language specfication from \'{mar_archive}\' mar archive.')
-    with zipfile.ZipFile(mar_archive, 'r') as archive:
-        langspec = archive.read('langspec.json')
-        return json.loads(langspec)
-
-def load_language_specification_from_json(json_file: str) -> dict:
-    """
-    Read a MAL language JSON specification file
-
-    Arguments:
-    file_spec       - a language specification file that can be for example
-                      provided by malc (https://github.com/mal-lang/malc)
-
-    Return:
-    A dictionary representing the language specification
-    """
-
-    logger.info(f'Load language specfication from \'{json_file}\'.')
-    with open(json_file, 'r', encoding='utf-8') as spec:
-        data = spec.read()
-    return json.loads(data)
-
 
 def save_language_specification_to_json(lang_spec: dict, filename: str) -> dict:
     """

@@ -6,11 +6,13 @@ MAL-Toolbox Language Graph Module
 
 import logging
 import json
+import zipfile
 
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from . import specification
+from .compiler import MalCompiler
 from ..exceptions import *
 
 
@@ -321,6 +323,31 @@ class LanguageGraph:
         self.attack_steps = []
         self._lang_spec = lang
         self._generate_graph()
+
+    @classmethod
+    def from_mal_spec(cls, mal_spec_file: str):
+        """
+        Create a language graph from a .mal file (a MAL spec).
+
+        Arguments:
+        mal_spec_file   -   the path to the .mal file
+        """
+        logger.info(f"Loading mal spec {mal_spec_file}.")
+        return LanguageGraph(MalCompiler.compile(mal_spec_file))
+
+    @classmethod
+    def from_mar_archive(cls, mar_archive: str):
+        """
+        Create a language graph from a ".mar" archive provided by malc
+        (https://github.com/mal-lang/malc).
+
+        Arguments:
+        mar_archive     -   the path to a ".mar" archive
+        """
+        logger.info(f'Loading mar archive \'{mar_archive}\'.')
+        with zipfile.ZipFile(mar_archive, 'r') as archive:
+            langspec = archive.read('langspec.json')
+            return LanguageGraph(json.loads(langspec))
 
     def save_to_file(self, filename: str):
         """
