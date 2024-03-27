@@ -9,15 +9,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 class LanguageClassesFactory:
-    def __init__(self, language_graph):
-        self.language_graph = language_graph
+    def __init__(self, lang_graph):
+        self.lang_graph = lang_graph
         self.json_schema = {}
 
     def generate_assets(self):
         """
         Generate JSON Schema for the assets in the language specification.
         """
-        for asset in self.language_graph.assets:
+        for asset in self.lang_graph.assets:
             logger.debug(f'Creating {asset.name} asset JSON '\
             'schema entry.')
             asset_json_entry = {'title': asset.name, 'type': 'object',
@@ -110,9 +110,9 @@ class LanguageClassesFactory:
                     ['maxItems'] = field.maximum
 
 
-        for assoc in self.language_graph.associations:
+        for assoc in self.lang_graph.associations:
             count = len(list(filter(lambda temp_assoc: temp_assoc.name ==
-                assoc.name, self.language_graph.associations)))
+                assoc.name, self.lang_graph.associations)))
             if count > 1:
                 # If there are multiple associations with the same name we
                 # will need to create separate entries for each using their
