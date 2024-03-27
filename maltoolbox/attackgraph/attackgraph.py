@@ -10,12 +10,14 @@ from typing import Optional
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
-from ..language import specification
+from ..language import specification, LanguageGraph
 from ..model import Model
 
 logger = logging.getLogger(__name__)
 
-def _process_step_expression(lang: dict, model: Model,
+# TODO see if (part of) this can be incorporated into the LanguageGraph, so that
+# the LanguageGraph's _lang_spec private property does not need to be accessed
+def _process_step_expression(lang_graph: LanguageGraph, model: Model,
     target_assets: list, step_expression: dict):
     """
     Recursively process an attack step expression.
@@ -36,6 +38,9 @@ def _process_step_expression(lang: dict, model: Model,
     logger.debug('Processing Step Expression:\n' \
         + json.dumps(step_expression, indent = 2))
 
+
+    lang = lang_graph._lang_spec
+
     match (step_expression['type']):
         case 'attackStep':
             # The attack step expression just adds the name of the attack
@@ -46,9 +51,9 @@ def _process_step_expression(lang: dict, model: Model,
             # The set operators are used to combine the left hand and right
             # hand targets accordingly.
             lh_targets, lh_attack_steps = _process_step_expression(
-                lang, model, target_assets, step_expression['lhs'])
+                lang_graph, model, target_assets, step_expression['lhs'])
             rh_targets, rh_attack_steps = _process_step_expression(
-                lang, model, target_assets, step_expression['rhs'])
+                lang_graph, model, target_assets, step_expression['rhs'])
 
             new_target_assets = []
             match (step_expression['type']):
@@ -79,11 +84,12 @@ def _process_step_expression(lang: dict, model: Model,
             # the language specification and resolve that.
             for target_asset in target_assets:
                 if (hasattr(target_asset, 'metaconcept')):
-                    variable_step_expr = specification.\
-                        get_variable_for_class_by_name(lang,
+                    # TODO how can this info be accessed in the lang_graph
+                    # directly without going through the private method?
+                    variable_step_expr = lang_graph._get_variable_for_asset_type_by_name(
                         target_asset.metaconcept, step_expression['name'])
                     return _process_step_expression(
-                        lang, model, target_assets, variable_step_expr)
+                        lang_graph, model, target_assets, variable_step_expr)
 
                 else:
                     logger.error('Requested variable from non-asset'
@@ -113,7 +119,7 @@ def _process_step_expression(lang: dict, model: Model,
                         step_expression['stepExpression']['name']))
             if new_target_assets:
                 (additional_assets, _) = _process_step_expression(
-                    lang, model, new_target_assets, step_expression)
+                    lang_graph, model, new_target_assets, step_expression)
                 new_target_assets.extend(additional_assets)
                 return (new_target_assets, None)
             else:
@@ -123,12 +129,13 @@ def _process_step_expression(lang: dict, model: Model,
             new_target_assets = []
             for target_asset in target_assets:
                 (assets, _) = _process_step_expression(
-                    lang, model, target_assets, step_expression['stepExpression'])
+                    lang_graph, model, target_assets,
+                    step_expression['stepExpression'])
                 new_target_assets.extend(assets)
 
             selected_new_target_assets = (asset for asset in \
                 new_target_assets if specification.extends_asset(
-                    lang,
+                    lang_graph,
                     asset.metaconcept,
                     step_expression['subType']))
             return (selected_new_target_assets, None)
@@ -137,8 +144,8 @@ def _process_step_expression(lang: dict, model: Model,
             # Apply the right hand step expression to left hand step
             # expression target assets.
             lh_targets, _ = _process_step_expression(
-                lang, model, target_assets, step_expression['lhs'])
-            return _process_step_expression(lang, model, lh_targets,
+                lang_graph, model, target_assets, step_expression['lhs'])
+            return _process_step_expression(lang_graph, model, lh_targets,
                 step_expression['rhs'])
 
 
@@ -150,12 +157,12 @@ def _process_step_expression(lang: dict, model: Model,
 
 
 class AttackGraph:
-    def __init__(self, lang_spec = None, model: Optional[Model] = None):
+    def __init__(self, lang_graph = None, model: Optional[Model] = None):
         self.nodes = []
         self.attackers = []
         self.model = model
-        self.lang_spec = lang_spec
-        if self.model is not None and self.lang_spec is not None:
+        self.lang_graph = lang_graph
+        if self.model is not None and self.lang_graph is not None:
             self._generate_graph()
 
     def __repr__(self) -> str:
@@ -362,8 +369,10 @@ class AttackGraph:
             logger.debug(f'Generating attack steps for asset {asset.name} which '\
                 f'is of class {asset.metaconcept}.')
             attack_step_nodes = []
-            attack_steps = specification.get_attacks_for_class(
-                self.lang_spec, asset.metaconcept)
+
+            # TODO probably part of what happens here is already done in lang_graph
+            attack_steps = self.lang_graph._get_attacks_for_asset_type(asset.metaconcept)
+
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug('Generating attack step node for '\
                     f'{attack_step_name}.')
@@ -383,7 +392,7 @@ class AttackGraph:
                         # Resolve step expression associated with (non-)existence
                         # attack steps.
                         (target_assets, attack_step) = _process_step_expression(
-                            self.lang_spec,
+                            self.lang_graph,
                             self.model,
                             [asset],
                             attack_step_attribs['requires']['stepExpressions'][0])
@@ -426,7 +435,7 @@ class AttackGraph:
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
                 (target_assets, attack_step) = _process_step_expression(
-                    self.lang_spec,
+                    self.lang_graph,
                     self.model,
                     [ag_node.asset],
                     step_expression)
@@ -441,7 +450,6 @@ class AttackGraph:
                         raise AttackGraphStepExpressionError(msg)
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)
-
 
     def regenerate_graph(self):
         """
