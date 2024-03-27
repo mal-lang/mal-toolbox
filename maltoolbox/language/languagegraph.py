@@ -229,6 +229,10 @@ class LanguageGraphAttackStep:
     parents: dict = field(default_factory = {})
     description: dict = field(default_factory = {})
 
+    @property
+    def qualified_name(self):
+        return f"{self.asset.name}:{self.name}"
+
     def to_dict(self):
         node_dict = {
             'name': self.name,
