@@ -342,8 +342,8 @@ class Model:
         }
         contents['metadata'] = {
             'name': self.name,
-            'langVersion': self.lang_class_factory.lang_graph.metadata['version'],
-            'langID': self.lang_class_factory.lang_graph.metadata['id'],
+            'langVersion': self.lang_classes_factory.lang_graph.metadata['version'],
+            'langID': self.lang_classes_factory.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
             'info': 'Created by the mal-toolbox model python module.'
         }
