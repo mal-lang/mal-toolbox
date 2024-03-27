@@ -376,8 +376,10 @@ class Model:
         fp = open(filename, 'w')
         json.dump(contents, fp, indent = 2)
 
-    def load_from_file(self, filename):
-        """Load model from a json file.
+    @classmethod
+    def load_from_file(cls, filename, lang_classes_factory):
+        """
+        Load model from a json file.
 
         Arguments:
         filename        - the name of the input file
@@ -386,31 +388,31 @@ class Model:
         with open(filename, 'r', encoding='utf-8') as model_file:
             json_model = json.loads(model_file.read())
 
-        self.name = json_model['metadata']['name']
+        model = Model(json_model['metadata']['name'], lang_classes_factory)
 
         # Reconstruct the assets
         for asset_id in json_model['assets']:
             asset_object = json_model['assets'][asset_id]
             logger.debug(f'Loading asset from {filename}:\n' \
                 + json.dumps(asset_object, indent = 2))
-            asset = getattr(self.lang_classes_factory.ns,
+            asset = getattr(model.lang_classes_factory.ns,
                 asset_object['metaconcept'])(name = asset_object['name'])
             for defense in asset_object['defenses']:
                 setattr(asset, defense,
                     float(asset_object['defenses'][defense]))
-            self.add_asset(asset, asset_id = int(asset_id))
+            model.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
         if 'associations' in json_model:
             for association_object in json_model['associations']:
-                association = getattr(self.lang_classes_factory.ns,
+                association = getattr(model.lang_classes_factory.ns,
                     association_object['metaconcept'])()
                 for field in association_object['association']:
                     asset_list = []
                     for asset_id in association_object['association'][field]:
-                        asset_list.append(self.get_asset_by_id(int(asset_id)))
+                        asset_list.append(model.get_asset_by_id(int(asset_id)))
                     setattr(association, field, asset_list)
-                self.add_association(association)
+                model.add_association(association)
 
         # Reconstruct the attackers
         if 'attackers' in json_model:
@@ -420,7 +422,8 @@ class Model:
                 attacker.entry_points = []
                 for asset_id in attackers_info[attacker_id]['entry_points']:
                     attacker.entry_points.append(
-                        (self.get_asset_by_id(int(asset_id)),
+                        (model.get_asset_by_id(int(asset_id)),
                         attackers_info[attacker_id]['entry_points']\
                             [asset_id]['attack_steps']))
-                self.add_attacker(attacker, attacker_id = int(attacker_id))
+                model.add_attacker(attacker, attacker_id = int(attacker_id))
+        return model
