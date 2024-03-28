@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AttackerAttachment:
-    id: str = None
+    id: int = None
     name: str = None
     entry_points: list[tuple] = None
 
