@@ -134,6 +134,8 @@ class LanguageClassesFactory:
         # First, we have to translate the language specification into a JSON
         # schema. Initialize the overall JSON schema structure.
         self.json_schema = {
+            '$schema': 'http://json-schema.org/draft-04/schema#',
+            'id': f"urn:mal:{__name__.replace('.', ':')}",
             'title': 'LanguageObject',
             'type': 'object',
             'oneOf':[
