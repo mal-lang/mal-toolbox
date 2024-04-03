@@ -70,6 +70,38 @@ def get_attack_surface(graph: AttackGraph,
                 attack_surface.append(child)
     return attack_surface
 
+def update_attack_surface_with_nodes(
+    graph: AttackGraph,
+    attacker: Attacker,
+    current_attack_surface,
+    new_nodes):
+    """
+    Update the attack surface of an attacker with the new nodes provided.
+
+    Arguments:
+    graph                   - the attack graph
+    attacker                - the Attacker whose attack surface is sought
+    current_attack_surface  - the current attack surface that we wish to
+                              expand
+    new_nodes               - the newly compromised nodes that we wish to see
+                              if any of their children can be added to or
+                              removed from(if the nodes are newly enabled
+                              defenses) the attack surface
+    """
+    logger.debug(f'Update the attack surface for Attacker {attacker.id}.')
+    attack_surface = current_attack_surface
+    for attack_step in new_nodes:
+        logger.debug('Determine attack surface stemming from '
+            f'{attack_step.id} for Attacker {attacker.id}.')
+        for child in attack_step.children:
+            if is_node_traversable_by_attacker(child, attacker) and \
+                    child not in attack_surface:
+                attack_surface.append(child)
+            elif not is_node_traversable_by_attacker(child, attacker) and \
+                child in attack_surface:
+                attack_surface.remove(child)
+    return attack_surface
+
 def get_defense_surface(graph: AttackGraph):
     """
     Get the defense surface. All non-suppressed defense steps that are not
