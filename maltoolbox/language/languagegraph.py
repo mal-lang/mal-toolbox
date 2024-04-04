@@ -342,7 +342,7 @@ class LanguageGraph:
         mal_spec_file   -   the path to the .mal file
         """
         logger.info(f"Loading mal spec {mal_spec_file}.")
-        return LanguageGraph(MalCompiler.compile(mal_spec_file))
+        return LanguageGraph(MalCompiler().compile(mal_spec_file))
 
     @classmethod
     def from_mar_archive(cls, mar_archive: str):
