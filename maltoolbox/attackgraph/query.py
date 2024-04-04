@@ -59,47 +59,79 @@ def get_attack_surface(graph: AttackGraph,
     graph       - the attack graph
     attacker    - the Attacker whose attack surface is sought
     """
-    logger.debug(f'Get the attack surface for Attacker {attacker.id}.')
+    logger.debug(f'Get the attack surface for Attacker \"{attacker.id}\".')
     attack_surface = []
     for attack_step in attacker.reached_attack_steps:
         logger.debug('Determine attack surface stemming from '
-            f'{attack_step.id} for Attacker {attacker.id}.')
+            f'\"{attack_step.id}\" for Attacker \"{attacker.id}\".')
         for child in attack_step.children:
             if is_node_traversable_by_attacker(child, attacker) and \
                     child not in attack_surface:
                 attack_surface.append(child)
     return attack_surface
 
-def update_attack_surface_with_nodes(
+def update_attack_surface_add_nodes(
     graph: AttackGraph,
     attacker: Attacker,
     current_attack_surface,
-    new_nodes):
+    nodes):
     """
-    Update the attack surface of an attacker with the new nodes provided.
+    Update the attack surface of an attacker with the new attack step nodes
+    provided to see if any of their children can be added.
 
     Arguments:
     graph                   - the attack graph
     attacker                - the Attacker whose attack surface is sought
     current_attack_surface  - the current attack surface that we wish to
                               expand
-    new_nodes               - the newly compromised nodes that we wish to see
-                              if any of their children can be added to or
-                              removed from(if the nodes are newly enabled
-                              defenses) the attack surface
+    nodes                   - the newly compromised attack step nodes that we
+                              wish to see if any of their children should be
+                              added to the attack surface
     """
-    logger.debug(f'Update the attack surface for Attacker {attacker.id}.')
+    logger.debug(f'Update the attack surface for Attacker \"{attacker.id}\".')
     attack_surface = current_attack_surface
-    for attack_step in new_nodes:
+    for attack_step in nodes:
         logger.debug('Determine attack surface stemming from '
-            f'{attack_step.id} for Attacker {attacker.id}.')
+            f'\"{attack_step.id}\" for Attacker \"{attacker.id}\".')
         for child in attack_step.children:
-            if is_node_traversable_by_attacker(child, attacker) and \
-                    child not in attack_surface:
+            is_traversable = is_node_traversable_by_attacker(child, attacker)
+            if is_traversable and child not in attack_surface:
                 attack_surface.append(child)
-            elif not is_node_traversable_by_attacker(child, attacker) and \
-                child in attack_surface:
+    return attack_surface
+
+def update_attack_surface_remove_nodes(
+    graph: AttackGraph,
+    attacker: Attacker,
+    current_attack_surface,
+    nodes):
+    """
+    Update the attack surface of an attacker to see if any of the descendants
+    of the nodes provided should be removed from it.
+
+    Arguments:
+    graph                   - the attack graph
+    attacker                - the Attacker whose attack surface is sought
+    current_attack_surface  - the current attack surface that we wish to
+                              restrict
+    nodes                   - the nodes that we wish to see if any of their
+                              descendants should be removed from the attack
+                              surface
+    """
+    logger.debug(f'Update the attack surface for Attacker \"{attacker.id}\".')
+    attack_surface = current_attack_surface
+    for step in nodes:
+        logger.debug('Determine for potential removal attack surface '
+            f'stemming from \"{step.id}\" for Attacker \"{attacker.id}\".')
+        for child in step.children:
+            is_traversable = is_node_traversable_by_attacker(child, attacker)
+            if not is_traversable and child in attack_surface:
                 attack_surface.remove(child)
+                attack_surface = update_attack_surface_remove_nodes(
+                    graph,
+                    attacker,
+                    attack_surface,
+                    [child]
+                )
     return attack_surface
 
 def get_defense_surface(graph: AttackGraph):
