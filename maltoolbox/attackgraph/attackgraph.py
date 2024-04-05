@@ -454,3 +454,14 @@ class AttackGraph:
         self.nodes = []
         self.attackers = []
         self._generate_graph()
+
+    def remove_node(self, node):
+        """
+        Arguments:
+        node    - the node we wish to remove from the attack graph
+        """
+        for child in node.children:
+            child.parents.remove(node)
+        for parent in node.parents:
+            parent.children.remove(node)
+        self.nodes.remove(node)
