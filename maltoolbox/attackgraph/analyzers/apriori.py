@@ -65,7 +65,7 @@ def propagate_necessity_from_node(node: AttackGraphNode):
 def calculate_viability_and_necessity(graph: AttackGraph):
     """
     Arguments:
-    node        - the attack graph for which we wish to determine the
+    graph       - the attack graph for which we wish to determine the
                   viability and necessity statuses for the nodes.
     """
     for node in graph.nodes:
@@ -87,3 +87,13 @@ def calculate_viability_and_necessity(graph: AttackGraph):
         if not node.is_necessary:
             propagate_necessity_from_node(node)
 
+def prune_unviable_and_unnecessary_nodes(graph: AttackGraph):
+    """
+    Arguments:
+    graph       - the attack graph for which we wish to remove the
+                  the nodes which are not viable or necessary.
+    """
+    for node in graph.nodes:
+        if (node.type == 'or' or node.type == 'and') and \
+            (not node.is_viable or not node.is_necessary):
+            graph.remove_node(node)
