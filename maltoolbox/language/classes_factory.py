@@ -20,8 +20,14 @@ class LanguageClassesFactory:
         for asset in self.lang_graph.assets:
             logger.debug(f'Creating {asset.name} asset JSON '\
             'schema entry.')
-            asset_json_entry = {'title': asset.name, 'type': 'object',
-                'properties': {}}
+            asset_json_entry = {
+                'title': asset.name,
+                'type': 'object',
+                'properties': {},
+            }
+            asset_json_entry['properties']['id'] = {
+                'type' : 'integer',
+            }
             asset_json_entry['properties']['metaconcept'] = \
                 {
                     'type' : 'string',

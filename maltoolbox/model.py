@@ -3,9 +3,11 @@ MAL-Toolbox Model Module
 """
 
 import json
+import yaml
 import logging
 
 from dataclasses import dataclass
+from python_jsonschema_objects.literals import LiteralValue
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,7 @@ class Model:
         self.latestId = max(asset.id + 1, self.latestId)
 
         asset.associations = []
+
         if not hasattr(asset, 'name'):
             asset.name = asset.metaconcept + ':' + str(asset.id)
         else:
@@ -274,28 +277,43 @@ class Model:
 
         return associated_assets
 
-    def asset_to_json(self, asset):
+    def asset_to_dict(self, asset):
         """
         Convert an asset to its JSON format.
         """
         defenses = {}
         logger.debug(f'Translating {asset.name} to json.')
-        for defense in list(vars(asset)['_properties'])[1:]:
-            defenseValue = getattr(asset, defense)
-            logger.debug(f'Translating {defense}: {defenseValue} defense '\
-                'to json.')
-            if defenseValue != getattr(asset, defense).default():
-            # Save the default values that are not the default ones.
-                defenses[str(defense)] = str(defenseValue)
-        return (str(asset.id), {
-                'name': str(asset.name),
-                'metaconcept': str(asset.metaconcept),
-                'eid': str(asset.id),
-                'defenses': defenses
-                }
+
+        for key, value in asset._properties.items():
+            property_schema = (
+                self.lang_classes_factory.json_schema['definitions']['LanguageAsset']
+                ['definitions'][asset.metaconcept]['properties'][key]
             )
 
-    def association_to_json(self, association):
+            if "maximum" not in property_schema:
+                # Check if property is a defense by looking up defense
+                # specific key. Skip if it is not a defense.
+                continue
+
+            logger.debug(f'Translating {key}: {value} defense to json.')
+
+            if value == value.default():
+                # Skip the defense values if they are the default ones.
+                continue
+
+            defenses[key] = float(value)
+
+        ret = (asset.id, {
+                'name': str(asset.name),
+                'metaconcept': str(asset.metaconcept),
+                }
+            )
+        if defenses:
+            ret[1]['defenses'] = defenses
+
+        return ret
+
+    def association_to_dict(self, association):
         """Convert an association to its JSON format.
 
         Arguments:
@@ -308,13 +326,15 @@ class Model:
         json_association = {
             'metaconcept': type(association).__name__,
             'association': {
-                str(firstElementName): [str(asset.id) for asset in firstElements],
-                str(secondElementName): [str(asset.id) for asset in secondElements]
+                str(firstElementName):
+                    [int(asset.id) for asset in firstElements],
+                str(secondElementName):
+                    [int(asset.id) for asset in secondElements]
             }
         }
         return json_association
 
-    def attacker_to_json(self, attacker):
+    def attacker_to_dict(self, attacker):
         """Convert an attacker to its JSON format.
 
         Arguments:
@@ -326,12 +346,12 @@ class Model:
             'entry_points': {},
         }
         for (asset, attack_steps) in attacker.entry_points:
-            json_attacker['entry_points'][str(asset.id)] = {
+            json_attacker['entry_points'][int(asset.id)] = {
                 'attack_steps' : attack_steps
             }
-        return (str(attacker.id), json_attacker)
+        return (int(attacker.id), json_attacker)
 
-    def model_to_json(self):
+    def model_to_dict(self):
         """Convert the model to its JSON format."""
         logger.debug(f'Converting model to JSON format.')
         contents = {
@@ -350,73 +370,150 @@ class Model:
 
         logger.debug('Translating assets to json.')
         for asset in self.assets:
-            (asset_id, asset_json) = self.asset_to_json(asset)
-            contents['assets'][asset_id] = asset_json
+            (asset_id, asset_json) = self.asset_to_dict(asset)
+            contents['assets'][int(asset_id)] = asset_json
 
         logger.debug('Translating associations to json.')
         for association in self.associations:
-            assoc_json = self.association_to_json(association)
+            assoc_json = self.association_to_dict(association)
             contents['associations'].append(assoc_json)
 
         logger.debug('Translating attackers to json.')
         for attacker in self.attackers:
-            (attacker_id, attacker_json) = self.attacker_to_json(attacker)
+            (attacker_id, attacker_json) = self.attacker_to_dict(attacker)
             contents['attackers'][attacker_id] = attacker_json
         return contents
 
     def save_to_file(self, filename):
-        """Save model to a json file.
+        """Save model to file.
 
         Arguments:
         filename        - the name of the output file
         """
 
         logger.info(f'Saving model to {filename} file.')
-        contents = self.model_to_json()
+        if filename.endswith('.yml') or filename.endswith('.yaml'):
+            self.save_to_yaml(filename)
+        elif filename.endswith('.json'):
+            self.save_to_json(filename)
+        else:
+            logger.error('Unknown file extension for model file to save to.')
+
+    def save_to_json(self, filename):
+        """Save model to a json file.
+
+        Arguments:
+        filename        - the name of the output file
+        """
+
+        contents = self.model_to_dict()
         fp = open(filename, 'w')
         json.dump(contents, fp, indent = 2)
 
+    def save_to_yaml(self, filename):
+        """Save model to a yaml file.
+
+        Arguments:
+        filename        - the name of the output file
+        """
+
+        contents = self.model_to_dict()
+
+        yaml.add_multi_representer(
+            LiteralValue,
+            lambda dumper, data: dumper.represent_data(data._value),
+            yaml.SafeDumper
+        )
+
+        fp = open(filename, 'w')
+        yaml.dump(contents, fp, Dumper=yaml.SafeDumper)
+
     @classmethod
     def load_from_file(cls, filename, lang_classes_factory):
+        """
+        Load model from file.
+
+        Arguments:
+        filename        - the name of the input file
+        """
+        logger.info(f'Loading model from {filename} file.')
+        if filename.endswith('.yml') or filename.endswith('.yaml'):
+            return cls.load_from_yaml(filename, lang_classes_factory)
+        elif filename.endswith('.json'):
+            return cls.load_from_json(filename, lang_classes_factory)
+        else:
+            logger.error('Unknown file extension for model file to load '
+                'from.')
+
+    @classmethod
+    def load_from_json(cls, filename, lang_classes_factory):
         """
         Load model from a json file.
 
         Arguments:
         filename        - the name of the input file
         """
-        logger.info(f'Loading model from {filename} file.')
         with open(filename, 'r', encoding='utf-8') as model_file:
-            json_model = json.loads(model_file.read())
+            model_dict = json.loads(model_file.read())
 
-        model = Model(json_model['metadata']['name'], lang_classes_factory)
+        return cls._process_model(model_dict, lang_classes_factory)
+
+    @classmethod
+    def load_from_yaml(cls, filename, lang_classes_factory):
+        """
+        Load model from a yaml file.
+
+        Arguments:
+        filename        - the name of the input file
+        """
+        with open(filename, 'r', encoding='utf-8') as model_file:
+            model_dict = yaml.safe_load(model_file)
+
+        return cls._process_model(model_dict, lang_classes_factory)
+
+    @classmethod
+    def _process_model(cls, model_dict, lang_classes_factory):
+        model = Model(model_dict['metadata']['name'], lang_classes_factory)
 
         # Reconstruct the assets
-        for asset_id in json_model['assets']:
-            asset_object = json_model['assets'][asset_id]
-            logger.debug(f'Loading asset from {filename}:\n' \
-                + json.dumps(asset_object, indent = 2))
+        for asset_id, asset_object in model_dict['assets'].items():
+            logger.debug(f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
+
+            # Allow defining an asset via the metaconcept only.
+            asset_object = (
+                asset_object
+                if isinstance(asset_object, dict)
+                else {'metaconcept': asset_object, 'name': f"{asset_object}:{asset_id}"}
+            )
+
             asset = getattr(model.lang_classes_factory.ns,
                 asset_object['metaconcept'])(name = asset_object['name'])
-            for defense in asset_object['defenses']:
-                setattr(asset, defense,
-                    float(asset_object['defenses'][defense]))
+
+            for defense in (defenses:=asset_object.get('defenses', [])):
+                setattr(asset, defense, float(defenses[defense]))
+
             model.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
-        if 'associations' in json_model:
-            for association_object in json_model['associations']:
-                association = getattr(model.lang_classes_factory.ns,
-                    association_object['metaconcept'])()
-                for field in association_object['association']:
-                    asset_list = []
-                    for asset_id in association_object['association'][field]:
-                        asset_list.append(model.get_asset_by_id(int(asset_id)))
-                    setattr(association, field, asset_list)
-                model.add_association(association)
+        for assoc_dict in model_dict.get('associations', []):
+            association = getattr(model.lang_classes_factory.ns, assoc_dict.pop('metaconcept'))()
+
+            # compatibility with old format
+            assoc_dict = assoc_dict.get('association', assoc_dict)
+            # TODO do we need the above compatibility?
+
+            for field, targets in assoc_dict.items():
+                targets = targets if isinstance(targets, list) else [targets]
+                setattr(
+                    association,
+                    field,
+                    [model.get_asset_by_id(int(id)) for id in targets]
+                )
+            model.add_association(association)
 
         # Reconstruct the attackers
-        if 'attackers' in json_model:
-            attackers_info = json_model['attackers']
+        if 'attackers' in model_dict:
+            attackers_info = model_dict['attackers']
             for attacker_id in attackers_info:
                 attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
                 attacker.entry_points = []
