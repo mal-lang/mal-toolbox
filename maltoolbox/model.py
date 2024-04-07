@@ -112,8 +112,7 @@ class Model:
             raise LookupError(f'Association is not part of model '
                 f'\"{self.model}\".')
 
-        firstElementName = list(vars(association)['_properties'])[0]
-        secondElementName = list(vars(association)['_properties'])[1]
+        firstElementName, secondElementName = association._properties.keys()
         firstElements = getattr(association, firstElementName)
         secondElements = getattr(association, secondElementName)
         found = False
@@ -142,8 +141,7 @@ class Model:
         association     - the association to add to the model
         """
         for prop in range(0, 2):
-            for asset in getattr(association,
-                list(vars(association)['_properties'])[prop]):
+            for asset in getattr(association, list(association._properties)[prop]):
                 assocs = list(asset.associations)
                 assocs.append(association)
                 asset.associations = assocs
@@ -159,8 +157,7 @@ class Model:
             raise LookupError(f'Association is not part of model '
                 f'\"{self.model}\".')
 
-        firstElementName = list(vars(association)['_properties'])[0]
-        secondElementName = list(vars(association)['_properties'])[1]
+        firstElementName, secondElementName = association._properties.keys()
         firstElements = getattr(association, firstElementName)
         secondElements = getattr(association, secondElementName)
         for asset in firstElements:
@@ -249,15 +246,15 @@ class Model:
 
     def get_associated_assets_by_field_name(self, asset, field_name):
         """
-        Get a list of associated assets for an asset given a fieldname.
+        Get a list of associated assets for an asset given a field name.
 
         Arguments:
         asset           - the asset whose fields we are interested in
-        fieldname       - the field name we are looking for
+        field_name       - the field name we are looking for
 
         Return:
         A list of assets associated with the asset given that match the
-        fieldname.
+        field_name.
         """
         logger.debug(f'Get associated assets for asset '
             f'{asset.name}(id:{asset.id}) by field name {field_name}.')
@@ -266,14 +263,14 @@ class Model:
             # Determine which two of the end points leads away from the asset.
             # This is particularly relevant for associations between two
             # assets of the same type.
-            if asset in getattr(association,
-                list(vars(association)['_properties'])[0]):
-                elementName = list(vars(association)['_properties'])[1]
+            prop1, prop2 = association._properties.keys()
+            if asset in getattr(association, prop1):
+                associated_asset = prop2
             else:
-                elementName = list(vars(association)['_properties'])[0]
+                associated_asset = prop1
 
-            if elementName == field_name:
-                associated_assets.extend(getattr(association, elementName))
+            if associated_asset == field_name:
+                associated_assets.extend(getattr(association, associated_asset))
 
         return associated_assets
 
@@ -319,12 +316,13 @@ class Model:
         Arguments:
         association     - association to convert to JSON
         """
-        firstElementName = list(vars(association)['_properties'])[0]
-        secondElementName = list(vars(association)['_properties'])[1]
+        firstElementName, secondElementName  = association._properties.keys()
+
         firstElements = getattr(association, firstElementName)
         secondElements = getattr(association, secondElementName)
+
         json_association = {
-            'metaconcept': type(association).__name__,
+            'metaconcept': association.__class__.__name__,
             'association': {
                 str(firstElementName):
                     [int(asset.id) for asset in firstElements],

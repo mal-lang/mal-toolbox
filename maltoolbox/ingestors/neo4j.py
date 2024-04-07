@@ -99,8 +99,7 @@ def ingest_model(model,
                 metaconcept=str(asset.metaconcept))
 
     for assoc in model.associations:
-        firstElementName = list(vars(assoc)['_properties'])[0]
-        secondElementName = list(vars(assoc)['_properties'])[1]
+        firstElementName, secondElementName = assoc._properties.keys()
         firstElements = getattr(assoc, firstElementName)
         secondElements = getattr(assoc, secondElementName)
         for first_asset in firstElements:
