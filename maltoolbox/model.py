@@ -47,6 +47,8 @@ class Model:
         asset.associations = []
         if not hasattr(asset, 'name'):
             asset.name = asset.metaconcept + ':' + str(asset.id)
+        else:
+            asset.name = asset.name + ':' + str(asset.id)
         self.assets.append(asset)
 
     def remove_asset(self, asset):

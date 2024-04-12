@@ -337,8 +337,7 @@ class AttackGraph:
 
             for (asset, attack_steps) in attacker_info.entry_points:
                 for attack_step in attack_steps:
-                    attack_step_id = asset.metaconcept + ':' \
-                        + str(asset.id) + ':' + attack_step
+                    attack_step_id = asset.name + ':' + attack_step
                     ag_node = self.get_node_by_id(attack_step_id)
                     if not ag_node:
                         logger.warning('Failed to find attacker entry point '
@@ -371,7 +370,7 @@ class AttackGraph:
 
                 defense_status = None
                 existence_status: Optional[bool] = None
-                node_id = asset.metaconcept + ':' + str(asset.id) + ':' + attack_step_name
+                node_id = asset.name + ':' + attack_step_name
 
                 match (attack_step_attribs['type']):
                     case 'defense':
@@ -432,8 +431,7 @@ class AttackGraph:
                     [ag_node.asset],
                     step_expression)
                 for target in target_assets:
-                    target_node_id = target.metaconcept + ':' \
-                        + str(target.id) + ':' + attack_step
+                    target_node_id = target.name + ':' + attack_step
                     target_node = self.get_node_by_id(target_node_id)
                     if not target_node:
                         msg = 'Failed to find target node ' \
