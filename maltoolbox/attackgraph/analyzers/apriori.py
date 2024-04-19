@@ -62,6 +62,67 @@ def propagate_necessity_from_node(node: AttackGraphNode):
         if child.is_necessary != original_value:
             propagate_necessity_from_node(child)
 
+
+def evaluate_viability(node):
+    """
+    Arguments:
+    graph       - the node to evaluate viability for.
+    """
+    match (node.type):
+        case 'exist':
+            node.is_viable = node.existence_status
+        case 'notExist':
+            node.is_viable = not node.existence_status
+        case 'defense':
+            node.is_viable = node.defense_status != 1.0
+        case 'or':
+            node.is_viable = False
+            for parent in node.parents:
+                node.is_viable = node.is_viable or parent.is_viable
+        case 'and':
+            node.is_viable = True
+            for parent in node.parents:
+                node.is_viable = node.is_viable and parent.is_viable
+        case _:
+            msg = f'Evaluate viability was provided node \"node.id\" which '\
+                f'is of unknown type \"{node.type}\"'
+            logger.error(msg)
+            raise ValueError(msg)
+
+def evaluate_necessity(node):
+    """
+    Arguments:
+    graph       - the node to evaluate necessity for.
+    """
+    match (node.type):
+        case 'exist':
+            node.is_necessary = not node.existence_status
+        case 'notExist':
+            node.is_necessary = node.existence_status
+        case 'defense':
+            node.is_necessary = node.defense_status != 0.0
+        case 'or':
+            node.is_necessary = True
+            for parent in node.parents:
+                node.is_necessary = node.is_necessary and parent.is_necessary
+        case 'and':
+            node.is_necessary = False
+            for parent in node.parents:
+                node.is_necessary = node.is_necessary or parent.is_necessary
+        case _:
+            msg = f'Evaluate necessity was provided node \"node.id\" which '\
+                f'is of unknown type \"{node.type}\"'
+            logger.error(msg)
+            raise ValueError(msg)
+
+def evaluate_viability_and_necessity(node):
+    """
+    Arguments:
+    graph       - the node to evaluate viability and necessity for.
+    """
+    evaluate_viability(node)
+    evaluate_necessity(node)
+
 def calculate_viability_and_necessity(graph: AttackGraph):
     """
     Arguments:
@@ -69,23 +130,12 @@ def calculate_viability_and_necessity(graph: AttackGraph):
                   viability and necessity statuses for the nodes.
     """
     for node in graph.nodes:
-        match (node.type):
-            case 'exist':
-                node.is_viable = node.existence_status
-                node.is_necessary = not node.existence_status
-            case 'notExist':
-                node.is_viable = not node.existence_status
-                node.is_necessary = node.existence_status
-            case 'defense':
-                node.is_viable = node.defense_status != 1.0
-                node.is_necessary = node.defense_status != 0.0
-            case _:
-                pass
-
-        if not node.is_viable:
-            propagate_viability_from_node(node)
-        if not node.is_necessary:
-            propagate_necessity_from_node(node)
+        if node.type in ['exist', 'notExist', 'defense']:
+            evaluate_viability_and_necessity(node)
+            if not node.is_viable:
+                propagate_viability_from_node(node)
+            if not node.is_necessary:
+                propagate_necessity_from_node(node)
 
 def prune_unviable_and_unnecessary_nodes(graph: AttackGraph):
     """

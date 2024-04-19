@@ -96,42 +96,9 @@ def update_attack_surface_add_nodes(
         for child in attack_step.children:
             is_traversable = is_node_traversable_by_attacker(child, attacker)
             if is_traversable and child not in attack_surface:
+                logger.debug(f'Add node {child.id} to the attack surface '
+                    f'of Attacker  \"{attacker.id}\".')
                 attack_surface.append(child)
-    return attack_surface
-
-def update_attack_surface_remove_nodes(
-    graph: AttackGraph,
-    attacker: Attacker,
-    current_attack_surface,
-    nodes):
-    """
-    Update the attack surface of an attacker to see if any of the descendants
-    of the nodes provided should be removed from it.
-
-    Arguments:
-    graph                   - the attack graph
-    attacker                - the Attacker whose attack surface is sought
-    current_attack_surface  - the current attack surface that we wish to
-                              restrict
-    nodes                   - the nodes that we wish to see if any of their
-                              descendants should be removed from the attack
-                              surface
-    """
-    logger.debug(f'Update the attack surface for Attacker \"{attacker.id}\".')
-    attack_surface = current_attack_surface
-    for step in nodes:
-        logger.debug('Determine for potential removal attack surface '
-            f'stemming from \"{step.id}\" for Attacker \"{attacker.id}\".')
-        for child in step.children:
-            is_traversable = is_node_traversable_by_attacker(child, attacker)
-            if not is_traversable and child in attack_surface:
-                attack_surface.remove(child)
-                attack_surface = update_attack_surface_remove_nodes(
-                    graph,
-                    attacker,
-                    attack_surface,
-                    [child]
-                )
     return attack_surface
 
 def get_defense_surface(graph: AttackGraph):
