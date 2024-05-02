@@ -61,10 +61,8 @@ class Model:
         if not hasattr(asset, 'name'):
             asset.name = asset.metaconcept + ':' + str(asset.id)
         else:
-            duplicate_name = False
             for ex_asset in self.assets:
                 if ex_asset.name == asset.name:
-                    duplicate_name = True
                     if allow_duplicate_names:
                         asset.name = asset.name + ':' + str(asset.id)
                         break
