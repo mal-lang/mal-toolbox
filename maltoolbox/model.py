@@ -29,9 +29,24 @@ class Model:
         self.lang_spec = lang_spec
         self.lang_classes_factory = lang_classes_factory
 
-    def add_asset(self, asset, asset_id: int = None):
+    def add_asset(self,
+        asset,
+        asset_id: int = None,
+        allow_duplicate_names = True):
         """
         Add an asset to the model.
+
+        Arguments:
+        asset                   - the asset to add to the model
+        asset_id                - the id to assign to this asset, usually as a
+                                  result of adding assets from an instance
+                                  model file
+        allow_duplicate_name    - allow duplicate names to be used. If allowed
+                                  and a duplicate is encountered the name will
+                                  be prefixed with the id.
+
+        Return:
+        An asset matching the name if it exists in the model.
         """
         if asset_id is not None:
             for existing_asset in self.assets:
@@ -46,7 +61,16 @@ class Model:
         if not hasattr(asset, 'name'):
             asset.name = asset.metaconcept + ':' + str(asset.id)
         else:
-            asset.name = asset.name + ':' + str(asset.id)
+            duplicate_name = False
+            for ex_asset in self.assets:
+                if ex_asset.name == asset.name:
+                    duplicate_name = True
+                    if allow_duplicate_names:
+                        asset.name = asset.name + ':' + str(asset.id)
+                        break
+                    else:
+                        raise ValueError(f'Asset name {asset.name} is a '
+                        'duplicate and we do not allow duplicates.')
 
         logger.debug(f'Add {asset.name}(id:{asset.id}) to model '
             f'\"{self.name}\".')
