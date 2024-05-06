@@ -10,6 +10,38 @@ def create_application_asset(model, name):
     return model.lang_classes_factory.ns.Application(name=name)
 
 
+def create_association(
+        model,
+        metaconcept,
+        from_fieldname,
+        to_fieldname,
+        from_assets,
+        to_assets
+    ):
+    """Helper function to create an association dict with
+    given parameters useful in tests"""
+
+    # Simulate receving the association from a json file
+    association_dict = {
+      "metaconcept": metaconcept,
+      "association": {
+        from_fieldname: from_assets,
+        to_fieldname: to_assets
+      }
+    }
+
+    # Create the association using the lang_classes_factory
+    association = getattr(
+        model.lang_classes_factory.ns,
+        association_dict['metaconcept'])()
+
+    # Add the assets
+    for field, assets in association_dict['association'].items():
+        setattr(association, field, assets)
+
+    return association
+
+
 def test_model_add_asset(example_model: Model):
     """Make sure assets are added correctly"""
 
@@ -90,3 +122,37 @@ def test_model_remove_nonexisting_asset(example_model: Model):
     program1 = create_application_asset(example_model, 'Program 1')
     with pytest.raises(LookupError):
         example_model.remove_asset(program1)
+
+
+def test_model_add_association(example_model: Model):
+    """Make sure associations work as intended"""
+
+    # Create two assets
+    program1 = create_application_asset(example_model, 'Program 1')
+    program1_id = example_model.latestId
+    program2 = create_application_asset(example_model, 'Program 2')
+    program2_id = program1_id + 1
+
+    # Add the assets with explicit IDs to keep track of them
+    example_model.add_asset(program1, asset_id=program1_id)
+    example_model.add_asset(program2, asset_id=program2_id)
+
+    # Create and add an association between program1 and program2
+    association = create_association(
+        example_model,
+        metaconcept="AppExecution",
+        from_fieldname="hostApp",
+        to_fieldname="appExecutedApps",
+        from_assets=[program1],
+        to_assets=[program2]
+    )
+
+    associations_before = list(example_model.associations)
+    # Add the association
+    example_model.add_association(association)
+    associations_after = list(example_model.associations)
+
+    # Make sure association was added to the model
+    assert len(associations_before) == len(associations_after) - 1
+    assert association not in associations_before
+    assert association in associations_after
