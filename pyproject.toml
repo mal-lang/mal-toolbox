@@ -43,3 +43,6 @@ include = ["maltoolbox*"]
 
 [tool.setuptools.package-data]
 maltoolbox = ["*.conf*"]
+
+[tool.pytest.ini_options]
+pythonpath = ['.']

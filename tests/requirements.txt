@@ -1,0 +1,3 @@
+-r ../requirements.txt  # Install the project dependencies
+
+pytest  # Install pytest to be able to run the tests
