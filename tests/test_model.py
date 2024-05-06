@@ -33,8 +33,9 @@ def test_model_add_asset_with_id_set(example_model):
     program1_id = example_model.latestId + 10
     example_model.add_asset(program1, asset_id=program1_id)
 
-    # Make sure latestId was updated accordingly
-    # TODO: should it be called next_id instead?
+    assert program1 in example_model.assets
+
+    # Make sure latestId was incremented
     assert example_model.latestId == program1_id + 1
 
     # Add asset with same ID as previously added asset, expect ValueError
@@ -42,8 +43,10 @@ def test_model_add_asset_with_id_set(example_model):
     with pytest.raises(ValueError):
         example_model.add_asset(program2, asset_id=program1_id)
 
+    assert program2 not in example_model.assets
 
-def test_model_add_duplicate_name(example_model: Model):
+
+def test_model_add_asset_duplicate_name(example_model: Model):
     """Add several assets with the same name to the model"""
 
     # Add a new asset
