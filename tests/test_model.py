@@ -50,7 +50,7 @@ def test_model_add_asset_with_id_set(example_model):
 def test_model_add_asset_duplicate_name(example_model: Model):
     """Add several assets with the same name to the model"""
 
-    # Add a new asset (Program 4)
+    # Add a new asset
     program1 = create_application_asset(example_model, 'Program 1')
     example_model.add_asset(program1)
     assert example_model.assets.count(program1) == 1
