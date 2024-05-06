@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AttackerAttachment:
+    """Used to attach attackers to assets (entry_points)"""
     id: int = None
     name: str = None
     entry_points: list[tuple] = None
@@ -29,18 +30,18 @@ class Model:
         self.lang_spec = lang_spec
         self.lang_classes_factory = lang_classes_factory
 
-    def add_asset(self,
-        asset,
-        asset_id: int = None,
-        allow_duplicate_names = True):
-        """
-        Add an asset to the model.
+    def add_asset(
+            self,
+            asset,
+            asset_id: int = None,
+            allow_duplicate_names = True
+        ):
+        """Add an asset to the model.
 
         Arguments:
         asset                   - the asset to add to the model
-        asset_id                - the id to assign to this asset, usually as a
-                                  result of adding assets from an instance
-                                  model file
+        asset_id                - the id to assign to this asset, usually
+                                  from an instance model file
         allow_duplicate_name    - allow duplicate names to be used. If allowed
                                   and a duplicate is encountered the name will
                                   be prefixed with the id.
@@ -75,8 +76,10 @@ class Model:
         self.assets.append(asset)
 
     def remove_asset(self, asset):
-        """
-        Remove an asset from the model.
+        """Remove an asset from the model.
+
+        Arguments:
+        asset     - the asset to remove
         """
         logger.debug(f'Remove {asset.name}(id:{asset.id}) from model '
             f'\"{self.name}\".')
@@ -91,9 +94,12 @@ class Model:
         self.assets.remove(asset)
 
     def remove_asset_from_association(self, asset, association):
-        """
-        Remove an asset from an association and remove the association if any
+        """Remove an asset from an association and remove the association if any
         of the two sides is now empty.
+
+        Arguments:
+        asset           - the asset to remove from the given association
+        association     - the association to remove the asset from
         """
         logger.debug(f'Remove {asset.name}(id:{asset.id}) from association '
             f'of type \"{type(association)}\".')
@@ -113,8 +119,8 @@ class Model:
             if asset in field:
                 found = True
                 if len(field) == 1:
-                    # There are no other assets on this side, we should
-                    # remove the entire association.
+                    # There are no other assets on this side,
+                    # so we should remove the entire association.
                     self.remove_association(association)
                     return
                 field.remove(asset)
@@ -125,6 +131,13 @@ class Model:
 
 
     def add_association(self, association):
+        """Add an association to the model.
+
+        An association will have 2 field names, each
+        potentially containing several assets.
+
+        Arguments:
+        association     - the association to add to the model
         """
         Add an association to the model.
         """
@@ -137,8 +150,10 @@ class Model:
         self.associations.append(association)
 
     def remove_association(self, association):
-        """
-        Remove an association from the model.
+        """Remove an association from the model.
+
+        Arguments:
+        association     - the association to remove from the model
         """
         if association not in self.associations:
             raise LookupError(f'Association is not part of model '
@@ -164,8 +179,11 @@ class Model:
         self.associations.remove(association)
 
     def add_attacker(self, attacker, attacker_id: int = None):
-        """
-        Add an attacker to the model.
+        """Add an attacker to the model.
+
+        Arguments:
+        attacker        - the attacker to add
+        attacker_id     - optional id for the attacker
         """
         if attacker_id is not None:
             attacker.id = attacker_id
@@ -275,8 +293,10 @@ class Model:
             )
 
     def association_to_json(self, association):
-        """
-        Convert an association to its JSON format.
+        """Convert an association to its JSON format.
+
+        Arguments:
+        association     - association to convert to JSON
         """
         firstElementName = list(vars(association)['_properties'])[0]
         secondElementName = list(vars(association)['_properties'])[1]
@@ -292,8 +312,10 @@ class Model:
         return json_association
 
     def attacker_to_json(self, attacker):
-        """
-        Convert an attacker to its JSON format.
+        """Convert an attacker to its JSON format.
+
+        Arguments:
+        attacker        - attacker to convert to JSON
         """
         logger.debug(f'Translating {attacker.name} to json.')
         json_attacker = {
@@ -307,9 +329,7 @@ class Model:
         return (str(attacker.id), json_attacker)
 
     def model_to_json(self):
-        """
-        Convert the model to its JSON format.
-        """
+        """Convert the model to its JSON format."""
         logger.debug(f'Converting model to JSON format.')
         contents = {
             'metadata': {},
@@ -342,8 +362,7 @@ class Model:
         return contents
 
     def save_to_file(self, filename):
-        """
-        Save model to a json file.
+        """Save model to a json file.
 
         Arguments:
         filename        - the name of the output file
@@ -355,8 +374,7 @@ class Model:
         json.dump(contents, fp, indent = 2)
 
     def load_from_file(self, filename):
-        """
-        Load model from a json file.
+        """Load model from a json file.
 
         Arguments:
         filename        - the name of the input file
