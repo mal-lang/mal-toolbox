@@ -56,3 +56,6 @@ nosetests.xml
 
 # vim session files
 *.vim
+
+# Make sure all test data is tracked by git
+!tests/testdata/*
