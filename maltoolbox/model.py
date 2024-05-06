@@ -207,8 +207,10 @@ class Model:
         """
         logger.debug(f'Get asset with id \"{asset_id}\" from model '
             f'\"{self.name}\".')
-        return next((asset for asset in self.assets if asset.id == asset_id),
-            None)
+        return next(
+                (asset for asset in self.assets
+                if asset.id == asset_id), None
+             )
 
     def get_asset_by_name(self, asset_name):
         """
@@ -222,8 +224,10 @@ class Model:
         """
         logger.debug(f'Get asset with name \"{asset_name}\" from model '
             f'\"{self.name}\".')
-        return next((asset for asset in self.assets \
-            if asset.name == asset_name), None)
+        return next(
+                (asset for asset in self.assets
+                if asset.name == asset_name), None
+             )
 
 
     def get_attacker_by_id(self, attacker_id):
@@ -238,8 +242,10 @@ class Model:
         """
         logger.debug(f'Get attacker with id \"{attacker_id}\" from model '
             f'\"{self.name}\".')
-        return next((attacker for attacker in self.attackers \
-            if attacker.id == attacker_id), None)
+        return next(
+                (attacker for attacker in self.attackers
+                if attacker.id == attacker_id), None
+            )
 
     def get_associated_assets_by_field_name(self, asset, field_name):
         """
