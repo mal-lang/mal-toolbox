@@ -73,8 +73,9 @@ class Model:
                         raise ValueError(f'Asset name {asset.name} is a '
                         'duplicate and we do not allow duplicates.')
 
-        logger.debug(f'Add {asset.name}(id:{asset.id}) to model '
-            f'\"{self.name}\".')
+        logger.debug(
+            f'Add {asset.name}(id:{asset.id}) to model "{self.name}".'
+        )
         self.assets.append(asset)
 
     def remove_asset(self, asset):
@@ -83,11 +84,14 @@ class Model:
         Arguments:
         asset     - the asset to remove
         """
-        logger.debug(f'Remove {asset.name}(id:{asset.id}) from model '
-            f'\"{self.name}\".')
+        logger.debug(
+            f'Remove {asset.name}(id:{asset.get("id")}) from model '
+            f'"{self.name}".'
+        )
         if asset not in self.assets:
-            raise LookupError(f'Asset {asset.id} is not part of model '
-                f'\"{self.model}\".')
+            raise LookupError(
+                f'Asset {asset.get("id")} is not part of model"{self.name}".'
+            )
 
         # First remove all of the associations
         for association in asset.associations:
