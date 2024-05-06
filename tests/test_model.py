@@ -65,5 +65,28 @@ def test_model_add_asset_duplicate_name(example_model: Model):
     assert example_model.assets.count(program1) == 2
 
 
-def test_model_remove_asset():
-    pass
+def test_model_remove_asset(example_model: Model):
+    """Remove assets from a model"""
+
+    # Add two program assets to the model
+    program1 = create_application_asset(example_model, 'Program 1')
+    program2 = create_application_asset(example_model, 'Program 2')
+    example_model.add_asset(program1)
+    example_model.add_asset(program2)
+
+    num_assets_before = len(example_model.assets)
+    example_model.remove_asset(program1)
+
+    # Make sure asset program1 was deleted, but program2 still exists
+    assert program1 not in example_model.assets
+    assert program2 in example_model.assets
+    assert len(example_model.assets) == num_assets_before - 1
+
+
+def test_model_remove_nonexisting_asset(example_model: Model):
+    """Removing a non existing asset leads to lookup error"""
+
+    # Create an asset but don't add it to the model before removing it
+    program1 = create_application_asset(example_model, 'Program 1')
+    with pytest.raises(LookupError):
+        example_model.remove_asset(program1)
