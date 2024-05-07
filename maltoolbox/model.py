@@ -100,8 +100,8 @@ class Model:
         self.assets.remove(asset)
 
     def remove_asset_from_association(self, asset, association):
-        """Remove an asset from an association and remove the association if any
-        of the two sides is now empty.
+        """Remove an asset from an association and remove the association
+        if any of the two sides is now empty.
 
         Arguments:
         asset           - the asset to remove from the given association

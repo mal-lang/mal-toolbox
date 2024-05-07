@@ -2,6 +2,7 @@
 
 import pytest
 
+from conftest import empty_model, path_testdata
 from maltoolbox.model import Model, AttackerAttachment
 
 
