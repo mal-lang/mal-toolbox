@@ -158,16 +158,19 @@ class Model:
         association     - the association to remove from the model
         """
         if association not in self.associations:
-            raise LookupError(f'Association is not part of model '
-                f'\"{self.model}\".')
+            raise LookupError(
+                f'Association is not part of model "{self.name}".'
+            )
 
         firstElementName, secondElementName = association._properties.keys()
         firstElements = getattr(association, firstElementName)
         secondElements = getattr(association, secondElementName)
+
         for asset in firstElements:
             assocs = list(asset.associations)
             assocs.remove(association)
             asset.associations = assocs
+
         for asset in secondElements:
             # In fringe cases we may have reflexive associations where the
             # first element removed the association already. But generally the
