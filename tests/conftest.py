@@ -27,7 +27,7 @@ def example_model(corelang_spec):
     """Fixture that generates a model for tests
 
     Uses coreLang specification (fixture) to create and return a
-    Model object defined in ./testdata/simple_example_model.json
+    Model object with no assets or associations
     """
 
     # Init LanguageClassesFactor
@@ -35,10 +35,4 @@ def example_model(corelang_spec):
     lang_classes_factory.create_classes()
 
     # Create instance model
-    instance_model = Model('Test model', corelang_spec, lang_classes_factory)
-
-    # Load model instance from json and return it
-    model_path = testdata_path("simple_example_model.json")
-    instance_model.load_from_file(model_path)
-
-    return instance_model
+    return Model('Test model', corelang_spec, lang_classes_factory)
