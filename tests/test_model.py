@@ -201,3 +201,85 @@ def test_model_remove_association_nonexisting(example_model: Model):
     # So we should expect a LookupError when trying to remove one
     with pytest.raises(LookupError):
         example_model.remove_association(association)
+
+
+def test_model_remove_asset_from_association(example_model: Model):
+    """Make sure we can remove asset from association and that
+    associations with no assets on any 'side' is removed"""
+
+    # Create and add 2 applications
+    p1 = create_application_asset(example_model, "Program 1")
+    p2 = create_application_asset(example_model, "Program 2")
+    example_model.add_asset(p1)
+    example_model.add_asset(p2)
+
+    # Create and add association from p1 to p2
+    association = create_association(
+        example_model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+    example_model.add_association(association)
+
+    # We are removing p1 from association so one side will be empty
+    # This means the association should be removed entirely
+    example_model.remove_asset_from_association(p1, association)
+    assert association not in p2.associations
+    assert association not in p1.associations
+    assert association not in example_model.associations
+
+def test_model_remove_asset_from_association_nonexisting_asset(
+        example_model: Model
+    ):
+    """Make sure error is thrown if deleting non existing asset
+    from association"""
+
+    # Create 4 applications and add 3 of them to model
+    p1 = create_application_asset(example_model, "Program 1")
+    p2 = create_application_asset(example_model, "Program 2")
+    p3 = create_application_asset(example_model, "Program 3")
+    p4 = create_application_asset(example_model, 'Program 4')
+    example_model.add_asset(p1)
+    example_model.add_asset(p2)
+    example_model.add_asset(p3)
+    p4.id = 1 # ID is required, otherwise crash in log statement
+
+    # Create an association between p1 and p2
+    association = create_association(
+        example_model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+    example_model.add_association(association)
+
+    # We are removing p3 from association where it does not exist
+    with pytest.raises(LookupError):
+        example_model.remove_asset_from_association(p3, association)
+
+    # We are removing p4 from association, but p4
+    # does not exist in the model
+    with pytest.raises(LookupError):
+        example_model.remove_asset_from_association(p4, association)
+
+
+def test_model_remove_asset_from_association_nonexisting_association(
+        example_model: Model
+    ):
+    """Make sure error is thrown if deleting non existing asset
+    from association"""
+
+    # Create and add 2 applications
+    p1 = create_application_asset(example_model, "Program 1")
+    p2 = create_application_asset(example_model, "Program 2")
+    example_model.add_asset(p1)
+    example_model.add_asset(p2)
+
+    # Create (but don't add!) an association between p1 and p2
+    association = create_association(
+        example_model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+    # We are removing an association that was never created -> LookupError
+    with pytest.raises(LookupError):
+        example_model.remove_asset_from_association(p1, association)
