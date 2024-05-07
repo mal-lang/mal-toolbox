@@ -42,114 +42,114 @@ def create_association(
     return association
 
 
-def test_model_add_asset(example_model: Model):
+def test_model_add_asset(model: Model):
     """Make sure assets are added correctly"""
 
-    assets_before = list(example_model.assets)
+    assets_before = list(model.assets)
 
     # Create an application asset
-    program1 = create_application_asset(example_model, 'Program 1')
-    example_model.add_asset(program1)
+    program1 = create_application_asset(model, 'Program 1')
+    model.add_asset(program1)
 
     # Make sure the new asset was added to the model
-    assert len(assets_before) + 1 == len(example_model.assets)
+    assert len(assets_before) + 1 == len(model.assets)
     assert program1 not in assets_before
-    assert program1 in example_model.assets
+    assert program1 in model.assets
 
 
-def test_model_add_asset_with_id_set(example_model):
+def test_model_add_asset_with_id_set(model):
     """Make sure assets are added and latestId correctly updated
     when id is set explicitly in method call"""
 
-    program1 = create_application_asset(example_model, 'Program 1')
-    program1_id = example_model.latestId + 10
-    example_model.add_asset(program1, asset_id=program1_id)
+    program1 = create_application_asset(model, 'Program 1')
+    program1_id = model.latestId + 10
+    model.add_asset(program1, asset_id=program1_id)
 
-    assert program1 in example_model.assets
+    assert program1 in model.assets
 
     # Make sure latestId was incremented
     # TODO: should it be called next_id or next_asset_id instead?
-    assert example_model.latestId == program1_id + 1
+    assert model.latestId == program1_id + 1
 
     # Add asset with same ID as previously added asset, expect ValueError
-    program2 = create_application_asset(example_model, 'Program 2')
+    program2 = create_application_asset(model, 'Program 2')
     with pytest.raises(ValueError):
-        example_model.add_asset(program2, asset_id=program1_id)
+        model.add_asset(program2, asset_id=program1_id)
 
-    assert program2 not in example_model.assets
+    assert program2 not in model.assets
 
 
-def test_model_add_asset_duplicate_name(example_model: Model):
+def test_model_add_asset_duplicate_name(model: Model):
     """Add several assets with the same name to the model"""
 
     # Add a new asset
-    program1 = create_application_asset(example_model, 'Program 1')
-    example_model.add_asset(program1)
-    assert example_model.assets.count(program1) == 1
+    program1 = create_application_asset(model, 'Program 1')
+    model.add_asset(program1)
+    assert model.assets.count(program1) == 1
 
     # Add asset again (will lead to duplicate name, allowed by default)
-    example_model.add_asset(program1)
-    assert example_model.assets.count(program1) == 2
+    model.add_asset(program1)
+    assert model.assets.count(program1) == 2
 
     # Add asset again while not allowing duplicates, expect ValueError
     with pytest.raises(ValueError):
-        example_model.add_asset(program1, allow_duplicate_names=False)
+        model.add_asset(program1, allow_duplicate_names=False)
     # Make sure there are still only two assets named 'Program 1'
-    assert example_model.assets.count(program1) == 2
+    assert model.assets.count(program1) == 2
 
 
-def test_model_remove_asset(example_model: Model):
+def test_model_remove_asset(model: Model):
     """Remove assets from a model"""
 
     # Add two program assets to the model
-    program1 = create_application_asset(example_model, 'Program 1')
-    program2 = create_application_asset(example_model, 'Program 2')
-    example_model.add_asset(program1)
-    example_model.add_asset(program2)
+    program1 = create_application_asset(model, 'Program 1')
+    program2 = create_application_asset(model, 'Program 2')
+    model.add_asset(program1)
+    model.add_asset(program2)
 
-    num_assets_before = len(example_model.assets)
-    example_model.remove_asset(program1)
+    num_assets_before = len(model.assets)
+    model.remove_asset(program1)
 
     # Make sure asset program1 was deleted, but program2 still exists
-    assert program1 not in example_model.assets
-    assert program2 in example_model.assets
-    assert len(example_model.assets) == num_assets_before - 1
+    assert program1 not in model.assets
+    assert program2 in model.assets
+    assert len(model.assets) == num_assets_before - 1
 
 
-def test_model_remove_nonexisting_asset(example_model: Model):
+def test_model_remove_nonexisting_asset(model: Model):
     """Removing a non existing asset leads to lookup error"""
 
     # Create an asset but don't add it to the model before removing it
-    program1 = create_application_asset(example_model, 'Program 1')
+    program1 = create_application_asset(model, 'Program 1')
     program1.id = 1  # Needs id to avoid crash in log statement
     with pytest.raises(LookupError):
-        example_model.remove_asset(program1)
+        model.remove_asset(program1)
 
 
-def test_model_add_association(example_model: Model):
+def test_model_add_association(model: Model):
     """Make sure associations work as intended"""
 
     # Create two assets
-    program1 = create_application_asset(example_model, 'Program 1')
-    program1_id = example_model.latestId
-    program2 = create_application_asset(example_model, 'Program 2')
+    program1 = create_application_asset(model, 'Program 1')
+    program1_id = model.latestId
+    program2 = create_application_asset(model, 'Program 2')
     program2_id = program1_id + 1
 
     # Add the assets with explicit IDs to keep track of them
-    example_model.add_asset(program1, asset_id=program1_id)
-    example_model.add_asset(program2, asset_id=program2_id)
+    model.add_asset(program1, asset_id=program1_id)
+    model.add_asset(program2, asset_id=program2_id)
 
     # Create an association between program1 and program2
     association = create_association(
-        example_model, metaconcept="AppExecution",
+        model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[program1], to_assets=[program2]
     )
 
-    associations_before = list(example_model.associations)
+    associations_before = list(model.associations)
     # Add the association to the model
-    example_model.add_association(association)
-    associations_after = list(example_model.associations)
+    model.add_association(association)
+    associations_after = list(model.associations)
 
     # Make sure association was added to the model and assets
     assert len(associations_before) == len(associations_after) - 1
@@ -159,223 +159,239 @@ def test_model_add_association(example_model: Model):
     assert association in program2.associations
 
 
-def test_model_remove_association(example_model: Model):
+def test_model_remove_association(model: Model):
     """Make sure association can be removed"""
 
     # Create and add 2 applications
-    p1 = create_application_asset(example_model, "Program 1")
-    p2 = create_application_asset(example_model, "Program 2")
-    example_model.add_asset(p1)
-    example_model.add_asset(p2)
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
 
     association = create_association(
-        example_model, metaconcept="AppExecution",
+        model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
 
-    example_model.add_association(association)
-    assert association in example_model.associations
+    model.add_association(association)
+    assert association in model.associations
     assert association in p1.associations
     assert association in p2.associations
 
     # Remove the association and make sure it was
     # removed from assets and model
-    example_model.remove_association(association)
-    assert association not in example_model.associations
+    model.remove_association(association)
+    assert association not in model.associations
     assert association not in p1.associations
     assert association not in p2.associations
 
 
-def test_model_remove_association_nonexisting(example_model: Model):
+def test_model_remove_association_nonexisting(model: Model):
     """Make sure non existing association can not be removed"""
     # Create the association but don't add it
     association = create_association(
-        example_model, metaconcept="AppExecution",
+        model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[], to_assets=[]
     )
 
     # No associations exists
-    assert example_model.associations == []
+    assert model.associations == []
 
     # So we should expect a LookupError when trying to remove one
     with pytest.raises(LookupError):
-        example_model.remove_association(association)
+        model.remove_association(association)
 
 
-def test_model_remove_asset_from_association(example_model: Model):
+def test_model_remove_asset_from_association(model: Model):
     """Make sure we can remove asset from association and that
     associations with no assets on any 'side' is removed"""
 
     # Create and add 2 applications
-    p1 = create_application_asset(example_model, "Program 1")
-    p2 = create_application_asset(example_model, "Program 2")
-    example_model.add_asset(p1)
-    example_model.add_asset(p2)
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
 
     # Create and add association from p1 to p2
     association = create_association(
-        example_model, metaconcept="AppExecution",
+        model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
-    example_model.add_association(association)
+    model.add_association(association)
 
     # We are removing p1 from association so one side will be empty
     # This means the association should be removed entirely
-    example_model.remove_asset_from_association(p1, association)
+    model.remove_asset_from_association(p1, association)
     assert association not in p2.associations
     assert association not in p1.associations
-    assert association not in example_model.associations
+    assert association not in model.associations
+
 
 def test_model_remove_asset_from_association_nonexisting_asset(
-        example_model: Model
+        model: Model
     ):
     """Make sure error is thrown if deleting non existing asset
     from association"""
 
     # Create 4 applications and add 3 of them to model
-    p1 = create_application_asset(example_model, "Program 1")
-    p2 = create_application_asset(example_model, "Program 2")
-    p3 = create_application_asset(example_model, "Program 3")
-    p4 = create_application_asset(example_model, 'Program 4')
-    example_model.add_asset(p1)
-    example_model.add_asset(p2)
-    example_model.add_asset(p3)
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    p3 = create_application_asset(model, "Program 3")
+    p4 = create_application_asset(model, 'Program 4')
+    model.add_asset(p1)
+    model.add_asset(p2)
+    model.add_asset(p3)
     p4.id = 1 # ID is required, otherwise crash in log statement
 
     # Create an association between p1 and p2
     association = create_association(
-        example_model, metaconcept="AppExecution",
+        model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
-    example_model.add_association(association)
+    model.add_association(association)
 
     # We are removing p3 from association where it does not exist
     with pytest.raises(LookupError):
-        example_model.remove_asset_from_association(p3, association)
+        model.remove_asset_from_association(p3, association)
 
     # We are removing p4 from association, but p4
     # does not exist in the model
     with pytest.raises(LookupError):
-        example_model.remove_asset_from_association(p4, association)
+        model.remove_asset_from_association(p4, association)
 
 
 def test_model_remove_asset_from_association_nonexisting_association(
-        example_model: Model
+        model: Model
     ):
     """Make sure error is thrown if deleting non existing asset
     from association"""
 
     # Create and add 2 applications
-    p1 = create_application_asset(example_model, "Program 1")
-    p2 = create_application_asset(example_model, "Program 2")
-    example_model.add_asset(p1)
-    example_model.add_asset(p2)
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
 
     # Create (but don't add!) an association between p1 and p2
     association = create_association(
-        example_model, metaconcept="AppExecution",
+        model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
     # We are removing an association that was never created -> LookupError
     with pytest.raises(LookupError):
-        example_model.remove_asset_from_association(p1, association)
+        model.remove_asset_from_association(p1, association)
 
 
-def test_model_add_attacker(example_model: Model):
+def test_model_add_attacker(model: Model):
     """Test functionality to add an attacker to the model"""
 
     # Add attacker 1
     attacker1 = AttackerAttachment()
     attacker1.entry_points = []
-    example_model.add_attacker(attacker1)
+    model.add_attacker(attacker1)
     assert attacker1.name == f'Attacker:{attacker1.id}'
 
     # Add attacker 2 with explicit id set (can be duplicate id)
     attacker2_id = attacker1.id
     attacker2 = AttackerAttachment()
     attacker2.entry_points = []
-    example_model.add_attacker(attacker2, attacker_id=attacker2_id)
+    model.add_attacker(attacker2, attacker_id=attacker2_id)
+
+    # Add attacker 2 with explicit id set (can be duplicate id)
+    attacker2_id = attacker1.id
+    attacker2 = AttackerAttachment()
+
+    asset_id = 1
+    attack_steps = ['attemptCredentialsReuse']
+    attacker2.entry_points = [
+        (asset_id, attack_steps)
+    ]
+    model.add_attacker(attacker2, attacker_id=attacker2_id)
+
+
     assert attacker2.name == f'Attacker:{attacker2_id}'
 
-def test_model_get_asset_by_id(example_model: Model):
+
+def test_model_get_asset_by_id(model: Model):
     """Make sure correct asset is returned or None
     if no asset with that ID exists"""
 
     # Create and add 2 applications
-    p1 = create_application_asset(example_model, "Program 1")
-    p2 = create_application_asset(example_model, "Program 2")
-    example_model.add_asset(p1)
-    example_model.add_asset(p2)
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
 
     # Correct assets removed and None if asset with that not exists
-    assert example_model.get_asset_by_id(p1.id) == p1
-    assert example_model.get_asset_by_id(p2.id) == p2
-    assert example_model.get_asset_by_id(1337) is None
+    assert model.get_asset_by_id(p1.id) == p1
+    assert model.get_asset_by_id(p2.id) == p2
+    assert model.get_asset_by_id(1337) is None
 
-def test_model_get_asset_by_name(example_model: Model):
+
+def test_model_get_asset_by_name(model: Model):
     """Make sure correct asset is returned or None
     if no asset with that name exists"""
 
     # Create and add 2 applications
-    p1 = create_application_asset(example_model, "Program 1")
-    p2 = create_application_asset(example_model, "Program 2")
-    example_model.add_asset(p1)
-    example_model.add_asset(p2)
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
 
     # Correct assets removed and None if asset with that name not exists
-    assert example_model.get_asset_by_name(p1.name) == p1
-    assert example_model.get_asset_by_name(p2.name) == p2
-    assert example_model.get_asset_by_name("Program 3") is None
+    assert model.get_asset_by_name(p1.name) == p1
+    assert model.get_asset_by_name(p2.name) == p2
+    assert model.get_asset_by_name("Program 3") is None
 
 
-def test_model_get_attacker_by_id(example_model: Model):
+def test_model_get_attacker_by_id(model: Model):
     """Make sure correct attacker is returned of None
     if no attacker with that ID exists"""
 
     # Add attacker 1
     attacker1 = AttackerAttachment()
     attacker1.entry_points = []
-    example_model.add_attacker(attacker1)
+    model.add_attacker(attacker1)
 
-    assert example_model.get_attacker_by_id(attacker1.id) == attacker1
-    assert example_model.get_attacker_by_id(1337) is None
+    assert model.get_attacker_by_id(attacker1.id) == attacker1
+    assert model.get_attacker_by_id(1337) is None
 
 
-def test_model_get_associated_assets_by_fieldname(example_model: Model):
+def test_model_get_associated_assets_by_fieldname(model: Model):
     """Make sure assets associated to the asset through the given
     field_name are returned"""
 
     # Create and add 2 applications
-    p1 = create_application_asset(example_model, "Program 1")
-    p2 = create_application_asset(example_model, "Program 2")
-    example_model.add_asset(p1)
-    example_model.add_asset(p2)
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
 
     # Create and add an association between p1 and p2
     association = create_association(
-        example_model, metaconcept="AppExecution",
+        model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
-    example_model.add_association(association)
+    model.add_association(association)
 
     # Since p2 is in an association with p1 through 'appExecutedApps'
     # p2 should be returned as an associated asset
-    ret = example_model.get_associated_assets_by_field_name(
+    ret = model.get_associated_assets_by_field_name(
         p1, "appExecutedApps")
     assert p2 in ret
 
     # Other fieldname from p2 to p1
-    ret = example_model.get_associated_assets_by_field_name(
+    ret = model.get_associated_assets_by_field_name(
         p2, "hostApp")
     assert p1 in ret
 
     # Non existing field name should give no assets
-    ret = example_model.get_associated_assets_by_field_name(
+    ret = model.get_associated_assets_by_field_name(
         p1, "bogusFieldName")
     assert ret == []

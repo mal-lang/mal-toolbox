@@ -23,7 +23,7 @@ def corelang_spec():
 
 
 @pytest.fixture
-def example_model(corelang_spec):
+def model(corelang_spec):
     """Fixture that generates a model for tests
 
     Uses coreLang specification (fixture) to create and return a
