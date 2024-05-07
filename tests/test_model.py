@@ -2,7 +2,7 @@
 
 import pytest
 
-from maltoolbox.model import Model
+from maltoolbox.model import Model, AttackerAttachment
 
 
 def create_application_asset(model, name):
@@ -284,3 +284,20 @@ def test_model_remove_asset_from_association_nonexisting_association(
     # We are removing an association that was never created -> LookupError
     with pytest.raises(LookupError):
         example_model.remove_asset_from_association(p1, association)
+
+
+def test_model_add_attacker(example_model: Model):
+    """Test functionality to add an attacker to the model"""
+
+    # Add attacker 1
+    attacker1 = AttackerAttachment()
+    attacker1.entry_points = []
+    example_model.add_attacker(attacker1)
+    assert attacker1.name == f'Attacker:{attacker1.id}'
+
+    # Add attacker 2 with explicit id set (can be duplicate id)
+    attacker2_id = attacker1.id
+    attacker2 = AttackerAttachment()
+    attacker2.entry_points = []
+    example_model.add_attacker(attacker2, attacker_id=attacker2_id)
+    assert attacker2.name == f'Attacker:{attacker2_id}'
