@@ -25,7 +25,8 @@ __version__ = '0.0.38'
 __authors__ = ['Andrei Buhaiu',
     'Giuseppe Nebbione',
     'Nikolaos Kakouros',
-    'Jakob Nyberg']
+    'Jakob Nyberg',
+    'Joakim Loxdal']
 __license__ = 'Apache 2.0'
 __docformat__ = 'restructuredtext en'
 
