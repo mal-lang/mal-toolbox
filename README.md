@@ -80,3 +80,9 @@ into a local Neo4J instance.
 A default configuration file `default.conf` can be found in the package
 directory. This contains the default values to use for logging and can also be
 used to store the information needed to access the local Neo4J instance.
+
+# Tests
+There are unit tests inside of ./tests.
+Before running the tests, make sure to install the requirements in ./tests/requirements.txt with `python -m pip install -r ./tests/requirements.txt`.
+
+To run all tests, use the `pytest` command. To run just a specific file or test function use `pytest tests/<filename>` or `pytest -k <function_name>`.
