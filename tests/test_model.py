@@ -530,3 +530,59 @@ def test_model_to_json(model: Model):
         model.lang_spec['formatVersion']
     assert model_dict['metadata']['langID'] == \
         model.lang_spec['defines'].get('id')
+
+def test_model_save_and_load_model_from_scratch(model: Model):
+    """Create a model, save it to file, load it from file and compare them
+    Note: will store file in /tmp
+    """
+
+    # Create and add 3 applications
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    p3 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
+    model.add_asset(p3)
+
+    # Create and add an association between p1 and p2
+    association = create_association(
+        model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+    model.add_association(association)
+
+    # Add attacker
+    attacker = AttackerAttachment()
+    attack_steps = ["attemptCredentialsReuse"]
+    attacker.entry_points = [
+        (p1, attack_steps)
+    ]
+    model.add_attacker(attacker)
+
+    # Mock open() function so no real files are written to filesystem
+    model.save_to_file('/tmp/test.json')
+
+    # Create a new model by loading old model from file
+    new_model = empty_model(model.lang_spec, 'New Test Model')
+    new_model.load_from_file('/tmp/test.json')
+
+    assert new_model.model_to_json() == model.model_to_json()
+
+
+def test_model_save_and_load_model_example_model(model):
+    """Load the simple_example_model.json from testdata, store it, compare"""
+
+    # Load from example file
+    model.load_from_file(
+        path_testdata("simple_example_model.json")
+    )
+
+    # Save to file
+    model.save_to_file('/tmp/test.json')
+
+    # Create new model and load from previously saved file
+    new_model = empty_model(model.lang_spec, 'New Test Model')
+    new_model.load_from_file('/tmp/test.json')
+
+    assert new_model.model_to_json() == model.model_to_json()
