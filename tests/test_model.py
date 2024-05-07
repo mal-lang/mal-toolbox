@@ -394,3 +394,137 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
     ret = model.get_associated_assets_by_field_name(
         p1, "bogusFieldName")
     assert ret == []
+
+
+def test_model_asset_to_json(model: Model):
+    """Make sure assets are converted to json correctly"""
+    # Create and add asset
+    p1 = create_application_asset(model, "Program 1")
+    model.add_asset(p1)
+
+    # Tuple is returned
+    ret = model.asset_to_json(p1)
+
+    # First element should be the id
+    p1_id = ret[0]
+    assert p1_id == str(p1.id)
+
+    # Second element is the dict, each value should
+    # be set as below for an 'Application' asset in coreLang
+    p1_dict = ret[1]
+    assert p1_dict.get('name') == p1.name
+    assert p1_dict.get('metaconcept') == 'Application'
+    assert p1_dict.get('eid') == str(p1.id)
+
+    # Default values for 'Application' defenses in coreLang
+    assert p1_dict.get('defenses') == {
+        'notPresent': '0.0', 'supplyChainAuditing': '0.0'
+    }
+
+
+def test_model_association_to_json(model: Model):
+    """Make sure associations are converted to json correctly"""
+    # Create and add 2 applications
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
+
+    # Create and add an association between p1 and p2
+    association = create_association(
+        model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+    model.add_association(association)
+
+    association_json = model.association_to_json(association)
+    assert association_json.get('metaconcept') == 'AppExecution'
+    assert association_json.get('association') == {
+        'hostApp': [str(p1.id)],
+        'appExecutedApps': [str(p2.id)]
+    }
+
+def test_model_attacker_to_json(model: Model):
+    """Make sure attackers get correct format and values"""
+
+    # Create and add an asset
+    p1 = create_application_asset(model, "Program 1")
+    model.add_asset(p1)
+
+    # Add attacker 1
+    attacker = AttackerAttachment()
+    attack_steps = ["attemptCredentialsReuse"]
+    attacker.entry_points = [
+        (p1, attack_steps)
+    ]
+    model.add_attacker(attacker)
+
+    # Convert the attacker to json and make sure
+    # id and name were converted correctly
+    ret = model.attacker_to_json(attacker)
+    assert ret[0] == str(attacker.id)
+    attacker_dict = ret[1]
+    assert attacker_dict.get('name') == attacker.name
+
+    # entrypoints_dict has asset IDs as keys
+    entrypoints_dict = attacker_dict.get('entry_points')
+
+    # attacker should be attached to p1, therefore p1s
+    # id should be a key in the entrypoints_dict
+    assert str(p1.id) in entrypoints_dict
+
+    # The given steps should be inside the entrypoint of
+    # the attacker for asset p1
+    assert entrypoints_dict[str(p1.id)]['attack_steps'] == attack_steps
+
+
+def test_model_to_json(model: Model):
+    """Put all to_json methods together and see that they work"""
+
+    # Create and add 3 applications
+    p1 = create_application_asset(model, "Program 1")
+    p2 = create_application_asset(model, "Program 2")
+    p3 = create_application_asset(model, "Program 2")
+    model.add_asset(p1)
+    model.add_asset(p2)
+    model.add_asset(p3)
+
+    # Create and add an association between p1 and p2
+    association = create_association(
+        model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+    model.add_association(association)
+
+    # Add attacker
+    attacker = AttackerAttachment()
+    attack_steps = ["attemptCredentialsReuse"]
+    attacker.entry_points = [
+        (p1, attack_steps)
+    ]
+    model.add_attacker(attacker)
+
+    model_dict = model.model_to_json()
+
+    # to_json will create map from asset id to asset dict
+    # (dict is second value of tuple returned from asset_to_json)
+    for asset in [p1, p2, p3]:
+        assert model_dict['assets'][str(asset.id)] == \
+        model.asset_to_json(asset)[1]
+
+    # associations are added as they are created by association_to_json
+    assert model_dict['associations'] == \
+        [model.association_to_json(association)]
+
+    # attackers are added similar to assets (id maps to attacker dict)
+    assert model_dict['attackers'][str(attacker.id)] == \
+        model.attacker_to_json(attacker)[1]
+
+    # Meta data should also be added
+    assert model_dict['metadata']['name'] == model.name
+    assert model_dict['metadata']['langVersion'] == \
+        model.lang_spec['formatVersion']
+    assert model_dict['metadata']['langID'] == \
+        model.lang_spec['defines'].get('id')
