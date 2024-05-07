@@ -19,7 +19,7 @@ def create_association(
         to_assets
     ):
     """Helper function to create an association dict with
-    given parameters useful in tests"""
+    given parameters, useful in tests"""
 
     # Simulate receving the association from a json file
     association_dict = {
@@ -137,22 +137,66 @@ def test_model_add_association(example_model: Model):
     example_model.add_asset(program1, asset_id=program1_id)
     example_model.add_asset(program2, asset_id=program2_id)
 
-    # Create and add an association between program1 and program2
+    # Create an association between program1 and program2
     association = create_association(
-        example_model,
-        metaconcept="AppExecution",
-        from_fieldname="hostApp",
-        to_fieldname="appExecutedApps",
-        from_assets=[program1],
-        to_assets=[program2]
+        example_model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[program1], to_assets=[program2]
     )
 
     associations_before = list(example_model.associations)
-    # Add the association
+    # Add the association to the model
     example_model.add_association(association)
     associations_after = list(example_model.associations)
 
-    # Make sure association was added to the model
+    # Make sure association was added to the model and assets
     assert len(associations_before) == len(associations_after) - 1
     assert association not in associations_before
     assert association in associations_after
+    assert association in program1.associations
+    assert association in program2.associations
+
+
+def test_model_remove_association(example_model: Model):
+    """Make sure association can be removed"""
+
+    # Create and add 2 applications
+    p1 = create_application_asset(example_model, "Program 1")
+    p2 = create_application_asset(example_model, "Program 2")
+    example_model.add_asset(p1)
+    example_model.add_asset(p2)
+
+    association = create_association(
+        example_model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+
+    example_model.add_association(association)
+    assert association in example_model.associations
+    assert association in p1.associations
+    assert association in p2.associations
+
+    # Remove the association and make sure it was
+    # removed from assets and model
+    example_model.remove_association(association)
+    assert association not in example_model.associations
+    assert association not in p1.associations
+    assert association not in p2.associations
+
+
+def test_model_remove_association_nonexisting(example_model: Model):
+    """Make sure non existing association can not be removed"""
+    # Create the association but don't add it
+    association = create_association(
+        example_model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[], to_assets=[]
+    )
+
+    # No associations exists
+    assert example_model.associations == []
+
+    # So we should expect a LookupError when trying to remove one
+    with pytest.raises(LookupError):
+        example_model.remove_association(association)
