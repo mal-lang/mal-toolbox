@@ -139,8 +139,6 @@ class Model:
         Arguments:
         association     - the association to add to the model
         """
-        Add an association to the model.
-        """
         for prop in range(0, 2):
             for asset in getattr(association,
                 list(vars(association)['_properties'])[prop]):
