@@ -120,6 +120,7 @@ def test_model_remove_nonexisting_asset(example_model: Model):
 
     # Create an asset but don't add it to the model before removing it
     program1 = create_application_asset(example_model, 'Program 1')
+    program1.id = 1  # Needs id to avoid crash in log statement
     with pytest.raises(LookupError):
         example_model.remove_asset(program1)
 
