@@ -112,12 +112,12 @@ class Model:
         for field in [firstElements, secondElements]:
             if asset in field:
                 found = True
-                field.remove(asset)
-                if len(field) == 0:
-                    # There are no other assets on this side, we should remove the
-                    # entire association.
+                if len(field) == 1:
+                    # There are no other assets on this side, we should
+                    # remove the entire association.
                     self.remove_association(association)
                     return
+                field.remove(asset)
 
         if not found:
             raise LookupError(f'Asset {asset.id} is not part of the '
