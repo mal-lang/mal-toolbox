@@ -167,7 +167,7 @@ class Model:
         """
         Add an attacker to the model.
         """
-        if attacker_id:
+        if attacker_id is not None:
             attacker.id = attacker_id
         else:
             attacker.id = self.latestId
