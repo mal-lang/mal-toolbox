@@ -85,12 +85,12 @@ class Model:
         asset     - the asset to remove
         """
         logger.debug(
-            f'Remove {asset.name}(id:{asset.get("id")}) from model '
+            f'Remove {asset.name}(id:{asset.id}) from model '
             f'"{self.name}".'
         )
         if asset not in self.assets:
             raise LookupError(
-                f'Asset {asset.get("id")} is not part of model"{self.name}".'
+                f'Asset {asset.id} is not part of model"{self.name}".'
             )
 
         # First remove all of the associations
@@ -107,14 +107,19 @@ class Model:
         asset           - the asset to remove from the given association
         association     - the association to remove the asset from
         """
+
         logger.debug(f'Remove {asset.name}(id:{asset.id}) from association '
             f'of type \"{type(association)}\".')
+
         if asset not in self.assets:
-            raise LookupError(f'Asset {asset.id} is not part of model '
-                f'\"{self.model}\".')
+            raise LookupError(
+                f'Asset {asset.id} is not part of model '
+                f'"{self.name}".'
+            )
         if association not in self.associations:
-            raise LookupError(f'Association is not part of model '
-                f'\"{self.model}\".')
+            raise LookupError(
+                f'Association is not part of model "{self.name}".'
+            )
 
         firstElementName, secondElementName = association._properties.keys()
         firstElements = getattr(association, firstElementName)
@@ -263,8 +268,10 @@ class Model:
         A list of assets associated with the asset given that match the
         field_name.
         """
-        logger.debug(f'Get associated assets for asset '
-            f'{asset.name}(id:{asset.id}) by field name {field_name}.')
+        logger.debug(
+            f'Get associated assets for asset '
+            f'{asset.name}(id:{asset.id}) by field name {field_name}.'
+        )
         associated_assets = []
         for association in asset.associations:
             # Determine which two of the end points leads away from the asset.
