@@ -301,3 +301,81 @@ def test_model_add_attacker(example_model: Model):
     attacker2.entry_points = []
     example_model.add_attacker(attacker2, attacker_id=attacker2_id)
     assert attacker2.name == f'Attacker:{attacker2_id}'
+
+def test_model_get_asset_by_id(example_model: Model):
+    """Make sure correct asset is returned or None
+    if no asset with that ID exists"""
+
+    # Create and add 2 applications
+    p1 = create_application_asset(example_model, "Program 1")
+    p2 = create_application_asset(example_model, "Program 2")
+    example_model.add_asset(p1)
+    example_model.add_asset(p2)
+
+    # Correct assets removed and None if asset with that not exists
+    assert example_model.get_asset_by_id(p1.id) == p1
+    assert example_model.get_asset_by_id(p2.id) == p2
+    assert example_model.get_asset_by_id(1337) is None
+
+def test_model_get_asset_by_name(example_model: Model):
+    """Make sure correct asset is returned or None
+    if no asset with that name exists"""
+
+    # Create and add 2 applications
+    p1 = create_application_asset(example_model, "Program 1")
+    p2 = create_application_asset(example_model, "Program 2")
+    example_model.add_asset(p1)
+    example_model.add_asset(p2)
+
+    # Correct assets removed and None if asset with that name not exists
+    assert example_model.get_asset_by_name(p1.name) == p1
+    assert example_model.get_asset_by_name(p2.name) == p2
+    assert example_model.get_asset_by_name("Program 3") is None
+
+
+def test_model_get_attacker_by_id(example_model: Model):
+    """Make sure correct attacker is returned of None
+    if no attacker with that ID exists"""
+
+    # Add attacker 1
+    attacker1 = AttackerAttachment()
+    attacker1.entry_points = []
+    example_model.add_attacker(attacker1)
+
+    assert example_model.get_attacker_by_id(attacker1.id) == attacker1
+    assert example_model.get_attacker_by_id(1337) is None
+
+
+def test_model_get_associated_assets_by_fieldname(example_model: Model):
+    """Make sure assets associated to the asset through the given
+    field_name are returned"""
+
+    # Create and add 2 applications
+    p1 = create_application_asset(example_model, "Program 1")
+    p2 = create_application_asset(example_model, "Program 2")
+    example_model.add_asset(p1)
+    example_model.add_asset(p2)
+
+    # Create and add an association between p1 and p2
+    association = create_association(
+        example_model, metaconcept="AppExecution",
+        from_fieldname="hostApp", to_fieldname="appExecutedApps",
+        from_assets=[p1], to_assets=[p2]
+    )
+    example_model.add_association(association)
+
+    # Since p2 is in an association with p1 through 'appExecutedApps'
+    # p2 should be returned as an associated asset
+    ret = example_model.get_associated_assets_by_field_name(
+        p1, "appExecutedApps")
+    assert p2 in ret
+
+    # Other fieldname from p2 to p1
+    ret = example_model.get_associated_assets_by_field_name(
+        p2, "hostApp")
+    assert p1 in ret
+
+    # Non existing field name should give no assets
+    ret = example_model.get_associated_assets_by_field_name(
+        p1, "bogusFieldName")
+    assert ret == []
