@@ -121,11 +121,11 @@ class Model:
                 f'Association is not part of model "{self.name}".'
             )
 
-        firstElementName, secondElementName = association._properties.keys()
-        firstElements = getattr(association, firstElementName)
-        secondElements = getattr(association, secondElementName)
+        first_field_name, second_field_name = association._properties.keys()
+        first_field = getattr(association, first_field_name)
+        second_field = getattr(association, second_field_name)
         found = False
-        for field in [firstElements, secondElements]:
+        for field in [first_field, second_field]:
             if asset in field:
                 found = True
                 if len(field) == 1:
@@ -169,16 +169,18 @@ class Model:
                 f'Association is not part of model "{self.name}".'
             )
 
-        firstElementName, secondElementName = association._properties.keys()
-        firstElements = getattr(association, firstElementName)
-        secondElements = getattr(association, secondElementName)
+        # An assocation goes from one field to another,
+        # both fields has a field_name and a list of assets
+        first_field_name, second_field_name = association._properties.keys()
+        first_field = getattr(association, first_field_name)
+        second_field = getattr(association, second_field_name)
 
-        for asset in firstElements:
+        for asset in first_field:
             assocs = list(asset.associations)
             assocs.remove(association)
             asset.associations = assocs
 
-        for asset in secondElements:
+        for asset in second_field:
             # In fringe cases we may have reflexive associations where the
             # first element removed the association already. But generally the
             # association should exist for the second element too.
@@ -334,18 +336,16 @@ class Model:
         Arguments:
         association     - association to get dictionary representation of
         """
-        firstElementName, secondElementName  = association._properties.keys()
-
-        firstElements = getattr(association, firstElementName)
-        secondElements = getattr(association, secondElementName)
-
+        first_field_name, second_field_name = association._properties.keys()
+        first_field = getattr(association, first_field_name)
+        second_field = getattr(association, second_field_name)
         json_association = {
             'metaconcept': association.__class__.__name__,
             'association': {
-                str(firstElementName):
-                    [int(asset.id) for asset in firstElements],
-                str(secondElementName):
-                    [int(asset.id) for asset in secondElements]
+                str(first_field_name):
+                    [int(asset.id) for asset in first_field],
+                str(second_field_name):
+                    [int(asset.id) for asset in second_field]
             }
         }
         return json_association
