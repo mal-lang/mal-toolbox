@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AttackerAttachment:
-    """Used to attach attackers to assets (entry_points)"""
+    """Used to attach attackers to attack step entrypoints of assets"""
     id: int = None
     name: str = None
     entry_points: list[tuple] = None
