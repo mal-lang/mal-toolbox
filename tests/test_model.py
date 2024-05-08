@@ -49,70 +49,71 @@ def test_model_add_asset(model: Model):
     assets_before = list(model.assets)
 
     # Create an application asset
-    program1 = create_application_asset(model, 'Program 1')
-    model.add_asset(program1)
+    p1 = create_application_asset(model, 'Program 1')
+    model.add_asset(p1)
 
     # Make sure the new asset was added to the model
     assert len(assets_before) + 1 == len(model.assets)
-    assert program1 not in assets_before
-    assert program1 in model.assets
+    assert p1 not in assets_before
+    assert p1 in model.assets
 
 
 def test_model_add_asset_with_id_set(model):
     """Make sure assets are added and latestId correctly updated
     when id is set explicitly in method call"""
 
-    program1 = create_application_asset(model, 'Program 1')
-    program1_id = model.latestId + 10
-    model.add_asset(program1, asset_id=program1_id)
+    p1 = create_application_asset(model, 'Program 1')
+    p1_id = model.latestId + 10
+    model.add_asset(p1, asset_id=p1_id)
 
-    assert program1 in model.assets
+    # Make sure asset was added
+    assert p1 in model.assets
 
     # Make sure latestId was incremented
-    assert model.latestId == program1_id + 1
+    assert model.latestId == p1_id + 1
 
     # Add asset with same ID as previously added asset, expect ValueError
-    program2 = create_application_asset(model, 'Program 2')
+    p2 = create_application_asset(model, 'Program 2')
     with pytest.raises(ValueError):
-        model.add_asset(program2, asset_id=program1_id)
+        model.add_asset(p2, asset_id=p1_id)
 
-    assert program2 not in model.assets
+    assert p2 not in model.assets
 
 
 def test_model_add_asset_duplicate_name(model: Model):
     """Add several assets with the same name to the model"""
 
     # Add a new asset
-    program1 = create_application_asset(model, 'Program 1')
-    model.add_asset(program1)
-    assert model.assets.count(program1) == 1
+    p1 = create_application_asset(model, 'Program 1')
+    model.add_asset(p1)
+    assert model.assets.count(p1) == 1
 
     # Add asset again (will lead to duplicate name, allowed by default)
-    model.add_asset(program1)
-    assert model.assets.count(program1) == 2
+    model.add_asset(p1)
+    assert model.assets.count(p1) == 2
 
     # Add asset again while not allowing duplicates, expect ValueError
     with pytest.raises(ValueError):
-        model.add_asset(program1, allow_duplicate_names=False)
+        model.add_asset(p1, allow_duplicate_names=False)
     # Make sure there are still only two assets named 'Program 1'
-    assert model.assets.count(program1) == 2
+    assert model.assets.count(p1) == 2
 
 
 def test_model_remove_asset(model: Model):
     """Remove assets from a model"""
 
     # Add two program assets to the model
-    program1 = create_application_asset(model, 'Program 1')
-    program2 = create_application_asset(model, 'Program 2')
-    model.add_asset(program1)
-    model.add_asset(program2)
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
+    model.add_asset(p1)
+    model.add_asset(p2)
 
     num_assets_before = len(model.assets)
-    model.remove_asset(program1)
+    model.remove_asset(p1)
 
-    # Make sure asset program1 was deleted, but program2 still exists
-    assert program1 not in model.assets
-    assert program2 in model.assets
+    # Make sure asset p1 was deleted, but p2 still exists
+    assert p1 not in model.assets
+    assert p2 in model.assets
     assert len(model.assets) == num_assets_before - 1
 
 
@@ -120,30 +121,30 @@ def test_model_remove_nonexisting_asset(model: Model):
     """Removing a non existing asset leads to lookup error"""
 
     # Create an asset but don't add it to the model before removing it
-    program1 = create_application_asset(model, 'Program 1')
-    program1.id = 1  # Needs id to avoid crash in log statement
+    p1 = create_application_asset(model, 'Program 1')
+    p1.id = 1  # Needs id to avoid crash in log statement
     with pytest.raises(LookupError):
-        model.remove_asset(program1)
+        model.remove_asset(p1)
 
 
 def test_model_add_association(model: Model):
     """Make sure associations work as intended"""
 
     # Create two assets
-    program1 = create_application_asset(model, 'Program 1')
-    program1_id = model.latestId
-    program2 = create_application_asset(model, 'Program 2')
-    program2_id = program1_id + 1
+    p1 = create_application_asset(model, 'Program 1')
+    p1_id = model.latestId
+    p2 = create_application_asset(model, 'Program 2')
+    p2_id = p1_id + 1
 
     # Add the assets with explicit IDs to keep track of them
-    model.add_asset(program1, asset_id=program1_id)
-    model.add_asset(program2, asset_id=program2_id)
+    model.add_asset(p1, asset_id=p1_id)
+    model.add_asset(p2, asset_id=p2_id)
 
-    # Create an association between program1 and program2
+    # Create an association between p1 and p2
     association = create_association(
         model, metaconcept="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[program1], to_assets=[program2]
+        from_assets=[p1], to_assets=[p2]
     )
 
     associations_before = list(model.associations)
@@ -155,8 +156,8 @@ def test_model_add_association(model: Model):
     assert len(associations_before) == len(associations_after) - 1
     assert association not in associations_before
     assert association in associations_after
-    assert association in program1.associations
-    assert association in program2.associations
+    assert association in p1.associations
+    assert association in p2.associations
 
 
 def test_model_remove_association(model: Model):
@@ -446,6 +447,7 @@ def test_model_association_to_json(model: Model):
         'appExecutedApps': [str(p2.id)]
     }
 
+
 def test_model_attacker_to_json(model: Model):
     """Make sure attackers get correct format and values"""
 
@@ -529,6 +531,7 @@ def test_model_to_json(model: Model):
         model.lang_spec['formatVersion']
     assert model_dict['metadata']['langID'] == \
         model.lang_spec['defines'].get('id')
+
 
 def test_model_save_and_load_model_from_scratch(model: Model):
     """Create a model, save it to file, load it from file and compare them
