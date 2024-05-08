@@ -5,6 +5,7 @@ import pytest
 from conftest import empty_model, path_testdata
 from maltoolbox.model import Model, AttackerAttachment
 
+### Helper functions
 
 def create_application_asset(model, name):
     """Helper function to create an asset of coreLang type Application"""
@@ -42,6 +43,7 @@ def create_association(
 
     return association
 
+### Tests
 
 def test_model_add_asset(model: Model):
     """Make sure assets are added correctly"""
@@ -535,7 +537,7 @@ def test_model_to_json(model: Model):
 
 def test_model_save_and_load_model_from_scratch(model: Model):
     """Create a model, save it to file, load it from file and compare them
-    Note: will store file in /tmp
+    Note: will create file in /tmp
     """
 
     # Create and add 3 applications
@@ -573,7 +575,8 @@ def test_model_save_and_load_model_from_scratch(model: Model):
 
 
 def test_model_save_and_load_model_example_model(model):
-    """Load the simple_example_model.json from testdata, store it, compare"""
+    """Load the simple_example_model.json from testdata, store it, compare
+    Note: will create file in /tmp"""
 
     # Load from example file
     model.load_from_file(
