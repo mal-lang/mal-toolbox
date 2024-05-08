@@ -61,18 +61,18 @@ def test_model_add_asset(model: Model):
 
 
 def test_model_add_asset_with_id_set(model):
-    """Make sure assets are added and latestId correctly updated
+    """Make sure assets are added and next_id correctly updated
     when id is set explicitly in method call"""
 
     p1 = create_application_asset(model, 'Program 1')
-    p1_id = model.latestId + 10
+    p1_id = model.next_id + 10
     model.add_asset(p1, asset_id=p1_id)
 
     # Make sure asset was added
     assert p1 in model.assets
 
-    # Make sure latestId was incremented
-    assert model.latestId == p1_id + 1
+    # Make sure next_id was incremented
+    assert model.next_id == p1_id + 1
 
     # Add asset with same ID as previously added asset, expect ValueError
     p2 = create_application_asset(model, 'Program 2')
@@ -134,7 +134,7 @@ def test_model_add_association(model: Model):
 
     # Create two assets
     p1 = create_application_asset(model, 'Program 1')
-    p1_id = model.latestId
+    p1_id = model.next_id
     p2 = create_application_asset(model, 'Program 2')
     p2_id = p1_id + 1
 

@@ -19,7 +19,7 @@ class AttackerAttachment:
     entry_points: list[tuple] = None
 
 class Model:
-    latestId = 0
+    next_id = 0
 
     def __repr__(self) -> str:
         return f'Model {self.name}'
@@ -56,8 +56,8 @@ class Model:
                     raise ValueError(f'Asset index {asset_id} already in use.')
             asset.id = asset_id
         else:
-            asset.id = self.latestId
-        self.latestId = max(asset.id + 1, self.latestId)
+            asset.id = self.next_id
+        self.next_id = max(asset.id + 1, self.next_id)
 
         asset.associations = []
 
@@ -201,8 +201,8 @@ class Model:
         if attacker_id is not None:
             attacker.id = attacker_id
         else:
-            attacker.id = self.latestId
-        self.latestId = max(attacker.id + 1, self.latestId)
+            attacker.id = self.next_id
+        self.next_id = max(attacker.id + 1, self.next_id)
 
         if not hasattr(attacker, 'name') or not attacker.name:
             attacker.name = 'Attacker:' + str(attacker.id)
