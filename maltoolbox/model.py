@@ -149,8 +149,10 @@ class Model:
         Arguments:
         association     - the association to add to the model
         """
-        for prop in range(0, 2):
-            for asset in getattr(association, list(association._properties)[prop]):
+        # Field names are the two first values in _properties
+        field_names = list(vars(association)['_properties'])[0:2]
+        for field_name in field_names:
+            for asset in getattr(association, field_name):
                 assocs = list(asset.associations)
                 assocs.append(association)
                 asset.associations = assocs
