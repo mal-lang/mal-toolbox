@@ -278,17 +278,23 @@ class Model:
         )
         associated_assets = []
         for association in asset.associations:
-            # Determine which two of the end points leads away from the asset.
+            # Determine which two of the fields leads away from the asset.
             # This is particularly relevant for associations between two
             # assets of the same type.
-            prop1, prop2 = association._properties.keys()
-            if asset in getattr(association, prop1):
-                associated_asset = prop2
-            else:
-                associated_asset = prop1
+            field_name1, field_name2 = association._properties.keys()
 
-            if associated_asset == field_name:
-                associated_assets.extend(getattr(association, associated_asset))
+            if asset in getattr(association, field_name1):
+                # If the asset is in the first field,
+                # the second one must lead away from it
+                field_name_away = field_name2
+            else:
+                # otherwise the first field must lead away
+                field_name_away = field_name1
+
+            if field_name_away == field_name:
+                associated_assets.extend(
+                    getattr(association, field_name_away)
+                )
 
         return associated_assets
 
