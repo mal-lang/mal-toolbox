@@ -14,11 +14,11 @@ def create_application_asset(model, name):
 
 def create_association(
         model,
-        metaconcept,
-        from_fieldname,
-        to_fieldname,
         from_assets,
-        to_assets
+        to_assets,
+        metaconcept="AppExecution",
+        from_fieldname="hostApp",
+        to_fieldname="appExecutedApps",
     ):
     """Helper function to create an association dict with
     given parameters, useful in tests"""
