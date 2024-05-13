@@ -7,6 +7,7 @@ import json
 
 from typing import Optional
 
+from analyzers.apriori import calculate_viability_and_necessity
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
@@ -148,15 +149,37 @@ def _process_step_expression(lang: dict, model: Model,
             return ([], None)
 
 
-
 class AttackGraph:
-    def __init__(self, lang_spec = None, model: Optional[Model] = None):
+    """An AttackGraph is created from a model and language
+    and contains attack step Nodes"""
+    def __init__(
+            self,
+            lang_spec = None,
+            model = None,
+            attach_attackers = True,
+            analyze = True
+        ):
+        """
+        Args:
+        lang_spec (dict)        - language specification for AttackGraph
+        model (Model)           - Model for AttackGraph
+        attach_attackers (bool) - attaches attackers automatically if True
+        analyze (bool)          - runs calculate_viability_and_necessity
+        """
         self.nodes = []
         self.attackers = []
         self.model = model
         self.lang_spec = lang_spec
-        if self.model is not None and self.lang_spec is not None:
-            self._generate_graph()
+
+        if self.model is None or self.lang_spec is None:
+            return
+
+        self._generate_graph()
+
+        if attach_attackers:
+            self.attach_attackers(self.model)
+        if analyze:
+            calculate_viability_and_necessity(self)
 
     def __repr__(self) -> str:
         return f'AttackGraph({len(self.nodes)} nodes)'
