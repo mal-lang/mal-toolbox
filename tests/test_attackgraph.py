@@ -12,7 +12,7 @@ from test_model import create_application_asset, create_association
 @pytest.fixture
 def example_attackgraph(corelang_spec, model: Model):
     """Fixture that generates an example attack graph
-    
+
     Uses coreLang specification and model with two applications
     with an association and an attacker to create and return
     an AttackGraph object
@@ -141,6 +141,99 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
 
     # Each attack step will get one node
     assert len(example_attackgraph.nodes) == num_assets_attack_steps
+
+
+def test_attackgraph_according_to_corelang(corelang_spec, model):
+    """Looking at corelang .mal file, make sure the resulting
+    AttackGraph contains expected nodes"""
+
+    # Create 2 assets
+    app1 = create_application_asset(model, "Application 1")
+    app2 = create_application_asset(model, "Application 2")
+    model.add_asset(app1)
+    model.add_asset(app2)
+
+    # Create association between app1 and app2
+    assoc = create_association(model, from_assets=[app1], to_assets=[app2])
+    model.add_association(assoc)
+    attack_graph = AttackGraph(lang_spec=corelang_spec, model=model)
+
+    # These are all attack 71 steps and defenses for Application asset in MAL
+    expected_node_names_application = [
+        "notPresent", "attemptUseVulnerability", "successfulUseVulnerability",
+        "useVulnerability", "attemptReverseReach", "successfulReverseReach",
+        "reverseReach", "localConnect", "networkConnectUninspected",
+        "networkConnectInspected", "networkConnect",
+        "specificAccessNetworkConnect",
+        "accessNetworkAndConnections", "attemptNetworkConnectFromResponse",
+        "networkConnectFromResponse", "specificAccessFromLocalConnection",
+        "specificAccessFromNetworkConnection", "specificAccess",
+        "bypassContainerization", "authenticate",
+        "specificAccessAuthenticate", "localAccess", "networkAccess",
+        "fullAccess", "physicalAccessAchieved", "attemptUnsafeUserActivity",
+        "successfulUnsafeUserActivity", "unsafeUserActivity",
+        "attackerUnsafeUserActivityCapability",
+        "attackerUnsafeUserActivityCapabilityWithReverseReach",
+        "attackerUnsafeUserActivityCapabilityWithoutReverseReach",
+        "supplyChainAuditing", "bypassSupplyChainAuditing",
+        "supplyChainAuditingBypassed",
+        "attemptFullAccessFromSupplyChainCompromise",
+        "fullAccessFromSupplyChainCompromise",
+        "attemptReadFromSoftProdVulnerability",
+        "attemptModifyFromSoftProdVulnerability",
+        "attemptDenyFromSoftProdVulnerability", "softwareCheck",
+        "softwareProductVulnerabilityLocalAccessAchieved",
+        "softwareProductVulnerabilityNetworkAccessAchieved",
+        "softwareProductVulnerabilityPhysicalAccessAchieved",
+        "softwareProductVulnerabilityLowPrivilegesAchieved",
+        "softwareProductVulnerabilityHighPrivilegesAchieved",
+        "softwareProductVulnerabilityUserInteractionAchieved",
+        "attemptSoftwareProductAbuse",
+        "softwareProductAbuse", "readFromSoftProdVulnerability",
+        "modifyFromSoftProdVulnerability",
+        "denyFromSoftProdVulnerability",
+        "attemptApplicationRespondConnectThroughData",
+        "successfulApplicationRespondConnectThroughData",
+        "applicationRespondConnectThroughData",
+        "attemptAuthorizedApplicationRespondConnectThroughData",
+        "successfulAuthorizedApplicationRespondConnectThroughData",
+        "authorizedApplicationRespondConnectThroughData",
+        "attemptRead", "successfulRead", "read", "specificAccessRead",
+        "attemptModify", "successfulModify", "modify", "specificAccessModify",
+        "attemptDeny", "successfulDeny", "deny",
+        "specificAccessDelete", "denyFromNetworkingAsset", "denyFromLockout"
+    ]
+
+    # Make sure the nodes in the AttackGraph have the expected names and order
+    for i, expected_name in enumerate(expected_node_names_application):
+        assert attack_graph.nodes[i].name == expected_name
+
+    # notPresent is a defense step and its children are (according to corelang):
+    extected_children_of_not_present = [
+        "successfulUseVulnerability",
+        "successfulReverseReach",
+        "networkConnectFromResponse",
+        "specificAccessFromLocalConnection",
+        "specificAccessFromNetworkConnection",
+        "localAccess",
+        "networkAccess",
+        "successfulUnsafeUserActivity",
+        "fullAccessFromSupplyChainCompromise",
+        "readFromSoftProdVulnerability",
+        "modifyFromSoftProdVulnerability",
+        "denyFromSoftProdVulnerability",
+        "successfulApplicationRespondConnectThroughData",
+        "successfulAuthorizedApplicationRespondConnectThroughData",
+        "successfulRead",
+        "successfulModify",
+        "successfulDeny"
+    ]
+    # Make sure children are also added for defense step notPresent
+    # Children of defense means that the defense protects against those steps (?)
+    not_present_children = [
+        n.name for n in attack_graph.nodes[0].children
+    ]
+    assert not_present_children == extected_children_of_not_present
 
 def test_attackgraph_regenerate_graph():
     """Make sure graph is regenerated"""
