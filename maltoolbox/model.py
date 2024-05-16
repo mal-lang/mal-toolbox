@@ -289,8 +289,10 @@ class Model:
         return associated_assets
 
     def asset_to_dict(self, asset):
-        """
-        Convert an asset to its JSON format.
+        """Get dictionary representation of the asset.
+
+        Arguments:
+        asset       - asset to get dictionary representation of
         """
         defenses = {}
         logger.debug(f'Translating {asset.name} to json.')
@@ -325,10 +327,10 @@ class Model:
         return ret
 
     def association_to_dict(self, association):
-        """Convert an association to its JSON format.
+        """Get dictionary representation of the association.
 
         Arguments:
-        association     - association to convert to JSON
+        association     - association to get dictionary representation of
         """
         firstElementName, secondElementName  = association._properties.keys()
 
@@ -347,10 +349,10 @@ class Model:
         return json_association
 
     def attacker_to_dict(self, attacker):
-        """Convert an attacker to its JSON format.
+        """Get dictionary representation of the attacker.
 
         Arguments:
-        attacker        - attacker to convert to JSON
+        attacker    - attacker to get dictionary representation of
         """
         logger.debug(f'Translating {attacker.name} to json.')
         json_attacker = {
@@ -364,8 +366,8 @@ class Model:
         return (int(attacker.id), json_attacker)
 
     def model_to_dict(self):
-        """Convert the model to its JSON format."""
-        logger.debug(f'Converting model to JSON format.')
+        """Get dictionary representation of the model."""
+        logger.debug(f'Get dictionary representation of the model.')
         contents = {
             'metadata': {},
             'assets': {},
