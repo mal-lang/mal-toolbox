@@ -58,16 +58,17 @@ def find_matches_recursively(
 
     Args:
     node                - node to check if current `pattern` matches for
-    pattern             - pattern to match against `node`
+    pattern_list        - will attempt to match first pattern against `node`
     matching_nodes      - list of matched nodes so far (builds up recursively)
-    pattern_match_count  - the number of matches on current pattern so far
+    pattern_match_count - the number of matches on current pattern so far
 
     Return: list of lists of AttackGraphNodes that match the pattern
     """
-    current_pattern = pattern_list[0]
     # Init chain lists if None
     current_chain = [] if current_chain is None else current_chain
     matching_chains = [] if matching_chains is None else matching_chains
+
+    current_pattern = pattern_list[0]
 
     if current_pattern.matches(node):
         # Current node matches, add to current_chain and increment match_count
