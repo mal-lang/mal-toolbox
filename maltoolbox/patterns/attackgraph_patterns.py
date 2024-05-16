@@ -13,6 +13,27 @@ class AttackGraphPattern:
     min_repeated: int = 1
     max_repeated: int = 1
 
+    def matches(self, node: AttackGraphNode):
+        """Returns true if pattern matches node"""
+        matches_pattern = True
+        for attr, value in self.attributes:
+            if getattr(node, attr) != value:
+                matches_pattern = False
+                break
+        return matches_pattern
+
+    def can_match_again(self, num_matches):
+        """Returns true if pattern can be used again"""
+        return num_matches < self.max_repeated
+
+    def must_match_again(self, num_matches):
+        """Returns true if pattern must match again to be fulfilled"""
+        return num_matches < self.min_repeated
+
+    def is_last_pattern_in_chain(self):
+        """Returns true if no more patterns to match after this"""
+        return self.next_pattern is None
+
 
 def find_in_graph(graph: AttackGraph, pattern: AttackGraphPattern):
     """Query a graph for a pattern of attributes"""
@@ -25,22 +46,23 @@ def find_in_graph(graph: AttackGraph, pattern: AttackGraphPattern):
 
     matching_chains = []
     for node in starting_nodes:
-        matching_chains += find_recursively(
+        matching_chains += find_matches_recursively(
             node,
             pattern
         )
     return matching_chains
 
 
-def find_recursively(
+def find_matches_recursively(
         node: AttackGraphNode,
         pattern: AttackGraphPattern,
         current_chain=None,
         matching_chains=None,
         pattern_match_count=0
     ):
-    """Follow a chain of attack graph nodes, check if they follow the pattern
-    and if they do, add them to the returned list of matching nodes
+    """Follow a chain of attack graph nodes, check if they follow the pattern.
+    When a sequence of patterns is fulfilled for a sequence of nodes,
+    add the list of nodes to the returned `matching_chains`
 
     Args:
     node                - node to check if current `pattern` matches for
@@ -48,63 +70,54 @@ def find_recursively(
     matching_nodes      - list of matched nodes so far (builds up recursively)
     pattern_match_count  - the number of matches on current pattern so far
 
-    Return: list of AttackGraphNodes that match the pattern
+    Return: list of lists of AttackGraphNodes that match the pattern
     """
 
     # Init chain lists if None
     current_chain = [] if current_chain is None else current_chain
     matching_chains = [] if matching_chains is None else matching_chains
 
-    # See if current node matches pattern
-    node_matches_pattern = True
-    for attr, value in pattern.attributes:
-        if getattr(node, attr) != value:
-            node_matches_pattern = False
-            break
 
-    if node_matches_pattern:
+    if pattern.matches(node):
         # Current node matches, add to current_chain and increment match_count
         current_chain.append(node)
         pattern_match_count += 1
 
-    # See if current pattern is fulfilled
-    pattern_fulfilled = pattern_match_count >= pattern.min_repeated
-    pattern_can_be_used_again = pattern_match_count < pattern.max_repeated
+        if pattern.is_last_pattern_in_chain() and \
+        not pattern.must_match_again(pattern_match_count):
+            # This is the last pattern in the chain,
+            #the current chain is matching
+            matching_chains.append(current_chain)
 
-    if pattern_fulfilled and pattern.next_pattern is None:
-        # This is the last pattern in the chain
-        # If it is fulfilled the current chain is done
-        matching_chains.append(current_chain)
-
-    elif node_matches_pattern and pattern_can_be_used_again:
-        # Pattern has matches left
-        for child in node.children:
-            matching_chains = find_recursively(
-                child,
-                pattern,
-                current_chain=current_chain,
-                matching_chains=matching_chains,
-                pattern_match_count=pattern_match_count
-            )
-
-    elif node_matches_pattern and not pattern_can_be_used_again:
-        # Pattern has run out of matches, must move to next pattern
-        for child in node.children:
-            matching_chains = find_recursively(
-                child,
+        elif pattern.can_match_again(pattern_match_count):
+            # Pattern has matches left, run recursively with current pattern
+            for child in node.children:
+                matching_chains = find_matches_recursively(
+                    child,
+                    pattern,
+                    current_chain=current_chain,
+                    matching_chains=matching_chains,
+                    pattern_match_count=pattern_match_count
+                )
+        else:
+            # Pattern has run out of matches, must move on to next pattern
+            for child in node.children:
+                matching_chains = find_matches_recursively(
+                    child,
+                    pattern.next_pattern,
+                    current_chain=current_chain,
+                    matching_chains=matching_chains
+                )
+    else:
+        if not pattern.must_match_again(pattern_match_count)\
+            and not pattern.is_last_pattern_in_chain():
+            # Node did not match current pattern, but we can try with
+            # the next pattern since current one is 'fulfilled'
+            matching_chains = find_matches_recursively(
+                node,
                 pattern.next_pattern,
                 current_chain=current_chain,
                 matching_chains=matching_chains
             )
-
-    elif not node_matches_pattern and pattern_fulfilled:
-        # Node did not match current pattern, but we can try with
-        # the next pattern since current one is fulfilled
-        matching_chains = find_recursively(
-            node,
-            pattern.next_pattern,
-            current_chain=current_chain,
-            matching_chains=matching_chains
-        )
 
     return matching_chains
