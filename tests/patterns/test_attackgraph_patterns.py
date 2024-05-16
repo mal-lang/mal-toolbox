@@ -40,11 +40,15 @@ def test_attackgraph_find_pattern(example_attackgraph):
     """Test a simple pattern"""
     patterns = [
         AttackGraphPattern(
-            attributes=[('id', 'Application 1:notPresent')],
+            attributes=[('name', 'attemptRead')],
             min_repeated=1, max_repeated=1
         ),
         AttackGraphPattern(
-            attributes=[('id', 'Application 1:successfulUseVulnerability')],
+            attributes=[('name', 'successfulRead')],
+            min_repeated=1, max_repeated=1
+        ),
+        AttackGraphPattern(
+            attributes=[('name', 'read')],
             min_repeated=1, max_repeated=1
         ),
     ]
