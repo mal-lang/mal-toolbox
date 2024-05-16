@@ -23,7 +23,7 @@ def create_association(
     """Helper function to create an association dict with
     given parameters, useful in tests"""
 
-    # Simulate receving the association from a json file
+    # Simulate receiving the association from a json file
     association_dict = {
       "metaconcept": metaconcept,
       "association": {
@@ -401,34 +401,56 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
     assert ret == []
 
 
-def test_model_asset_to_json(model: Model):
-    """Make sure assets are converted to json correctly"""
+def test_model_asset_to_dict(model: Model):
+    """Make sure assets are converted to dictionaries correctly"""
     # Create and add asset
     p1 = create_application_asset(model, "Program 1")
     model.add_asset(p1)
 
     # Tuple is returned
-    ret = model.asset_to_json(p1)
+    ret = model.asset_to_dict(p1)
 
     # First element should be the id
     p1_id = ret[0]
-    assert p1_id == str(p1.id)
+    assert p1_id == p1.id
 
     # Second element is the dict, each value should
     # be set as below for an 'Application' asset in coreLang
     p1_dict = ret[1]
     assert p1_dict.get('name') == p1.name
     assert p1_dict.get('metaconcept') == 'Application'
-    assert p1_dict.get('eid') == str(p1.id)
+
+    # Default values should not be saved
+    assert p1_dict.get('defenses') == None
+
+def test_model_asset_with_nondefault_defense_to_dict(model: Model):
+    """Make sure assets are converted to dictionaries correctly"""
+    # Create and add asset
+    p1 = create_application_asset(model, "Program 1")
+    p1.notPresent = 1.0
+    model.add_asset(p1)
+
+    # Tuple is returned
+    ret = model.asset_to_dict(p1)
+
+    # First element should be the id
+    p1_id = ret[0]
+    assert p1_id == p1.id
+
+    # Second element is the dict, each value should
+    # be set as below for an 'Application' asset in coreLang
+    p1_dict = ret[1]
+    assert p1_dict.get('name') == p1.name
+    assert p1_dict.get('metaconcept') == 'Application'
 
     # Default values for 'Application' defenses in coreLang
     assert p1_dict.get('defenses') == {
-        'notPresent': '0.0', 'supplyChainAuditing': '0.0'
+        'notPresent': 1.0
     }
 
 
-def test_model_association_to_json(model: Model):
-    """Make sure associations are converted to json correctly"""
+def test_model_association_to_dict(model: Model):
+    """Make sure associations are converted to dictionaries correctly"""
     # Create and add 2 applications
     p1 = create_application_asset(model, "Program 1")
     p2 = create_application_asset(model, "Program 2")
@@ -443,15 +465,15 @@ def test_model_association_to_json(model: Model):
     )
     model.add_association(association)
 
-    association_json = model.association_to_json(association)
-    assert association_json.get('metaconcept') == 'AppExecution'
-    assert association_json.get('association') == {
-        'hostApp': [str(p1.id)],
-        'appExecutedApps': [str(p2.id)]
+    association_dict = model.association_to_dict(association)
+    assert association_dict.get('metaconcept') == 'AppExecution'
+    assert association_dict.get('association') == {
+        'hostApp': [p1.id],
+        'appExecutedApps': [p2.id]
     }
 
 
-def test_model_attacker_to_json(model: Model):
+def test_model_attacker_to_dict(model: Model):
     """Make sure attackers get correct format and values"""
 
     # Create and add an asset
@@ -466,10 +488,10 @@ def test_model_attacker_to_json(model: Model):
     ]
     model.add_attacker(attacker)
 
-    # Convert the attacker to json and make sure
+    # Convert the attacker to a dictionary and make sure
     # id and name were converted correctly
-    ret = model.attacker_to_json(attacker)
-    assert ret[0] == str(attacker.id)
+    ret = model.attacker_to_dict(attacker)
+    assert ret[0] == attacker.id
     attacker_dict = ret[1]
     assert attacker_dict.get('name') == attacker.name
 
@@ -478,20 +500,20 @@ def test_model_attacker_to_json(model: Model):
 
     # attacker should be attached to p1, therefore p1s
     # id should be a key in the entrypoints_dict
-    assert str(p1.id) in entrypoints_dict
+    assert p1.id in entrypoints_dict
 
     # The given steps should be inside the entrypoint of
     # the attacker for asset p1
-    assert entrypoints_dict[str(p1.id)]['attack_steps'] == attack_steps
+    assert entrypoints_dict[p1.id]['attack_steps'] == attack_steps
 
 
-def test_model_to_json(model: Model):
-    """Put all to_json methods together and see that they work"""
+def test_model_to_dict(model: Model):
+    """Put all to_dict methods together and see that they work"""
 
     # Create and add 3 applications
     p1 = create_application_asset(model, "Program 1")
     p2 = create_application_asset(model, "Program 2")
-    p3 = create_application_asset(model, "Program 2")
+    p3 = create_application_asset(model, "Program 3")
     model.add_asset(p1)
     model.add_asset(p2)
     model.add_asset(p3)
@@ -512,28 +534,28 @@ def test_model_to_json(model: Model):
     ]
     model.add_attacker(attacker)
 
-    model_dict = model.model_to_json()
+    model_dict = model.model_to_dict()
 
-    # to_json will create map from asset id to asset dict
-    # (dict is second value of tuple returned from asset_to_json)
+    # to_dict will create map from asset id to asset dict
+    # (dict is second value of tuple returned from asset_to_dict)
     for asset in [p1, p2, p3]:
-        assert model_dict['assets'][str(asset.id)] == \
-        model.asset_to_json(asset)[1]
+        assert model_dict['assets'][asset.id] == \
+        model.asset_to_dict(asset)[1]
 
-    # associations are added as they are created by association_to_json
+    # associations are added as they are created by association_to_dict
     assert model_dict['associations'] == \
-        [model.association_to_json(association)]
+        [model.association_to_dict(association)]
 
     # attackers are added similar to assets (id maps to attacker dict)
-    assert model_dict['attackers'][str(attacker.id)] == \
-        model.attacker_to_json(attacker)[1]
+    assert model_dict['attackers'][attacker.id] == \
+        model.attacker_to_dict(attacker)[1]
 
     # Meta data should also be added
     assert model_dict['metadata']['name'] == model.name
     assert model_dict['metadata']['langVersion'] == \
-        model.lang_spec['formatVersion']
+        model.lang_classes_factory.lang_graph.metadata['version']
     assert model_dict['metadata']['langID'] == \
-        model.lang_spec['defines'].get('id')
+        model.lang_classes_factory.lang_graph.metadata['id']
 
 
 def test_model_save_and_load_model_from_scratch(model: Model):
@@ -544,7 +566,7 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     # Create and add 3 applications
     p1 = create_application_asset(model, "Program 1")
     p2 = create_application_asset(model, "Program 2")
-    p3 = create_application_asset(model, "Program 2")
+    p3 = create_application_asset(model, "Program 3")
     model.add_asset(p1)
     model.add_asset(p2)
     model.add_asset(p3)
@@ -569,10 +591,12 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     model.save_to_file('/tmp/test.json')
 
     # Create a new model by loading old model from file
-    new_model = empty_model(model.lang_spec, 'New Test Model')
-    new_model.load_from_file('/tmp/test.json')
+    new_model = Model.load_from_file(
+        '/tmp/test.json',
+        model.lang_classes_factory
+    )
 
-    assert new_model.model_to_json() == model.model_to_json()
+    assert new_model.model_to_dict() == model.model_to_dict()
 
 
 def test_model_save_and_load_model_example_model(model):
@@ -580,15 +604,18 @@ def test_model_save_and_load_model_example_model(model):
     Note: will create file in /tmp"""
 
     # Load from example file
-    model.load_from_file(
-        path_testdata("simple_example_model.json")
+    model = Model.load_from_file(
+        path_testdata("simple_example_model.json"),
+        model.lang_classes_factory
     )
 
     # Save to file
     model.save_to_file('/tmp/test.json')
 
     # Create new model and load from previously saved file
-    new_model = empty_model(model.lang_spec, 'New Test Model')
-    new_model.load_from_file('/tmp/test.json')
+    new_model = Model.load_from_file(
+        '/tmp/test.json',
+        model.lang_classes_factory
+    )
 
-    assert new_model.model_to_json() == model.model_to_json()
+    assert new_model.model_to_dict() == model.model_to_dict()

@@ -2,7 +2,7 @@
 import os
 import pytest
 
-from maltoolbox.language import specification, LanguageClassesFactory
+from maltoolbox.language import LanguageGraph, LanguageClassesFactory
 from maltoolbox.model import Model
 
 def path_testdata(filename):
@@ -16,32 +16,30 @@ def path_testdata(filename):
 
 
 @pytest.fixture
-def corelang_spec():
+def corelang_lang_graph():
     """Fixture that returns the coreLang language specification as dict"""
     mar_file_path = path_testdata("org.mal-lang.coreLang-1.0.0.mar")
-    return specification.load_language_specification_from_mar(mar_file_path)
+    return LanguageGraph.from_mar_archive(mar_file_path)
 
 
-def empty_model(corelang_spec, name):
+def empty_model(lang_classes_factory, name):
     """Fixture that generates a model for tests
 
     Uses coreLang specification (fixture) to create and return Model
     """
 
-    # Init LanguageClassesFactor
-    lang_classes_factory = LanguageClassesFactory(corelang_spec)
-    lang_classes_factory.create_classes()
-
     # Create instance model from model json file
-    return Model(name, corelang_spec, lang_classes_factory)
+    return Model(name, lang_classes_factory)
 
 
 @pytest.fixture
-def model(corelang_spec):
+def model(corelang_lang_graph):
     """Fixture that generates a model for tests
 
     Uses coreLang specification (fixture) to create and return a
     Model object with no assets or associations
     """
+    # Init LanguageClassesFactory
+    lang_classes_factory = LanguageClassesFactory(corelang_lang_graph)
 
-    return empty_model(corelang_spec, 'Test Model')
+    return empty_model(lang_classes_factory, 'Test Model')
