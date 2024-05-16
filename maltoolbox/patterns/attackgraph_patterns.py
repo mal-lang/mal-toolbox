@@ -9,7 +9,6 @@ from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 class AttackGraphPattern:
     """A pattern to search for in a graph"""
     attributes: dict
-    next_pattern: AttackGraphPattern | None = None
     min_repeated: int = 1
     max_repeated: int = 1
 
@@ -30,32 +29,25 @@ class AttackGraphPattern:
         """Returns true if pattern must match again to be fulfilled"""
         return num_matches < self.min_repeated
 
-    def is_last_pattern_in_chain(self):
-        """Returns true if no more patterns to match after this"""
-        return self.next_pattern is None
 
-
-def find_in_graph(graph: AttackGraph, pattern: AttackGraphPattern):
+def find_in_graph(graph: AttackGraph, patterns: list[AttackGraphPattern]):
     """Query a graph for a pattern of attributes"""
 
     # Find the starting nodes
-    attribute = pattern.attributes[0]
+    attribute = patterns[0].attributes[0]
     starting_nodes = graph.get_nodes_by_attribute_value(
          attribute[0], attribute[1]
     )
-
     matching_chains = []
     for node in starting_nodes:
-        matching_chains += find_matches_recursively(
-            node,
-            pattern
-        )
+        matching_chains += find_matches_recursively(node, patterns)
+
     return matching_chains
 
 
 def find_matches_recursively(
         node: AttackGraphNode,
-        pattern: AttackGraphPattern,
+        pattern_list: list[AttackGraphPattern],
         current_chain=None,
         matching_chains=None,
         pattern_match_count=0
@@ -72,29 +64,28 @@ def find_matches_recursively(
 
     Return: list of lists of AttackGraphNodes that match the pattern
     """
-
+    current_pattern = pattern_list[0]
     # Init chain lists if None
     current_chain = [] if current_chain is None else current_chain
     matching_chains = [] if matching_chains is None else matching_chains
 
-
-    if pattern.matches(node):
+    if current_pattern.matches(node):
         # Current node matches, add to current_chain and increment match_count
         current_chain.append(node)
         pattern_match_count += 1
 
-        if pattern.is_last_pattern_in_chain() and \
-        not pattern.must_match_again(pattern_match_count):
+        if len(pattern_list) == 1 \
+            and not current_pattern.must_match_again(pattern_match_count):
             # This is the last pattern in the chain,
-            #the current chain is matching
+            # and the current chain is matching
             matching_chains.append(current_chain)
 
-        elif pattern.can_match_again(pattern_match_count):
+        elif current_pattern.can_match_again(pattern_match_count):
             # Pattern has matches left, run recursively with current pattern
             for child in node.children:
                 matching_chains = find_matches_recursively(
                     child,
-                    pattern,
+                    pattern_list,
                     current_chain=current_chain,
                     matching_chains=matching_chains,
                     pattern_match_count=pattern_match_count
@@ -104,18 +95,18 @@ def find_matches_recursively(
             for child in node.children:
                 matching_chains = find_matches_recursively(
                     child,
-                    pattern.next_pattern,
+                    pattern_list[1:],
                     current_chain=current_chain,
                     matching_chains=matching_chains
                 )
     else:
-        if not pattern.must_match_again(pattern_match_count)\
-            and not pattern.is_last_pattern_in_chain():
+        if not current_pattern.must_match_again(pattern_match_count)\
+            and len(pattern_list) > 1:
             # Node did not match current pattern, but we can try with
             # the next pattern since current one is 'fulfilled'
             matching_chains = find_matches_recursively(
                 node,
-                pattern.next_pattern,
+                pattern_list[1:],
                 current_chain=current_chain,
                 matching_chains=matching_chains
             )
