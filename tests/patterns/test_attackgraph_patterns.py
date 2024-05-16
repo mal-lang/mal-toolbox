@@ -38,13 +38,15 @@ def example_attackgraph(corelang_spec, model: Model):
 
 def test_attackgraph_find_pattern(example_attackgraph):
     """Test a simple pattern"""
-    pattern = AttackGraphPattern(
-        next_pattern=AttackGraphPattern(
+    patterns = [
+        AttackGraphPattern(
+            attributes=[('id', 'Application 1:notPresent')],
+            min_repeated=1, max_repeated=1
+        ),
+        AttackGraphPattern(
             attributes=[('id', 'Application 1:successfulUseVulnerability')],
             min_repeated=1, max_repeated=1
         ),
-        attributes=[('id', 'Application 1:notPresent')],
-        min_repeated=1, max_repeated=1
-    )
-    chains = attackgraph_patterns.find_in_graph(example_attackgraph, pattern)
+    ]
+    chains = attackgraph_patterns.find_in_graph(example_attackgraph, patterns)
     breakpoint()
