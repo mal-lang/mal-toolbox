@@ -12,8 +12,9 @@ class LanguageClassesFactory:
     def __init__(self, lang_graph):
         self.lang_graph = lang_graph
         self.json_schema = {}
+        self.__create_classes()
 
-    def generate_assets(self):
+    def __generate_assets(self):
         """
         Generate JSON Schema for the assets in the language specification.
         """
@@ -56,7 +57,7 @@ class LanguageClassesFactory:
                 {'$ref': '#/definitions/LanguageAsset/definitions/' + asset.name}
             )
 
-    def generate_associations(self):
+    def __generate_associations(self):
         """
         Generate JSON Schema for the associations in the language specification.
         """
@@ -132,7 +133,7 @@ class LanguageClassesFactory:
                     append({'$ref': '#/definitions/LanguageAssociation/' +
                     'definitions/' + assoc.name})
 
-    def create_classes(self):
+    def __create_classes(self):
         """
         Create classes based on the language specification.
         """
@@ -160,8 +161,8 @@ class LanguageClassesFactory:
             'oneOf': [],
             'definitions': {}}
 
-        self.generate_assets()
-        self.generate_associations()
+        self.__generate_assets()
+        self.__generate_associations()
         logger.debug(json.dumps(self.json_schema, indent = 2))
 
         # Once we have the JSON schema we create the actual classes.

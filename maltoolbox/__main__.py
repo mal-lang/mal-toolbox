@@ -49,10 +49,6 @@ def generate_attack_graph(model_file: str, lang_file: str, send_to_neo4j: bool) 
         lang_graph.save_language_specification_to_json(log_configs['langspec_file'])
 
     lang_classes_factory = LanguageClassesFactory(lang_graph)
-    lang_classes_factory.create_classes()
-    # TODO is there ever a reason to instantiate a LanguageClassesFactory and
-    # not run create_classes? If not, we should run create_classes() directly in
-    # LanguageClassesFactory.__init__() and make it a private method.
 
     instance_model = Model.load_from_file(model_file, lang_classes_factory)
 
