@@ -4,7 +4,7 @@ from maltoolbox.model import Model, AttackerAttachment
 from maltoolbox.attackgraph import AttackGraph
 
 import maltoolbox.patterns.attackgraph_patterns as attackgraph_patterns
-from maltoolbox.patterns.attackgraph_patterns import AttackGraphPattern
+from maltoolbox.patterns.attackgraph_patterns import SearchPattern, SearchCondition
 
 from test_model import create_application_asset, create_association
 
@@ -38,19 +38,19 @@ def example_attackgraph(corelang_spec, model: Model):
 
 def test_attackgraph_find_pattern(example_attackgraph):
     """Test a simple pattern"""
-    patterns = [
-        AttackGraphPattern(
-            attributes=[('name', 'attemptRead')],
-            min_repeated=1, max_repeated=1
-        ),
-        AttackGraphPattern(
-            attributes=[('name', 'successfulRead')],
-            min_repeated=1, max_repeated=1
-        ),
-        AttackGraphPattern(
-            attributes=[('name', 'read')],
-            min_repeated=1, max_repeated=1
-        ),
-    ]
-    chains = attackgraph_patterns.find_in_graph(example_attackgraph, patterns)
+    pattern = SearchPattern(
+        [
+            SearchCondition(
+                lambda n : n.name == "attemptRead"
+            ),
+            SearchCondition(
+                lambda n : n.name == "successfulRead"
+            ),
+            SearchCondition(
+                lambda n : n.name == "read"
+            )
+        ]
+    )
+
+    chains = pattern.find_matches(example_attackgraph)
     breakpoint()
