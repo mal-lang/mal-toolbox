@@ -1,13 +1,13 @@
 """Utilities for finding patterns in the AttackGraph"""
 
 from __future__ import annotations
-from dataclasses import dataclass, field
-from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
+from dataclasses import dataclass
 from typing import Callable
+from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 
 class SearchPattern:
     """A pattern consists of conditions, the conditions are used
-    to find matching sequence of nodes in an AttackGraph."""
+    to find all matching sequences of nodes in an AttackGraph."""
     conditions: list[SearchCondition]
 
     def __init__(self, conditions):
@@ -47,6 +47,7 @@ class SearchCondition:
     # If lamdba returns True for a node, the node matches
     # If the lamdba returns False for a node, the node does not match
     matches: Callable[[AttackGraphNode], bool]
+    greedy: bool = False
 
     # It is possible to require/allow a Condition to repeat
     min_repeated: int = 1
@@ -80,27 +81,39 @@ def find_matches_recursively(
 
     Return: list of lists of AttackGraphNodes that match the condition
     """
-
     # Init path lists if None
-    current_path = [] if current_path is None else current_path
-    matching_paths = [] if matching_paths is None else matching_paths
+    current_path = [] if current_path is None else list(current_path)
+    matching_paths = [] if matching_paths is None else list(matching_paths)
 
-    current_exp = condition_list[0]
+    curr_cond = condition_list[0]
+    next_condition = condition_list[1] if len(condition_list) > 1 else None
 
-    if current_exp.matches(node):
+    if curr_cond.matches(node):
         # Current node matches, add to current_path and increment match_count
         current_path.append(node)
         condition_match_count += 1
 
-        if len(condition_list) == 1 \
-            and not current_exp.must_match_again(condition_match_count):
+        if next_condition is None \
+            and not curr_cond.must_match_again(condition_match_count):
             # This is the last condition in the path,
             # and the current path is matching
             matching_paths.append(current_path)
 
-        elif current_exp.can_match_again(condition_match_count):
-            # Pattern has matches left, run recursively with current condition
+        elif curr_cond.can_match_again(condition_match_count):
+            # Pattern has matches left
+
             for child in node.children:
+                # If curr_cond not greedy and next condition matches child
+                # move to next condition, otherwise continue with current
+                move_to_next_condition = (
+                    not curr_cond.greedy and
+                    next_condition.matches(child) and
+                    not curr_cond.must_match_again(condition_match_count)
+                )
+                if move_to_next_condition:
+                    condition_list = condition_list[1:]
+                    condition_match_count = 0
+
                 matching_paths = find_matches_recursively(
                     child,
                     condition_list,
@@ -118,7 +131,7 @@ def find_matches_recursively(
                     matching_paths=matching_paths
                 )
     else:
-        if not current_exp.must_match_again(condition_match_count)\
+        if not curr_cond.must_match_again(condition_match_count)\
             and len(condition_list) > 1:
             # Node did not match current condition, but we can try with
             # the next condition since current one is 'fulfilled'

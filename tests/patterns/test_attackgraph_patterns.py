@@ -2,8 +2,7 @@
 import pytest
 from maltoolbox.model import Model, AttackerAttachment
 from maltoolbox.attackgraph import AttackGraph
-
-import maltoolbox.patterns.attackgraph_patterns as attackgraph_patterns
+import math
 from maltoolbox.patterns.attackgraph_patterns import SearchPattern, SearchCondition
 
 from test_model import create_application_asset, create_association
@@ -41,16 +40,31 @@ def test_attackgraph_find_pattern(example_attackgraph):
     pattern = SearchPattern(
         [
             SearchCondition(
+                lambda n : n.name == "attemptModify"
+            ),
+            SearchCondition(
+                lambda n : True,
+                min_repeated=1, max_repeated=math.inf
+            ),
+            SearchCondition(
                 lambda n : n.name == "attemptRead"
-            ),
-            SearchCondition(
-                lambda n : n.name == "successfulRead"
-            ),
-            SearchCondition(
-                lambda n : n.name == "read"
             )
         ]
     )
 
-    chains = pattern.find_matches(example_attackgraph)
-    breakpoint()
+    paths = pattern.find_matches(example_attackgraph)
+
+    assert paths
+    # Make sure the paths match the pattern
+    for path in paths:
+        conditions = list(pattern.conditions)
+        num_matches_curr_condition = 0
+        for node in path:
+            if conditions[0].matches(node):
+                num_matches_curr_condition += 1
+            elif not conditions[0].must_match_again(
+                num_matches_curr_condition):
+                conditions.pop(0)
+                num_matches_curr_condition = 0
+            else:
+                assert False, "Chain does not match pattern conditions"
