@@ -4,25 +4,27 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 from typing import Callable
+
 class SearchPattern:
     """A pattern consists of conditions, the conditions are used
-    to find matching paths in an attack graph"""
-    conditions: list[Condition]
+    to find matching sequence of nodes in an AttackGraph."""
+    conditions: list[SearchCondition]
 
     def __init__(self, conditions):
         self.conditions = conditions
 
     def find_matches(self, graph: AttackGraph):
         """Search through a graph for a pattern using
-        its conditions, and return matching paths of nodes
+        its conditions, and return sequences of nodes
+        that match all the conditions in the pattern
 
         Args:
-        graph   - The graph to search in
+        graph   - The AttackGraph to search in
     
-        Return: list[list[AttackGraphNode]] of matching paths
+        Return: list[list[AttackGraphNode]] matching paths of Nodes
         """
 
-        # Find the starting nodes
+        # Find the starting nodes which match the first condition
         condition = self.conditions[0]
         starting_nodes = []
         for node in graph.nodes:
@@ -39,7 +41,7 @@ class SearchPattern:
 
 @dataclass
 class SearchCondition:
-    """A filter has a condition that has to be true for a node to match"""
+    """A condition that has to be true for a node to match"""
 
     # `matches` should be a lambda that takes node as input and returns bool
     # If lamdba returns True for a node, the node matches
@@ -61,12 +63,12 @@ class SearchCondition:
 
 def find_matches_recursively(
         node: AttackGraphNode,
-        condition_list: list[Condition],
+        condition_list: list[SearchCondition],
         current_path=None,
         matching_paths=None,
         condition_match_count=0
     ):
-    """Find all paths of nodes that match the list of conditions.
+    """Find all sequences of nodes that match the list of conditions.
     When a sequence of conditions is fulfilled for a path of nodes,
     add the path of nodes to the returned `matching_paths`
 
@@ -78,6 +80,7 @@ def find_matches_recursively(
 
     Return: list of lists of AttackGraphNodes that match the condition
     """
+
     # Init path lists if None
     current_path = [] if current_path is None else current_path
     matching_paths = [] if matching_paths is None else matching_paths
