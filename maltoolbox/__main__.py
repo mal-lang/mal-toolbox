@@ -21,72 +21,55 @@ Notes:
       parameters required for this app to reach the Neo4j instance should be
       defined in the default.conf file.
 """
-import docopt
+
 import logging
 import json
-import sys
-import zipfile
+import docopt
 
+from maltoolbox.wrappers import create_attack_graph
 from . import log_configs, neo4j_configs
-from .language import LanguageClassesFactory, LanguageGraph
 from .language.compiler import MalCompiler
-from .model import Model
-from .attackgraph import AttackGraph
-from .attackgraph.analyzers.apriori import calculate_viability_and_necessity
 from .ingestors import neo4j
-from .exceptions import AttackGraphStepExpressionError
 
 logger = logging.getLogger(__name__)
 
-
-def generate_attack_graph(model_file: str, lang_file: str, send_to_neo4j: bool) -> None:
-    try:
-        lang_graph = LanguageGraph.from_mar_archive(lang_file)
-    except zipfile.BadZipFile:
-        lang_graph = LanguageGraph.from_mal_spec(lang_file)
-
-    if log_configs['langspec_file']:
-        lang_graph.save_language_specification_to_json(log_configs['langspec_file'])
-
-    lang_classes_factory = LanguageClassesFactory(lang_graph)
-
-    instance_model = Model.load_from_file(model_file, lang_classes_factory)
-
-    if log_configs['model_file']:
-        instance_model.save_to_file(log_configs['model_file'])
-
-    try:
-        graph = AttackGraph(lang_graph, instance_model)
-    except AttackGraphStepExpressionError:
-        logger.error('Attack graph generation failed when attempting ' \
-            'to resolve attack step expression!')
-        sys.exit(1)
-
-    calculate_viability_and_necessity(graph)
-
-    graph.attach_attackers()
-
+def generate_attack_graph(
+        model_file: str,
+        lang_file: str,
+        send_to_neo4j: bool
+    ) -> None:
+    """Create an attack graph and optionally send to neo4j
+    
+    Args:
+    model_file      - path to the model file
+    lang_file       - path to the language file
+    send_to_neo4j   - whether to ingest into neo4j or not
+    """
+    attack_graph = create_attack_graph(lang_file, model_file)
     if log_configs['attackgraph_file']:
-        graph.save_to_file(
-            log_configs['attackgraph_file'])
+        attack_graph.save_to_file(
+            log_configs['attackgraph_file']
+        )
 
     if send_to_neo4j:
         logger.debug('Ingest model graph into Neo4J database.')
-        neo4j.ingest_model(instance_model,
+        neo4j.ingest_model(attack_graph.model,
             neo4j_configs['uri'],
             neo4j_configs['username'],
             neo4j_configs['password'],
             neo4j_configs['dbname'],
             delete=True)
         logger.debug('Ingest attack graph into Neo4J database.')
-        neo4j.ingest_attack_graph(graph,
+        neo4j.ingest_attack_graph(attack_graph,
             neo4j_configs['uri'],
             neo4j_configs['username'],
             neo4j_configs['password'],
             neo4j_configs['dbname'],
             delete=False)
 
+
 def compile(lang_file, output_file):
+    """Compile language and dump into output file"""
     compiler = MalCompiler()
 
     with open(output_file, "w") as f:
