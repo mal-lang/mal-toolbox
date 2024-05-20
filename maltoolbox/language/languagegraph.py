@@ -29,6 +29,7 @@ class LanguageGraphAsset:
     # futureproofing at its most hopeful.
     super_assets: list = None
     sub_assets: list = None
+    is_abstract: bool = None
 
     def to_dict(self):
         node_dict = {
@@ -672,7 +673,8 @@ class LanguageGraph:
                 attack_steps = [],
                 description = asset['meta'],
                 super_assets = [],
-                sub_assets = []
+                sub_assets = [],
+                is_abstract = asset['isAbstract']
             )
             self.assets.append(asset_node)
 
