@@ -86,17 +86,17 @@ def find_matches_recursively(
     matching_paths = [] if matching_paths is None else list(matching_paths)
 
     curr_cond = condition_list[0]
-    next_condition = condition_list[1] if len(condition_list) > 1 else None
+    next_cond = condition_list[1] if len(condition_list) > 1 else None
 
     if curr_cond.matches(node):
         # Current node matches, add to current_path and increment match_count
         current_path.append(node)
         condition_match_count += 1
 
-        if next_condition is None \
+        if next_cond is None \
             and not curr_cond.must_match_again(condition_match_count):
             # This is the last condition in the path,
-            # and the current path is matching
+            # and the current path is fulfilled
             matching_paths.append(current_path)
 
         elif curr_cond.can_match_again(condition_match_count):
@@ -107,7 +107,7 @@ def find_matches_recursively(
                 # move to next condition, otherwise continue with current
                 move_to_next_condition = (
                     not curr_cond.greedy and
-                    next_condition.matches(child) and
+                    next_cond.matches(child) and
                     not curr_cond.must_match_again(condition_match_count)
                 )
                 if move_to_next_condition:
