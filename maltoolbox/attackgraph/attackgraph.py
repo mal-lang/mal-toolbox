@@ -13,6 +13,8 @@ from ..exceptions import AttackGraphStepExpressionError
 from ..language import specification, LanguageGraph
 from ..model import Model
 
+from maltoolbox.utils import save_to_json, save_to_yaml
+
 logger = logging.getLogger(__name__)
 
 # TODO see if (part of) this can be incorporated into the LanguageGraph, so that
@@ -168,22 +170,29 @@ class AttackGraph:
     def __repr__(self) -> str:
         return f'AttackGraph({len(self.nodes)} nodes)'
 
-    def save_to_file(self, filename: str):
-        """
-        Save the attack graph to a json file.
-
-        Arguments:
-        filename        - the name of the output file
-        """
-
-        logger.info(f'Saving attack graph with {len(self.nodes)} attack step '
-            f'nodes to {filename} file.')
+    def serialize(self):
+        """Convert AttackGraph to list"""
         serialized_graph = []
         for ag_node in self.nodes:
             serialized_graph.append(ag_node.to_dict())
-        with open(filename, 'w', encoding='utf-8') as file:
-            json.dump(serialized_graph, file, indent=4)
+        return serialized_graph
 
+    def save_to_file(self, filename: str):
+        """
+        Save AttackGraph to json/yml file depending on extension.
+
+        Arguments:
+        filename        - name of the output file
+        """
+
+        logger.info(f'Saving AttackGraph to "{filename}".')
+        serialized_graph = self.serialize()
+        if filename.endswith('.yml') or filename.endswith('.yaml'):
+            save_to_yaml(filename, serialized_graph)
+        elif filename.endswith('.json'):
+            save_to_json(filename, serialized_graph)
+        else:
+            logger.error('Unknown file extension for AttackGraph to save to.')
 
     def load_from_file(self, filename: str, model: Optional[Model] = None):
         """
