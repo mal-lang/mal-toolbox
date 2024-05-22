@@ -319,7 +319,7 @@ class Model():
                 # specific key. Skip if it is not a defense.
                 continue
 
-            logger.debug(f'Translating {key}: {value} defense to json.')
+            logger.debug(f'Translating {key}: {value} defense to dictionary.')
 
             if value == value.default():
                 # Skip the defense values if they are the default ones.
@@ -346,16 +346,17 @@ class Model():
         first_field_name, second_field_name = association._properties.keys()
         first_field = getattr(association, first_field_name)
         second_field = getattr(association, second_field_name)
-        json_association = {
-            'metaconcept': association.__class__.__name__,
-            'association': {
+
+        association_dict = {
+            association.__class__.__name__ :
+            {
                 str(first_field_name):
                     [int(asset.id) for asset in first_field],
                 str(second_field_name):
                     [int(asset.id) for asset in second_field]
             }
         }
-        return json_association
+        return association_dict
 
     def attacker_to_dict(self, attacker):
         """Get dictionary representation of the attacker.
@@ -363,16 +364,16 @@ class Model():
         Arguments:
         attacker    - attacker to get dictionary representation of
         """
-        logger.debug(f'Translating {attacker.name} to json.')
-        json_attacker = {
+        logger.debug(f'Translating {attacker.name} to dictionary.')
+        attacker_dict = {
             'name': str(attacker.name),
             'entry_points': {},
         }
         for (asset, attack_steps) in attacker.entry_points:
-            json_attacker['entry_points'][int(asset.id)] = {
+            attacker_dict['entry_points'][int(asset.id)] = {
                 'attack_steps' : attack_steps
             }
-        return (int(attacker.id), json_attacker)
+        return (int(attacker.id), attacker_dict)
 
     def _to_dict(self):
         """Get dictionary representation of the model."""
@@ -391,17 +392,17 @@ class Model():
             'info': 'Created by the mal-toolbox model python module.'
         }
 
-        logger.debug('Translating assets to dict.')
+        logger.debug('Translating assets to dictionary.')
         for asset in self.assets:
             (asset_id, asset_dict) = self.asset_to_dict(asset)
             contents['assets'][int(asset_id)] = asset_dict
 
-        logger.debug('Translating associations to dict.')
+        logger.debug('Translating associations to dictionary.')
         for association in self.associations:
             assoc_dict = self.association_to_dict(association)
             contents['associations'].append(assoc_dict)
 
-        logger.debug('Translating attackers to dict.')
+        logger.debug('Translating attackers to dictionary.')
         for attacker in self.attackers:
             (attacker_id, attacker_dict) = self.attacker_to_dict(attacker)
             contents['attackers'][attacker_id] = attacker_dict
@@ -448,14 +449,12 @@ class Model():
             model.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
-        for assoc_dict in serialized_object.get('associations', []):
-            association = getattr(model.lang_classes_factory.ns, assoc_dict.pop('metaconcept'))()
+        for assoc_entry in serialized_object.get('associations', []):
+            assoc = list(assoc_entry.keys())[0]
+            assoc_fields = assoc_entry[assoc]
+            association = getattr(model.lang_classes_factory.ns, assoc)()
 
-            # compatibility with old format
-            assoc_dict = assoc_dict.get('association', assoc_dict)
-            # TODO do we need the above compatibility?
-
-            for field, targets in assoc_dict.items():
+            for field, targets in assoc_fields.items():
                 targets = targets if isinstance(targets, list) else [targets]
                 setattr(
                     association,
