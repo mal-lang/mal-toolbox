@@ -80,12 +80,11 @@ def test_attackgraph_save_load(example_attackgraph: AttackGraph):
     Note: Will create file in /tmp"""
 
     # Save the example attack graph to /tmp
-    example_graph_path = "/tmp/example_graph.txt"
+    example_graph_path = "/tmp/example_graph.yml"
     example_attackgraph.save_to_file(example_graph_path)
 
     # Load the attack graph
-    loaded_attack_graph = AttackGraph()
-    loaded_attack_graph.load_from_file(example_graph_path)
+    loaded_attack_graph = AttackGraph.load_from_file(example_graph_path)
 
     # The model will not exist in the loaded attack graph
     assert loaded_attack_graph.model is None
