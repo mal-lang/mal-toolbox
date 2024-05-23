@@ -7,13 +7,17 @@ import json
 
 from typing import Optional
 
+from maltoolbox.file_utils import (
+    load_dict_from_json_file, load_dict_from_yaml_file,
+    save_dict_to_file
+)
+
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
 from ..language import specification, LanguageGraph
 from ..model import Model
 
-from maltoolbox.utils import save_to_json, save_to_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -157,8 +161,8 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
             return ([], None)
 
 
-
-class AttackGraph:
+class AttackGraph():
+    """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
         self.nodes = []
         self.attackers = []
@@ -170,55 +174,29 @@ class AttackGraph:
     def __repr__(self) -> str:
         return f'AttackGraph({len(self.nodes)} nodes)'
 
-    def serialize(self):
+    def _to_dict(self):
         """Convert AttackGraph to list"""
         serialized_graph = []
         for ag_node in self.nodes:
             serialized_graph.append(ag_node.to_dict())
         return serialized_graph
 
-    def save_to_file(self, filename: str):
-        """
-        Save AttackGraph to json/yml file depending on extension.
+    def save_to_file(self, filename):
+        """Save to json/yml depending on extension"""
+        return save_dict_to_file(filename, self._to_dict())
 
-        Arguments:
-        filename        - name of the output file
-        """
-
-        logger.info(f'Saving AttackGraph to "{filename}".')
-        serialized_graph = self.serialize()
-        if filename.endswith('.yml') or filename.endswith('.yaml'):
-            save_to_yaml(filename, serialized_graph)
-        elif filename.endswith('.json'):
-            save_to_json(filename, serialized_graph)
-        else:
-            logger.error('Unknown file extension for AttackGraph to save to.')
-
-    def load_from_file(self, filename: str, model: Optional[Model] = None):
-        """
-        Load the attack graph model from a json file.
-
-        Arguments:
-        filename        - the name of the input file to parse
-        model           - (optional) the instance model that the attack graph was
-                          generated from. If this given then the attack graph node
-                          and instance model asset link can be re-established. If
-                          this argument is not given the attack graph will still
-                          be created it will just omit the links to the assets.
+    @classmethod
+    def _from_dict(cls, serialized_object, model=None):
+        """Create AttackGraph from dict
+        Args:
+        serialized_object   - AttackGraph in dict format
+        model               - Optional Model to add connections to
         """
 
-        logger.info(f'Loading attack graph from {filename} file.')
-        if model:
-            logger.info(f'Model(\'{model.name}\') was provided will attempt '
-            'to establish links to assets.')
-        else:
-            logger.info('No model was provided therefore asset links will '
-            'not be established.')
+        attack_graph = AttackGraph()
 
-        with open(filename, 'r', encoding='utf-8') as file:
-            serialized_graph = json.load(file)
         # Create all of the nodes in the imported attack graph.
-        for node_dict in serialized_graph:
+        for node_dict in serialized_object:
             ag_node = AttackGraphNode(
                 id=node_dict['id'],
                 type=node_dict['type'],
@@ -240,6 +218,7 @@ class AttackGraph:
                 'tags' in node_dict else []
             ag_node.reward = float(node_dict['reward']) if \
                 'reward' in node_dict else 0.0
+
             if ag_node.name == 'firstSteps':
                 # This is an attacker entry point node, recreate the attacker.
                 attacker_id = ag_node.id.split(':')[1]
@@ -249,39 +228,44 @@ class AttackGraph:
                     reached_attack_steps = [],
                     node = ag_node
                 )
-                self.attackers.append(ag_attacker)
+                attack_graph.attackers.append(ag_attacker)
                 ag_node.attacker = ag_attacker
 
-            self.nodes.append(ag_node)
+            attack_graph.nodes.append(ag_node)
 
         # Re-establish links between nodes.
-        for node_dict in serialized_graph:
-            _ag_node: Optional[AttackGraphNode] = self.get_node_by_id(node_dict['id'])
+        for node_dict in serialized_object:
+            _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
-                logger.error(f'Failed to find node with id {node_dict["id"]}'
-                    f' when loading from attack graph from file {filename}')
+                logger.error(
+                    f'Failed to find node with id {node_dict["id"]}'
+                    f' when loading from attack graph from dict'
+                )
             else:
                 for child_id in node_dict['children']:
-                    child = self.get_node_by_id(child_id)
+                    child = attack_graph.get_node_by_id(child_id)
                     if child is None:
-                        logger.error(f'Failed to find child node with id {child_id}'
-                            f' when loading from attack graph from file {filename}')
+                        logger.error(
+                            f'Failed to find child node with id {child_id}'
+                            f' when loading from attack graph from dict'
+                        )
                         return None
                     _ag_node.children.append(child)
 
                     if isinstance(_ag_node.attacker, Attacker):
-                        # Relink the attacker related connections since the node
-                        # is an attacker entry point node.
+                        # Relink the attacker related connections since the
+                        # node is an attacker entry point node.
                         ag_attacker = _ag_node.attacker
                         ag_attacker.entry_points.append(child)
                         ag_attacker.compromise(child)
 
                 for parent_id in node_dict['parents']:
-                    parent = self.get_node_by_id(parent_id)
+                    parent = attack_graph.get_node_by_id(parent_id)
                     if parent is None:
-                        logger.error('Failed to find parent node with id '
-                            f'{parent_id} when loading from attack graph from '
-                            f'file {filename}')
+                        logger.error(
+                            f'Failed to find parent node with id {parent_id} '
+                            'when loading from attack graph from dict'
+                        )
                         return None
                     _ag_node.parents.append(parent)
 
@@ -290,9 +274,10 @@ class AttackGraph:
                     asset = model.get_asset_by_id(
                         int(node_dict['asset'].split(':')[1]))
                     if asset is None:
-                        logger.error('Failed to find asset with id '
-                            f'{node_dict["asset"]} when loading from attack graph '
-                            f'from file {filename}')
+                        logger.error(
+                            f'Failed to find asset with id {node_dict["asset"]}'
+                            'when loading from attack graph dict'
+                        )
                         return None
                     _ag_node.asset = asset
                     if hasattr(asset, 'attack_step_nodes'):
@@ -301,7 +286,19 @@ class AttackGraph:
                         asset.attack_step_nodes = attack_step_nodes
                     else:
                         asset.attack_step_nodes = [_ag_node]
+        return attack_graph
 
+    @classmethod
+    def load_from_file(cls, filename, model=None):
+        """Create from json or yaml file depending on file extension"""
+        serialized_model = None
+        if filename.endswith(('.yml', '.yaml')):
+            serialized_model = load_dict_from_yaml_file(filename)
+        elif filename.endswith('.json'):
+            serialized_model = load_dict_from_json_file(filename)
+        else:
+            raise ValueError('Unknown file extension, expected json/yml/yaml')
+        return cls._from_dict(serialized_model, model=model)
 
     def get_node_by_id(self, node_id: str) -> Optional[AttackGraphNode]:
         """
@@ -318,15 +315,15 @@ class AttackGraph:
         return next((ag_node for ag_node in self.nodes \
             if ag_node.id == node_id), None)
 
-
     def attach_attackers(self):
         """
         Create attackers and their entry point nodes and attach them to the
         relevant attack step nodes and to the attackers.
         """
 
-        logger.info(f'Attach attackers from \'{self.model.name}\' model to the '
-            'graph.')
+        logger.info(
+            f'Attach attackers from "{self.model.name}" model to the graph.'
+        )
         for attacker_info in self.model.attackers:
             attacker_node = AttackGraphNode(
                     id = 'Attacker:' + str(attacker_info.id) + ':firstSteps',
@@ -353,16 +350,17 @@ class AttackGraph:
                     attack_step_id = asset.name + ':' + attack_step
                     ag_node = self.get_node_by_id(attack_step_id)
                     if not ag_node:
-                        logger.warning('Failed to find attacker entry point '
+                        logger.warning(
+                            'Failed to find attacker entry point '
                             + attack_step_id + ' for Attacker:'
-                            + ag_attacker.id + '.')
+                            + ag_attacker.id + '.'
+                        )
                         continue
                     ag_attacker.compromise(ag_node)
 
             ag_attacker.entry_points = ag_attacker.reached_attack_steps
             attacker_node.children = ag_attacker.entry_points
             self.nodes.append(attacker_node)
-
 
     def _generate_graph(self):
         """
@@ -372,16 +370,19 @@ class AttackGraph:
 
         # First, generate all of the nodes of the attack graph.
         for asset in self.model.assets:
-            logger.debug(f'Generating attack steps for asset {asset.name} which '\
-                f'is of class {asset.metaconcept}.')
+            logger.debug(
+                f'Generating attack steps for asset {asset.name} '
+                f'which is of class {asset.metaconcept}.'
+            )
             attack_step_nodes = []
 
             # TODO probably part of what happens here is already done in lang_graph
             attack_steps = self.lang_graph._get_attacks_for_asset_type(asset.metaconcept)
 
             for attack_step_name, attack_step_attribs in attack_steps.items():
-                logger.debug('Generating attack step node for '\
-                    f'{attack_step_name}.')
+                logger.debug(
+                    f'Generating attack step node for {attack_step_name}.'
+                )
 
                 defense_status = None
                 existence_status: Optional[bool] = None
