@@ -75,7 +75,9 @@ def test_attackgraph_init(corelang_lang_graph, model):
         assert _generate_graph.call_count == 0
 
 
-def test_attackgraph_save_load(example_attackgraph: AttackGraph):
+def test_attackgraph_save_load_no_model_given(
+        example_attackgraph: AttackGraph
+    ):
     """Save AttackGraph to a file and load it
     Note: Will create file in /tmp"""
 
@@ -107,6 +109,29 @@ def test_attackgraph_save_load(example_attackgraph: AttackGraph):
 
         # Make sure nodes are the same (except for the excluded keys)
         assert loaded_node_dict == original_node_dict
+
+
+def test_attackgraph_from_to_from_json_yml_model_given(
+        example_attackgraph: AttackGraph
+    ):
+    """Try to save and load attack graph from json and yml with model given,
+    and make sure the dict represenation is the same (except for reward field)
+    """
+    for attackgraph_path in ("/tmp/attackgraph.yml", "/tmp/attackgraph.json"):
+        example_attackgraph.save_to_file(attackgraph_path)
+        loaded_attackgraph = AttackGraph.load_from_file(
+            attackgraph_path, model=example_attackgraph.model)
+
+        # Loaded graph nodes will have a 'reward' attribute which original
+        # nodes does not, otherwise they should be the same
+        for i, loaded_node_dict in enumerate(loaded_attackgraph._to_dict()):
+            original_node_dict = example_attackgraph._to_dict()[i]
+
+            # Remove key that don't match
+            del loaded_node_dict['reward']
+
+            # Make sure nodes are the same (except for the excluded keys)
+            assert loaded_node_dict == original_node_dict
 
 
 def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
@@ -276,8 +301,3 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
     #     for parent in parents:
     #         assert child in parent.children
     #         assert parent in child.parents
-
-
-def test_attackgraph_process_step_expression():
-    """"""
-    pass

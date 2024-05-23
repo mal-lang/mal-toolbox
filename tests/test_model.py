@@ -589,16 +589,17 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     ]
     model.add_attacker(attacker)
 
-    # Mock open() function so no real files are written to filesystem
-    model.save_to_file('/tmp/test.json')
+    for model_path in ("/tmp/test.json", "/tmp/test.yaml", "/tmp/test.yml"):
+        # Mock open() function so no real files are written to filesystem
+        model.save_to_file(model_path)
 
-    # Create a new model by loading old model from file
-    new_model = Model.load_from_file(
-        '/tmp/test.json',
-        model.lang_classes_factory
-    )
+        # Create a new model by loading old model from file
+        new_model = Model.load_from_file(
+            model_path,
+            model.lang_classes_factory
+        )
 
-    assert new_model._to_dict() == model._to_dict()
+        assert new_model._to_dict() == model._to_dict()
 
 
 def test_model_save_and_load_model_example_model(model):
