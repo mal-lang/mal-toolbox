@@ -3,11 +3,13 @@ MAL-Toolbox Model Module
 """
 
 import json
-import yaml
 import logging
 
 from dataclasses import dataclass
-from python_jsonschema_objects.literals import LiteralValue
+from maltoolbox.file_utils import (
+    load_dict_from_json_file, load_dict_from_yaml_file,
+    save_dict_to_file
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,8 @@ class AttackerAttachment:
     name: str = None
     entry_points: list[tuple] = None
 
-class Model:
+class Model():
+    """An implementation of a MAL language with assets and associations"""
     next_id = 0
 
     def __repr__(self) -> str:
@@ -139,7 +142,6 @@ class Model:
             raise LookupError(f'Asset {asset.id} is not part of the '
                 'association provided.')
 
-
     def add_association(self, association):
         """Add an association to the model.
 
@@ -241,7 +243,6 @@ class Model:
                 (asset for asset in self.assets
                 if asset.name == asset_name), None
              )
-
 
     def get_attacker_by_id(self, attacker_id):
         """
@@ -373,9 +374,9 @@ class Model:
             }
         return (int(attacker.id), json_attacker)
 
-    def model_to_dict(self):
+    def _to_dict(self):
         """Get dictionary representation of the model."""
-        logger.debug(f'Get dictionary representation of the model.')
+        logger.debug(f'Translating model to dict.')
         contents = {
             'metadata': {},
             'assets': {},
@@ -390,122 +391,52 @@ class Model:
             'info': 'Created by the mal-toolbox model python module.'
         }
 
-        logger.debug('Translating assets to json.')
+        logger.debug('Translating assets to dict.')
         for asset in self.assets:
-            (asset_id, asset_json) = self.asset_to_dict(asset)
-            contents['assets'][int(asset_id)] = asset_json
+            (asset_id, asset_dict) = self.asset_to_dict(asset)
+            contents['assets'][int(asset_id)] = asset_dict
 
-        logger.debug('Translating associations to json.')
+        logger.debug('Translating associations to dict.')
         for association in self.associations:
-            assoc_json = self.association_to_dict(association)
-            contents['associations'].append(assoc_json)
+            assoc_dict = self.association_to_dict(association)
+            contents['associations'].append(assoc_dict)
 
-        logger.debug('Translating attackers to json.')
+        logger.debug('Translating attackers to dict.')
         for attacker in self.attackers:
-            (attacker_id, attacker_json) = self.attacker_to_dict(attacker)
-            contents['attackers'][attacker_id] = attacker_json
+            (attacker_id, attacker_dict) = self.attacker_to_dict(attacker)
+            contents['attackers'][attacker_id] = attacker_dict
         return contents
 
     def save_to_file(self, filename):
-        """Save model to file.
+        """Save to json/yml depending on extension"""
+        return save_dict_to_file(filename, self._to_dict())
+
+    @classmethod
+    def _from_dict(cls, serialized_object, lang_classes_factory):
+        """Create a model from dict representation
 
         Arguments:
-        filename        - the name of the output file
+        serialized_object    - Model in dict format
+        lang_classes_factory -
         """
-
-        logger.info(f'Saving model to {filename} file.')
-        if filename.endswith('.yml') or filename.endswith('.yaml'):
-            self.save_to_yaml(filename)
-        elif filename.endswith('.json'):
-            self.save_to_json(filename)
-        else:
-            logger.error('Unknown file extension for model file to save to.')
-
-    def save_to_json(self, filename):
-        """Save model to a json file.
-
-        Arguments:
-        filename        - the name of the output file
-        """
-
-        contents = self.model_to_dict()
-        fp = open(filename, 'w')
-        json.dump(contents, fp, indent = 2)
-
-    def save_to_yaml(self, filename):
-        """Save model to a yaml file.
-
-        Arguments:
-        filename        - the name of the output file
-        """
-
-        contents = self.model_to_dict()
-
-        yaml.add_multi_representer(
-            LiteralValue,
-            lambda dumper, data: dumper.represent_data(data._value),
-            yaml.SafeDumper
+        model = Model(
+            serialized_object['metadata']['name'],
+            lang_classes_factory
         )
 
-        fp = open(filename, 'w')
-        yaml.dump(contents, fp, Dumper=yaml.SafeDumper)
-
-    @classmethod
-    def load_from_file(cls, filename, lang_classes_factory):
-        """
-        Load model from file.
-
-        Arguments:
-        filename        - the name of the input file
-        """
-        logger.info(f'Loading model from {filename} file.')
-        if filename.endswith('.yml') or filename.endswith('.yaml'):
-            return cls.load_from_yaml(filename, lang_classes_factory)
-        elif filename.endswith('.json'):
-            return cls.load_from_json(filename, lang_classes_factory)
-        else:
-            logger.error('Unknown file extension for model file to load '
-                'from.')
-
-    @classmethod
-    def load_from_json(cls, filename, lang_classes_factory):
-        """
-        Load model from a json file.
-
-        Arguments:
-        filename        - the name of the input file
-        """
-        with open(filename, 'r', encoding='utf-8') as model_file:
-            model_dict = json.loads(model_file.read())
-
-        return cls._process_model(model_dict, lang_classes_factory)
-
-    @classmethod
-    def load_from_yaml(cls, filename, lang_classes_factory):
-        """
-        Load model from a yaml file.
-
-        Arguments:
-        filename        - the name of the input file
-        """
-        with open(filename, 'r', encoding='utf-8') as model_file:
-            model_dict = yaml.safe_load(model_file)
-
-        return cls._process_model(model_dict, lang_classes_factory)
-
-    @classmethod
-    def _process_model(cls, model_dict, lang_classes_factory):
-        model = Model(model_dict['metadata']['name'], lang_classes_factory)
-
         # Reconstruct the assets
-        for asset_id, asset_object in model_dict['assets'].items():
-            logger.debug(f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
+        for asset_id, asset_object in serialized_object['assets'].items():
+            logger.debug(
+                f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
 
             # Allow defining an asset via the metaconcept only.
             asset_object = (
                 asset_object
                 if isinstance(asset_object, dict)
-                else {'metaconcept': asset_object, 'name': f"{asset_object}:{asset_id}"}
+                else {
+                    'metaconcept': asset_object,
+                    'name': f"{asset_object}:{asset_id}"
+                }
             )
 
             asset = getattr(model.lang_classes_factory.ns,
@@ -517,7 +448,7 @@ class Model:
             model.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
-        for assoc_dict in model_dict.get('associations', []):
+        for assoc_dict in serialized_object.get('associations', []):
             association = getattr(model.lang_classes_factory.ns, assoc_dict.pop('metaconcept'))()
 
             # compatibility with old format
@@ -534,8 +465,8 @@ class Model:
             model.add_association(association)
 
         # Reconstruct the attackers
-        if 'attackers' in model_dict:
-            attackers_info = model_dict['attackers']
+        if 'attackers' in serialized_object:
+            attackers_info = serialized_object['attackers']
             for attacker_id in attackers_info:
                 attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
                 attacker.entry_points = []
@@ -546,3 +477,16 @@ class Model:
                             [asset_id]['attack_steps']))
                 model.add_attacker(attacker, attacker_id = int(attacker_id))
         return model
+
+    @classmethod
+    def load_from_file(cls, filename, lang_classes_factory):
+        """Create from json or yaml file depending on file extension"""
+        serialized_model = None
+        if filename.endswith(('.yml', '.yaml')):
+            serialized_model = load_dict_from_yaml_file(filename)
+        elif filename.endswith('.json'):
+            serialized_model = load_dict_from_json_file(filename)
+        else:
+            raise ValueError('Unknown file extension, expected json/yml/yaml')
+        return cls._from_dict(serialized_model, lang_classes_factory)
+
