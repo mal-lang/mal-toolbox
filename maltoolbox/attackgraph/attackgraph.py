@@ -89,11 +89,11 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
             # Fetch the step expression associated with the variable from
             # the language specification and resolve that.
             for target_asset in target_assets:
-                if (hasattr(target_asset, 'metaconcept')):
+                if (hasattr(target_asset, 'type')):
                     # TODO how can this info be accessed in the lang_graph
                     # directly without going through the private method?
                     variable_step_expr = lang_graph._get_variable_for_asset_type_by_name(
-                        target_asset.metaconcept, step_expression['name'])
+                        target_asset.type, step_expression['name'])
                     return _process_step_expression(
                         lang_graph, model, target_assets, variable_step_expr)
 
@@ -142,7 +142,7 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
             selected_new_target_assets = (asset for asset in \
                 new_target_assets if specification.extends_asset(
                     lang_graph,
-                    asset.metaconcept,
+                    asset.type,
                     step_expression['subType']))
             return (selected_new_target_assets, None)
 
@@ -372,12 +372,11 @@ class AttackGraph():
         for asset in self.model.assets:
             logger.debug(
                 f'Generating attack steps for asset {asset.name} '
-                f'which is of class {asset.metaconcept}.'
-            )
+                f'which is of class {asset.type}.')
             attack_step_nodes = []
 
             # TODO probably part of what happens here is already done in lang_graph
-            attack_steps = self.lang_graph._get_attacks_for_asset_type(asset.metaconcept)
+            attack_steps = self.lang_graph._get_attacks_for_asset_type(asset.type)
 
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(

@@ -65,7 +65,7 @@ class Model():
         asset.associations = []
 
         if not hasattr(asset, 'name'):
-            asset.name = asset.metaconcept + ':' + str(asset.id)
+            asset.name = asset.type + ':' + str(asset.id)
         else:
             for ex_asset in self.assets:
                 if ex_asset.name == asset.name:
@@ -306,12 +306,12 @@ class Model():
         asset       - asset to get dictionary representation of
         """
         defenses = {}
-        logger.debug(f'Translating {asset.name} to json.')
+        logger.debug(f'Translating {asset.name} to dictionary.')
 
         for key, value in asset._properties.items():
             property_schema = (
                 self.lang_classes_factory.json_schema['definitions']['LanguageAsset']
-                ['definitions'][asset.metaconcept]['properties'][key]
+                ['definitions'][asset.type]['properties'][key]
             )
 
             if "maximum" not in property_schema:
@@ -329,7 +329,7 @@ class Model():
 
         ret = (asset.id, {
                 'name': str(asset.name),
-                'metaconcept': str(asset.metaconcept),
+                'type': str(asset.type),
                 }
             )
         if defenses:
@@ -430,18 +430,18 @@ class Model():
             logger.debug(
                 f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
 
-            # Allow defining an asset via the metaconcept only.
+            # Allow defining an asset via type only.
             asset_object = (
                 asset_object
                 if isinstance(asset_object, dict)
                 else {
-                    'metaconcept': asset_object,
+                    'type': asset_object,
                     'name': f"{asset_object}:{asset_id}"
                 }
             )
 
             asset = getattr(model.lang_classes_factory.ns,
-                asset_object['metaconcept'])(name = asset_object['name'])
+                asset_object['type'])(name = asset_object['name'])
 
             for defense in (defenses:=asset_object.get('defenses', [])):
                 setattr(asset, defense, float(defenses[defense]))

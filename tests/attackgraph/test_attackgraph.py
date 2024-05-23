@@ -174,7 +174,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     for asset in example_attackgraph.model.assets:
         attack_steps = example_attackgraph.\
             lang_graph._get_attacks_for_asset_type(
-                asset.metaconcept
+                asset.type
             )
         num_assets_attack_steps += len(attack_steps)
 

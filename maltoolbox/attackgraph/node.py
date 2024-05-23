@@ -41,8 +41,7 @@ class AttackGraphNode:
         }
 
         if self.asset is not None:
-            node_dict['asset'] = self.asset.metaconcept + ':' \
-                + str(self.asset.id)
+            node_dict['asset'] = self.asset.name
         if self.defense_status is not None:
             node_dict['defense_status'] = str(self.defense_status)
         if self.existence_status is not None:

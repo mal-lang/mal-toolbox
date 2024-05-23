@@ -93,10 +93,10 @@ def ingest_model(model,
     for asset in model.assets:
         nodeid = asset.name
 
-        nodes[str(asset.id)] = Node(str(asset.metaconcept),
+        nodes[str(asset.id)] = Node(str(asset.type),
                 name=str(asset.name),
                 asset_id=str(asset.id),
-                metaconcept=str(asset.metaconcept))
+                type=str(asset.type))
 
     for assoc in model.associations:
         firstElementName, secondElementName = assoc._properties.keys()
@@ -132,12 +132,12 @@ def get_model(uri,
     instance_model = Model('Neo4j imported model', lang_spec,
         lang_classes_factory)
     # Get all assets
-    assets_results = g.run('MATCH (a) WHERE a.metaconcept IS NOT NULL RETURN DISTINCT a').data()
+    assets_results = g.run('MATCH (a) WHERE a.type IS NOT NULL RETURN DISTINCT a').data()
     for asset in assets_results:
         asset_data = dict(asset['a'])
         logger.debug('Loading asset from Neo4j instance:\n' \
             + str(asset_data))
-        if asset_data['metaconcept'] == 'Attacker':
+        if asset_data['type'] == 'Attacker':
             attacker_id = int(asset_data['asset_id'])
             attacker = AttackerAttachment()
             attacker.entry_points = []
@@ -145,12 +145,12 @@ def get_model(uri,
             continue
 
         if not hasattr(lang_classes_factory.ns,
-            asset_data['metaconcept']):
-            logger.error(f'Failed to find {asset_data["metaconcept"]} '
+            asset_data['type']):
+            logger.error(f'Failed to find {asset_data["type"]} '
                 'asset in language specification!')
             return None
         asset_obj = getattr(lang_classes_factory.ns,
-            asset_data['metaconcept'])(name = asset_data['name'])
+            asset_data['type'])(name = asset_data['name'])
         asset_id = int(asset_data['asset_id'])
 
         #TODO Process defense values when they are included in Neo4j
@@ -158,7 +158,7 @@ def get_model(uri,
         instance_model.add_asset(asset_obj, asset_id)
 
     # Get all relationships
-    assocs_results = g.run('MATCH (a)-[r1]->(b),(a)<-[r2]-(b) WHERE a.metaconcept IS NOT NULL RETURN DISTINCT a, r1, r2, b').data()
+    assocs_results = g.run('MATCH (a)-[r1]->(b),(a)<-[r2]-(b) WHERE a.type IS NOT NULL RETURN DISTINCT a, r1, r2, b').data()
 
     for assoc in assocs_results:
         left_field = list(assoc['r1'].types())[0]
@@ -169,8 +169,8 @@ def get_model(uri,
         logger.debug(f'Load association '
             f'(\"{left_field}\",'
             f'\"{right_field}\",'
-            f'\"{left_asset["metaconcept"]}\",'
-            f'\"{right_asset["metaconcept"]}\") '
+            f'\"{left_asset["type"]}\",'
+            f'\"{right_asset["type"]}\") '
             f'from Neo4j instance.')
 
         left_id = int(left_asset['asset_id'])
@@ -215,14 +215,14 @@ def get_model(uri,
             lang_spec,
             left_field,
             right_field,
-            left_asset.metaconcept,
-            right_asset.metaconcept)
+            left_asset.type,
+            right_asset.type)
         logger.debug(f'Found \"{assoc_name}\" association.')
 
         if not assoc_name:
             logger.error(f'Failed to find '
-                f'(\"{left_asset.metaconcept}\",'
-                f'\"{right_asset.metaconcept}\",'
+                f'(\"{left_asset.type}\",'
+                f'\"{right_asset.type}\",'
                 f'\"{left_field}\",'
                 f'\"{right_field}\") '
                 'association in language specification!')
