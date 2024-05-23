@@ -5,7 +5,6 @@ from .mal_lexer import malLexer
 from .mal_parser import malParser
 from .mal_visitor import malVisitor
 
-import sys
 import os
 
 class MalCompiler:
@@ -28,4 +27,3 @@ class MalCompiler:
         tree = parser.mal()
 
         return malVisitor(compiler=self).visit(tree)
-
