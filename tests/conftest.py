@@ -18,13 +18,6 @@ def path_testdata(filename):
     return os.path.join(current_dir, f"testdata/{filename}")
 
 
-@pytest.fixture
-def corelang_lang_graph():
-    """Fixture that returns the coreLang language specification as dict"""
-    mar_file_path = path_testdata("org.mal-lang.coreLang-1.0.0.mar")
-    return LanguageGraph.from_mar_archive(mar_file_path)
-
-
 def empty_model(lang_classes_factory, name):
     """Fixture that generates a model for tests
 
@@ -37,10 +30,10 @@ def empty_model(lang_classes_factory, name):
 ## Fixtures (can be ingested into tests)
 
 @pytest.fixture
-def corelang_spec():
+def corelang_lang_graph():
     """Fixture that returns the coreLang language specification as dict"""
     mar_file_path = path_testdata("org.mal-lang.coreLang-1.0.0.mar")
-    return specification.load_language_specification_from_mar(mar_file_path)
+    return LanguageGraph.from_mar_archive(mar_file_path)
 
 
 @pytest.fixture

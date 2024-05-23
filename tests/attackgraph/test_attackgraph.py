@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import patch
 
+from maltoolbox.language import LanguageGraph
 from maltoolbox.attackgraph import AttackGraph
 from maltoolbox.model import Model, AttackerAttachment
 
@@ -10,7 +11,7 @@ from test_model import create_application_asset, create_association
 
 
 @pytest.fixture
-def example_attackgraph(corelang_spec, model: Model):
+def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """Fixture that generates an example attack graph
 
     Uses coreLang specification and model with two applications
@@ -34,28 +35,43 @@ def example_attackgraph(corelang_spec, model: Model):
     ]
     model.add_attacker(attacker)
 
-    return AttackGraph(lang_spec=corelang_spec, model=model)
+    return AttackGraph(
+        lang_graph=corelang_lang_graph,
+        model=model
+    )
 
 
-def test_attackgraph_init(corelang_spec, model):
+def test_attackgraph_init(corelang_lang_graph, model):
     """Test init with different params given"""
 
     # _generate_graph is called when langspec and model is given to init
     with patch("maltoolbox.attackgraph.AttackGraph._generate_graph")\
          as _generate_graph:
-        AttackGraph(lang_spec=corelang_spec, model=model)
+        AttackGraph(
+            lang_graph=corelang_lang_graph,
+            model=model
+        )
         assert _generate_graph.call_count == 1
 
     # _generate_graph is not called when no langspec or model is given
     with patch("maltoolbox.attackgraph.AttackGraph._generate_graph")\
         as _generate_graph:
-        AttackGraph(lang_spec=None, model=None)
+        AttackGraph(
+            lang_graph=None,
+            model=None
+        )
         assert _generate_graph.call_count == 0
 
-        AttackGraph(lang_spec=corelang_spec, model=None)
+        AttackGraph(
+            lang_graph=corelang_lang_graph,
+            model=None
+        )
         assert _generate_graph.call_count == 0
 
-        AttackGraph(lang_spec=None, model=model)
+        AttackGraph(
+            lang_graph=None,
+            model=model
+        )
         assert _generate_graph.call_count == 0
 
 
@@ -106,8 +122,7 @@ def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     """Make sure attackers are attached to graph"""
 
     nodes_before = list(example_attackgraph.nodes)
-    # TODO: Should we use self.model in attach_attackers instead?
-    example_attackgraph.attach_attackers(example_attackgraph.model)
+    example_attackgraph.attach_attackers()
     nodes_after = list(example_attackgraph.nodes)
 
     # An attacker node should be added
@@ -123,8 +138,6 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     """Make sure the graph is correctly generated from model and lang"""
     # TODO: Add test cases with defense steps
 
-    from maltoolbox.language import specification
-
     # Empty the attack graph
     example_attackgraph.nodes = []
     example_attackgraph.attackers = []
@@ -135,15 +148,17 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     # Calculate how many nodes we should expect
     num_assets_attack_steps = 0
     for asset in example_attackgraph.model.assets:
-        attack_steps = specification.get_attacks_for_class(
-            example_attackgraph.lang_spec, asset.metaconcept)
+        attack_steps = example_attackgraph.\
+            lang_graph._get_attacks_for_asset_type(
+                asset.metaconcept
+            )
         num_assets_attack_steps += len(attack_steps)
 
     # Each attack step will get one node
     assert len(example_attackgraph.nodes) == num_assets_attack_steps
 
 
-def test_attackgraph_according_to_corelang(corelang_spec, model):
+def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     """Looking at corelang .mal file, make sure the resulting
     AttackGraph contains expected nodes"""
 
@@ -156,7 +171,7 @@ def test_attackgraph_according_to_corelang(corelang_spec, model):
     # Create association between app1 and app2
     assoc = create_association(model, from_assets=[app1], to_assets=[app2])
     model.add_association(assoc)
-    attack_graph = AttackGraph(lang_spec=corelang_spec, model=model)
+    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model=model)
 
     # These are all attack 71 steps and defenses for Application asset in MAL
     expected_node_names_application = [
