@@ -3,7 +3,10 @@ import pytest
 from maltoolbox.model import Model, AttackerAttachment
 from maltoolbox.attackgraph import AttackGraph
 import math
-from maltoolbox.patterns.attackgraph_patterns import SearchPattern, SearchCondition
+
+from maltoolbox.patternfinder.attackgraph_patterns import (
+    SearchPattern, SearchCondition
+)
 
 from test_model import create_application_asset, create_association
 
