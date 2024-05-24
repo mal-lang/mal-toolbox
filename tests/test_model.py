@@ -16,7 +16,7 @@ def create_association(
         model,
         from_assets,
         to_assets,
-        metaconcept="AppExecution",
+        assoc_type="AppExecution",
         from_fieldname="hostApp",
         to_fieldname="appExecutedApps",
     ):
@@ -25,8 +25,7 @@ def create_association(
 
     # Simulate receiving the association from a json file
     association_dict = {
-      "metaconcept": metaconcept,
-      "association": {
+      assoc_type: {
         from_fieldname: from_assets,
         to_fieldname: to_assets
       }
@@ -35,10 +34,10 @@ def create_association(
     # Create the association using the lang_classes_factory
     association = getattr(
         model.lang_classes_factory.ns,
-        association_dict['metaconcept'])()
+            list(association_dict)[0])()
 
     # Add the assets
-    for field, assets in association_dict['association'].items():
+    for field, assets in association_dict[assoc_type].items():
         setattr(association, field, assets)
 
     return association
@@ -150,7 +149,7 @@ def test_model_add_association(model: Model):
 
     # Create an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
@@ -178,7 +177,7 @@ def test_model_remove_association(model: Model):
     model.add_asset(p2)
 
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
@@ -200,7 +199,7 @@ def test_model_remove_association_nonexisting(model: Model):
     """Make sure non existing association can not be removed"""
     # Create the association but don't add it
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[], to_assets=[]
     )
@@ -225,7 +224,7 @@ def test_model_remove_asset_from_association(model: Model):
 
     # Create and add association from p1 to p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
@@ -257,7 +256,7 @@ def test_model_remove_asset_from_association_nonexisting_asset(
 
     # Create an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
@@ -287,7 +286,7 @@ def test_model_remove_asset_from_association_nonexisting_association(
 
     # Create (but don't add!) an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
@@ -383,7 +382,7 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
@@ -426,7 +425,7 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
 #     # be set as below for an 'Application' asset in coreLang
 #     p1_dict = ret[1]
 #     assert p1_dict.get('name') == p1.name
-#     assert p1_dict.get('metaconcept') == 'Application'
+#     assert p1_dict.get('type') == 'Application'
 #
 #     # Default values should not be saved
 #     assert p1_dict.get('defenses') == None
@@ -449,7 +448,7 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
 #     # be set as below for an 'Application' asset in coreLang
 #     p1_dict = ret[1]
 #     assert p1_dict.get('name') == p1.name
-#     assert p1_dict.get('metaconcept') == 'Application'
+#     assert p1_dict.get('type') == 'Application'
 #
 #     # Default values for 'Application' defenses in coreLang
 #     assert p1_dict.get('defenses') == {
@@ -467,15 +466,16 @@ def test_model_association_to_dict(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
     model.add_association(association)
 
     association_dict = model.association_to_dict(association)
-    assert association_dict.get('metaconcept') == 'AppExecution'
-    assert association_dict.get('association') == {
+    association_type = list(association_dict.keys())[0]
+    assert association_type == 'AppExecution'
+    assert association_dict[association_type ] == {
         'hostApp': [p1.id],
         'appExecutedApps': [p2.id]
     }
@@ -528,7 +528,7 @@ def test_serialize(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
@@ -581,7 +581,7 @@ def test_model_save_and_load_model_from_scratch(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
+        model, assoc_type="AppExecution",
         from_fieldname="hostApp", to_fieldname="appExecutedApps",
         from_assets=[p1], to_assets=[p2]
     )
