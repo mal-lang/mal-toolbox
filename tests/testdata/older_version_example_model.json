@@ -1,0 +1,262 @@
+{
+  "metadata": {
+    "name": "Older Version Example Model",
+    "langVersion": "1.0.0",
+    "langID": "org.mal-lang.coreLang",
+    "malVersion": "0.1.0-SNAPSHOT",
+    "MAL Toolbox Version": "0.0.38",
+    "info": "Created by the mal-toolbox model python module."
+  },
+  "assets": {
+    "0": {
+      "name": "OS App",
+      "type": "Application",
+      "defenses": {
+        "notPresent": 0.0,
+        "supplyChainAuditing": 0.0
+      }
+    },
+    "1": {
+      "name": "Program 1",
+      "type": "Application",
+      "defenses": {
+        "notPresent": 1.0,
+        "supplyChainAuditing": 0.0
+      }
+    },
+    "2": {
+      "name": "Program 1:2",
+      "type": "Application",
+      "defenses": {
+        "notPresent": 0.0,
+        "supplyChainAuditing": 0.0
+      }
+    },
+    "3": {
+      "name": "IDPS 1",
+      "type": "IDPS",
+      "defenses": {
+        "notPresent": 0.0,
+        "supplyChainAuditing": 0.0
+      }
+    },
+    "4": {
+      "name": "SoftwareVulnerability:4",
+      "type": "SoftwareVulnerability",
+      "defenses": {
+        "notPresent": 0.0,
+        "networkAccessRequired": 0.0,
+        "localAccessRequired": 0.0,
+        "physicalAccessRequired": 0.0,
+        "lowPrivilegesRequired": 1.0,
+        "highPrivilegesRequired": 0.0,
+        "userInteractionRequired": 0.0,
+        "confidentialityImpactLimitations": 0.0,
+        "availabilityImpactLimitations": 1.0,
+        "integrityImpactLimitations": 0.0,
+        "highComplexityExploitRequired": 0.0
+      }
+    },
+    "5": {
+      "name": "Data:5",
+      "type": "Data",
+      "defenses": {
+        "notPresent": 0.0
+      }
+    },
+    "6": {
+      "name": "Credentials:6",
+      "type": "Credentials",
+      "defenses": {
+        "unique": 0.0,
+        "notPhishable": 0.0
+      }
+    },
+    "7": {
+      "name": "Credentials:7",
+      "type": "Credentials",
+      "defenses": {
+        "unique": 0.0,
+        "notPhishable": 0.0
+      }
+    },
+    "8": {
+      "name": "Identity:8",
+      "type": "Identity",
+      "defenses": {
+        "notPresent": 0.0
+      }
+    },
+    "9": {
+      "name": "Credentials:9",
+      "type": "Credentials",
+      "defenses": {
+        "unique": 0.0,
+        "notPhishable": 0.0
+      }
+    },
+    "10": {
+      "name": "Credentials:10",
+      "type": "Credentials",
+      "defenses": {
+        "notPhishable": 0.0
+      }
+    },
+    "11": {
+      "name": "Identity:11",
+      "type": "Identity",
+      "defenses": {
+        "notPresent": 0.0
+      }
+    },
+    "12": {
+      "name": "User:12",
+      "type": "User",
+      "defenses": {
+        "noPasswordReuse": 0.0,
+        "securityAwareness": 0.0
+      }
+    },
+    "13": {
+      "name": "Group:13",
+      "type": "Group",
+      "defenses": {
+        "notPresent": 0.0
+      }
+    }
+  },
+  "associations": [
+    {
+      "AppExecution": {
+        "hostApp": [
+          0
+        ],
+        "appExecutedApps": [
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "ApplicationVulnerability_SoftwareVulnerability_Application": {
+        "vulnerabilities": [
+          4
+        ],
+        "application": [
+          2
+        ]
+      }
+    },
+    {
+      "AppContainment": {
+        "containedData": [
+          5
+        ],
+        "containingApp": [
+          2
+        ]
+      }
+    },
+    {
+      "EncryptionCredentials": {
+        "encryptCreds": [
+          6
+        ],
+        "encryptedData": [
+          5
+        ]
+      }
+    },
+    {
+      "ConditionalAuthentication": {
+        "credentials": [
+          6
+        ],
+        "requiredFactors": [
+          7
+        ]
+      }
+    },
+    {
+      "IdentityCredentials": {
+        "identities": [
+          8
+        ],
+        "credentials": [
+          6
+        ]
+      }
+    },
+    {
+      "IdentityCredentials": {
+        "identities": [
+          11
+        ],
+        "credentials": [
+          9,
+          10
+        ]
+      }
+    },
+    {
+      "UserAssignedIdentities": {
+        "users": [
+          12
+        ],
+        "userIds": [
+          8,
+          11
+        ]
+      }
+    },
+    {
+      "Dependence_Information_Application": {
+        "infoDependedUpon": [
+          13
+        ],
+        "dependentApps": [
+          3
+        ]
+      }
+    }
+  ],
+  "attackers": {
+    "14": {
+      "name": "Attacker:14",
+      "entry_points": {
+        "6": {
+          "attack_steps": [
+            "attemptCredentialsReuse"
+          ]
+        },
+        "7": {
+          "attack_steps": [
+            "attemptCredentialsReuse",
+            "guessCredentials"
+          ]
+        },
+        "0": {
+          "attack_steps": [
+            "softwareProductAbuse"
+          ]
+        },
+        "9": {
+          "attack_steps": [
+            "attemptCredentialsReuse"
+          ]
+        }
+      }
+    },
+    "15": {
+      "name": "Attacker:15",
+      "entry_points": {
+        "0": {
+          "attack_steps": [
+            "fullAccess"
+          ]
+        }
+      }
+    }
+  }
+}

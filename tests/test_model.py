@@ -628,3 +628,15 @@ def test_model_save_and_load_model_example_model(model):
     )
 
     assert new_model._to_dict() == model._to_dict()
+
+def test_model_load_older_version_example_model(model):
+    """Load the older_version_example_model.json from testdata, and check if
+    its version is correct"""
+
+    # Load from example file
+    model = Model.load_from_file(
+        path_testdata("older_version_example_model.json"),
+        model.lang_classes_factory
+    )
+
+    assert model.maltoolbox_version == '0.0.38'
