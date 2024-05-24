@@ -395,7 +395,8 @@ class LanguageGraph():
 
     @classmethod
     def _from_dict(cls, serialized_object):
-        return LanguageGraph(serialized_object)
+        raise NotImplementedError(
+            "Converting from dict feature is not implemented yet")
 
     @classmethod
     def load_from_file(cls, filename):
