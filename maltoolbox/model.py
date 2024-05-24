@@ -11,6 +11,8 @@ from maltoolbox.file_utils import (
     save_dict_to_file
 )
 
+from .__init__ import __version__
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -27,12 +29,19 @@ class Model():
     def __repr__(self) -> str:
         return f'Model {self.name}'
 
-    def __init__(self, name, lang_classes_factory):
+    def __init__(
+            self,
+            name,
+            lang_classes_factory,
+            mt_version = __version__
+        ):
+
         self.name = name
         self.assets = []
         self.associations = []
         self.attackers = []
         self.lang_classes_factory = lang_classes_factory
+        self.maltoolbox_version = mt_version
 
     def add_asset(
             self,
@@ -389,6 +398,7 @@ class Model():
             'langVersion': self.lang_classes_factory.lang_graph.metadata['version'],
             'langID': self.lang_classes_factory.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
+            'MAL-Toolbox Version': __version__,
             'info': 'Created by the mal-toolbox model python module.'
         }
 
@@ -420,10 +430,13 @@ class Model():
         serialized_object    - Model in dict format
         lang_classes_factory -
         """
+        maltoolbox_version = serialized_object['metadata']['MAL Toolbox Version'] \
+            if 'MAL Toolbox Version' in serialized_object['metadata'] \
+            else __version__
         model = Model(
             serialized_object['metadata']['name'],
-            lang_classes_factory
-        )
+            lang_classes_factory,
+            mt_version = maltoolbox_version)
 
         # Reconstruct the assets
         for asset_id, asset_object in serialized_object['assets'].items():
