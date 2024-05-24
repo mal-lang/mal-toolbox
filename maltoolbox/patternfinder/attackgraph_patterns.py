@@ -1,7 +1,8 @@
 """Utilities for finding patterns in the AttackGraph"""
 
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from itertools import count
 from typing import Callable
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 
@@ -85,61 +86,48 @@ def find_matches_recursively(
     current_path = [] if current_path is None else list(current_path)
     matching_paths = [] if matching_paths is None else list(matching_paths)
 
-    curr_cond = condition_list[0]
-    next_cond = condition_list[1] if len(condition_list) > 1 else None
+    curr_cond, *next_conds = condition_list
+
+    if node in current_path:
+        # Stop the chain, infinite loop
+        return matching_paths
+
+    if next_conds and not curr_cond.must_match_again(condition_match_count):
+        # Try next condition for current node if current is fulfilled
+        matching_paths = find_matches_recursively(
+            node,
+            next_conds,
+            current_path=list(current_path),
+            matching_paths=list(matching_paths)
+        )
 
     if curr_cond.matches(node):
         # Current node matches, add to current_path and increment match_count
         current_path.append(node)
         condition_match_count += 1
 
-        if next_cond is None \
-            and not curr_cond.must_match_again(condition_match_count):
-            # This is the last condition in the path,
-            # and the current path is fulfilled
-            matching_paths.append(current_path)
-
-        elif curr_cond.can_match_again(condition_match_count):
-            # Pattern has matches left
-
+        if next_conds:
+            # If there are more conditions, try next one for all children
             for child in node.children:
-                # If curr_cond not greedy and next condition matches child
-                # move to next condition, otherwise continue with current
-                move_to_next_condition = (
-                    not curr_cond.greedy and
-                    next_cond.matches(child) and
-                    not curr_cond.must_match_again(condition_match_count)
-                )
-                if move_to_next_condition:
-                    condition_list = condition_list[1:]
-                    condition_match_count = 0
-
                 matching_paths = find_matches_recursively(
                     child,
-                    condition_list,
-                    current_path=current_path,
-                    matching_paths=matching_paths,
+                    next_conds,
+                    current_path=list(current_path),
+                    matching_paths=list(matching_paths),
+                )
+        if curr_cond.can_match_again(condition_match_count):
+            # If we can match current condition again, try for all children
+            for child in node.children:
+                matching_paths = find_matches_recursively(
+                    child,
+                    [curr_cond] + next_conds,
+                    current_path=list(current_path),
+                    matching_paths=list(matching_paths),
                     condition_match_count=condition_match_count
                 )
-        else:
-            # Pattern has run out of matches, must move on to next condition
-            for child in node.children:
-                matching_paths = find_matches_recursively(
-                    child,
-                    condition_list[1:],
-                    current_path=current_path,
-                    matching_paths=matching_paths
-                )
-    else:
-        if not curr_cond.must_match_again(condition_match_count)\
-            and len(condition_list) > 1:
-            # Node did not match current condition, but we can try with
-            # the next condition since current one is 'fulfilled'
-            matching_paths = find_matches_recursively(
-                node,
-                condition_list[1:],
-                current_path=current_path,
-                matching_paths=matching_paths
-            )
+
+        if not next_conds and current_path not in matching_paths:
+            # Congrats - matched a full unique search pattern!
+            matching_paths.append(current_path)
 
     return matching_paths
