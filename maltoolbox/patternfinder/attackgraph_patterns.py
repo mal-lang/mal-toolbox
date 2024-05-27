@@ -1,8 +1,7 @@
 """Utilities for finding patterns in the AttackGraph"""
 
 from __future__ import annotations
-from dataclasses import dataclass, field
-from itertools import count
+from dataclasses import dataclass
 from typing import Callable
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 
@@ -70,9 +69,10 @@ def find_matches_recursively(
         matching_paths=None,
         condition_match_count=0
     ):
-    """Find all sequences of nodes that match the list of conditions.
+    """Find all paths of nodes that match the list of conditions.
     When a sequence of conditions is fulfilled for a path of nodes,
     add the path of nodes to the returned `matching_paths`
+    The function runs recursively down all paths of children nodes.
 
     Args:
     node                  - node to check if current `condition` matches for
@@ -80,9 +80,10 @@ def find_matches_recursively(
     matching_nodes        - list of matched nodes so far (recursively built)
     condition_match_count - number of matches on current condition so far
 
-    Return: list of lists of AttackGraphNodes that match the condition
+    Return: list of lists (paths) of AttackGraphNodes that match the condition
     """
-    # Init path lists if None
+
+    # Init path lists if None, or copy/init into new lists for each iteration
     current_path = [] if current_path is None else list(current_path)
     matching_paths = [] if matching_paths is None else list(matching_paths)
 
@@ -93,12 +94,13 @@ def find_matches_recursively(
         return matching_paths
 
     if next_conds and not curr_cond.must_match_again(condition_match_count):
-        # Try next condition for current node if current is fulfilled
+        # Try next condition for current node if there are more and
+        # current condition is already fulfilled.
         matching_paths = find_matches_recursively(
             node,
             next_conds,
-            current_path=list(current_path),
-            matching_paths=list(matching_paths)
+            current_path=current_path,
+            matching_paths=matching_paths
         )
 
     if curr_cond.matches(node):
@@ -112,8 +114,8 @@ def find_matches_recursively(
                 matching_paths = find_matches_recursively(
                     child,
                     next_conds,
-                    current_path=list(current_path),
-                    matching_paths=list(matching_paths),
+                    current_path=current_path,
+                    matching_paths=matching_paths,
                 )
         if curr_cond.can_match_again(condition_match_count):
             # If we can match current condition again, try for all children
@@ -121,8 +123,8 @@ def find_matches_recursively(
                 matching_paths = find_matches_recursively(
                     child,
                     [curr_cond] + next_conds,
-                    current_path=list(current_path),
-                    matching_paths=list(matching_paths),
+                    current_path=current_path,
+                    matching_paths=matching_paths,
                     condition_match_count=condition_match_count
                 )
 
