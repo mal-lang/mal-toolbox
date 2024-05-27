@@ -7,8 +7,14 @@ Welcome to MAL Toolbox's documentation!
 =======================================
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 5
    :caption: Contents:
+
+   about
+
+   installation
+
+   api
 
 Indices and tables
 ==================
