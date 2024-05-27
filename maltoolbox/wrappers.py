@@ -24,11 +24,17 @@ def create_attack_graph(
     ) -> AttackGraph:
     """Create and return an attack graph
 
-    Args:
-    lang_file                       - path to language file (.mar or .mal)
-    model_file                      - path to model file (yaml or json)
-    attach_attackers                - whether to run attach_attackers or not
-    calc_viability_and_necessity    - whether run apriori calculations or not
+    Parameters
+    ----------
+    :param lang_file: path to language file (.mar or .mal)
+    :param model_file: path to model file (yaml or json)
+    :param attach_attackers: whether to run attach_attackers or not
+    :param calc_viability_and_necessity: run apriori calculations or not
+
+    Returns
+    -------
+    AttackGraph
+        AttackGraph generated using model given
     """
     try:
         lang_graph = LanguageGraph.from_mar_archive(lang_file)
