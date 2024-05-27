@@ -176,7 +176,7 @@ def test_attackgraph_find_multiple_same_subpath():
     )
     paths = pattern.find_matches(attack_graph)
 
-    # Make sure we find two paths: (Node1->Node7) and (Node1->Node6)
+    # Make sure we find all paths
     assert [node1, node2, node4] in paths
     assert [node1, node3, node5] in paths
     assert [node1, node2] in paths
