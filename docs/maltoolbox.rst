@@ -13,14 +13,6 @@ Subpackages
 Submodules
 ----------
 
-maltoolbox.cl\_parser module
-----------------------------
-
-.. automodule:: maltoolbox.cl_parser
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 maltoolbox.exceptions module
 ----------------------------
 
@@ -33,6 +25,14 @@ maltoolbox.model module
 -----------------------
 
 .. automodule:: maltoolbox.model
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+maltoolbox.wrappers module
+--------------------------
+
+.. automodule:: maltoolbox.wrappers
    :members:
    :undoc-members:
    :show-inheritance:

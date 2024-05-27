@@ -1,6 +1,14 @@
 maltoolbox.language package
 ===========================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   maltoolbox.language.compiler
+
 Submodules
 ----------
 
