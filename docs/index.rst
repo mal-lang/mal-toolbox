@@ -14,7 +14,7 @@ Welcome to MAL Toolbox's documentation!
 
    installation
 
-   api
+   API documentation <apidocs/maltoolbox>
 
 Indices and tables
 ==================

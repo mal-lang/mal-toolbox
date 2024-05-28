@@ -1,0 +1,26 @@
+maltoolbox package
+==================
+
+.. automodule:: maltoolbox
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   maltoolbox.attackgraph
+   maltoolbox.language
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   maltoolbox.exceptions
+   maltoolbox.model
+   maltoolbox.wrappers
