@@ -1,5 +1,6 @@
 """
 MAL-Toolbox Language Classes Factory Module
+Uses python_jsonschema_objects to generate python classes from a MAL language
 """
 
 import python_jsonschema_objects as pjs
@@ -16,7 +17,7 @@ class LanguageClassesFactory:
 
     def _generate_assets(self):
         """
-        Generate JSON Schema for the assets in the language specification.
+        Generate JSON Schema for asset types in language specification.
         """
         for asset in self.lang_graph.assets:
             logger.debug(f'Creating {asset.name} asset JSON '\
@@ -59,7 +60,7 @@ class LanguageClassesFactory:
 
     def _generate_associations(self):
         """
-        Generate JSON Schema for the associations in the language specification.
+        Generate JSON Schema for association types in language specification.
         """
         def create_association_entry(assoc):
             logger.debug(f'Creating {assoc.name} association JSON schema entry.')
