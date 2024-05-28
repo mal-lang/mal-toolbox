@@ -1,5 +1,5 @@
 About MAL Toolbox
-==============
+=================
 
 MAL Toolbox is a collection of tools related to MAL (`Meta Attack Language <https://mal-lang.org/>`_).
 
@@ -30,13 +30,14 @@ With a MAL language (e.g. `coreLang <https://github.com/mal-lang/coreLang>`_) de
 a :class:`maltoolbox.model.Model` can be created either from a model instance file or empty.
 
 Assets and associations
-""""""""""""""""""""""
+"""""""""""""""""""""""
 A model consists of assets and associations.
 
 - An asset is a python object of a class that was dynamically generated using the MAL language with
   (:class:`maltoolbox.language.classes_factory.LanguageClassesFactory`).
 
 - An association is a connection between two or more assets.
+
 The MAL language defines which assets can have an association between each other and what the 'field names' between them are called.
 
 Example:
@@ -44,7 +45,7 @@ Example:
 `hostApp` and `appExecutedApps`, this is defined in the MAL language coreLang but can look different in other MAL languages.
 
 Load/create a model
-""""""""""""""""""
+"""""""""""""""""""
 
 First, you have to load the MAL language:
 
@@ -97,7 +98,7 @@ The point of the AttackGraph is to give an abstraction that shows each step an A
 paths for an attacker and run simulations.
 
 Generating an AttackGraph
-""""""""""""""""""""""""
+"""""""""""""""""""""""""
 
 If you already have an instance model file and .mal/.mar, the easiest way to create an AttackGraph
 is to use the wrapper :func:`maltoolbox.wrappers.create_attack_graph`
