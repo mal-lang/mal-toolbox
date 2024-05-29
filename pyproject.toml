@@ -47,3 +47,4 @@ maltoolbox = ["*.conf*"]
 
 [tool.pytest.ini_options]
 pythonpath = ['.']
+filterwarnings = "ignore:invalid escape sequence"
