@@ -11,7 +11,7 @@ from maltoolbox.patternfinder.attackgraph_patterns import (
 from test_model import create_application_asset, create_association
 
 @pytest.fixture
-def example_attackgraph(corelang_spec, model: Model):
+def example_attackgraph(corelang_lang_graph, model: Model):
     """Fixture that generates an example attack graph
     
     Uses coreLang specification and model with two applications
@@ -35,7 +35,7 @@ def example_attackgraph(corelang_spec, model: Model):
     ]
     model.add_attacker(attacker)
 
-    return AttackGraph(lang_spec=corelang_spec, model=model)
+    return AttackGraph(lang_graph=corelang_lang_graph, model=model)
 
 
 def test_attackgraph_find_pattern_example_graph(example_attackgraph):
