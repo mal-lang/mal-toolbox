@@ -22,5 +22,6 @@ Submodules
    :maxdepth: 4
 
    maltoolbox.exceptions
+   maltoolbox.file_utils
    maltoolbox.model
    maltoolbox.wrappers
