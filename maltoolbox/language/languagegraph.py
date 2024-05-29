@@ -1,8 +1,8 @@
-from __future__ import annotations
-
 """
 MAL-Toolbox Language Graph Module
 """
+
+from __future__ import annotations
 
 import copy
 import logging
@@ -10,9 +10,11 @@ import json
 import zipfile
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
-from . import specification
+from maltoolbox.file_utils import (
+    load_dict_from_yaml_file, load_dict_from_json_file,
+    save_dict_to_file
+)
 from .compiler import MalCompiler
 from ..exceptions import *
 
@@ -114,6 +116,7 @@ class LanguageGraphAssociationField:
     fieldname: str
     minimum: int
     maximum: int
+
 
 @dataclass
 class LanguageGraphAssociation:
@@ -220,6 +223,7 @@ class LanguageGraphAssociation:
             f'association {self.name} which did not contain it!')
         return None
 
+
 @dataclass
 class LanguageGraphAttackStep:
     name: str = None
@@ -322,7 +326,8 @@ class DependencyChain:
         return str(self.to_dict())
 
 
-class LanguageGraph:
+class LanguageGraph():
+    """Graph representation of a MAL language"""
     def __init__(self, lang: dict):
         self.assets = []
         self.associations = []
@@ -337,7 +342,7 @@ class LanguageGraph:
     @classmethod
     def from_mal_spec(cls, mal_spec_file: str):
         """
-        Create a language graph from a .mal file (a MAL spec).
+        Create a LanguageGraph from a .mal file (a MAL spec).
 
         Arguments:
         mal_spec_file   -   the path to the .mal file
@@ -348,7 +353,7 @@ class LanguageGraph:
     @classmethod
     def from_mar_archive(cls, mar_archive: str):
         """
-        Create a language graph from a ".mar" archive provided by malc
+        Create a LanguageGraph from a ".mar" archive provided by malc
         (https://github.com/mal-lang/malc).
 
         Arguments:
@@ -359,15 +364,8 @@ class LanguageGraph:
             langspec = archive.read('langspec.json')
             return LanguageGraph(json.loads(langspec))
 
-    def save_to_file(self, filename: str):
-        """
-        Save the language graph to a json file.
-
-        Arguments:
-        filename        - the name of the output file
-        """
-
-        logger.info(f'Saving language graph to \"{filename}\" file.')
+    def _to_dict(self):
+        """Converts LanguageGraph into a dict"""
         serialized_assets = []
         for asset in self.assets:
             serialized_assets.append(asset.to_dict())
@@ -377,20 +375,47 @@ class LanguageGraph:
         serialized_attack_steps = []
         for attack_step in self.attack_steps:
             serialized_attack_steps.append(attack_step.to_dict())
-        logger.debug(f'Saving {len(serialized_assets)} assets, '
+
+        logger.debug(
+            f'Serializing {len(serialized_assets)} assets, '
             f'{len(serialized_associations)} associations, and '
-            f'{len(serialized_attack_steps)} attack steps to '
-            f'\"{filename}\" file')
+            f'{len(serialized_attack_steps)} attack steps'
+        )
+
         serialized_graph = {
             'Assets': serialized_assets,
             'Associations': serialized_associations,
             'Attack Steps': serialized_attack_steps
         }
-        with open(filename, 'w', encoding='utf-8') as file:
-            json.dump(serialized_graph, file, indent=4)
+        return serialized_graph
 
+    def save_to_file(self, filename):
+        """Save to json/yml depending on extension"""
+        return save_dict_to_file(filename, self._to_dict())
 
-    # TODO do we want to keep this around? Seems redundant given the above method
+    @classmethod
+    def _from_dict(cls, serialized_object):
+        raise NotImplementedError(
+            "Converting from dict feature is not implemented yet")
+
+    @classmethod
+    def load_from_file(cls, filename):
+        """Create LanguageGraph from mal, mar, yaml or json"""
+        lang_graph = None
+        if filename.endswith('.mal'):
+            lang_graph = cls.from_mal_spec(filename)
+        elif filename.endswith('.mar'):
+            lang_graph = cls.from_mar_archive(filename)
+        elif filename.endswith(('yaml', 'yml')):
+            lang_graph = cls._from_dict(load_dict_from_yaml_file(filename))
+        elif filename.endswith(('json')):
+            lang_graph = cls._from_dict(load_dict_from_json_file(filename))
+        else:
+            raise TypeError(
+                "Unknown file extension, expected json/mal/mar/yml/yaml"
+            )
+        return lang_graph
+
     def save_language_specification_to_json(self, filename: str) -> dict:
         """
         Save a MAL language specification dictionary to a JSON file
@@ -402,7 +427,6 @@ class LanguageGraph:
 
         with open(filename, 'w', encoding='utf-8') as file:
             json.dump(self._lang_spec, file, indent=4)
-
 
     def process_step_expression(self,
         lang: dict,
@@ -657,7 +681,6 @@ class LanguageGraph:
                         f'{dep_chain.type}!')
                     return None
 
-
     def _generate_graph(self):
         """
         Generate language graph starting from the MAL language specification
@@ -876,7 +899,6 @@ class LanguageGraph:
 
         return attack_steps
 
-
     def _get_associations_for_asset_type(self, asset_type: str) -> dict:
         """
         Get all Associations for a specific Class
@@ -916,14 +938,15 @@ class LanguageGraph:
 
         return associations
 
-    def _get_variable_for_asset_type_by_name(self, asset_type: str, variable_name:str) -> dict:
+    def _get_variable_for_asset_type_by_name(
+            self, asset_type: str, variable_name:str) -> dict:
         """
         Get a variables for a specific asset type by name.
         NOTE: Variables are the ones specified in MAL through `let` statements
 
         Arguments:
-        asset_type      - a string representing the type of asset which contains
-                        the variable
+        asset_type      - a string representing the type of asset which
+                          contains the variable
         variable_name   - the name of the variable to search for
 
         Return:
@@ -951,8 +974,6 @@ class LanguageGraph:
             return None
 
         return variable_dict['stepExpression']
-
-
 
     def regenerate_graph(self):
         """
