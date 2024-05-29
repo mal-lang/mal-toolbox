@@ -271,8 +271,8 @@ class AttackGraph():
 
                 # Also recreate asset links if model is available.
                 if model and 'asset' in node_dict:
-                    asset = model.get_asset_by_id(
-                        int(node_dict['asset'].split(':')[1]))
+                    asset = model.get_asset_by_name(
+                        node_dict['asset'])
                     if asset is None:
                         logger.error(
                             f'Failed to find asset with id {node_dict["asset"]}'
