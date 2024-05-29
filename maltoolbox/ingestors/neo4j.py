@@ -41,7 +41,8 @@ def ingest_attack_graph(graph,
     for node in graph.nodes:
         node_dict = node.to_dict()
         nodes[node.id] = Node(
-            node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
+            str(node.asset.metaconcept if node.asset else node_dict['id']),
+            id=node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
             name = node_dict['name'],
             full_name = node_dict['id'],
             type = node_dict['type'],
