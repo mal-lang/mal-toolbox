@@ -110,6 +110,18 @@ class LanguageGraphAsset:
             superassets.extend(current_asset.super_assets)
         return superassets
 
+    def get_all_common_superassets(self, other: LanguageGraphAsset):
+        """Return a set of all common ancestors between this asset
+        and the other asset given as parameter"""
+        self_superassets = set(
+            asset.name for asset in self.get_all_superassets()
+        )
+        other_superassets = set(
+            asset.name for asset in other.get_all_superassets()
+        )
+        return self_superassets.intersection(other_superassets)
+
+
 @dataclass
 class LanguageGraphAssociationField:
     asset: LanguageGraphAsset
@@ -475,10 +487,12 @@ class LanguageGraph():
                 rh_target_asset, rh_dep_chain, _ = self.process_step_expression(
                     lang, target_asset, dep_chain, step_expression['rhs'])
 
-                if lh_target_asset != rh_target_asset:
-                    logger.error('Set operation has different target asset '
-                        'types for each side of the expression: '
-                        f'{lh_target_asset.name} and {rh_target_asset.name}!')
+                if not lh_target_asset.get_all_common_superassets(rh_target_asset):
+                    logger.error(
+                        "Set operation attempted between targets "
+                        "that do not share any common superassets:"
+                        f'{lh_target_asset.name} and {rh_target_asset.name}!'
+                    )
                     return (None, None, None)
 
                 new_dep_chain = DependencyChain(
