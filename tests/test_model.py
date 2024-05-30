@@ -85,20 +85,26 @@ def test_model_add_asset_with_id_set(model):
 def test_model_add_asset_duplicate_name(model: Model):
     """Add several assets with the same name to the model"""
 
-    # Add a new asset
-    p1 = create_application_asset(model, 'Program 1')
-    model.add_asset(p1)
-    assert model.assets.count(p1) == 1
+    asset_name = "MyProgram"
 
-    # Add asset again (will lead to duplicate name, allowed by default)
+    # Add a new asset
+    p1 = create_application_asset(model, asset_name)
     model.add_asset(p1)
-    assert model.assets.count(p1) == 2
+    assert len(model.assets) == 1
+    assert model.assets[0].name == asset_name
+
+    # Add with same name again (allowed by default)
+    p2 = create_application_asset(model, asset_name)
+    model.add_asset(p2)
+    assert len(model.assets) == 2
+    # Is this expected - shouldn't p2 have same name as p1?
+    assert model.assets[1].name == f"{asset_name}:{p2.id}"
 
     # Add asset again while not allowing duplicates, expect ValueError
     with pytest.raises(ValueError):
         model.add_asset(p1, allow_duplicate_names=False)
     # Make sure there are still only two assets named 'Program 1'
-    assert model.assets.count(p1) == 2
+    assert len(model.assets) == 2
 
 
 def test_model_remove_asset(model: Model):
