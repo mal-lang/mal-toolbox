@@ -467,8 +467,11 @@ class LanguageGraph():
         A tuple triplet containing the target asset, the resulting parent
         associations chain, and the name of the attack step.
         """
-        logger.debug('Processing Step Expression:\n' \
-            + json.dumps(step_expression, indent = 2))
+
+        if logger.level == logging.DEBUG:
+            # This expressions takes a lot of time
+            logger.debug('Processing Step Expression:\n' \
+                + json.dumps(step_expression, indent = 2))
 
         match (step_expression['type']):
             case 'attackStep':
