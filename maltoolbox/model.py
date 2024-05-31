@@ -34,6 +34,11 @@ class Model():
         self.attackers = []
         self.lang_classes_factory = lang_classes_factory
 
+        # Below sets used to check for duplicate names or ids,
+        # better for optimization than iterating over all assets
+        self.asset_ids = set()
+        self.asset_names = set()
+
     def add_asset(
             self,
             asset,
@@ -53,13 +58,13 @@ class Model():
         Return:
         An asset matching the name if it exists in the model.
         """
-        if asset_id is not None:
-            for existing_asset in self.assets:
-                if asset_id == existing_asset.id:
-                    raise ValueError(f'Asset index {asset_id} already in use.')
-            asset.id = asset_id
-        else:
-            asset.id = self.next_id
+
+        # Set asset ID and check for duplicates
+        asset.id = asset_id or self.next_id
+        if asset.id in self.asset_ids:
+            raise ValueError(f'Asset index {asset_id} already in use.')
+        self.asset_ids.add(asset.id)
+
         self.next_id = max(asset.id + 1, self.next_id)
 
         asset.associations = []
@@ -67,14 +72,13 @@ class Model():
         if not hasattr(asset, 'name'):
             asset.name = asset.metaconcept + ':' + str(asset.id)
         else:
-            for ex_asset in self.assets:
-                if ex_asset.name == asset.name:
-                    if allow_duplicate_names:
-                        asset.name = asset.name + ':' + str(asset.id)
-                        break
-                    else:
-                        raise ValueError(f'Asset name {asset.name} is a '
-                        'duplicate and we do not allow duplicates.')
+            if asset.name in self.asset_names:
+                if allow_duplicate_names:
+                    asset.name = asset.name + ':' + str(asset.id)
+                else:
+                    raise ValueError(f'Asset name {asset.name} is a '
+                    'duplicate and we do not allow duplicates.')
+        self.asset_names.add(asset.name)
 
         logger.debug(
             f'Add {asset.name}(id:{asset.id}) to model "{self.name}".'
