@@ -41,11 +41,10 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
     A tuple pair containing a list of all of the target assets and the name of
     the attack step.
     """
-    logger.debug('Processing Step Expression:\n' \
-        + json.dumps(step_expression, indent = 2))
 
-
-    lang = lang_graph._lang_spec
+    # This debug log takes a lot of time, removed for optimization reasons:
+    # logger.debug('Processing Step Expression:\n' \
+    #     + json.dumps(step_expression, indent = 2))
 
     match (step_expression['type']):
         case 'attackStep':
