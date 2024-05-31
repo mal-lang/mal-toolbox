@@ -165,7 +165,9 @@ class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
         self.nodes = []
+        self.id_to_node = {}  # to get nodes by id faster
         self.attackers = []
+
         self.model = model
         self.lang_graph = lang_graph
         if self.model is not None and self.lang_graph is not None:
@@ -231,7 +233,7 @@ class AttackGraph():
                 attack_graph.attackers.append(ag_attacker)
                 ag_node.attacker = ag_attacker
 
-            attack_graph.nodes.append(ag_node)
+            attack_graph.add_node(ag_node)
 
         # Re-establish links between nodes.
         for node_dict in serialized_object:
@@ -312,8 +314,7 @@ class AttackGraph():
         """
 
         logger.debug(f'Looking up node with id {node_id}')
-        return next((ag_node for ag_node in self.nodes \
-            if ag_node.id == node_id), None)
+        return self.id_to_node.get(node_id)
 
     def attach_attackers(self):
         """
@@ -360,7 +361,7 @@ class AttackGraph():
 
             ag_attacker.entry_points = ag_attacker.reached_attack_steps
             attacker_node.children = ag_attacker.entry_points
-            self.nodes.append(attacker_node)
+            self.add_node(attacker_node)
 
     def _generate_graph(self):
         """
@@ -370,10 +371,12 @@ class AttackGraph():
 
         # First, generate all of the nodes of the attack graph.
         for asset in self.model.assets:
+
             logger.debug(
                 f'Generating attack steps for asset {asset.name} '
                 f'which is of class {asset.metaconcept}.'
             )
+
             attack_step_nodes = []
 
             # TODO probably part of what happens here is already done in lang_graph
@@ -427,7 +430,7 @@ class AttackGraph():
                 )
                 ag_node.attributes = attack_step_attribs
                 attack_step_nodes.append(ag_node)
-                self.nodes.append(ag_node)
+                self.add_node(ag_node)
             asset.attack_step_nodes = attack_step_nodes
 
         # Then, link all of the nodes according to their associations.
@@ -446,6 +449,7 @@ class AttackGraph():
                     self.model,
                     [ag_node.asset],
                     step_expression)
+
                 for target in target_assets:
                     target_node_id = target.name + ':' + attack_step
                     target_node = self.get_node_by_id(target_node_id)
@@ -467,6 +471,13 @@ class AttackGraph():
         self.nodes = []
         self.attackers = []
         self._generate_graph()
+
+    def add_node(self, node: AttackGraphNode):
+        """Add a node to the graph and map from its ID in self.id_to_node
+        Arguments:
+        node    - the node to add"""
+        self.nodes.append(node)
+        self.id_to_node[node.id] = node
 
     def remove_node(self, node):
         """
