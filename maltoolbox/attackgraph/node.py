@@ -26,7 +26,6 @@ class AttackGraphNode:
     tags: Optional[list[str]] = None
     observations: Optional[dict] = None
     attributes: Optional[dict] = None
-    attacker: Optional['Attacker'] = None
 
     def to_dict(self):
         node_dict = {
@@ -36,7 +35,7 @@ class AttackGraphNode:
             'ttc': self.ttc,
             'children': [child.id for child in self.children],
             'parents': [parent.id for parent in self.parents],
-            'compromised_by': ['Attacker:' + attacker.id for attacker in \
+            'compromised_by': ['Attacker:' + str(attacker.id) for attacker in \
                 self.compromised_by]
         }
 
