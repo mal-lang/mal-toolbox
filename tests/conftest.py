@@ -18,7 +18,7 @@ def path_testdata(filename):
     return os.path.join(current_dir, f"testdata/{filename}")
 
 
-def empty_model(lang_classes_factory, name):
+def empty_model(name, lang_classes_factory):
     """Fixture that generates a model for tests
 
     Uses coreLang specification (fixture) to create and return Model
@@ -46,4 +46,4 @@ def model(corelang_lang_graph):
     # Init LanguageClassesFactory
     lang_classes_factory = LanguageClassesFactory(corelang_lang_graph)
 
-    return empty_model(lang_classes_factory, 'Test Model')
+    return empty_model('Test Model', lang_classes_factory)
