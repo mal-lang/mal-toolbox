@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
-from ..language import specification
+from ..language import LanguageGraph
 from ..model import Model
 from ..exceptions import AttackGraphException
 from ..file_utils import (
@@ -150,11 +150,17 @@ def _process_step_expression(
                     step_expression['stepExpression'])
                 new_target_assets.extend(assets)
 
-            selected_new_target_assets = [asset for asset in \
-                new_target_assets if specification.extends_asset(
-                    lang_graph._lang_spec,
-                    asset.type,
-                    step_expression['subType'])]
+            subtype_asset = [
+                asset
+                for asset in lang_graph.assets
+                if asset.name == step_expression['subType']
+            ].pop()
+
+            selected_new_target_assets = (
+                asset
+                for asset in new_target_assets
+                if subtype_asset.is_subasset_of(asset)
+            )
             return (selected_new_target_assets, None)
 
         case 'collect':
