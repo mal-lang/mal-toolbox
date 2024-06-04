@@ -15,7 +15,7 @@ from maltoolbox.file_utils import (
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
-from ..language import specification, LanguageGraph
+from ..language import LanguageGraph
 from ..model import Model
 
 
