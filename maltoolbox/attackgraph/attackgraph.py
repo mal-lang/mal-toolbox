@@ -72,7 +72,7 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
 
                 case 'intersection':
                     for ag_node in rh_targets:
-                        if next((lnode for lnode in new_target_assets \
+                        if next((lnode for lnode in lh_targets \
                             if lnode.id == ag_node.id), None):
                             new_target_assets.append(ag_node)
 
