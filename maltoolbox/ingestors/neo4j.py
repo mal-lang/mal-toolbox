@@ -6,9 +6,6 @@ import logging
 
 from py2neo import Graph, Node, Relationship, Subgraph
 
-from ..model import AttackerAttachment, Model
-from ..language import specification
-
 logger = logging.getLogger(__name__)
 
 def ingest_attack_graph(graph,
