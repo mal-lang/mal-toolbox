@@ -24,7 +24,6 @@ class AttackGraphNode:
     extra: Optional[dict] = None
     mitre_info: Optional[str] = None
     tags: Optional[list[str]] = None
-    observations: Optional[dict] = None
     attributes: Optional[dict] = None
     attacker: Optional['Attacker'] = None
 
@@ -55,10 +54,6 @@ class AttackGraphNode:
             node_dict['mitre_info'] = str(self.mitre_info)
         if self.tags:
             node_dict['tags'] = str(self.tags)
-        if self.observations is not None:
-            node_dict['observations'] = self.observations
-        if hasattr(self, 'reward') and self.reward is not None:
-            node_dict['reward'] = self.reward
 
         return node_dict
 

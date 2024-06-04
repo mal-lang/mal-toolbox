@@ -216,8 +216,6 @@ class AttackGraph():
                 'mitre_info' in node_dict else None
             ag_node.tags = node_dict['tags'] if \
                 'tags' in node_dict else []
-            ag_node.reward = float(node_dict['reward']) if \
-                'reward' in node_dict else 0.0
 
             if ag_node.name == 'firstSteps':
                 # This is an attacker entry point node, recreate the attacker.
