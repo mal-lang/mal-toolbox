@@ -139,11 +139,17 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
                     step_expression['stepExpression'])
                 new_target_assets.extend(assets)
 
-            selected_new_target_assets = (asset for asset in \
-                new_target_assets if specification.extends_asset(
-                    lang_graph,
-                    asset.metaconcept,
-                    step_expression['subType']))
+            subtype_asset = (
+                asset
+                for asset in lang_graph.assets
+                if asset.name == step_expression['subType']
+            ).pop()
+
+            selected_new_target_assets = (
+                asset
+                for asset in new_target_assets
+                if subtype_asset.is_subasset_of(asset)
+            )
             return (selected_new_target_assets, None)
 
         case 'collect':
