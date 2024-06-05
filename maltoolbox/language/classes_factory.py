@@ -163,7 +163,10 @@ class LanguageClassesFactory:
 
         self._generate_assets()
         self._generate_associations()
-        logger.debug(json.dumps(self.json_schema, indent = 2))
+
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug(json.dumps(self.json_schema, indent = 2))
 
         # Once we have the JSON schema we create the actual classes.
         builder = pjs.ObjectBuilder(self.json_schema)
