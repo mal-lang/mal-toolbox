@@ -29,14 +29,12 @@ def get_association_by_fields_and_assets(lang_spec: dict,
     None if there is no match.
     """
     for assoc in lang_spec['associations']:
-        logger.debug(f'Compare (\"{first_asset}\",'
-            f'\"{first_field}\",'
-            f'\"{second_asset}\",'
-            f'\"{second_field}\") to '
-            f'(\"{assoc["leftAsset"]}\",'
-            f'\"{assoc["leftField"]}\",'
-            f'\"{assoc["rightAsset"]}\",'
-            f'\"{assoc["rightField"]}\").')
+        logger.debug(
+            'Compare ("%s", "%s". "%s". "%s") to ("%s", "%s", "%s", "%s").',
+            first_asset, first_field, second_asset, second_field,
+            assoc["leftAsset"], assoc["leftField"],
+            assoc["rightAsset"], assoc["rightField"]
+        )
 
         # If the asset and fields match either way we accept it as a match.
         if assoc['leftField'] == first_field and \
@@ -67,7 +65,7 @@ def extends_asset(lang_spec: dict, asset, target_asset):
     False otherwise.
     """
 
-    logger.debug(f'Check if {asset} extends {target_asset} via inheritance.')
+    logger.debug('Check if %s extends %s via inheritance.', asset, target_asset)
 
     if asset == target_asset:
         return True
@@ -75,8 +73,9 @@ def extends_asset(lang_spec: dict, asset, target_asset):
     asset_dict = next((asset_info for asset_info in lang_spec['assets'] \
         if asset_info['name'] == asset), None)
     if not asset_dict:
-        logger.error(f'Failed to find asset type {asset} when '\
-            'looking for variable.')
+        logger.error(
+            'Failed to find asset type %s when looking for variable.', asset
+        )
         return False
     if asset_dict['superAsset']:
         if asset_dict['superAsset'] == target_asset:

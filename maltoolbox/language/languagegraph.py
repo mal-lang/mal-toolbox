@@ -207,8 +207,10 @@ class LanguageGraphAssociation:
         if self.right_field.fieldname == fieldname:
             return self.left_field.fieldname
 
-        logger.warning(f'Requested fieldname \"{fieldname}\" from '
-            f'association {self.name} which did not contain it!')
+        logger.warning(
+            'Requested fieldname "%s" from association %s'
+            'which did not contain it!', fieldname, self.name
+        )
         return None
 
     def get_opposite_asset(self, asset):
@@ -231,8 +233,10 @@ class LanguageGraphAssociation:
         if asset.is_subasset_of(self.right_field.asset):
             return self.left_field.asset
 
-        logger.warning(f'Requested asset \"{asset.name}\" from '
-            f'association {self.name} which did not contain it!')
+        logger.warning(
+            'Requested asset "%s" from association %s'
+            'which did not contain it!', asset.name, self.name
+        )
         return None
 
 
@@ -359,7 +363,7 @@ class LanguageGraph():
         Arguments:
         mal_spec_file   -   the path to the .mal file
         """
-        logger.info(f"Loading mal spec {mal_spec_file}.")
+        logger.info("Loading mal spec %s", mal_spec_file)
         return LanguageGraph(MalCompiler().compile(mal_spec_file))
 
     @classmethod
@@ -371,7 +375,7 @@ class LanguageGraph():
         Arguments:
         mar_archive     -   the path to a ".mar" archive
         """
-        logger.info(f'Loading mar archive \'{mar_archive}\'.')
+        logger.info('Loading mar archive %s', mar_archive)
         with zipfile.ZipFile(mar_archive, 'r') as archive:
             langspec = archive.read('langspec.json')
             return LanguageGraph(json.loads(langspec))
@@ -389,9 +393,9 @@ class LanguageGraph():
             serialized_attack_steps.append(attack_step.to_dict())
 
         logger.debug(
-            f'Serializing {len(serialized_assets)} assets, '
-            f'{len(serialized_associations)} associations, and '
-            f'{len(serialized_attack_steps)} attack steps'
+            'Serializing %s assets, %s associations, and %s attack steps',
+            len(serialized_assets), len(serialized_associations),
+            len(serialized_attack_steps)
         )
 
         serialized_graph = {
@@ -435,7 +439,7 @@ class LanguageGraph():
         Arguments:
         filename        - the JSON filename where the language specification will be written
         """
-        logger.info(f'Save language specfication to {filename}.')
+        logger.info('Save language specification to %s', filename)
 
         with open(filename, 'w', encoding='utf-8') as file:
             json.dump(self._lang_spec, file, indent=4)
@@ -470,8 +474,10 @@ class LanguageGraph():
 
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
-            logger.debug('Processing Step Expression:\n' \
-                + json.dumps(step_expression, indent = 2))
+            logger.debug(
+                'Processing Step Expression:\n %s',
+                json.dumps(step_expression, indent = 2)
+            )
 
         match (step_expression['type']):
             case 'attackStep':
@@ -492,9 +498,9 @@ class LanguageGraph():
 
                 if not lh_target_asset.get_all_common_superassets(rh_target_asset):
                     logger.error(
-                        "Set operation attempted between targets "
-                        "that do not share any common superassets:"
-                        f'{lh_target_asset.name} and {rh_target_asset.name}!'
+                        "Set operation attempted between targets that"
+                        " do not share any common superassets: %s and %s!",
+                        lh_target_asset.name, rh_target_asset.name
                     )
                     return (None, None, None)
 
@@ -520,8 +526,10 @@ class LanguageGraph():
                         variable_step_expr)
 
                 else:
-                    logger.error('Failed to find variable '
-                        f'{step_expression["name"]} for {target_asset.name}')
+                    logger.error(
+                        'Failed to find variable %s for %s',
+                        step_expression["name"], target_asset.name
+                    )
                     return (None, None, None)
 
             case 'field':
@@ -530,7 +538,9 @@ class LanguageGraph():
                 # fieldname and association to the parent associations chain.
                 fieldname = step_expression['name']
                 if not target_asset:
-                    logger.error(f'Missing target asset for field \"{fieldname}\"!')
+                    logger.error(
+                        'Missing target asset for field "%s"!', fieldname
+                    )
                     return (None, None, None)
 
                 new_target_asset = None
@@ -555,8 +565,10 @@ class LanguageGraph():
                         return (new_target_asset,
                             new_dep_chain,
                             None)
-                logger.error(f'Failed to find field \"{fieldname}\" on '
-                    f'asset \"{target_asset.name}\"!')
+                logger.error(
+                    'Failed to find field "%s" on asset "%s"!',
+                    fieldname, target_asset.name
+                )
                 return (None, None, None)
 
             case 'transitive':
@@ -591,12 +603,14 @@ class LanguageGraph():
 
                 subtype_asset = next((asset for asset in self.assets if asset.name == subtype_name), None)
                 if not subtype_asset:
-                    logger.error('Failed to find subtype attack step '
-                        f'\"{subtype_name}\"')
+                    logger.error(
+                        'Failed to find subtype attack step "%s', subtype_name)
                 if not subtype_asset.is_subasset_of(result_target_asset):
-                    logger.error(f'Found subtype \"{subtype_name}\" which '
-                        f'does not extend \"{result_target_asset.name}\". '
-                        'Therefore the subtype cannot be resolved.')
+                    logger.error(
+                        'Found subtype "%s" which does not extend "%s", '
+                        'therefore the subtype cannot be resolved.',
+                        subtype_name, result_target_asset.name
+                    )
                     return (None, None, None)
 
                 new_dep_chain = DependencyChain(
@@ -626,8 +640,9 @@ class LanguageGraph():
                     rh_attack_step_name)
 
             case _:
-                logger.error('Unknown attack step type: '
-                    f'{step_expression["type"]}')
+                logger.error(
+                    'Unknown attack step type: %s', step_expression["type"]
+                )
                 return (None, None, None)
 
     def reverse_dep_chain(self, dep_chain, reverse_chain):
@@ -694,8 +709,10 @@ class LanguageGraph():
                     return new_dep_chain
 
                 case _:
-                    logger.error('Unknown associations chain element '
-                        f'{dep_chain.type}!')
+                    logger.error(
+                        'Unknown associations chain element %s!',
+                        dep_chain.type
+                    )
                     return None
 
     def _generate_graph(self):
@@ -705,8 +722,10 @@ class LanguageGraph():
         """
         # Generate all of the asset nodes of the language graph.
         for asset in self._lang_spec['assets']:
-            logger.debug(f'Create asset language graph nodes for asset '
-                f'{asset["name"]}')
+            logger.debug(
+                'Create asset language graph nodes for asset %s',
+                asset["name"]
+            )
             asset_node = LanguageGraphAsset(
                 name = asset['name'],
                 associations = [],
@@ -736,8 +755,10 @@ class LanguageGraph():
 
         # Generate all of the association nodes of the language graph.
         for asset in self.assets:
-            logger.debug(f'Create association language graph nodes for asset '
-                f'{asset.name}')
+            logger.debug(
+                'Create association language graph nodes for asset %s',
+                asset.name
+            )
             associations_nodes = []
             associations = self._get_associations_for_asset_type(asset.name)
             for association in associations:
@@ -796,13 +817,17 @@ class LanguageGraph():
 
         # Generate all of the attack step nodes of the language graph.
         for asset in self.assets:
-            logger.debug(f'Create attack steps language graph nodes for '
-                f'asset {asset.name}.')
+            logger.debug(
+                'Create attack steps language graph nodes for asset %s',
+                asset.name
+            )
             attack_step_nodes = []
             attack_steps = self._get_attacks_for_asset_type(asset.name)
             for attack_step_name, attack_step_attribs in attack_steps.items():
-                logger.debug(f'Create attack step language graph nodes for '
-                    f'{attack_step_name}.')
+                logger.debug(
+                    'Create attack step language graph nodes for %s',
+                    attack_step_name
+                )
 
                 attack_step_node = LanguageGraphAttackStep(
                     name = attack_step_name,
@@ -819,8 +844,10 @@ class LanguageGraph():
 
         # Then, link all of the attack step nodes according to their associations.
         for attack_step in self.attack_steps:
-            logger.debug('Determining children for attack step '\
-                f'{attack_step.name}.')
+            logger.debug(
+                'Determining children for attack step %s',
+                attack_step.name
+            )
             step_expressions = \
                 attack_step.attributes['reaches']['stepExpressions'] if \
                     attack_step.attributes['reaches'] else []
@@ -891,15 +918,21 @@ class LanguageGraph():
         try:
             asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == asset_type))
         except StopIteration:
-            logger.error(f'Failed to find asset type {asset_type} when '\
-                'looking for attack steps.')
+            logger.error(
+                'Failed to find asset type %s when looking'
+                'for attack steps.', asset_type
+            )
             return None
 
-        logger.debug(f'Get attack steps for {asset["name"]} asset from '\
-            'language specification.')
+        logger.debug(
+            'Get attack steps for %s asset from '
+            'language specification.', asset["name"]
+        )
         if asset['superAsset']:
-            logger.debug(f'Asset extends another one, fetch the superclass '\
-                'attack steps for it.')
+            logger.debug(
+                'Asset extends another one, fetch the superclass'
+                'attack steps for it.'
+            )
             attack_steps = self._get_attacks_for_asset_type(asset['superAsset'])
 
         for step in asset['attackSteps']:
@@ -930,20 +963,26 @@ class LanguageGraph():
         with a dictionary containing other characteristics of the attack such as
         type of attack, TTC distribution, child attack steps and other information
         """
-        logger.debug(f'Get associations for {asset_type} asset from '\
-            'language specification.')
+        logger.debug(
+            'Get associations for %s asset from '
+            'language specification.', asset_type
+        )
         associations = []
 
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
         if not asset:
-            logger.error(f'Failed to find asset type {asset_type} when '\
-                'looking for associations.')
+            logger.error(
+                'Failed to find asset type %s when '\
+                'looking for associations.', asset_type
+            )
             return None
 
         if asset['superAsset']:
-            logger.debug(f'Asset extends another one, fetch the superclass '\
-                'associations for it.')
+            logger.debug(
+                'Asset extends another one, fetch the superclass'
+                'associations for it.'
+            )
             associations.extend(self._get_associations_for_asset_type(asset['superAsset']))
         assoc_iter = (assoc for assoc in self._lang_spec['associations'] \
             if assoc['leftAsset'] == asset_type or \
@@ -973,8 +1012,10 @@ class LanguageGraph():
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
         if not asset:
-            logger.error(f'Failed to find asset type {asset_type} when '\
-                'looking for variable.')
+            logger.error(
+                'Failed to find asset type %s when looking for variable.',
+                asset_type
+            )
             return None
 
         variable_dict = next((variable for variable in \
@@ -986,8 +1027,10 @@ class LanguageGraph():
             if variable_dict:
                 return variable_dict
             else:
-                logger.error(f'Failed to find variable {variable_name} in '\
-                    f'{asset_type}\'s language specification.')
+                logger.error(
+                    'Failed to find variable %s in %s lang specification.',
+                    variable_name, asset_type
+                )
             return None
 
         return variable_dict['stepExpression']

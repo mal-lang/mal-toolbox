@@ -135,8 +135,9 @@ def get_model(uri,
     assets_results = g.run('MATCH (a) WHERE a.type IS NOT NULL RETURN DISTINCT a').data()
     for asset in assets_results:
         asset_data = dict(asset['a'])
-        logger.debug('Loading asset from Neo4j instance:\n' \
-            + str(asset_data))
+        logger.debug(
+            'Loading asset from Neo4j instance:\n%s', str(asset_data)
+        )
         if asset_data['type'] == 'Attacker':
             attacker_id = int(asset_data['asset_id'])
             attacker = AttackerAttachment()
@@ -146,8 +147,10 @@ def get_model(uri,
 
         if not hasattr(lang_classes_factory.ns,
             asset_data['type']):
-            logger.error(f'Failed to find {asset_data["type"]} '
-                'asset in language specification!')
+            logger.error(
+                'Failed to find %s asset in language specification!',
+                asset_data["type"]
+            )
             return None
         asset_obj = getattr(lang_classes_factory.ns,
             asset_data['type'])(name = asset_data['name'])
@@ -166,12 +169,10 @@ def get_model(uri,
         left_asset = dict(assoc['a'])
         right_asset = dict(assoc['b'])
 
-        logger.debug(f'Load association '
-            f'(\"{left_field}\",'
-            f'\"{right_field}\",'
-            f'\"{left_asset["type"]}\",'
-            f'\"{right_asset["type"]}\") '
-            f'from Neo4j instance.')
+        logger.debug(
+            'Load association ("%s", "%s", "%s", "%s") from Neo4j instance.',
+            left_field, right_field, left_asset["type"], right_asset["type"]
+        )
 
         left_id = int(left_asset['asset_id'])
         right_id = int(right_asset['asset_id'])
@@ -188,13 +189,16 @@ def get_model(uri,
         if attacker_id:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
-                logger.error(f'Failed to find attacker with id {attacker_id} '
-                    'in model!')
+                logger.error(
+                    'Failed to find attacker with id %s in model!',
+                    attacker_id
+                )
                 return None
             target_asset = instance_model.get_asset_by_id(target_id)
             if not target_asset:
-                logger.error(f'Failed to find asset with id {target_id} '
-                    'in model!')
+                logger.error(
+                    'Failed to find asset with id %s in model!', target_id
+                )
                 return None
             attacker.entry_points.append((target_asset,
                 [target_prop]))
@@ -202,13 +206,13 @@ def get_model(uri,
 
         left_asset = instance_model.get_asset_by_id(left_id)
         if not left_asset:
-            logger.error(f'Failed to find asset with id {left_id} '
-                'in model!')
+            logger.error(
+                'Failed to find asset with id %s in model!', left_id)
             return None
         right_asset = instance_model.get_asset_by_id(right_id)
         if not right_asset:
-            logger.error(f'Failed to find asset with id {right_id} '
-                'in model!')
+            logger.error(
+                'Failed to find asset with id %s in model!', right_id)
             return None
 
         assoc_name = specification.get_association_by_fields_and_assets(
@@ -217,21 +221,23 @@ def get_model(uri,
             right_field,
             left_asset.type,
             right_asset.type)
-        logger.debug(f'Found \"{assoc_name}\" association.')
+        logger.debug('Found "%s" association.', assoc_name)
 
         if not assoc_name:
-            logger.error(f'Failed to find '
-                f'(\"{left_asset.type}\",'
-                f'\"{right_asset.type}\",'
-                f'\"{left_field}\",'
-                f'\"{right_field}\") '
-                'association in language specification!')
+            logger.error(
+                'Failed to find ("%s", "%s", "%s", "%s")'
+                'association in language specification!',
+                left_asset.type, right_asset.type,
+                left_field, right_field
+            )
             return None
 
         if not hasattr(lang_classes_factory.ns,
             assoc_name):
-            logger.error(f'Failed to find {assoc_name} '
-                'association in language specification!')
+            logger.error(
+                'Failed to find %s association in language specification!',
+                assoc_name
+            )
             return None
 
         assoc = getattr(lang_classes_factory.ns, assoc_name)()
@@ -240,4 +246,3 @@ def get_model(uri,
         instance_model.add_association(assoc)
 
     return instance_model
-
