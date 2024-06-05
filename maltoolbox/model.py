@@ -77,7 +77,7 @@ class Model():
                         'duplicate and we do not allow duplicates.')
 
         # Optional field for extra asset data
-        asset.extra = {}
+        asset.extras = {}
 
         logger.debug(
             f'Add {asset.name}(id:{asset.id}) to model "{self.name}".'
@@ -156,7 +156,7 @@ class Model():
         """
 
         # Optional field for extra association data
-        association.extra = {}
+        association.extras = {}
 
         # Field names are the two first values in _properties
         field_names = list(vars(association)['_properties'])[0:2]
@@ -345,9 +345,9 @@ class Model():
         if defenses:
             asset_dict['defenses'] = defenses
 
-        if asset.extra:
+        if asset.extras:
             # Add optional metadata to dict
-            asset_dict['extra'] = asset.extra
+            asset_dict['extra'] = asset.extras
 
         return (asset.id, asset_dict)
 
@@ -371,9 +371,9 @@ class Model():
             }
         }
 
-        if association.extra:
+        if association.extras:
             # Add optional metadata to dict
-            json_association['extra'] = association.extra
+            json_association['extra'] = association.extras
 
         return json_association
 

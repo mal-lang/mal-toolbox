@@ -27,7 +27,7 @@ class AttackGraphNode:
     attacker: Optional['Attacker'] = None
 
     # Optional extra metadata for AttackGraphNode
-    extra: Optional[dict] = None
+    extras: Optional[dict] = None
 
     def to_dict(self):
         node_dict = {
@@ -56,8 +56,8 @@ class AttackGraphNode:
             node_dict['mitre_info'] = str(self.mitre_info)
         if self.tags:
             node_dict['tags'] = str(self.tags)
-        if self.extra:
-            node_dict['extra'] = self.extra
+        if self.extras:
+            node_dict['extra'] = self.extras
 
         return node_dict
 
