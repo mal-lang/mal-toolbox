@@ -72,7 +72,7 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
 
                 case 'intersection':
                     for ag_node in rh_targets:
-                        if next((lnode for lnode in new_target_assets \
+                        if next((lnode for lnode in lh_targets \
                             if lnode.id == ag_node.id), None):
                             new_target_assets.append(ag_node)
 
@@ -89,11 +89,11 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
             # Fetch the step expression associated with the variable from
             # the language specification and resolve that.
             for target_asset in target_assets:
-                if (hasattr(target_asset, 'metaconcept')):
+                if (hasattr(target_asset, 'type')):
                     # TODO how can this info be accessed in the lang_graph
                     # directly without going through the private method?
                     variable_step_expr = lang_graph._get_variable_for_asset_type_by_name(
-                        target_asset.metaconcept, step_expression['name'])
+                        target_asset.type, step_expression['name'])
                     return _process_step_expression(
                         lang_graph, model, target_assets, variable_step_expr)
 
@@ -142,7 +142,7 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
             selected_new_target_assets = (asset for asset in \
                 new_target_assets if specification.extends_asset(
                     lang_graph,
-                    asset.metaconcept,
+                    asset.type,
                     step_expression['subType']))
             return (selected_new_target_assets, None)
 
@@ -176,10 +176,16 @@ class AttackGraph():
 
     def _to_dict(self):
         """Convert AttackGraph to list"""
-        serialized_graph = []
+        serialized_attack_steps = []
+        serialized_attackers = []
         for ag_node in self.nodes:
-            serialized_graph.append(ag_node.to_dict())
-        return serialized_graph
+            serialized_attack_steps.append(ag_node.to_dict())
+        for attacker in self.attackers:
+            serialized_attackers.append(attacker.to_dict())
+        return {
+            'attack_steps': serialized_attack_steps,
+            'attackers': serialized_attackers,
+        }
 
     def save_to_file(self, filename):
         """Save to json/yml depending on extension"""
@@ -194,9 +200,11 @@ class AttackGraph():
         """
 
         attack_graph = AttackGraph()
+        serialized_attack_steps = serialized_object['attack_steps']
+        serialized_attackers = serialized_object['attackers']
 
         # Create all of the nodes in the imported attack graph.
-        for node_dict in serialized_object:
+        for node_dict in serialized_attack_steps:
             ag_node = AttackGraphNode(
                 id=node_dict['id'],
                 type=node_dict['type'],
@@ -219,22 +227,10 @@ class AttackGraph():
             ag_node.reward = float(node_dict['reward']) if \
                 'reward' in node_dict else 0.0
 
-            if ag_node.name == 'firstSteps':
-                # This is an attacker entry point node, recreate the attacker.
-                attacker_id = ag_node.id.split(':')[1]
-                ag_attacker = Attacker(
-                    id = str(attacker_id),
-                    entry_points = [],
-                    reached_attack_steps = [],
-                    node = ag_node
-                )
-                attack_graph.attackers.append(ag_attacker)
-                ag_node.attacker = ag_attacker
-
             attack_graph.nodes.append(ag_node)
 
         # Re-establish links between nodes.
-        for node_dict in serialized_object:
+        for node_dict in serialized_attack_steps:
             _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
                 logger.error(
@@ -252,13 +248,6 @@ class AttackGraph():
                         return None
                     _ag_node.children.append(child)
 
-                    if isinstance(_ag_node.attacker, Attacker):
-                        # Relink the attacker related connections since the
-                        # node is an attacker entry point node.
-                        ag_attacker = _ag_node.attacker
-                        ag_attacker.entry_points.append(child)
-                        ag_attacker.compromise(child)
-
                 for parent_id in node_dict['parents']:
                     parent = attack_graph.get_node_by_id(parent_id)
                     if parent is None:
@@ -271,8 +260,8 @@ class AttackGraph():
 
                 # Also recreate asset links if model is available.
                 if model and 'asset' in node_dict:
-                    asset = model.get_asset_by_id(
-                        int(node_dict['asset'].split(':')[1]))
+                    asset = model.get_asset_by_name(
+                        node_dict['asset'])
                     if asset is None:
                         logger.error(
                             f'Failed to find asset with id {node_dict["asset"]}'
@@ -286,6 +275,21 @@ class AttackGraph():
                         asset.attack_step_nodes = attack_step_nodes
                     else:
                         asset.attack_step_nodes = [_ag_node]
+
+        for attacker in serialized_attackers:
+            ag_attacker = Attacker(
+                id = int(attacker.id.split(':')[1]),
+                entry_points = [],
+                reached_attack_steps = []
+            )
+            for node_id in attacker.reached_attack_steps:
+                node = attack_graph.get_node_by_id(node_id)
+                ag_attacker.compromise(node)
+            for node_id in attacker.entry_points:
+                node = attack_graph.get_node_by_id(node_id)
+                ag_attacker.entry_points.append(node)
+            attack_graph.attackers.append(ag_attacker)
+
         return attack_graph
 
     @classmethod
@@ -325,24 +329,11 @@ class AttackGraph():
             f'Attach attackers from "{self.model.name}" model to the graph.'
         )
         for attacker_info in self.model.attackers:
-            attacker_node = AttackGraphNode(
-                    id = 'Attacker:' + str(attacker_info.id) + ':firstSteps',
-                    type = 'or',
-                    asset = None,
-                    name = 'firstSteps',
-                    ttc = {},
-                    children = [],
-                    parents = [],
-                    compromised_by = []
-            )
-
             ag_attacker = Attacker(
-                id = str(attacker_info.id),
+                id = int(attacker_info.id),
                 entry_points = [],
-                reached_attack_steps = [],
-                node = attacker_node
+                reached_attack_steps = []
             )
-            attacker_node.attacker = ag_attacker
             self.attackers.append(ag_attacker)
 
             for (asset, attack_steps) in attacker_info.entry_points:
@@ -352,15 +343,13 @@ class AttackGraph():
                     if not ag_node:
                         logger.warning(
                             'Failed to find attacker entry point '
-                            + attack_step_id + ' for Attacker:'
-                            + ag_attacker.id + '.'
+                            f'{attack_step_id} for Attacker:'
+                            f'{ag_attacker.id}.'
                         )
                         continue
                     ag_attacker.compromise(ag_node)
 
             ag_attacker.entry_points = ag_attacker.reached_attack_steps
-            attacker_node.children = ag_attacker.entry_points
-            self.nodes.append(attacker_node)
 
     def _generate_graph(self):
         """
@@ -372,12 +361,11 @@ class AttackGraph():
         for asset in self.model.assets:
             logger.debug(
                 f'Generating attack steps for asset {asset.name} '
-                f'which is of class {asset.metaconcept}.'
-            )
+                f'which is of class {asset.type}.')
             attack_step_nodes = []
 
             # TODO probably part of what happens here is already done in lang_graph
-            attack_steps = self.lang_graph._get_attacks_for_asset_type(asset.metaconcept)
+            attack_steps = self.lang_graph._get_attacks_for_asset_type(asset.type)
 
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(

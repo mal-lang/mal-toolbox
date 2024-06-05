@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "name": "Simple Example Model",
+    "name": "Older Version Example Model",
     "langVersion": "1.0.0",
     "langID": "org.mal-lang.coreLang",
     "malVersion": "0.1.0-SNAPSHOT",
+    "MAL Toolbox Version": "0.0.38",
     "info": "Created by the mal-toolbox model python module."
   },
   "assets": {

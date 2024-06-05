@@ -34,7 +34,7 @@ def test_attackgraphnode():
 
     # Make sure compromised node has attacker added to it
     attacker = Attacker(
-        "1", entry_points=[node1], reached_attack_steps=[], node=node1
+        "1", entry_points=[node1], reached_attack_steps=[]
     )
     node6.compromise(attacker)
     assert node6.compromised_by == [attacker]
@@ -47,7 +47,6 @@ def test_attackgraphnode():
     assert not node6.is_compromised()
 
     # Node 3 is disabled defense
-    # TODO: is_available_defense->is_disabled defense?
     assert node3.is_available_defense()
     assert not node3.is_enabled_defense()
 

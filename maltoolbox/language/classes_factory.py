@@ -29,7 +29,7 @@ class LanguageClassesFactory:
             asset_json_entry['properties']['id'] = {
                 'type' : 'integer',
             }
-            asset_json_entry['properties']['metaconcept'] = \
+            asset_json_entry['properties']['type'] = \
                 {
                     'type' : 'string',
                     'default': asset.name

@@ -12,10 +12,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Attacker:
-    id: str
+    id: int
     entry_points: list[node.AttackGraphNode]
     reached_attack_steps: list[node.AttackGraphNode]
-    node: node.AttackGraphNode
 
     def to_dict(self):
         attacker_dict = {
@@ -23,8 +22,7 @@ class Attacker:
             "entry_points": [entry_point.id for entry_point in
                 self.entry_points],
             "reached_attack_steps": [attack_step.id for attack_step in
-                self.reached_attack_steps],
-            "node": self.node.id
+                self.reached_attack_steps]
         }
 
         return attacker_dict

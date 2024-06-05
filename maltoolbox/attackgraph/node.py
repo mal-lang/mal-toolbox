@@ -26,7 +26,6 @@ class AttackGraphNode:
     tags: Optional[list[str]] = None
     observations: Optional[dict] = None
     attributes: Optional[dict] = None
-    attacker: Optional['Attacker'] = None
 
     def to_dict(self):
         node_dict = {
@@ -36,13 +35,12 @@ class AttackGraphNode:
             'ttc': self.ttc,
             'children': [child.id for child in self.children],
             'parents': [parent.id for parent in self.parents],
-            'compromised_by': ['Attacker:' + attacker.id for attacker in \
+            'compromised_by': ['Attacker:' + str(attacker.id) for attacker in \
                 self.compromised_by]
         }
 
         if self.asset is not None:
-            node_dict['asset'] = self.asset.metaconcept + ':' \
-                + str(self.asset.id)
+            node_dict['asset'] = str(self.asset.name)
         if self.defense_status is not None:
             node_dict['defense_status'] = str(self.defense_status)
         if self.existence_status is not None:
