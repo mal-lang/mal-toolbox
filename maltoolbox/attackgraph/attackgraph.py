@@ -42,7 +42,7 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
     the attack step.
     """
 
-    if logger.level == logging.DEBUG:
+    if logger.isEnabledFor(logging.DEBUG):
         # This expressions takes a lot of time
         logger.debug('Processing Step Expression:\n' \
             + json.dumps(step_expression, indent = 2))

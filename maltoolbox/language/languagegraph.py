@@ -468,7 +468,7 @@ class LanguageGraph():
         associations chain, and the name of the attack step.
         """
 
-        if logger.level == logging.DEBUG:
+        if logger.isEnabledFor(logging.DEBUG):
             # This expressions takes a lot of time
             logger.debug('Processing Step Expression:\n' \
                 + json.dumps(step_expression, indent = 2))
