@@ -430,8 +430,11 @@ class Model():
 
         # Reconstruct the assets
         for asset_id, asset_object in serialized_object['assets'].items():
-            logger.debug(
-                f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
+
+            if logger.isEnabledFor(logging.DEBUG):
+                # Avoid running json.dumps when not in debug
+                logger.debug(
+                    f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
 
             # Allow defining an asset via the metaconcept only.
             asset_object = (

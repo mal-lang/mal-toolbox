@@ -41,8 +41,12 @@ def load_model_from_scad_archive(scad_archive: str,
         lang_classes_factory)
 
     for child in root.iter('objects'):
-        logger.debug(f'Loading asset from \"{scad_archive}\":\n' \
-            + json.dumps(child.attrib, indent = 2))
+
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug(f'Loading asset from \"{scad_archive}\":\n' \
+                + json.dumps(child.attrib, indent = 2))
+
         if child.attrib['metaConcept'] == 'Attacker':
             attacker_id = int(child.attrib['id'])
             attacker = AttackerAttachment()

@@ -469,7 +469,7 @@ class LanguageGraph():
         """
 
         if logger.isEnabledFor(logging.DEBUG):
-            # This expressions takes a lot of time
+            # Avoid running json.dumps when not in debug
             logger.debug('Processing Step Expression:\n' \
                 + json.dumps(step_expression, indent = 2))
 
