@@ -53,7 +53,7 @@ class Model():
                                   from an instance model file
         allow_duplicate_name    - allow duplicate names to be used. If allowed
                                   and a duplicate is encountered the name will
-                                  be prefixed with the id.
+                                  be appended with the id.
 
         Return:
         An asset matching the name if it exists in the model.
