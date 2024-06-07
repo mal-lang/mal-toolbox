@@ -160,7 +160,6 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
                 f'{step_expression["type"]}')
             return ([], None)
 
-
 class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
@@ -226,8 +225,6 @@ class AttackGraph():
                 'mitre_info' in node_dict else None
             ag_node.tags = node_dict['tags'] if \
                 'tags' in node_dict else []
-            ag_node.reward = float(node_dict['reward']) if \
-                'reward' in node_dict else 0.0
 
             attack_graph.add_node(ag_node)
 

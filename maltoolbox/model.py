@@ -89,6 +89,9 @@ class Model():
                     'duplicate and we do not allow duplicates.')
         self.asset_names.add(asset.name)
 
+        # Optional field for extra asset data
+        asset.extras = {}
+
         logger.debug(
             f'Add {asset.name}(id:{asset.id}) to model "{self.name}".'
         )
@@ -164,13 +167,18 @@ class Model():
         Arguments:
         association     - the association to add to the model
         """
+
+        # Optional field for extra association data
+        association.extras = {}
+
         # Field names are the two first values in _properties
         field_names = list(vars(association)['_properties'])[0:2]
         for field_name in field_names:
             for asset in getattr(association, field_name):
-                assocs = list(asset.associations)
-                assocs.append(association)
-                asset.associations = assocs
+                # Add associations to assets that are part of them
+                asset_assocs = list(asset.associations)
+                asset_assocs.append(association)
+                asset.associations = asset_assocs
         self.associations.append(association)
 
     def remove_association(self, association):
@@ -317,6 +325,8 @@ class Model():
 
         Arguments:
         asset       - asset to get dictionary representation of
+
+        Return: tuple with name of asset and the asset as dict
         """
         defenses = {}
         logger.debug(f'Translating {asset.name} to dictionary.')
@@ -340,15 +350,20 @@ class Model():
 
             defenses[key] = float(value)
 
-        ret = (asset.id, {
-                'name': str(asset.name),
-                'type': str(asset.type),
-                }
-            )
-        if defenses:
-            ret[1]['defenses'] = defenses
+        asset_dict = {
+            'name': str(asset.name),
+            'type': str(asset.type)
+        }
 
-        return ret
+        if defenses:
+            asset_dict['defenses'] = defenses
+
+        if asset.extras:
+            # Add optional metadata to dict
+            asset_dict['extra'] = asset.extras
+
+        return (asset.id, asset_dict)
+
 
     def association_to_dict(self, association):
         """Get dictionary representation of the association.
@@ -369,6 +384,11 @@ class Model():
                     [int(asset.id) for asset in second_field]
             }
         }
+
+        if association.extras:
+            # Add optional metadata to dict
+            association_dict['extra'] = association.extras
+
         return association_dict
 
     def attacker_to_dict(self, attacker):

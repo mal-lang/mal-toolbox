@@ -21,11 +21,12 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list['Attacker'] = field(default_factory=list)
-    extra: Optional[dict] = None
     mitre_info: Optional[str] = None
     tags: Optional[list[str]] = None
-    observations: Optional[dict] = None
     attributes: Optional[dict] = None
+
+    # Optional extra metadata for AttackGraphNode
+    extras: Optional[dict] = None
 
     def to_dict(self):
         node_dict = {
@@ -53,10 +54,8 @@ class AttackGraphNode:
             node_dict['mitre_info'] = str(self.mitre_info)
         if self.tags:
             node_dict['tags'] = str(self.tags)
-        if self.observations is not None:
-            node_dict['observations'] = self.observations
-        if hasattr(self, 'reward') and self.reward is not None:
-            node_dict['reward'] = self.reward
+        if self.extras:
+            node_dict['extra'] = self.extras
 
         return node_dict
 
