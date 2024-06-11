@@ -55,7 +55,7 @@ class AttackGraphNode:
         if self.tags:
             node_dict['tags'] = str(self.tags)
         if self.extras:
-            node_dict['extra'] = self.extras
+            node_dict['extras'] = self.extras
 
         return node_dict
 

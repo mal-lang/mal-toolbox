@@ -360,7 +360,7 @@ class Model():
 
         if asset.extras:
             # Add optional metadata to dict
-            asset_dict['extra'] = asset.extras
+            asset_dict['extras'] = asset.extras
 
         return (asset.id, asset_dict)
 
@@ -387,7 +387,7 @@ class Model():
 
         if association.extras:
             # Add optional metadata to dict
-            association_dict['extra'] = association.extras
+            association_dict['extras'] = association.extras
 
         return association_dict
 
