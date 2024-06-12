@@ -21,11 +21,11 @@ def create_data_asset(model, name):
 
 def create_association(
         model,
-        from_assets,
-        to_assets,
+        left_assets,
+        right_assets,
         assoc_type="AppExecution",
-        from_fieldname="hostApp",
-        to_fieldname="appExecutedApps",
+        left_fieldname="hostApp",
+        right_fieldname="appExecutedApps",
     ):
     """Helper function to create an association dict with
     given parameters, useful in tests"""
@@ -33,8 +33,8 @@ def create_association(
     # Simulate receiving the association from a json file
     association_dict = {
       assoc_type: {
-        from_fieldname: from_assets,
-        to_fieldname: to_assets
+        left_fieldname: left_assets,
+        right_fieldname: right_assets
       }
     }
 
@@ -157,8 +157,8 @@ def test_model_add_association(model: Model):
     # Create an association between p1 and p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
 
     associations_before = list(model.associations)
@@ -191,8 +191,8 @@ def test_model_add_appexecution_association_two_assets(model: Model):
         # are not allowed in the left field for AppExecution
         create_association(
             model, assoc_type="AppExecution",
-            from_fieldname="hostApp", to_fieldname="appExecutedApps",
-            from_assets=[p1, p2], to_assets=[p1]
+            left_fieldname="hostApp", right_fieldname="appExecutedApps",
+            left_assets=[p1, p2], right_assets=[p1]
         )
 
 
@@ -215,20 +215,20 @@ def test_model_add_association_duplicate(model: Model):
     # Create an association between (d1, d2) and d3
     association1 = create_association(
         model, assoc_type="DataContainment",
-        from_fieldname="containingData", to_fieldname="containedData",
-        from_assets=[d1, d2], to_assets=[d3]
+        left_fieldname="containingData", right_fieldname="containedData",
+        left_assets=[d1, d2], right_assets=[d3]
     )
     # Create an identical association, but from just d2
     association2 = create_association(
         model, assoc_type="DataContainment",
-        from_fieldname="containingData", to_fieldname="containedData",
-        from_assets=[d2], to_assets=[d3]
+        left_fieldname="containingData", right_fieldname="containedData",
+        left_assets=[d2], right_assets=[d3]
     )
     # Create association with duplicate assets in both fields
     association3 = create_association(
         model, assoc_type="DataContainment",
-        from_fieldname="containingData", to_fieldname="containedData",
-        from_assets=[d2, d2], to_assets=[d3, d3]
+        left_fieldname="containingData", right_fieldname="containedData",
+        left_assets=[d2, d2], right_assets=[d3, d3]
     )
 
     # Add the first association to the model - no problem
@@ -273,8 +273,8 @@ def test_model_remove_association(model: Model):
 
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
 
     model.add_association(association)
@@ -298,8 +298,8 @@ def test_model_remove_association_nonexisting(model: Model):
     # Create the association but don't add it
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[], to_assets=[]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[], right_assets=[]
     )
 
     # No associations exists
@@ -323,8 +323,8 @@ def test_model_remove_asset_from_association(model: Model):
     # Create and add association from p1 to p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -355,8 +355,8 @@ def test_model_remove_asset_from_association_nonexisting_asset(
     # Create an association between p1 and p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -385,8 +385,8 @@ def test_model_remove_asset_from_association_nonexisting_association(
     # Create (but don't add!) an association between p1 and p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     # We are removing an association that was never created -> LookupError
     with pytest.raises(LookupError):
@@ -481,8 +481,8 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
     # Create and add an association between p1 and p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -565,8 +565,8 @@ def test_model_association_to_dict(model: Model):
     # Create and add an association between p1 and p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -627,8 +627,8 @@ def test_serialize(model: Model):
     # Create and add an association between p1 and p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -680,8 +680,8 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     # Create and add an association between p1 and p2
     association = create_association(
         model, assoc_type="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
