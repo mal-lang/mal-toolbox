@@ -34,9 +34,9 @@ class AttackGraphNode:
             'type': self.type,
             'name': self.name,
             'ttc': self.ttc,
-            'children': [child.id for child in self.children],
-            'parents': [parent.id for parent in self.parents],
-            'compromised_by': ['Attacker:' + str(attacker.id) for attacker in \
+            'children': [child.get_full_name() for child in self.children],
+            'parents': [parent.get_full_name() for parent in self.parents],
+            'compromised_by': [ attacker.name for attacker in \
                 self.compromised_by]
         }
 

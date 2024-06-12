@@ -21,10 +21,10 @@ class Attacker:
         attacker_dict = {
             'id': self.id,
             'name': self.name,
-            'entry_points': [entry_point.id for entry_point in
+            'entry_points': [entry_point.get_full_name() for entry_point in
                 self.entry_points],
-            'reached_attack_steps': [attack_step.id for attack_step in
-                self.reached_attack_steps]
+            'reached_attack_steps': [attack_step.get_full_name() for
+                attack_step in self.reached_attack_steps]
         }
 
         return attacker_dict
