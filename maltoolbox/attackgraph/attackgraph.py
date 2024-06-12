@@ -180,13 +180,14 @@ class AttackGraph():
         return f'AttackGraph({len(self.nodes)} nodes)'
 
     def _to_dict(self):
-        """Convert AttackGraph to list"""
-        serialized_attack_steps = []
-        serialized_attackers = []
+        """Convert AttackGraph to dict"""
+        serialized_attack_steps = {}
+        serialized_attackers = {}
         for ag_node in self.nodes:
-            serialized_attack_steps.append(ag_node.to_dict())
+            serialized_attack_steps[ag_node.get_full_name()] =\
+                ag_node.to_dict()
         for attacker in self.attackers:
-            serialized_attackers.append(attacker.to_dict())
+            serialized_attackers[attacker.name] = attacker.to_dict()
         return {
             'attack_steps': serialized_attack_steps,
             'attackers': serialized_attackers,
