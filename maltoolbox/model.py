@@ -180,31 +180,25 @@ class Model():
                 f"Identical association {association_type} already exists"
             )
 
+
+        # Check for duplicate assets in each field
         left_field_name, right_field_name = association._properties.keys()
-        left_field_assets = getattr(association, left_field_name)
-        right_field_assets = getattr(association, right_field_name)
 
-        # Check for duplicate assets in left field
-        unique_left_field_asset_names = {a.name for a in left_field_assets}
-        if len(left_field_assets) > len(unique_left_field_asset_names):
-            raise ModelAssociationException(
-                "More than one asset share same name in left field"
-                f"{association_type}.{left_field_name}"
-            )
+        for field_name in (left_field_name, right_field_name):
+            field_assets = getattr(association, field_name)
 
-        # Check for duplicate assets in right field
-        unique_right_field_asset_names = {a.name for a in right_field_assets}
-        if len(right_field_assets) > len(unique_right_field_asset_names):
-            raise ModelAssociationException(
-                "More than one asset share same name in left field"
-                f"{association_type}.{right_field_name}"
-            )
+            unique_field_asset_names = {a.name for a in field_assets}
+            if len(field_assets) > len(unique_field_asset_names):
+                raise ModelAssociationException(
+                    "More than one asset share same name in field"
+                    f"{association_type}.{field_name}"
+                )
 
         # For each asset in left field, go through each assets in right field
         # to find all unique connections. Raise error if a connection between
         # two assets already exist in a previously added association.
-        for left_asset in left_field_assets:
-            for right_asset in right_field_assets:
+        for left_asset in getattr(association, left_field_name):
+            for right_asset in getattr(association, right_field_name):
 
                 if self.association_exists_between_assets(
                     association_type, left_asset, right_asset
