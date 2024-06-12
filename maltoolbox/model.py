@@ -160,6 +160,62 @@ class Model():
             raise LookupError(f'Asset {asset.id} is not part of the '
                 'association provided.')
 
+    def _validate_association(self, association) -> None:
+        """Raise error if association is invalid or already part of the Model.
+
+        Raises:
+            DuplicateAssociationError - same association already exists
+            ModelAssociationException - association is not valid
+        """
+
+        # Optimization: only look for duplicates in associations of same type
+        association_type = association.__class__.__name__
+        associations_same_type = self.type_to_associations.get(
+            association_type, []
+        )
+
+        # Check if identical association already exists
+        if association in associations_same_type:
+            raise DuplicateModelAssociationError(
+                f"Identical association {association_type} already exists"
+            )
+
+        left_field_name, right_field_name = association._properties.keys()
+        left_field_assets = getattr(association, left_field_name)
+        right_field_assets = getattr(association, right_field_name)
+
+        # Check for duplicate assets in left field
+        unique_left_field_asset_names = {a.name for a in left_field_assets}
+        if len(left_field_assets) > len(unique_left_field_asset_names):
+            raise ModelAssociationException(
+                "More than one asset share same name in left field"
+                f"{association_type}.{left_field_name}"
+            )
+
+        # Check for duplicate assets in right field
+        unique_right_field_asset_names = {a.name for a in right_field_assets}
+        if len(right_field_assets) > len(unique_right_field_asset_names):
+            raise ModelAssociationException(
+                "More than one asset share same name in left field"
+                f"{association_type}.{right_field_name}"
+            )
+
+        # For each asset in left field, go through each assets in right field
+        # to find all unique connections. Raise error if a connection between
+        # two assets already exist in a previously added association.
+        for left_asset in left_field_assets:
+            for right_asset in right_field_assets:
+
+                if self.association_exists_between_assets(
+                    association_type, left_asset, right_asset
+                ):
+                    # Assets already have the connection in another
+                    # association with same type
+                    raise DuplicateModelAssociationError(
+                        f"Association type {association_type} already exists"
+                        f" between {left_asset.name} and {right_asset.name}"
+                    )
+
     def add_association(self, association):
         """Add an association to the model.
 
@@ -168,13 +224,23 @@ class Model():
 
         Arguments:
         association     - the association to add to the model
+
+        Raises:
+        DuplicateAssociationError - same association already exists
+        ModelAssociationException - association is not valid
+
         """
+
+        # Check association is valid and not duplicate
+        self._validate_association(association)
 
         # Optional field for extra association data
         association.extras = {}
 
         # Field names are the two first values in _properties
         field_names = list(vars(association)['_properties'])[0:2]
+
+        # Add the association to all of the included assets
         for field_name in field_names:
             for asset in getattr(association, field_name):
                 # Add associations to assets that are part of them
@@ -300,6 +366,18 @@ class Model():
                 (attacker for attacker in self.attackers
                 if attacker.id == attacker_id), None
             )
+
+    def association_exists_between_assets(
+            self, association_type, left_asset, right_asset
+        ):
+        """Return True if the association already exists between the assets"""
+        associations = self.type_to_associations.get(association_type, [])
+        for association in associations:
+            field_name1, field_name2 = association._properties.keys()
+            if left_asset in getattr(association, field_name1):
+                if right_asset in getattr(association, field_name2):
+                    return True
+            return False
 
     def get_associated_assets_by_field_name(self, asset, field_name):
         """
