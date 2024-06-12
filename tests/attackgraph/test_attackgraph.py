@@ -138,7 +138,7 @@ def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
 def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     """Make sure attackers are properly attached to graph"""
 
-    app1_ncu = example_attackgraph.get_node_by_id(
+    app1_ncu = example_attackgraph.get_node_by_full_name(
         'Application 1:networkConnectUninspected'
     )
 
@@ -274,7 +274,7 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
 
 def test_attackgraph_regenerate_graph():
     """Make sure graph is regenerated"""
-    pass  # we don't have to test this atm tbh plz
+    pass
 
 
 def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
@@ -293,9 +293,3 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
     for child in children:
         assert node_to_remove not in child.parents
 
-    # Make sure references were rewritten to merge parents with children
-    ## TODO: Is it expected behaviour that this test fails?
-    # for child in children:
-    #     for parent in parents:
-    #         assert child in parent.children
-    #         assert parent in child.parents

@@ -9,10 +9,10 @@ from . import Attacker
 
 @dataclass
 class AttackGraphNode:
-    id: str
     type: str
     name: str
-    ttc: dict
+    ttc: dict = None
+    id: int = None
     asset: Any = None
     children: list['AttackGraphNode'] = field(default_factory=list)
     parents: list['AttackGraphNode'] = field(default_factory=list)
@@ -21,8 +21,8 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list['Attacker'] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     mitre_info: Optional[str] = None
-    tags: Optional[list[str]] = None
     attributes: Optional[dict] = None
 
     # Optional extra metadata for AttackGraphNode
@@ -119,3 +119,15 @@ class AttackGraphNode:
         return self.type == 'defense' and \
             'suppress' not in self.tags and \
             self.defense_status != 1.0
+
+    def get_full_name(self) -> str:
+        """
+        Return the full name of the attack step. This is a combination of the
+        asset name to which the attack step belongs and attack step name
+        itself.
+        """
+        if self.asset:
+            full_name = self.asset.name + ':' + self.name
+        else:
+            full_name = str(self.id) + ':' + self.name
+        return full_name
