@@ -40,7 +40,7 @@ class Model():
         self.name = name
         self.assets = []
         self.associations = []
-        self.type_to_associations = {}
+        self.type_to_associations = {} # optimization
         self.attackers = []
         self.lang_classes_factory = lang_classes_factory
         self.maltoolbox_version = mt_version
@@ -237,14 +237,13 @@ class Model():
         # Add the association to all of the included assets
         for field_name in field_names:
             for asset in getattr(association, field_name):
-                # Add associations to assets that are part of them
                 asset_assocs = list(asset.associations)
                 asset_assocs.append(association)
                 asset.associations = asset_assocs
 
-        # Add the association to the model
         self.associations.append(association)
 
+        # Add association to type->association mapping
         association_type = association.__class__.__name__
         self.type_to_associations.setdefault(
                 association_type, []
@@ -289,7 +288,7 @@ class Model():
         self.type_to_associations[association_type].remove(
             association
         )
-        # Remove type from type-> association mapping if mapping empty
+        # Remove type from type->association mapping if mapping empty
         if len(self.type_to_associations[association_type]) == 0:
             del self.type_to_associations[association_type]
 
