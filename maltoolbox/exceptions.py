@@ -30,3 +30,16 @@ class AttackGraphStepExpressionError(AttackGraphException):
     """A target attack step cannot be linked with for a step expression."""
     pass
 
+
+class ModelException(MalToolboxException):
+    """Base Exception for all Model related exceptions"""
+    pass
+
+
+class ModelAssociationException(ModelException):
+    """Exception related to associations in Model"""
+    pass
+
+class DuplicateModelAssociationError(ModelException):
+    """Associations should be unique as part of Model"""
+    pass
