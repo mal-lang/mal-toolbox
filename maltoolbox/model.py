@@ -12,6 +12,7 @@ from maltoolbox.file_utils import (
 )
 
 from .__init__ import __version__
+from .exceptions import DuplicateModelAssociationError, ModelAssociationException
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class Model():
         self.name = name
         self.assets = []
         self.associations = []
+        self.type_to_associations = {}
         self.attackers = []
         self.lang_classes_factory = lang_classes_factory
         self.maltoolbox_version = mt_version
@@ -179,7 +181,15 @@ class Model():
                 asset_assocs = list(asset.associations)
                 asset_assocs.append(association)
                 asset.associations = asset_assocs
+
+        # Add the association to the model
         self.associations.append(association)
+
+        association_type = association.__class__.__name__
+        self.type_to_associations.setdefault(
+                association_type, []
+            ).append(association)
+
 
     def remove_association(self, association):
         """Remove an association from the model.
@@ -213,6 +223,15 @@ class Model():
                 asset.associations = assocs
 
         self.associations.remove(association)
+
+        # Remove association from type->association mapping
+        association_type = association.__class__.__name__
+        self.type_to_associations[association_type].remove(
+            association
+        )
+        # Remove type from type-> association mapping if mapping empty
+        if len(self.type_to_associations[association_type]) == 0:
+            del self.type_to_associations[association_type]
 
     def add_attacker(self, attacker, attacker_id: int = None):
         """Add an attacker to the model.
