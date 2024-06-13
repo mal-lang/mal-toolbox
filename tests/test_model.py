@@ -366,6 +366,7 @@ def test_model_get_attacker_by_id(model: Model):
     attacker1.entry_points = []
     model.add_attacker(attacker1)
 
+    assert attacker1.id is not None
     assert model.get_attacker_by_id(attacker1.id) == attacker1
     assert model.get_attacker_by_id(1337) is None
 
@@ -508,6 +509,7 @@ def test_model_attacker_to_dict(model: Model):
 
     # attacker should be attached to p1, therefore p1s
     # id should be a key in the entrypoints_dict
+    assert p1.id is not None and entrypoints_dict
     assert p1.id in entrypoints_dict
 
     # The given steps should be inside the entrypoint of

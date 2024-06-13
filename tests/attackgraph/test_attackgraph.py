@@ -169,6 +169,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
 
     # Calculate how many nodes we should expect
     num_assets_attack_steps = 0
+    assert example_attackgraph.model
     for asset in example_attackgraph.model.assets:
         attack_steps = example_attackgraph.\
             lang_graph._get_attacks_for_asset_type(
