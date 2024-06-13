@@ -393,7 +393,7 @@ class malVisitor(ParseTreeVisitor):
             key, subkey = mult_key.split(".")
 
             # upper limit equals lower limit if not given
-            if subkey == "max" and association[key][subkey] == None:
+            if subkey == "max" and association[key][subkey] is None:
                 association[key][subkey] = association[key]["min"]
 
             if association[key][subkey] == "*":

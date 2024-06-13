@@ -17,8 +17,12 @@ from maltoolbox.file_utils import (
     save_dict_to_file
 )
 from .compiler import MalCompiler # type: ignore
-from ..exceptions import *
-
+from ..exceptions import (
+    LanguageGraphAssociationError,
+    LanguageGraphStepExpressionError,
+    LanguageGraphException,
+    LanguageGraphSuperAssetNotFoundError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -949,7 +953,7 @@ class LanguageGraph():
         logger.debug(f'Get attack steps for {asset["name"]} asset from '\
             'language specification.')
         if asset['superAsset']:
-            logger.debug(f'Asset extends another one, fetch the superclass '\
+            logger.debug('Asset extends another one, fetch the superclass '\
                 'attack steps for it.')
             attack_steps = self._get_attacks_for_asset_type(asset['superAsset'])
 
@@ -993,7 +997,7 @@ class LanguageGraph():
             return associations
 
         if asset['superAsset']:
-            logger.debug(f'Asset extends another one, fetch the superclass '\
+            logger.debug('Asset extends another one, fetch the superclass '\
                 'associations for it.')
             associations.extend(self._get_associations_for_asset_type(asset['superAsset']))
         assoc_iter = (assoc for assoc in self._lang_spec['associations'] \

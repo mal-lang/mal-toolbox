@@ -439,7 +439,7 @@ class Model():
 
     def _to_dict(self) -> Dict:
         """Get dictionary representation of the model."""
-        logger.debug(f'Translating model to dict.')
+        logger.debug('Translating model to dict.')
         contents: Dict[str, Any] = {
             'metadata': {},
             'assets': {},

@@ -8,7 +8,7 @@ import logging
 from py2neo import Graph, Node, Relationship, Subgraph # type: ignore
 
 from ..model import AttackerAttachment, Model
-from ..language import specification
+from ..language import specification, LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ import logging
 import xml.etree.ElementTree as ET
 
 from ..model import AttackerAttachment, Model
-from ..language import specification
+from ..language import specification, LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,6 @@ def load_model_from_scad_archive(
             defense_name = subchild.attrib['metaConcept']
             defense_name = defense_name[0].lower() + defense_name[1:]
             for distrib in subchild.iter('evidenceDistribution'):
-                distrib_type = distrib.attrib['type']
                 for d in distrib.iter('parameters'):
                     if 'value' in d.attrib:
                         dist_value = d.attrib['value']
