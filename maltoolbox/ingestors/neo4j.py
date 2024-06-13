@@ -92,7 +92,6 @@ def ingest_model(model,
     rels = []
 
     for asset in model.assets:
-        nodeid = asset.name
 
         nodes[str(asset.id)] = Node(str(asset.type),
                 name=str(asset.name),

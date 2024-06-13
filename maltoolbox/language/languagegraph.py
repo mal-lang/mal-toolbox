@@ -760,7 +760,7 @@ class LanguageGraph():
         for asset in self.assets:
             logger.debug(f'Create association language graph nodes for asset '
                 f'{asset.name}')
-            associations_nodes = []
+
             associations = self._get_associations_for_asset_type(asset.name)
             for association in associations:
                 left_asset = next((asset for asset in self.assets \
@@ -820,7 +820,7 @@ class LanguageGraph():
         for asset in self.assets:
             logger.debug(f'Create attack steps language graph nodes for '
                 f'asset {asset.name}.')
-            attack_step_nodes = []
+
             attack_steps = self._get_attacks_for_asset_type(asset.name)
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(f'Create attack step language graph nodes for '

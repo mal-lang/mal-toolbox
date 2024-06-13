@@ -9,7 +9,6 @@ from .mal_lexer import malLexer
 from .mal_parser import malParser
 from .mal_visitor import malVisitor
 
-import os
 
 class MalCompiler:
     def __init__(self):

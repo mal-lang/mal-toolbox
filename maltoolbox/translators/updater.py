@@ -1,9 +1,7 @@
 import json
-import yaml
 import logging
 
-from dataclasses import dataclass
-from python_jsonschema_objects.literals import LiteralValue
+import yaml
 
 from ..model import Model, AttackerAttachment
 from ..language import LanguageClassesFactory
