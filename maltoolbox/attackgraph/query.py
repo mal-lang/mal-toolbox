@@ -54,7 +54,6 @@ def is_node_traversable_by_attacker(
             return False
 
 def get_attack_surface(
-        graph: AttackGraph,
         attacker: Attacker
     ) -> List[AttackGraphNode]:
     """
@@ -64,7 +63,6 @@ def get_attack_surface(
     parents in the attack steps reached.
 
     Arguments:
-    graph       - the attack graph TODO: unused, should it be removed?
     attacker    - the Attacker whose attack surface is sought
     """
     logger.debug(f'Get the attack surface for Attacker \"{attacker.id}\".')
@@ -79,7 +77,6 @@ def get_attack_surface(
     return attack_surface
 
 def update_attack_surface_add_nodes(
-        graph: AttackGraph,
         attacker: Attacker,
         current_attack_surface,
         nodes: List[AttackGraphNode]
@@ -89,7 +86,6 @@ def update_attack_surface_add_nodes(
     provided to see if any of their children can be added.
 
     Arguments:
-    graph                   - the attack graph TODO: unused, should it be removed?
     attacker                - the Attacker whose attack surface is sought
     current_attack_surface  - the current attack surface that we wish to
                               expand
