@@ -5,20 +5,23 @@ from __future__ import annotations
 import logging
 import json
 
-from typing import Any, Dict, List, Optional, Tuple
-
-from maltoolbox.file_utils import (
-    load_dict_from_json_file, load_dict_from_yaml_file,
-    save_dict_to_file
-)
+from typing import TYPE_CHECKING
 
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
-from ..language import specification, LanguageGraph
+from ..language import specification
 from ..model import Model
 from ..exceptions import AttackGraphException
+from ..file_utils import (
+    load_dict_from_json_file,
+    load_dict_from_yaml_file,
+    save_dict_to_file
+)
 
+if TYPE_CHECKING:
+    from typing import Any, Dict, List, Optional, Tuple
+    from ..language import LanguageGraph
 
 logger = logging.getLogger(__name__)
 

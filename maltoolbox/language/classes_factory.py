@@ -1,14 +1,16 @@
 """
 MAL-Toolbox Language Classes Factory Module
 """
-
+from __future__ import annotations
 import json
 import logging
-from typing import Any, Literal
+from typing import TYPE_CHECKING
 
 import python_jsonschema_objects as pjs # type: ignore
 
-from maltoolbox.language import LanguageGraph
+if TYPE_CHECKING:
+    from typing import Any, Literal
+    from maltoolbox.language import LanguageGraph
 
 logger = logging.getLogger(__name__)
 

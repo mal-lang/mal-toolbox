@@ -6,8 +6,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 
-from typing import Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from typing import Dict, List
     from .attackgraph import AttackGraphNode
 
 logger = logging.getLogger(__name__)

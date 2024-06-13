@@ -6,15 +6,19 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING
 
-from maltoolbox.language import LanguageClassesFactory
-from maltoolbox.file_utils import (
-    load_dict_from_json_file, load_dict_from_yaml_file,
+from .file_utils import (
+    load_dict_from_json_file,
+    load_dict_from_yaml_file,
     save_dict_to_file
 )
 
 from . import __version__
+
+if TYPE_CHECKING:
+    from typing import Any, Dict, List, Optional, Set, Tuple
+    from .language import LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
 
