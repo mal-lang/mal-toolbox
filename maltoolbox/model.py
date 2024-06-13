@@ -279,7 +279,9 @@ class Model():
                 if asset.name == asset_name), None
              )
 
-    def get_attacker_by_id(self, attacker_id: int) -> Optional[Any]:
+    def get_attacker_by_id(
+            self, attacker_id: int
+        ) -> Optional[AttackerAttachment]:
         """
         Find an attacker in the model based on its id.
 
@@ -425,7 +427,7 @@ class Model():
         """
 
         logger.debug(f'Translating {attacker.name} to dictionary.')
-        attacker_dict: Dict[Any, Any] = {
+        attacker_dict: Dict[str, Any] = {
             'name': str(attacker.name),
             'entry_points': {},
         }
