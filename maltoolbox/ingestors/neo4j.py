@@ -131,14 +131,14 @@ def get_model(
 
     g = Graph(uri=uri, user=username, password=password, name=dbname)
 
-    instance_model = Model('Neo4j imported model', lang_spec,
-        lang_classes_factory)
+    instance_model = Model('Neo4j imported model', lang_classes_factory)
     # Get all assets
     assets_results = g.run('MATCH (a) WHERE a.type IS NOT NULL RETURN DISTINCT a').data()
     for asset in assets_results:
         asset_data = dict(asset['a'])
         logger.debug('Loading asset from Neo4j instance:\n' \
             + str(asset_data))
+
         if asset_data['type'] == 'Attacker':
             attacker_id = int(asset_data['asset_id'])
             attacker = AttackerAttachment()
