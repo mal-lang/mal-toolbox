@@ -475,7 +475,7 @@ class LanguageGraph():
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
             logger.debug(
-                'Processing Step Expression:\n %s',
+                'Processing Step Expression:\n%s',
                 json.dumps(step_expression, indent = 2)
             )
 
@@ -973,7 +973,7 @@ class LanguageGraph():
             asset_type), None)
         if not asset:
             logger.error(
-                'Failed to find asset type %s when '\
+                'Failed to find asset type %s when '
                 'looking for associations.', asset_type
             )
             return None
