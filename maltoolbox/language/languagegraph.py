@@ -216,10 +216,10 @@ class LanguageGraphAssociation:
         if self.right_field.fieldname == fieldname:
             return self.left_field.fieldname
 
-        msg = (f'Requested fieldname \"{fieldname}\" from '
-               f'association {self.name} which did not contain it!')
-        logger.error(msg)
-        raise LanguageGraphAssociationError(msg)
+        msg = ('Requested fieldname "%s" from association '
+               '%s which did not contain it!')
+        logger.error(msg, fieldname, self.name)
+        raise LanguageGraphAssociationError(msg % (fieldname, self.name))
 
     def get_opposite_asset(
             self, asset: LanguageGraphAsset
@@ -363,8 +363,9 @@ class DependencyChain:
                 }
 
             case _:
-                msg = f'Unknown associations chain element {self.type}!'
-                raise LanguageGraphAssociationError(msg)
+                msg = 'Unknown associations chain element %s!'
+                logger.error(msg, self.type)
+                raise LanguageGraphAssociationError(msg % self.type)
 
     def __repr__(self) -> str:
         return str(self.to_dict())
@@ -749,9 +750,9 @@ class LanguageGraph():
                     return reverse_chain
 
                 case _:
-                    msg = 'Unknown assoc chain element {dep_chain.type}'
-                    logger.error(msg)
-                    raise LanguageGraphAssociationError(msg)
+                    msg = 'Unknown assoc chain element %s'
+                    logger.error(msg, dep_chain.type)
+                    raise LanguageGraphAssociationError(msg % dep_chain.type)
 
     def _generate_graph(self) -> None:
         """
@@ -781,11 +782,12 @@ class LanguageGraph():
                 super_asset = next((asset for asset in self.assets \
                     if asset.name == asset_info['superAsset']), None)
                 if not super_asset:
-                    msg = 'Failed to find super asset ' \
-                        f'\"{asset_info["superAsset"]}\" ' \
-                        f'for asset \"{asset_info["name"]}\"!'
-                    logger.error(msg)
-                    raise LanguageGraphSuperAssetNotFoundError(msg)
+                    msg = 'Failed to find super asset "%s" for asset "%s"!'
+                    logger.error(
+                        msg, asset_info["superAsset"], asset_info["name"])
+                    raise LanguageGraphSuperAssetNotFoundError(
+                        msg % (asset_info["superAsset"], asset_info["name"]))
+
                 super_asset.sub_assets.append(asset)
                 asset.super_assets.append(super_asset)
 
@@ -799,18 +801,21 @@ class LanguageGraph():
                 left_asset = next((asset for asset in self.assets \
                     if asset.name == association['leftAsset']), None)
                 if not left_asset:
-                    msg = 'Failed to find left hand asset ' \
-                        f'\"{association["leftAsset"]}\" for ' \
-                        f'association \"{association["name"]}\"!'
-                    logger.error(msg)
-                    raise LanguageGraphAssociationError(msg)
+                    msg = 'Left asset "%s" for association "%s" not found!'
+                    logger.error(
+                        msg, association["leftAsset"], association["name"])
+                    raise LanguageGraphAssociationError(
+                        msg % (association["leftAsset"], association["name"]))
+
                 right_asset = next((asset for asset in self.assets \
                     if asset.name == association['rightAsset']), None)
                 if not right_asset:
-                    msg = 'Failed to find right hand asset ' \
-                        f'\"{association["rightAsset"]}\" for ' \
-                        f'association \"{association["name"]}\"!'
-                    raise LanguageGraphAssociationError(msg)
+                    msg = 'Right asset "%s" for association "%s" not found!'
+                    logger.error(
+                        msg, association["rightAsset"], association["name"])
+                    raise LanguageGraphAssociationError(
+                        msg % (association["rightAsset"], association["name"])
+                    )
 
                 # Technically we should be more exhaustive and check the
                 # flipped version too and all of the fieldnames as well.
@@ -890,22 +895,25 @@ class LanguageGraph():
                         step_expression)
                 if not target_asset:
                     msg = 'Failed to find target asset to link with for ' \
-                        'step expression:\n' + \
-                        json.dumps(step_expression, indent = 2)
-
-                    raise LanguageGraphStepExpressionError(msg)
+                        'step expression:\n%s'
+                    raise LanguageGraphStepExpressionError(
+                        msg % json.dumps(step_expression, indent = 2)
+                    )
 
                 target_attack_step = next((attack_step \
                     for attack_step in target_asset.attack_steps \
                         if attack_step.name == attack_step_name), None)
 
                 if not target_attack_step:
-                    msg = 'Failed to find target attack step ' \
-                        f'{attack_step_name} on ' \
-                        f'{target_asset.name} to link with for step ' \
-                        'expression:\n' + \
-                        json.dumps(step_expression, indent = 2)
-                    raise LanguageGraphStepExpressionError(msg)
+                    msg = 'Failed to find target attack step %s on %s to ' \
+                          'link with for step expression:\n%s'
+                    raise LanguageGraphStepExpressionError(
+                        msg % (
+                            attack_step_name,
+                            target_asset.name,
+                            json.dumps(step_expression, indent = 2)
+                        )
+                    )
 
                 # It is easier to create the parent associations chain due to
                 # the left-hand first progression.
@@ -1028,10 +1036,9 @@ class LanguageGraph():
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
         if not asset:
-            msg = (f'Failed to find asset type {asset_type} when '\
-                    'looking for variable.')
-            logger.error(msg)
-            raise LanguageGraphException(msg)
+            msg = 'Failed to find asset type %s when looking for variable.'
+            logger.error(msg, asset_type)
+            raise LanguageGraphException(msg % asset_type)
 
         variable_dict = next((variable for variable in \
             asset['variables'] if variable['name'] == variable_name), None)
@@ -1042,10 +1049,10 @@ class LanguageGraph():
             if variable_dict:
                 return variable_dict
             else:
-                msg = (f'Failed to find variable {variable_name} in '
-                       f'{asset_type}\'s language specification.')
-                logger.error(msg)
-                raise LanguageGraphException(msg)
+                msg = 'Failed to find variable %s in %s lang specification.'
+                logger.error(msg, variable_name, asset_type)
+                raise LanguageGraphException(
+                    msg % (variable_name, asset_type))
 
         return variable_dict['stepExpression']
 

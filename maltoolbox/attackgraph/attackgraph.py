@@ -241,27 +241,27 @@ class AttackGraph():
         for node_dict in serialized_attack_steps:
             _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
-                msg = (f'Failed to find node with id {node_dict["id"]}'
-                       f' when loading from attack graph from dict')
-                logger.error(msg)
-                raise LookupError(msg)
+                msg = ('Failed to find node with id %s when loading'
+                       ' attack graph from dict')
+                logger.error(msg, node_dict["id"])
+                raise LookupError(msg % node_dict["id"])
             else:
                 for child_id in node_dict['children']:
                     child = attack_graph.get_node_by_id(child_id)
                     if child is None:
-                        msg = (f'Failed to find child node with id {child_id}'
-                               f' when loading from attack graph from dict')
-                        logger.error(msg)
-                        raise LookupError(msg)
+                        msg = ('Failed to find child node with id %s'
+                               ' when loading from attack graph from dict')
+                        logger.error(msg, child_id)
+                        raise LookupError(msg % child_id)
                     _ag_node.children.append(child)
 
                 for parent_id in node_dict['parents']:
                     parent = attack_graph.get_node_by_id(parent_id)
                     if parent is None:
-                        msg = (f'Failed to find parent node with id {parent_id} '
-                                'when loading from attack graph from dict')
-                        logger.error(msg)
-                        raise LookupError(msg)
+                        msg = ('Failed to find parent node with id %s '
+                               'when loading from attack graph from dict')
+                        logger.error(msg, parent_id)
+                        raise LookupError(msg % parent_id)
                     _ag_node.parents.append(parent)
 
                 # Also recreate asset links if model is available.
@@ -269,12 +269,10 @@ class AttackGraph():
                     asset = model.get_asset_by_name(
                         node_dict['asset'])
                     if asset is None:
-                        msg = (
-                            f'Failed to find asset with id {node_dict["asset"]}'
-                            'when loading from attack graph dict'
-                        )
-                        logger.error(msg)
-                        raise LookupError(msg)
+                        msg = ('Failed to find asset with id %s'
+                               'when loading from attack graph dict')
+                        logger.error(msg, node_dict["asset"])
+                        raise LookupError(msg % node_dict["asset"])
                     _ag_node.asset = asset
                     if hasattr(asset, 'attack_step_nodes'):
                         attack_step_nodes = list(asset.attack_step_nodes)
@@ -294,19 +292,19 @@ class AttackGraph():
                 if node:
                     ag_attacker.compromise(node)
                 else:
-                    msg = (f"Could not find node with id {node_id}"
-                            "in reached attack steps")
-                    logger.error(msg)
-                    raise AttackGraphException(msg)
+                    msg = ("Could not find node with id %s"
+                           "in reached attack steps")
+                    logger.error(msg, node_id)
+                    raise AttackGraphException(msg % node_id)
             for node_id in attacker.entry_points:
                 node = attack_graph.get_node_by_id(node_id)
                 if node:
                     ag_attacker.entry_points.append(node)
                 else:
-                    msg = (f"Could not find node with id {node_id}"
-                            "in attacker entrypoints")
-                    logger.error(msg)
-                    raise AttackGraphException(msg)
+                    msg = ("Could not find node with id %s"
+                           "in attacker entrypoints")
+                    logger.error(msg, node_id)
+                    raise AttackGraphException(msg % node_id)
             attack_graph.attackers.append(ag_attacker)
 
         return attack_graph
@@ -359,9 +357,9 @@ class AttackGraph():
         for attacker_info in self.model.attackers:
 
             if not attacker_info.id:
-                msg = "Can not attach attacker without ID"
-                logger.error(msg)
-                raise AttackGraphException(msg)
+                msg = "Can not attach attacker %s without ID"
+                logger.error(msg, attacker_info.name)
+                raise AttackGraphException(msg, attacker_info.name)
 
             ag_attacker = Attacker(
                 id = attacker_info.id,
@@ -481,11 +479,12 @@ class AttackGraph():
                     target_node_id = target.name + ':' + attack_step
                     target_node = self.get_node_by_id(target_node_id)
                     if not target_node:
-                        msg = 'Failed to find target node ' \
-                        f'{target_node_id} to link with for attack step ' \
-                        f'{ag_node.id}!'
-                        logger.error(msg)
-                        raise AttackGraphStepExpressionError(msg)
+                        msg = ('Failed to find target node '
+                               '%s to link with for attack step %s!')
+                        logger.error(msg, target_node_id, ag_node.id)
+                        raise AttackGraphStepExpressionError(
+                            msg % (target_node_id % ag_node.id)
+                        )
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)
 

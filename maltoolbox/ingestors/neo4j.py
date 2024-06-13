@@ -146,10 +146,9 @@ def get_model(
             continue
 
         if not hasattr(lang_classes_factory.ns, asset_data['type']):
-            msg = (f'Failed to find {asset_data["type"]} '
-                    'asset in language specification!')
-            logger.error(msg)
-            raise LookupError(msg)
+            msg = 'Failed to find %s asset in language specification!'
+            logger.error(msg, asset_data["type"])
+            raise LookupError(msg % asset_data["type"])
 
         asset_obj = getattr(lang_classes_factory.ns,
             asset_data['type'])(name = asset_data['name'])
@@ -190,30 +189,28 @@ def get_model(
         if attacker_id:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
-                msg = (f'Failed to find attacker with id {attacker_id} '
-                        'in model!')
-                logger.error(msg)
-                raise LookupError(msg)
+                msg = 'Failed to find attacker with id %s in model!'
+                logger.error(msg, attacker_id)
+                raise LookupError(msg % attacker_id)
             target_asset = instance_model.get_asset_by_id(target_id)
             if not target_asset:
-                msg = (f'Failed to find asset with id {target_id} '
-                        'in model!')
-                logger.error(msg)
-                raise LookupError(msg)
+                msg = 'Failed to find asset with id %s in model!'
+                logger.error(msg, target_id)
+                raise LookupError(msg % target_id)
             attacker.entry_points.append((target_asset,
                 [target_prop]))
             continue
 
         left_asset = instance_model.get_asset_by_id(left_id)
         if not left_asset:
-            msg = f'Failed to find asset with id {left_id} in model!'
-            logger.error(msg)
-            raise LookupError(msg)
+            msg = 'Failed to find asset with id %s in model!'
+            logger.error(msg, left_id)
+            raise LookupError(msg % left_id)
         right_asset = instance_model.get_asset_by_id(right_id)
         if not right_asset:
-            msg = f'Failed to find asset with id {right_id} in model!'
-            logger.error(msg)
-            raise LookupError(msg)
+            msg = 'Failed to find asset with id %s in model!'
+            logger.error(msg, right_id)
+            raise LookupError(msg % right_id)
 
         assoc_name = specification.get_association_by_fields_and_assets(
             lang_spec,
@@ -234,10 +231,9 @@ def get_model(
 
         if not hasattr(lang_classes_factory.ns,
             assoc_name):
-            msg = (f'Failed to find {assoc_name}'
-                    'association in language specification!')
-            logger.error(msg)
-            raise LookupError(msg)
+            msg = 'Failed to find %s association in language specification!'
+            logger.error(msg, assoc_name)
+            raise LookupError(msg % assoc_name)
 
         assoc = getattr(lang_classes_factory.ns, assoc_name)()
         setattr(assoc, left_field, [left_asset])

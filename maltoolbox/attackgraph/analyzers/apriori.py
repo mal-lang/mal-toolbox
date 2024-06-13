@@ -83,10 +83,10 @@ def evaluate_viability(node: AttackGraphNode) -> None:
             for parent in node.parents:
                 node.is_viable = node.is_viable and parent.is_viable
         case _:
-            msg = f'Evaluate viability was provided node \"node.id\" which '\
-                f'is of unknown type \"{node.type}\"'
-            logger.error(msg)
-            raise ValueError(msg)
+            msg = ('Evaluate viability was provided node "%s" which '
+                   'is of unknown type "%s"')
+            logger.error(msg, node.id, node.type)
+            raise ValueError(msg % (node.id, node.type))
 
 def evaluate_necessity(node: AttackGraphNode) -> None:
     """
@@ -109,10 +109,10 @@ def evaluate_necessity(node: AttackGraphNode) -> None:
             for parent in node.parents:
                 node.is_necessary = node.is_necessary or parent.is_necessary
         case _:
-            msg = f'Evaluate necessity was provided node \"node.id\" which '\
-                f'is of unknown type \"{node.type}\"'
-            logger.error(msg)
-            raise ValueError(msg)
+            msg = ('Evaluate necessity was provided node "%s" which '
+                   'is of unknown type "%s"')
+            logger.error(msg, node.id, node.type)
+            raise ValueError(msg % (node.id, node.type))
 
 def evaluate_viability_and_necessity(node: AttackGraphNode) -> None:
     """
