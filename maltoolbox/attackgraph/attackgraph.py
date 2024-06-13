@@ -363,7 +363,7 @@ class AttackGraph():
                 raise AttackGraphException(msg)
 
             ag_attacker = Attacker(
-                id = int(attacker_info.id),
+                id = attacker_info.id,
                 entry_points = [],
                 reached_attack_steps = []
             )
