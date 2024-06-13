@@ -241,29 +241,27 @@ class AttackGraph():
         for node_dict in serialized_attack_steps:
             _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
-                logger.error(
-                    f'Failed to find node with id {node_dict["id"]}'
-                    f' when loading from attack graph from dict'
-                )
+                msg = (f'Failed to find node with id {node_dict["id"]}'
+                       f' when loading from attack graph from dict')
+                logger.error(msg)
+                raise LookupError(msg)
             else:
                 for child_id in node_dict['children']:
                     child = attack_graph.get_node_by_id(child_id)
                     if child is None:
-                        logger.error(
-                            f'Failed to find child node with id {child_id}'
-                            f' when loading from attack graph from dict'
-                        )
-                        return None
+                        msg = (f'Failed to find child node with id {child_id}'
+                               f' when loading from attack graph from dict')
+                        logger.error(msg)
+                        raise LookupError(msg)
                     _ag_node.children.append(child)
 
                 for parent_id in node_dict['parents']:
                     parent = attack_graph.get_node_by_id(parent_id)
                     if parent is None:
-                        logger.error(
-                            f'Failed to find parent node with id {parent_id} '
-                            'when loading from attack graph from dict'
-                        )
-                        return None
+                        msg = (f'Failed to find parent node with id {parent_id} '
+                                'when loading from attack graph from dict')
+                        logger.error(msg)
+                        raise LookupError(msg)
                     _ag_node.parents.append(parent)
 
                 # Also recreate asset links if model is available.
@@ -271,11 +269,12 @@ class AttackGraph():
                     asset = model.get_asset_by_name(
                         node_dict['asset'])
                     if asset is None:
-                        logger.error(
+                        msg = (
                             f'Failed to find asset with id {node_dict["asset"]}'
                             'when loading from attack graph dict'
                         )
-                        return None
+                        logger.error(msg)
+                        raise LookupError(msg)
                     _ag_node.asset = asset
                     if hasattr(asset, 'attack_step_nodes'):
                         attack_step_nodes = list(asset.attack_step_nodes)
@@ -348,10 +347,21 @@ class AttackGraph():
         relevant attack step nodes and to the attackers.
         """
 
+        if not self.model:
+            msg = "Can not attach attackers without a model"
+            logger.error(msg)
+            raise AttackGraphException(msg)
+
         logger.info(
             f'Attach attackers from "{self.model.name}" model to the graph.'
         )
         for attacker_info in self.model.attackers:
+
+            if not attacker_info.id:
+                msg = "Can not attach attacker without ID"
+                logger.error(msg)
+                raise AttackGraphException(msg)
+
             ag_attacker = Attacker(
                 id = int(attacker_info.id),
                 entry_points = [],
@@ -379,6 +389,11 @@ class AttackGraph():
         Generate the attack graph based on the original model instance and the
         MAL language specification provided at initialization.
         """
+
+        if not self.model:
+            msg = "Can not generate AttackGraph without model"
+            logger.error(msg)
+            raise AttackGraphException(msg)
 
         # First, generate all of the nodes of the attack graph.
         for asset in self.model.assets:

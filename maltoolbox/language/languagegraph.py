@@ -327,13 +327,13 @@ class DependencyChain:
                 }
 
             case 'field':
-                association = self.association
-                return {association.name:
+                if not self.association:
+                    raise LanguageGraphAssociationError("Missing association for dep chain")
+                return {self.association.name:
                     {'fieldname': self.fieldname,
                      'next_association':
                           self.next_link.to_dict() if self.next_link else None
                     }
-                }
 
             case 'transitive':
                 return {'transitive':
@@ -341,6 +341,14 @@ class DependencyChain:
                 }
 
             case 'subType':
+                if not self.subtype:
+                    raise LanguageGraphException(
+                        "No subtype for dependency chain"
+                    )
+                if not self.next_link:
+                    raise LanguageGraphException(
+                        "No next link for subtype dependency chain"
+                    )
                 return {'subType': self.subtype.name,
                     'expression': self.next_link.to_dict()
                 }
@@ -608,9 +616,12 @@ class LanguageGraph():
                         step_expression['stepExpression'])
 
                 subtype_asset = next((asset for asset in self.assets if asset.name == subtype_name), None)
+
                 if not subtype_asset:
-                    logger.error('Failed to find subtype attack step '
-                        f'\"{subtype_name}\"')
+                    msg = 'Failed to find subtype attackstep "{subtype_name}"'
+                    logger.error(msg)
+                    raise LanguageGraphException(msg)
+
                 if not subtype_asset.is_subasset_of(result_target_asset):
                     logger.error(f'Found subtype \"{subtype_name}\" which '
                         f'does not extend \"{result_target_asset.name}\". '
@@ -695,6 +706,12 @@ class LanguageGraph():
 
                 case 'field':
                     association = dep_chain.association
+
+                    if not association:
+                        raise LanguageGraphException(
+                            "Missing association for dep chain"
+                        )
+
                     opposite_fieldname = association.get_opposite_fieldname(
                         dep_chain.fieldname)
                     new_dep_chain = DependencyChain(
@@ -716,9 +733,9 @@ class LanguageGraph():
                     return new_dep_chain
 
                 case _:
-                    logger.error('Unknown associations chain element '
-                        f'{dep_chain.type}!')
-                    return None
+                    msg = 'Unknown assoc chain element {dep_chain.type}'
+                    logger.error(msg)
+                    raise LanguageGraphAssociationError(msg)
 
     def _generate_graph(self) -> None:
         """
@@ -995,9 +1012,10 @@ class LanguageGraph():
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
         if not asset:
-            logger.error(f'Failed to find asset type {asset_type} when '\
-                'looking for variable.')
-            return None
+            msg = (f'Failed to find asset type {asset_type} when '\
+                    'looking for variable.')
+            logger.error(msg)
+            raise LanguageGraphException(msg)
 
         variable_dict = next((variable for variable in \
             asset['variables'] if variable['name'] == variable_name), None)
