@@ -721,21 +721,28 @@ class LanguageGraph():
                         dep_chain.fieldname)
                     new_dep_chain = DependencyChain(
                         type = 'field',
-                        next_link = reverse_chain)
+                        next_link = reverse_chain
+                    )
                     new_dep_chain.fieldname = opposite_fieldname
                     new_dep_chain.association = association
-                    return self.reverse_dep_chain(dep_chain.next_link,
-                        new_dep_chain)
+                    return self.reverse_dep_chain(
+                                dep_chain.next_link,
+                                new_dep_chain
+                            )
 
                 case 'subType':
-                    result_reverse_chain = self.reverse_dep_chain(
-                        new_dep_chain.next_link,
-                        reverse_chain)
-                    new_dep_chain = DependencyChain(
-                        type = 'subtype',
-                        next_link = result_reverse_chain)
-                    new_dep_chain.subtype = dep_chain.subtype
-                    return new_dep_chain
+                    #TODO FIX BUG: new_dep_chain is undefined
+                    # result_reverse_chain = self.reverse_dep_chain(
+                    #     new_dep_chain.next_link,
+                    #     reverse_chain
+                    # )
+                    # new_dep_chain = DependencyChain(
+                    #     type = 'subtype',
+                    #     next_link = result_reverse_chain
+                    # )
+                    # new_dep_chain.subtype = dep_chain.subtype
+                    # return new_dep_chain
+                    return reverse_chain
 
                 case _:
                     msg = 'Unknown assoc chain element {dep_chain.type}'
