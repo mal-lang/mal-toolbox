@@ -1,8 +1,8 @@
-from antlr4 import ParseTreeVisitor
-
-from .mal_parser import malParser
-
+# mypy: ignore-errors
 from collections.abc import MutableMapping, MutableSequence
+
+from antlr4 import ParseTreeVisitor
+from .mal_parser import malParser
 
 # In a rule like `rule: one? two* three`:
 #   - ctx.one() would be None if the token was not found on a matching line

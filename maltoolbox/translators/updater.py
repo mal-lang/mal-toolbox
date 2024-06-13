@@ -5,13 +5,16 @@ import logging
 from dataclasses import dataclass
 from python_jsonschema_objects.literals import LiteralValue
 
-from maltoolbox.model import Model, AttackerAttachment
+from ..model import Model, AttackerAttachment
+from ..language import LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
 
-def load_model_from_older_version(filename: str,
-    lang_classes_factory,
-    version) -> Model:
+def load_model_from_older_version(
+        filename: str,
+        lang_classes_factory: LanguageClassesFactory,
+        version: str
+    ) -> Model:
     match (version):
         case '0.0.39':
             return load_model_from_version_0_0_39(filename,
@@ -20,8 +23,10 @@ def load_model_from_older_version(filename: str,
             logger.error(f'Unknown version \"{version}\" format. Could not '
             f'load model from file \"{filename}\".')
 
-def load_model_from_version_0_0_39(filename: str,
-    lang_classes_factory) -> Model:
+def load_model_from_version_0_0_39(
+        filename: str,
+        lang_classes_factory: LanguageClassesFactory
+    ) -> Model:
     """
     Load model from file.
 
@@ -31,7 +36,7 @@ def load_model_from_version_0_0_39(filename: str,
                               classes needed to build the model
     """
 
-    def _process_model(model_dict, lang_classes_factory):
+    def _process_model(model_dict, lang_classes_factory) -> Model:
         model = Model(model_dict['metadata']['name'], lang_classes_factory)
 
         # Reconstruct the assets
@@ -85,7 +90,10 @@ def load_model_from_version_0_0_39(filename: str,
                 model.add_attacker(attacker, attacker_id = int(attacker_id))
         return model
 
-    def load_from_json(filename, lang_classes_factory):
+    def load_from_json(
+            filename: str,
+            lang_classes_factory: LanguageClassesFactory
+        ) -> Model:
         """
         Load model from a json file.
 
@@ -97,7 +105,10 @@ def load_model_from_version_0_0_39(filename: str,
 
         return _process_model(model_dict, lang_classes_factory)
 
-    def load_from_yaml(filename, lang_classes_factory):
+    def load_from_yaml(
+            filename: str,
+            lang_classes_factory: LanguageClassesFactory
+        ) -> Model:
         """
         Load model from a yaml file.
 

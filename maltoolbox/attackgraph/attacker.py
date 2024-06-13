@@ -1,23 +1,26 @@
-from __future__ import annotations
-
 """
 MAL-Toolbox Attack Graph Attacker Class
 """
 
+from __future__ import annotations
+from dataclasses import dataclass
 import logging
 
-from dataclasses import dataclass
+from typing import Dict, List, TYPE_CHECKING
+if TYPE_CHECKING:
+    from .attackgraph import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class Attacker:
     id: int
-    entry_points: list[node.AttackGraphNode]
-    reached_attack_steps: list[node.AttackGraphNode]
+    entry_points: List[AttackGraphNode]
+    reached_attack_steps: List[AttackGraphNode]
 
-    def to_dict(self):
-        attacker_dict = {
+    def to_dict(self) -> Dict:
+        """Convert the Attacker to a dict"""
+        return {
             "id": self.id,
             "entry_points": [entry_point.id for entry_point in
                 self.entry_points],
@@ -25,12 +28,10 @@ class Attacker:
                 self.reached_attack_steps]
         }
 
-        return attacker_dict
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.to_dict())
 
-    def compromise(self, node):
+    def compromise(self, node: AttackGraphNode) -> None:
         """
         Have the attacke compromise the node given as a parameter.
 
@@ -48,7 +49,7 @@ class Attacker:
         node.compromised_by.append(self)
         self.reached_attack_steps.append(node)
 
-    def undo_compromise(self, node):
+    def undo_compromise(self, node: AttackGraphNode) -> None:
         """
         Remove the attacker from the list of attackers that have compromised
         the node given as a parameter.

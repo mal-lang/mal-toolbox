@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """
 MAL-Toolbox Attack Graph Apriori Analyzer Submodule
 
@@ -13,6 +11,7 @@ Currently these are:
   compromised) to compromise children attack steps.
 """
 
+from __future__ import annotations
 import logging
 
 from ..attackgraph import AttackGraph
@@ -20,7 +19,7 @@ from ..node import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
-def propagate_viability_from_node(node: AttackGraphNode):
+def propagate_viability_from_node(node: AttackGraphNode) -> None:
     """
     Arguments:
     node        - the attack graph node from which to propagate the viable
@@ -40,7 +39,7 @@ def propagate_viability_from_node(node: AttackGraphNode):
         if child.is_viable != original_value:
             propagate_viability_from_node(child)
 
-def propagate_necessity_from_node(node: AttackGraphNode):
+def propagate_necessity_from_node(node: AttackGraphNode) -> None:
     """
     Arguments:
     node        - the attack graph node from which to propagate the necessary
@@ -63,7 +62,7 @@ def propagate_necessity_from_node(node: AttackGraphNode):
             propagate_necessity_from_node(child)
 
 
-def evaluate_viability(node):
+def evaluate_viability(node: AttackGraphNode) -> None:
     """
     Arguments:
     graph       - the node to evaluate viability for.
@@ -89,7 +88,7 @@ def evaluate_viability(node):
             logger.error(msg)
             raise ValueError(msg)
 
-def evaluate_necessity(node):
+def evaluate_necessity(node: AttackGraphNode) -> None:
     """
     Arguments:
     graph       - the node to evaluate necessity for.
@@ -115,7 +114,7 @@ def evaluate_necessity(node):
             logger.error(msg)
             raise ValueError(msg)
 
-def evaluate_viability_and_necessity(node):
+def evaluate_viability_and_necessity(node: AttackGraphNode) -> None:
     """
     Arguments:
     graph       - the node to evaluate viability and necessity for.
@@ -123,7 +122,7 @@ def evaluate_viability_and_necessity(node):
     evaluate_viability(node)
     evaluate_necessity(node)
 
-def calculate_viability_and_necessity(graph: AttackGraph):
+def calculate_viability_and_necessity(graph: AttackGraph) -> None:
     """
     Arguments:
     graph       - the attack graph for which we wish to determine the
@@ -137,7 +136,7 @@ def calculate_viability_and_necessity(graph: AttackGraph):
             if not node.is_necessary:
                 propagate_necessity_from_node(node)
 
-def prune_unviable_and_unnecessary_nodes(graph: AttackGraph):
+def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
     """
     Arguments:
     graph       - the attack graph for which we wish to remove the

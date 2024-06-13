@@ -21,7 +21,7 @@ def create_attack_graph(
         model_file: str,
         attach_attackers=True,
         calc_viability_and_necessity=True
-    ):
+    ) -> AttackGraph:
     """Create and return an attack graph
 
     Args:

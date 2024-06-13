@@ -1,10 +1,11 @@
 """
 MAL-Toolbox Neo4j Ingestor Module
 """
+# mypy: ignore-errors
 
 import logging
 
-from py2neo import Graph, Node, Relationship, Subgraph
+from py2neo import Graph, Node, Relationship, Subgraph # type: ignore
 
 from ..model import AttackerAttachment, Model
 from ..language import specification
@@ -12,12 +13,12 @@ from ..language import specification
 logger = logging.getLogger(__name__)
 
 def ingest_attack_graph(graph,
-        uri,
-        username,
-        password,
-        dbname,
-        delete=False
-) -> None:
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        delete: bool = False
+    ) -> None:
     """
     Ingest an attack graph into a neo4j database
 
@@ -65,12 +66,12 @@ def ingest_attack_graph(graph,
 
 
 def ingest_model(model,
-        uri,
-        username,
-        password,
-        dbname,
-        delete=False
-) -> None:
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        delete: bool = False
+    ) -> None:
     """
     Ingest an instance model graph into a Neo4J database
 
@@ -119,13 +120,15 @@ def ingest_model(model,
     g.commit(tx)
 
 
-def get_model(uri,
-        username,
-        password,
-        dbname,
-        lang_spec,
-        lang_classes_factory
-) -> Model:
+def get_model(
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        lang_spec: dict,
+        lang_classes_factory: LanguageClassesFactory
+    ) -> Model:
+    """Load a model from Neo4j"""
 
     g = Graph(uri=uri, user=username, password=password, name=dbname)
 

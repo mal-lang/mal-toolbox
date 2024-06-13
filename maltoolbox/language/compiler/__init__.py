@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# mypy: ignore-errors
+
+import os
+from typing import Optional
 
 from antlr4 import FileStream, CommonTokenStream
 from .mal_lexer import malLexer
@@ -12,7 +16,7 @@ class MalCompiler:
         self.path = None
         self.current_file = None
 
-    def compile(self, malfile: str = None):
+    def compile(self, malfile: Optional[str] = None):
         if not self.path:
             self.path = os.path.dirname(malfile)
 
