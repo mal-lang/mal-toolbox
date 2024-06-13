@@ -78,7 +78,7 @@ def get_attack_surface(
 
 def update_attack_surface_add_nodes(
         attacker: Attacker,
-        current_attack_surface,
+        current_attack_surface: List[AttackGraphNode],
         nodes: List[AttackGraphNode]
     ) -> List[AttackGraphNode]:
     """
