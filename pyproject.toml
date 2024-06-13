@@ -48,3 +48,12 @@ maltoolbox = ["*.conf*"]
 [tool.pytest.ini_options]
 pythonpath = ['.']
 filterwarnings = "ignore:invalid escape sequence"
+
+[tool.mypy]
+exclude = [
+  'maltoolbox/ingestors',
+  'maltoolbox/translators',
+  'maltoolbox/language/compiler',
+  'venv'
+]
+allow_redefinition = true
