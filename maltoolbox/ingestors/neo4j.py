@@ -5,7 +5,7 @@ MAL-Toolbox Neo4j Ingestor Module
 
 import logging
 
-from py2neo import Graph, Node, Relationship, Subgraph # type: ignore
+from py2neo import Graph, Node, Relationship, Subgraph
 
 from ..model import AttackerAttachment, Model
 from ..language import specification, LanguageClassesFactory

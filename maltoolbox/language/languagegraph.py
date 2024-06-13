@@ -16,7 +16,7 @@ from maltoolbox.file_utils import (
     load_dict_from_yaml_file, load_dict_from_json_file,
     save_dict_to_file
 )
-from .compiler import MalCompiler # type: ignore
+from .compiler import MalCompiler
 from ..exceptions import (
     LanguageGraphAssociationError,
     LanguageGraphStepExpressionError,

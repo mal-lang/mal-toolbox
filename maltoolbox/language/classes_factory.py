@@ -6,7 +6,7 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-import python_jsonschema_objects as pjs # type: ignore
+import python_jsonschema_objects as pjs
 
 if TYPE_CHECKING:
     from typing import Any, Literal

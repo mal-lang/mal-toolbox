@@ -3,7 +3,7 @@
 import json
 from typing import Dict
 import yaml
-from python_jsonschema_objects.literals import LiteralValue # type: ignore
+from python_jsonschema_objects.literals import LiteralValue
 
 def save_dict_to_json_file(filename: str, serialized_object: dict) -> None:
     """Save serialized object to a json file.

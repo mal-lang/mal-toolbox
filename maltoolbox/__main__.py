@@ -28,7 +28,7 @@ import docopt
 
 from maltoolbox.wrappers import create_attack_graph
 from . import log_configs, neo4j_configs
-from .language.compiler import MalCompiler # type: ignore
+from .language.compiler import MalCompiler
 from .ingestors import neo4j
 
 logger = logging.getLogger(__name__)
