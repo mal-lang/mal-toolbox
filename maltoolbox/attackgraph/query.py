@@ -60,7 +60,7 @@ def get_attack_surface(
     parents in the attack steps reached.
 
     Arguments:
-    graph       - the attack graph
+    graph       - the attack graph TODO: unused, should it be removed?
     attacker    - the Attacker whose attack surface is sought
     """
     logger.debug(f'Get the attack surface for Attacker \"{attacker.id}\".')
@@ -85,7 +85,7 @@ def update_attack_surface_add_nodes(
     provided to see if any of their children can be added.
 
     Arguments:
-    graph                   - the attack graph
+    graph                   - the attack graph TODO: unused, should it be removed?
     attacker                - the Attacker whose attack surface is sought
     current_attack_surface  - the current attack surface that we wish to
                               expand
@@ -127,4 +127,3 @@ def get_enabled_defenses(graph: AttackGraph) -> List[AttackGraphNode]:
     """
     logger.debug(f'Get the enabled defenses.')
     return [node for node in graph.nodes if node.is_enabled_defense()]
-

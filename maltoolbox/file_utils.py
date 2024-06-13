@@ -12,6 +12,7 @@ def save_dict_to_json_file(filename: str, serialized_object: dict) -> None:
     filename        - the name of the output file
     data            - dict to output as json
     """
+
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(serialized_object, f, indent=4)
 
@@ -23,6 +24,7 @@ def save_dict_to_yaml_file(filename: str, serialized_object: dict) -> None:
     filename        - the name of the output file
     data            - dict to output as yaml
     """
+
     # Handle Literal values from jsonschema_objects
     yaml.add_multi_representer(
         LiteralValue,

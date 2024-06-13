@@ -253,6 +253,7 @@ class Model():
         Return:
         An asset matching the id if it exists in the model.
         """
+
         logger.debug(f'Get asset with id \"{asset_id}\" from model '
             f'\"{self.name}\".')
         return next(
@@ -270,6 +271,7 @@ class Model():
         Return:
         An asset matching the name if it exists in the model.
         """
+
         logger.debug(f'Get asset with name \"{asset_name}\" from model '
             f'\"{self.name}\".')
         return next(
@@ -287,6 +289,7 @@ class Model():
         Return:
         An attacker matching the id if it exists in the model.
         """
+
         logger.debug(f'Get attacker with id \"{attacker_id}\" from model '
             f'\"{self.name}\".')
         return next(
@@ -310,6 +313,7 @@ class Model():
         A list of assets associated with the asset given that match the
         field_name.
         """
+
         logger.debug(
             f'Get associated assets for asset '
             f'{asset.name}(id:{asset.id}) by field name {field_name}.'
@@ -344,6 +348,7 @@ class Model():
 
         Return: tuple with name of asset and the asset as dict
         """
+
         defenses = {}
         logger.debug(f'Translating {asset.name} to dictionary.')
 
@@ -559,4 +564,3 @@ class Model():
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
         return cls._from_dict(serialized_model, lang_classes_factory)
-

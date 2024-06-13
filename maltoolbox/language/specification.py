@@ -89,4 +89,3 @@ def extends_asset(lang_spec: dict, asset: str, target_asset: str) -> bool:
                 target_asset)
 
     return False
-

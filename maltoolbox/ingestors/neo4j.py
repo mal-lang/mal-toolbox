@@ -32,7 +32,6 @@ def ingest_attack_graph(graph,
                            before ingesting the new attack graph
     """
 
-
     g = Graph(uri=uri, user=username, password=password, name=dbname)
     if delete:
         g.delete_all()
@@ -157,7 +156,6 @@ def get_model(
         asset_id = int(asset_data['asset_id'])
 
         #TODO Process defense values when they are included in Neo4j
-
         instance_model.add_asset(asset_obj, asset_id)
 
     # Get all relationships
@@ -178,6 +176,7 @@ def get_model(
 
         left_id = int(left_asset['asset_id'])
         right_id = int(right_asset['asset_id'])
+
         attacker_id = None
         if left_field == 'firstSteps':
             attacker_id = right_id

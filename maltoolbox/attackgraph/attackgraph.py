@@ -355,6 +355,7 @@ class AttackGraph():
         logger.info(
             f'Attach attackers from "{self.model.name}" model to the graph.'
         )
+
         for attacker_info in self.model.attackers:
 
             if not attacker_info.id:

@@ -8,7 +8,6 @@ from .mal_parser import malParser
 #   - ctx.one() would be None if the token was not found on a matching line
 #   - ctx.two() would be []
 
-
 class malVisitor(ParseTreeVisitor):
     def __init__(self, compiler, *args, **kwargs):
         self.compiler = compiler
