@@ -4,7 +4,7 @@ MAL-Toolbox Language Classes Factory Module
 
 import json
 import logging
-from typing import Any
+from typing import Any, Literal
 
 import python_jsonschema_objects as pjs # type: ignore
 
@@ -107,7 +107,7 @@ class LanguageClassesFactory:
         def create_association_field(
                 assoc: Any,
                 assoc_json_entry: dict,
-                position: str
+                position: Literal['left', 'right']
             ) -> None:
             field = getattr(assoc, position + "_field")
             assoc_json_entry['properties'][field.fieldname] = \
