@@ -321,8 +321,10 @@ class DependencyChain:
         match (self.type):
             case 'union' | 'intersection' | 'difference':
                 return {self.type: {
-                    'left': self.left_chain.to_dict(),
+                    'left': self.left_chain.to_dict()
+                            if self.left_chain else {},
                     'right': self.right_chain.to_dict()
+                             if self.right_chain else {}
                     }
                 }
 
@@ -332,12 +334,15 @@ class DependencyChain:
                 return {self.association.name:
                     {'fieldname': self.fieldname,
                      'next_association':
-                          self.next_link.to_dict() if self.next_link else None
+                            self.next_link.to_dict()
+                            if self.next_link else {}
+                        }
                     }
 
             case 'transitive':
                 return {'transitive':
                     self.next_link.to_dict()
+                    if self.next_link else {}
                 }
 
             case 'subType':
@@ -932,7 +937,7 @@ class LanguageGraph():
         except StopIteration:
             logger.error(f'Failed to find asset type {asset_type} when '\
                 'looking for attack steps.')
-            return None
+            return attack_steps
 
         logger.debug(f'Get attack steps for {asset["name"]} asset from '\
             'language specification.')
@@ -971,14 +976,14 @@ class LanguageGraph():
         """
         logger.debug(f'Get associations for {asset_type} asset from '\
             'language specification.')
-        associations = []
+        associations: List = []
 
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
         if not asset:
             logger.error(f'Failed to find asset type {asset_type} when '\
                 'looking for associations.')
-            return None
+            return associations
 
         if asset['superAsset']:
             logger.debug(f'Asset extends another one, fetch the superclass '\
