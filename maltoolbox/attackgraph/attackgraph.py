@@ -20,7 +20,7 @@ from ..file_utils import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional, Tuple
+    from typing import Any, Optional, Tuple
     from ..language import LanguageGraph
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 def _process_step_expression(
         lang_graph: LanguageGraph,
         model: Model,
-        target_assets: List[Any],
-        step_expression: Dict[str, Any]
-    ) -> Tuple[List, Optional[str]]:
+        target_assets: list[Any],
+        step_expression: dict[str, Any]
+    ) -> Tuple[list, Optional[str]]:
     """
     Recursively process an attack step expression.
 
@@ -171,9 +171,9 @@ def _process_step_expression(
 class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
-        self.nodes: List[AttackGraphNode] = []
-        self.id_to_node: Dict[str, AttackGraphNode] = {}  # optimization
-        self.attackers: List[Attacker] = []
+        self.nodes: list[AttackGraphNode] = []
+        self.id_to_node: dict[str, AttackGraphNode] = {}  # optimization
+        self.attackers: list[Attacker] = []
 
         self.model = model
         self.lang_graph = lang_graph
@@ -183,7 +183,7 @@ class AttackGraph():
     def __repr__(self) -> str:
         return f'AttackGraph({len(self.nodes)} nodes)'
 
-    def _to_dict(self) -> Dict:
+    def _to_dict(self) -> dict:
         """Convert AttackGraph to list"""
         serialized_attack_steps = []
         serialized_attackers = []
@@ -203,7 +203,7 @@ class AttackGraph():
     @classmethod
     def _from_dict(
             cls,
-            serialized_object: Dict,
+            serialized_object: dict,
             model: Optional[Model]=None
         ) -> AttackGraph:
         """Create AttackGraph from dict

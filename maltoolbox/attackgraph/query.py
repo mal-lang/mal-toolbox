@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 from .attackgraph import AttackGraph, Attacker
 
 if TYPE_CHECKING:
-    from typing import List
     from .attackgraph import AttackGraphNode
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ def is_node_traversable_by_attacker(
 
 def get_attack_surface(
         attacker: Attacker
-    ) -> List[AttackGraphNode]:
+    ) -> list[AttackGraphNode]:
     """
     Get the current attack surface of an attacker. This includes all of the
     viable children nodes of already reached attack steps that are of 'or'
@@ -78,9 +77,9 @@ def get_attack_surface(
 
 def update_attack_surface_add_nodes(
         attacker: Attacker,
-        current_attack_surface: List[AttackGraphNode],
-        nodes: List[AttackGraphNode]
-    ) -> List[AttackGraphNode]:
+        current_attack_surface: list[AttackGraphNode],
+        nodes: list[AttackGraphNode]
+    ) -> list[AttackGraphNode]:
     """
     Update the attack surface of an attacker with the new attack step nodes
     provided to see if any of their children can be added.
@@ -106,7 +105,7 @@ def update_attack_surface_add_nodes(
                 attack_surface.append(child)
     return attack_surface
 
-def get_defense_surface(graph: AttackGraph) -> List[AttackGraphNode]:
+def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
     """
     Get the defense surface. All non-suppressed defense steps that are not
     already fully enabled.
@@ -117,7 +116,7 @@ def get_defense_surface(graph: AttackGraph) -> List[AttackGraphNode]:
     logger.debug('Get the defense surface.')
     return [node for node in graph.nodes if node.is_available_defense()]
 
-def get_enabled_defenses(graph: AttackGraph) -> List[AttackGraphNode]:
+def get_enabled_defenses(graph: AttackGraph) -> list[AttackGraphNode]:
     """
     Get the defenses already enabled. All non-suppressed defense steps that
     are already fully enabled.

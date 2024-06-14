@@ -1,7 +1,6 @@
 """Utily functions for file handling"""
 
 import json
-from typing import Dict
 import yaml
 from python_jsonschema_objects.literals import LiteralValue
 
@@ -36,14 +35,14 @@ def save_dict_to_yaml_file(filename: str, serialized_object: dict) -> None:
         yaml.dump(serialized_object, f, Dumper=yaml.SafeDumper)
 
 
-def load_dict_from_yaml_file(filename: str) -> Dict:
+def load_dict_from_yaml_file(filename: str) -> dict:
     """Open json file and read as dict"""
     with open(filename, 'r', encoding='utf-8') as file:
         object_dict = yaml.safe_load(file)
     return object_dict
 
 
-def load_dict_from_json_file(filename: str) -> Dict:
+def load_dict_from_json_file(filename: str) -> dict:
     """Open yaml file and read as dict"""
     with open(filename, 'r', encoding='utf-8') as file:
         object_dict = json.loads(file.read())

@@ -4,7 +4,7 @@ MAL-Toolbox Attack Graph Node Dataclass
 
 from __future__ import annotations
 from dataclasses import field, dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from . import Attacker
 
@@ -30,7 +30,7 @@ class AttackGraphNode:
     # Optional extra metadata for AttackGraphNode
     extras: Optional[dict] = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict = {
             'id': self.id,

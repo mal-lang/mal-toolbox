@@ -10,7 +10,7 @@ import json
 import zipfile
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional, Set, Tuple
 
 from maltoolbox.file_utils import (
     load_dict_from_yaml_file, load_dict_from_json_file,
@@ -29,18 +29,18 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LanguageGraphAsset:
     name: Optional[str] = None
-    associations: List[LanguageGraphAssociation] = field(default_factory=lambda: [])
-    attack_steps: List[LanguageGraphAttackStep] = field(default_factory=lambda: [])
-    description: Dict = field(default_factory=lambda: {})
+    associations: list[LanguageGraphAssociation] = field(default_factory=lambda: [])
+    attack_steps: list[LanguageGraphAttackStep] = field(default_factory=lambda: [])
+    description: dict = field(default_factory=lambda: {})
     # MAL languages currently do not support multiple inheritance, but this is
     # futureproofing at its most hopeful.
-    super_assets: List = field(default_factory=lambda: [])
-    sub_assets: List = field(default_factory=lambda: [])
+    super_assets: list = field(default_factory=lambda: [])
+    sub_assets: list = field(default_factory=lambda: [])
     is_abstract: Optional[bool] = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert LanguageGraphAsset to dictionary"""
-        node_dict: Dict[str, Any] = {
+        node_dict: dict[str, Any] = {
             'name': self.name,
             'associations': [],
             'attack_steps': [],
@@ -84,7 +84,7 @@ class LanguageGraphAsset:
             current_assets.extend(current_asset.super_assets)
         return False
 
-    def get_all_subassets(self) -> List[LanguageGraphAsset]:
+    def get_all_subassets(self) -> list[LanguageGraphAsset]:
         """
         Return a list of all of the assets that directly or indirectly extend
         this asset.
@@ -100,7 +100,7 @@ class LanguageGraphAsset:
             subassets.extend(current_asset.sub_assets)
         return subassets
 
-    def get_all_superassets(self) -> List[LanguageGraphAsset]:
+    def get_all_superassets(self) -> list[LanguageGraphAsset]:
         """
         Return a list of all of the assets that this asset directly or
         indirectly extends.
@@ -143,9 +143,9 @@ class LanguageGraphAssociation:
     name: str
     left_field: LanguageGraphAssociationField
     right_field: LanguageGraphAssociationField
-    description: Optional[Dict] = None
+    description: Optional[dict] = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert LanguageGraphAssociation to dictionary"""
         node_dict = {
             'name': self.name,
@@ -253,18 +253,18 @@ class LanguageGraphAttackStep:
     name: str
     type: str
     asset: LanguageGraphAsset
-    ttc: Dict = field(default_factory = lambda: {})
-    children: Dict = field(default_factory = lambda: {})
-    parents: Dict = field(default_factory = lambda: {})
-    description: Dict = field(default_factory = lambda: {})
-    attributes: Optional[Dict] = None
+    ttc: dict = field(default_factory = lambda: {})
+    children: dict = field(default_factory = lambda: {})
+    parents: dict = field(default_factory = lambda: {})
+    description: dict = field(default_factory = lambda: {})
+    attributes: Optional[dict] = None
 
     @property
     def qualified_name(self) -> str:
         return f"{self.asset.name}:{self.name}"
 
-    def to_dict(self) -> Dict:
-        node_dict: Dict[Any, Any] = {
+    def to_dict(self) -> dict:
+        node_dict: dict[Any, Any] = {
             'name': self.name,
             'type': self.type,
             'asset': self.asset.name,
@@ -320,7 +320,7 @@ class DependencyChain:
             return dep_chain
         raise StopIteration
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert DependencyChain to dictionary"""
         match (self.type):
             case 'union' | 'intersection' | 'difference':
@@ -374,10 +374,10 @@ class DependencyChain:
 class LanguageGraph():
     """Graph representation of a MAL language"""
     def __init__(self, lang: dict):
-        self.assets: List = []
-        self.associations: List = []
-        self.attack_steps: List = []
-        self._lang_spec: Dict = lang
+        self.assets: list = []
+        self.associations: list = []
+        self.attack_steps: list = []
+        self._lang_spec: dict = lang
         self.metadata = {
             "version": lang["defines"]["version"],
             "id": lang["defines"]["id"],
@@ -439,7 +439,7 @@ class LanguageGraph():
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
-    def _from_dict(cls, serialized_object: Dict) -> None:
+    def _from_dict(cls, serialized_object: dict) -> None:
         raise NotImplementedError(
             "Converting from dict feature is not implemented yet")
 
@@ -936,7 +936,7 @@ class LanguageGraph():
                         self.reverse_dep_chain(dep_chain,
                             None))]
 
-    def _get_attacks_for_asset_type(self, asset_type: str) -> Dict:
+    def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
         """
         Get all Attack Steps for a specific Class
 
@@ -950,7 +950,7 @@ class LanguageGraph():
         with a dictionary containing other characteristics of the attack such as
         type of attack, TTC distribution, child attack steps and other information
         """
-        attack_steps: Dict = {}
+        attack_steps: dict = {}
         try:
             asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == asset_type))
         except StopIteration:
@@ -979,7 +979,7 @@ class LanguageGraph():
 
         return attack_steps
 
-    def _get_associations_for_asset_type(self, asset_type: str) -> List:
+    def _get_associations_for_asset_type(self, asset_type: str) -> list:
         """
         Get all Associations for a specific Class
 
@@ -995,7 +995,7 @@ class LanguageGraph():
         """
         logger.debug(f'Get associations for {asset_type} asset from '\
             'language specification.')
-        associations: List = []
+        associations: list = []
 
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
@@ -1019,7 +1019,7 @@ class LanguageGraph():
         return associations
 
     def _get_variable_for_asset_type_by_name(
-            self, asset_type: str, variable_name: str) -> Dict:
+            self, asset_type: str, variable_name: str) -> dict:
         """
         Get a variables for a specific asset type by name.
         NOTE: Variables are the ones specified in MAL through `let` statements

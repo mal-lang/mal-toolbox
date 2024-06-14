@@ -8,7 +8,6 @@ import logging
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Dict, List
     from .attackgraph import AttackGraphNode
 
 logger = logging.getLogger(__name__)
@@ -16,10 +15,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Attacker:
     id: int
-    entry_points: List[AttackGraphNode]
-    reached_attack_steps: List[AttackGraphNode]
+    entry_points: list[AttackGraphNode]
+    reached_attack_steps: list[AttackGraphNode]
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert the Attacker to a dict"""
         return {
             "id": self.id,

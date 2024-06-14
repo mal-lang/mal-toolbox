@@ -17,7 +17,7 @@ from .file_utils import (
 from . import __version__
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional, Set, Tuple
+    from typing import Any, Optional, Set, Tuple
     from .language import LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
@@ -44,9 +44,9 @@ class Model():
         ):
 
         self.name = name
-        self.assets: List = []
-        self.associations: List = []
-        self.attackers: List[AttackerAttachment] = []
+        self.assets: list = []
+        self.associations: list = []
+        self.attackers: list[AttackerAttachment] = []
         self.lang_classes_factory: LanguageClassesFactory = lang_classes_factory
         self.maltoolbox_version: str = mt_version
 
@@ -346,7 +346,7 @@ class Model():
 
         return associated_assets
 
-    def asset_to_dict(self, asset: Any) -> Tuple[str, Dict]:
+    def asset_to_dict(self, asset: Any) -> Tuple[str, dict]:
         """Get dictionary representation of the asset.
 
         Arguments:
@@ -377,7 +377,7 @@ class Model():
 
             defenses[key] = float(value)
 
-        asset_dict: Dict[str, Any] = {
+        asset_dict: dict[str, Any] = {
             'name': str(asset.name),
             'type': str(asset.type)
         }
@@ -392,7 +392,7 @@ class Model():
         return (asset.id, asset_dict)
 
 
-    def association_to_dict(self, association: Any) -> Dict:
+    def association_to_dict(self, association: Any) -> dict:
         """Get dictionary representation of the association.
 
         Arguments:
@@ -423,7 +423,7 @@ class Model():
 
     def attacker_to_dict(
             self, attacker: AttackerAttachment
-        ) -> Tuple[Optional[int], Dict]:
+        ) -> Tuple[Optional[int], dict]:
         """Get dictionary representation of the attacker.
 
         Arguments:
@@ -431,7 +431,7 @@ class Model():
         """
 
         logger.debug(f'Translating {attacker.name} to dictionary.')
-        attacker_dict: Dict[str, Any] = {
+        attacker_dict: dict[str, Any] = {
             'name': str(attacker.name),
             'entry_points': {},
         }
@@ -441,10 +441,10 @@ class Model():
             }
         return (attacker.id, attacker_dict)
 
-    def _to_dict(self) -> Dict:
+    def _to_dict(self) -> dict:
         """Get dictionary representation of the model."""
         logger.debug('Translating model to dict.')
-        contents: Dict[str, Any] = {
+        contents: dict[str, Any] = {
             'metadata': {},
             'assets': {},
             'associations': [],
