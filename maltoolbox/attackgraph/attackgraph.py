@@ -195,7 +195,7 @@ class AttackGraph():
 
     def save_to_file(self, filename):
         """Save to json/yml depending on extension"""
-        logger.debug(f'Save attack graph to file\"{filename}\".')
+        logger.debug(f'Save attack graph to file\"%s\".', filename)
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
@@ -299,11 +299,11 @@ class AttackGraph():
     def load_from_file(cls, filename, model=None):
         """Create from json or yaml file depending on file extension"""
         if model is not None:
-            logger.debug(f'Load attack graph from file\"{filename}\" with '
-            'model \"{model.name}\".')
+            logger.debug(f'Load attack graph from file\"%s\" with '
+            'model \"%s\".', filename, model.name)
         else:
-            logger.debug(f'Load attack graph from file\"{filename}\" '
-            'without model.')
+            logger.debug(f'Load attack graph from file\"%s\" '
+            'without model.', filename)
         serialized_attack_graph = None
         if filename.endswith(('.yml', '.yaml')):
             serialized_attack_graph = load_dict_from_yaml_file(filename)
