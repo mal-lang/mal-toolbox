@@ -44,8 +44,10 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
 
     if logger.isEnabledFor(logging.DEBUG):
         # Avoid running json.dumps when not in debug
-        logger.debug('Processing Step Expression:\n' \
-            + json.dumps(step_expression, indent = 2))
+        logger.debug(
+            'Processing Step Expression:\n%s',
+            json.dumps(step_expression, indent = 2)
+        )
 
     match (step_expression['type']):
         case 'attackStep':
@@ -98,9 +100,10 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
                         lang_graph, model, target_assets, variable_step_expr)
 
                 else:
-                    logger.error('Requested variable from non-asset'
-                        f'target node: {target_asset} which cannot be'
-                        'resolved.')
+                    logger.error(
+                        'Requested variable from non-asset target node:'
+                        '%s which cannot be resolved.', target_asset
+                    )
             return ([], None)
 
         case 'field':
@@ -156,8 +159,9 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
 
 
         case _:
-            logger.error('Unknown attack step type: '
-                f'{step_expression["type"]}')
+            logger.error(
+                'Unknown attack step type: %s', step_expression["type"]
+            )
             return ([], None)
 
 class AttackGraph():
@@ -233,16 +237,17 @@ class AttackGraph():
             _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
                 logger.error(
-                    f'Failed to find node with id {node_dict["id"]}'
-                    f' when loading from attack graph from dict'
+                    'Failed to find node with id %s when'
+                    'loading from attack graph from dict',
+                    node_dict["id"]
                 )
             else:
                 for child_id in node_dict['children']:
                     child = attack_graph.get_node_by_id(child_id)
                     if child is None:
                         logger.error(
-                            f'Failed to find child node with id {child_id}'
-                            f' when loading from attack graph from dict'
+                            'Failed to find child node with id %s when'
+                            'loading from attack graph from dict', child_id
                         )
                         return None
                     _ag_node.children.append(child)
@@ -251,8 +256,9 @@ class AttackGraph():
                     parent = attack_graph.get_node_by_id(parent_id)
                     if parent is None:
                         logger.error(
-                            f'Failed to find parent node with id {parent_id} '
-                            'when loading from attack graph from dict'
+                            'Failed to find parent node with id %s '
+                            'when loading from attack graph from dict',
+                            parent_id
                         )
                         return None
                     _ag_node.parents.append(parent)
@@ -263,8 +269,9 @@ class AttackGraph():
                         node_dict['asset'])
                     if asset is None:
                         logger.error(
-                            f'Failed to find asset with id {node_dict["asset"]}'
-                            'when loading from attack graph dict'
+                            'Failed to find asset with id %s'
+                            'when loading from attack graph dict',
+                            node_dict["asset"]
                         )
                         return None
                     _ag_node.asset = asset
@@ -314,7 +321,7 @@ class AttackGraph():
         The attack step node that matches the given id.
         """
 
-        logger.debug(f'Looking up node with id {node_id}')
+        logger.debug('Looking up node with id %s', node_id)
         return self.id_to_node.get(node_id)
 
     def attach_attackers(self):
@@ -324,7 +331,7 @@ class AttackGraph():
         """
 
         logger.info(
-            f'Attach attackers from "{self.model.name}" model to the graph.'
+            'Attach attackers from "%s" model to the graph.', self.model.name
         )
         for attacker_info in self.model.attackers:
             ag_attacker = Attacker(
@@ -340,9 +347,8 @@ class AttackGraph():
                     ag_node = self.get_node_by_id(attack_step_id)
                     if not ag_node:
                         logger.warning(
-                            'Failed to find attacker entry point '
-                            f'{attack_step_id} for Attacker:'
-                            f'{ag_attacker.id}.'
+                            'Failed to find entry point %s for attacker: %s.',
+                            attack_step_id, ag_attacker.id
                         )
                         continue
                     ag_attacker.compromise(ag_node)
@@ -359,8 +365,8 @@ class AttackGraph():
         for asset in self.model.assets:
 
             logger.debug(
-                f'Generating attack steps for asset {asset.name} '
-                f'which is of class {asset.type}.'
+                'Generating attack steps for asset %s which is of class %s.',
+                asset.name, asset.type
             )
 
             attack_step_nodes = []
@@ -370,7 +376,7 @@ class AttackGraph():
 
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(
-                    f'Generating attack step node for {attack_step_name}.'
+                    'Generating attack step node for %s.', attack_step_name
                 )
 
                 defense_status = None
@@ -381,8 +387,10 @@ class AttackGraph():
                     case 'defense':
                         # Set the defense status for defenses
                         defense_status = getattr(asset, attack_step_name)
-                        logger.debug('Setting the defense status of '\
-                            f'{node_id} to {defense_status}.')
+                        logger.debug(
+                            'Setting the defense status of %s to %s.',
+                            node_id, defense_status
+                        )
 
                     case 'exist' | 'notExist':
                         # Resolve step expression associated with (non-)existence
@@ -421,8 +429,9 @@ class AttackGraph():
 
         # Then, link all of the nodes according to their associations.
         for ag_node in self.nodes:
-            logger.debug('Determining children for attack step '\
-                f'{ag_node.id}.')
+            logger.debug(
+                'Determining children for attack step %s', ag_node.id
+            )
             step_expressions = \
                 ag_node.attributes['reaches']['stepExpressions'] if \
                     isinstance(ag_node.attributes, dict) and ag_node.attributes['reaches'] else []

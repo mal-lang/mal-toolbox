@@ -38,11 +38,14 @@ class Attacker:
         node    - the node that the attacker will compromise
         """
 
-        logger.debug(f'Attacker \"{self.id}\" is compromising node '
-            f'\"{node.id}\".')
+        logger.debug(
+            'Attacker "%s" is compromising node "%s".', self.id, node.id
+        )
         if node.is_compromised_by(self):
-            logger.info(f'Attacker \"{self.id}\" had already compromised '
-                f'node \"{node.id}\". Do nothing.')
+            logger.info(
+                'Attacker "%s" already compromised node "%s". Do nothing.',
+                self.id, node.id
+            )
             return
 
         node.compromised_by.append(self)
@@ -57,11 +60,15 @@ class Attacker:
         node    - the node that we wish to remove this attacker from.
         """
 
-        logger.debug(f'Attacker \"{self.id}\" is being removed from the '
-            f'compromised_by list of node \"{node.id}\".')
+        logger.debug(
+            'Removing attacker "%s" from compromised_by list of node "%s".',
+            self.id, node.id
+        )
         if not node.is_compromised_by(self):
-            logger.info(f'Attacker \"{self.id}\" had not compromised '
-                f'node \"{node.id}\". Do nothing.')
+            logger.info(
+                'Attacker "%s" had not compromised node "%s". Do nothing.',
+                self.id, node.id
+            )
             return
 
         node.compromised_by.remove(self)

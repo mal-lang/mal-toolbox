@@ -19,8 +19,7 @@ class LanguageClassesFactory:
         Generate JSON Schema for the assets in the language specification.
         """
         for asset in self.lang_graph.assets:
-            logger.debug(f'Creating {asset.name} asset JSON '\
-            'schema entry.')
+            logger.debug('Creating %s asset JSON schema entry.', asset.name)
             asset_json_entry = {
                 'title': asset.name,
                 'type': 'object',
@@ -62,7 +61,7 @@ class LanguageClassesFactory:
         Generate JSON Schema for the associations in the language specification.
         """
         def create_association_entry(assoc):
-            logger.debug(f'Creating {assoc.name} association JSON schema entry.')
+            logger.debug('Creating %s association JSON schema entry.', assoc.name)
             assoc_json_entry = {'title': assoc.name, 'type': 'object', 'properties': {}}
 
             create_association_field(assoc, assoc_json_entry, 'left')
@@ -72,9 +71,10 @@ class LanguageClassesFactory:
         def create_association_with_subentries(assoc):
             if (assoc.name not in self.json_schema['definitions']\
                 ['LanguageAssociation']['definitions']):
-                logger.info('Multiple associations with the same '\
-                    f'name, {assoc.name}, exist. '\
-                    'Creating subentries for each one.')
+                logger.info(
+                    'Multiple associations with name %s exist. '
+                    'Creating subentries for each one.', assoc.name
+                )
                 self.json_schema['definitions']['LanguageAssociation']\
                 ['definitions'][assoc.name] =\
                     {
@@ -91,7 +91,7 @@ class LanguageClassesFactory:
             subentry_name = assoc.name + '_' + assoc.left_field.asset.name + '_' \
                 + assoc.right_field.asset.name
 
-            logger.info(f'Creating {subentry_name} subentry association.')
+            logger.info('Creating %s subentry association.', subentry_name)
             assoc_json_subentry['title'] = subentry_name
             self.json_schema['definitions']['LanguageAssociation']\
                 ['definitions'][assoc.name]['definitions'][subentry_name] = assoc_json_subentry

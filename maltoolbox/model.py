@@ -85,15 +85,17 @@ class Model():
                 if allow_duplicate_names:
                     asset.name = asset.name + ':' + str(asset.id)
                 else:
-                    raise ValueError(f'Asset name {asset.name} is a '
-                    'duplicate and we do not allow duplicates.')
+                    raise ValueError(
+                        f'Asset name {asset.name} is a duplicate'
+                        ' and we do not allow duplicates.'
+                    )
         self.asset_names.add(asset.name)
 
         # Optional field for extra asset data
         asset.extras = {}
 
         logger.debug(
-            f'Add {asset.name}(id:{asset.id}) to model "{self.name}".'
+            'Add %s(id:%s) to model "%s".', asset.name, asset.id, self.name
         )
         self.assets.append(asset)
 
@@ -104,8 +106,8 @@ class Model():
         asset     - the asset to remove
         """
         logger.debug(
-            f'Remove {asset.name}(id:{asset.id}) from model '
-            f'"{self.name}".'
+            'Remove %s(id:%s) from model "%s".',
+            asset.name, asset.id, self.name
         )
         if asset not in self.assets:
             raise LookupError(
@@ -127,8 +129,10 @@ class Model():
         association     - the association to remove the asset from
         """
 
-        logger.debug(f'Remove {asset.name}(id:{asset.id}) from association '
-            f'of type \"{type(association)}\".')
+        logger.debug(
+            'Remove %s(id:%s) from association of type "%s".',
+            asset.name, asset.id, type(association)
+        )
 
         if asset not in self.assets:
             raise LookupError(
@@ -241,8 +245,10 @@ class Model():
         Return:
         An asset matching the id if it exists in the model.
         """
-        logger.debug(f'Get asset with id \"{asset_id}\" from model '
-            f'\"{self.name}\".')
+        logger.debug(
+            'Get asset with id "%s" from model "%s".',
+            asset_id, self.name
+        )
         return next(
                 (asset for asset in self.assets
                 if asset.id == asset_id), None
@@ -258,8 +264,10 @@ class Model():
         Return:
         An asset matching the name if it exists in the model.
         """
-        logger.debug(f'Get asset with name \"{asset_name}\" from model '
-            f'\"{self.name}\".')
+        logger.debug(
+            'Get asset with name "%s" from model "%s".',
+            asset_name, self.name
+        )
         return next(
                 (asset for asset in self.assets
                 if asset.name == asset_name), None
@@ -275,8 +283,10 @@ class Model():
         Return:
         An attacker matching the id if it exists in the model.
         """
-        logger.debug(f'Get attacker with id \"{attacker_id}\" from model '
-            f'\"{self.name}\".')
+        logger.debug(
+            'Get attacker with id "%s" from model "%s".',
+            attacker_id, self.name
+        )
         return next(
                 (attacker for attacker in self.attackers
                 if attacker.id == attacker_id), None
@@ -295,8 +305,8 @@ class Model():
         field_name.
         """
         logger.debug(
-            f'Get associated assets for asset '
-            f'{asset.name}(id:{asset.id}) by field name {field_name}.'
+            'Get associated assets for asset %s(id:%s) by field name %s.',
+            asset.name, asset.id, field_name
         )
         associated_assets = []
         for association in asset.associations:
@@ -329,7 +339,7 @@ class Model():
         Return: tuple with name of asset and the asset as dict
         """
         defenses = {}
-        logger.debug(f'Translating {asset.name} to dictionary.')
+        logger.debug('Translating %s to dictionary.', asset.name)
 
         for key, value in asset._properties.items():
             property_schema = (
@@ -342,7 +352,7 @@ class Model():
                 # specific key. Skip if it is not a defense.
                 continue
 
-            logger.debug(f'Translating {key}: {value} defense to dictionary.')
+            logger.debug('Translating %s: %s defense to dictionary.', key, value)
 
             if value == value.default():
                 # Skip the defense values if they are the default ones.
@@ -360,7 +370,7 @@ class Model():
 
         if asset.extras:
             # Add optional metadata to dict
-            asset_dict['extra'] = asset.extras
+            asset_dict['extras'] = asset.extras
 
         return (asset.id, asset_dict)
 
@@ -387,7 +397,7 @@ class Model():
 
         if association.extras:
             # Add optional metadata to dict
-            association_dict['extra'] = association.extras
+            association_dict['extras'] = association.extras
 
         return association_dict
 
@@ -397,7 +407,7 @@ class Model():
         Arguments:
         attacker    - attacker to get dictionary representation of
         """
-        logger.debug(f'Translating {attacker.name} to dictionary.')
+        logger.debug('Translating %s to dictionary.', attacker.name)
         attacker_dict = {
             'name': str(attacker.name),
             'entry_points': {},
@@ -410,7 +420,7 @@ class Model():
 
     def _to_dict(self):
         """Get dictionary representation of the model."""
-        logger.debug(f'Translating model to dict.')
+        logger.debug('Translating model to dict.')
         contents = {
             'metadata': {},
             'assets': {},
@@ -468,7 +478,8 @@ class Model():
             if logger.isEnabledFor(logging.DEBUG):
                 # Avoid running json.dumps when not in debug
                 logger.debug(
-                    f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
+                    "Loading asset:\n%s", json.dumps(asset_object, indent=2)
+                )
 
             # Allow defining an asset via type only.
             asset_object = (
