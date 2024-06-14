@@ -34,12 +34,16 @@ class AttackGraphNode:
             'type': self.type,
             'name': self.name,
             'ttc': self.ttc,
-            'children': [child.get_full_name() for child in self.children],
-            'parents': [parent.get_full_name() for parent in self.parents],
+            'children': {},
+            'parents': {},
             'compromised_by': [ attacker.name for attacker in \
                 self.compromised_by]
         }
 
+        for child in self.children:
+            node_dict['children'][child.id] = child.get_full_name()
+        for parent in self.parents:
+            node_dict['parents'][parent.id] = parent.get_full_name()
         if self.asset is not None:
             node_dict['asset'] = str(self.asset.name)
         if self.defense_status is not None:

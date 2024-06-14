@@ -95,14 +95,22 @@ def test_attackgraph_save_load_no_model_given(
     assert len(example_attackgraph.nodes) == len(loaded_attack_graph.nodes)
 
     # Loaded graph nodes will not have 'asset' since it does not have a model.
-    for i, loaded_node in enumerate(loaded_attack_graph.nodes):
-        original_node = example_attackgraph.nodes[i]
+    for loaded_node in loaded_attack_graph.nodes:
+        original_node = example_attackgraph.get_node_by_id(loaded_node.id)
 
         # Convert loaded and original node to dicts
         loaded_node_dict = loaded_node.to_dict()
         original_node_dict = original_node.to_dict()
+        for child in original_node_dict['children']:
+            child_node = example_attackgraph.get_node_by_id(child)
+            original_node_dict['children'][child] = str(child_node.id) + ":" + \
+                child_node.name
+        for parent in original_node_dict['parents']:
+            parent_node = example_attackgraph.get_node_by_id(parent)
+            original_node_dict['parents'][parent] = str(parent_node.id) + ":" + \
+                parent_node.name
 
-        # Remove key that don't match
+        # Remove key that is not expected to match.
         del original_node_dict['asset']
 
         # Make sure nodes are the same (except for the excluded keys)
@@ -120,8 +128,10 @@ def test_attackgraph_save_and_load_json_yml_model_given(
         loaded_attackgraph = AttackGraph.load_from_file(
             attackgraph_path, model=example_attackgraph.model)
 
-        for i, loaded_node_dict in enumerate(loaded_attackgraph._to_dict()['attack_steps']):
-            original_node_dict = example_attackgraph._to_dict()['attack_steps'][i]
+        for node_full_name, loaded_node_dict in \
+                loaded_attackgraph._to_dict()['attack_steps'].items():
+            original_node_dict = \
+                example_attackgraph._to_dict()['attack_steps'][node_full_name]
 
             # Make sure nodes are the same (except for the excluded keys)
             assert loaded_node_dict == original_node_dict
@@ -266,7 +276,6 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
         "successfulDeny"
     ]
     # Make sure children are also added for defense step notPresent
-    # Children of defense means that the defense protects against those steps (?)
     not_present_children = [
         n.name for n in attack_graph.nodes[0].children
     ]
