@@ -17,7 +17,7 @@ from .file_utils import (
 from . import __version__
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Set, Tuple
+    from typing import Any, Optional
     from .language import LanguageClassesFactory
     from python_jsonschema_objects.classbuilder import ProtocolBase
 
@@ -57,8 +57,8 @@ class Model():
 
         # Below sets used to check for duplicate names or ids,
         # better for optimization than iterating over all assets
-        self.asset_ids: Set[int] = set()
-        self.asset_names: Set[str] = set()
+        self.asset_ids: set[int] = set()
+        self.asset_names: set[str] = set()
 
     def add_asset(
             self,
@@ -357,7 +357,7 @@ class Model():
 
         return associated_assets
 
-    def asset_to_dict(self, asset: SchemaGeneratedClass) -> Tuple[str, dict]:
+    def asset_to_dict(self, asset: SchemaGeneratedClass) -> tuple[str, dict]:
         """Get dictionary representation of the asset.
 
         Arguments:
@@ -434,7 +434,7 @@ class Model():
 
     def attacker_to_dict(
             self, attacker: AttackerAttachment
-        ) -> Tuple[Optional[int], dict]:
+        ) -> tuple[Optional[int], dict]:
         """Get dictionary representation of the attacker.
 
         Arguments:

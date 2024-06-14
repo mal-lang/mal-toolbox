@@ -10,7 +10,7 @@ import json
 import zipfile
 
 from dataclasses import dataclass, field
-from typing import Any, Optional, Set, Tuple
+from typing import Any, Optional
 
 from maltoolbox.file_utils import (
     load_dict_from_yaml_file, load_dict_from_json_file,
@@ -118,7 +118,7 @@ class LanguageGraphAsset:
 
     def get_all_common_superassets(
             self, other: LanguageGraphAsset
-        ) -> Set[Optional[str]]:
+        ) -> set[Optional[str]]:
         """Return a set of all common ancestors between this asset
         and the other asset given as parameter"""
         self_superassets = set(
@@ -480,7 +480,7 @@ class LanguageGraph():
             target_asset,
             dep_chain,
             step_expression: dict
-        ) -> Tuple:
+        ) -> tuple:
         """
         Recursively process an attack step expression.
 

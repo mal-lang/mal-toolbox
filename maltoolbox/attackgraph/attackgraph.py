@@ -20,7 +20,7 @@ from ..file_utils import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, Tuple
+    from typing import Any, Optional
     from ..language import LanguageGraph
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def _process_step_expression(
         model: Model,
         target_assets: list[Any],
         step_expression: dict[str, Any]
-    ) -> Tuple[list, Optional[str]]:
+    ) -> tuple[list, Optional[str]]:
     """
     Recursively process an attack step expression.
 
