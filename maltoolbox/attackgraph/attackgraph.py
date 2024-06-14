@@ -184,7 +184,7 @@ class AttackGraph():
         serialized_attack_steps = {}
         serialized_attackers = {}
         for ag_node in self.nodes:
-            serialized_attack_steps[ag_node.get_full_name()] =\
+            serialized_attack_steps[ag_node.full_name] =\
                 ag_node.to_dict()
         for attacker in self.attackers:
             serialized_attackers[attacker.name] = attacker.to_dict()
@@ -459,7 +459,7 @@ class AttackGraph():
         # Then, link all of the nodes according to their associations.
         for ag_node in self.nodes:
             logger.debug('Determining children for attack step '\
-                f'{ag_node.get_full_name()}.')
+                f'{ag_node.full_name}.')
             step_expressions = \
                 ag_node.attributes['reaches']['stepExpressions'] if \
                     isinstance(ag_node.attributes, dict) and ag_node.attributes['reaches'] else []
@@ -481,7 +481,7 @@ class AttackGraph():
                     if not target_node:
                         msg = 'Failed to find target node ' \
                         f'{target_node_id} to link with for attack step ' \
-                        f'{ag_node.get_full_name()}!'
+                        f'{ag_node.full_name}!'
                         logger.error(msg)
                         raise AttackGraphStepExpressionError(msg)
                     ag_node.children.append(target_node)
@@ -521,7 +521,7 @@ class AttackGraph():
 
         self.nodes.append(node)
         self._id_to_node[node.id] = node
-        self._full_name_to_node[node.get_full_name()] = node
+        self._full_name_to_node[node.full_name] = node
 
     def remove_node(self, node):
         """Remove node from attack graph
@@ -534,7 +534,7 @@ class AttackGraph():
             parent.children.remove(node)
         self.nodes.remove(node)
         del self._id_to_node[node.id]
-        del self._full_name_to_node[node.get_full_name()]
+        del self._full_name_to_node[node.full_name]
 
     def add_attacker(
             self,

@@ -41,9 +41,9 @@ class AttackGraphNode:
         }
 
         for child in self.children:
-            node_dict['children'][child.id] = child.get_full_name()
+            node_dict['children'][child.id] = child.full_name
         for parent in self.parents:
-            node_dict['parents'][parent.id] = parent.get_full_name()
+            node_dict['parents'][parent.id] = parent.full_name
         if self.asset is not None:
             node_dict['asset'] = str(self.asset.name)
         if self.defense_status is not None:
@@ -124,7 +124,8 @@ class AttackGraphNode:
             'suppress' not in self.tags and \
             self.defense_status != 1.0
 
-    def get_full_name(self) -> str:
+    @property
+    def full_name(self) -> str:
         """
         Return the full name of the attack step. This is a combination of the
         asset name to which the attack step belongs and attack step name
