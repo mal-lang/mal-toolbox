@@ -11,6 +11,8 @@ from maltoolbox.file_utils import (
     save_dict_to_file
 )
 
+from .__init__ import __version__
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -27,12 +29,24 @@ class Model():
     def __repr__(self) -> str:
         return f'Model {self.name}'
 
-    def __init__(self, name, lang_classes_factory):
+    def __init__(
+            self,
+            name,
+            lang_classes_factory,
+            mt_version = __version__
+        ):
+
         self.name = name
         self.assets = []
         self.associations = []
         self.attackers = []
         self.lang_classes_factory = lang_classes_factory
+        self.maltoolbox_version = mt_version
+
+        # Below sets used to check for duplicate names or ids,
+        # better for optimization than iterating over all assets
+        self.asset_ids = set()
+        self.asset_names = set()
 
     def add_asset(
             self,
@@ -48,36 +62,40 @@ class Model():
                                   from an instance model file
         allow_duplicate_name    - allow duplicate names to be used. If allowed
                                   and a duplicate is encountered the name will
-                                  be prefixed with the id.
+                                  be appended with the id.
 
         Return:
         An asset matching the name if it exists in the model.
         """
-        if asset_id is not None:
-            for existing_asset in self.assets:
-                if asset_id == existing_asset.id:
-                    raise ValueError(f'Asset index {asset_id} already in use.')
-            asset.id = asset_id
-        else:
-            asset.id = self.next_id
+
+        # Set asset ID and check for duplicates
+        asset.id = asset_id or self.next_id
+        if asset.id in self.asset_ids:
+            raise ValueError(f'Asset index {asset_id} already in use.')
+        self.asset_ids.add(asset.id)
+
         self.next_id = max(asset.id + 1, self.next_id)
 
         asset.associations = []
 
         if not hasattr(asset, 'name'):
-            asset.name = asset.metaconcept + ':' + str(asset.id)
+            asset.name = asset.type + ':' + str(asset.id)
         else:
-            for ex_asset in self.assets:
-                if ex_asset.name == asset.name:
-                    if allow_duplicate_names:
-                        asset.name = asset.name + ':' + str(asset.id)
-                        break
-                    else:
-                        raise ValueError(f'Asset name {asset.name} is a '
-                        'duplicate and we do not allow duplicates.')
+            if asset.name in self.asset_names:
+                if allow_duplicate_names:
+                    asset.name = asset.name + ':' + str(asset.id)
+                else:
+                    raise ValueError(
+                        f'Asset name {asset.name} is a duplicate'
+                        ' and we do not allow duplicates.'
+                    )
+        self.asset_names.add(asset.name)
+
+        # Optional field for extra asset data
+        asset.extras = {}
 
         logger.debug(
-            f'Add {asset.name}(id:{asset.id}) to model "{self.name}".'
+            'Add %s(id:%s) to model "%s".', asset.name, asset.id, self.name
         )
         self.assets.append(asset)
 
@@ -88,8 +106,8 @@ class Model():
         asset     - the asset to remove
         """
         logger.debug(
-            f'Remove {asset.name}(id:{asset.id}) from model '
-            f'"{self.name}".'
+            'Remove %s(id:%s) from model "%s".',
+            asset.name, asset.id, self.name
         )
         if asset not in self.assets:
             raise LookupError(
@@ -111,8 +129,10 @@ class Model():
         association     - the association to remove the asset from
         """
 
-        logger.debug(f'Remove {asset.name}(id:{asset.id}) from association '
-            f'of type \"{type(association)}\".')
+        logger.debug(
+            'Remove %s(id:%s) from association of type "%s".',
+            asset.name, asset.id, type(association)
+        )
 
         if asset not in self.assets:
             raise LookupError(
@@ -151,13 +171,18 @@ class Model():
         Arguments:
         association     - the association to add to the model
         """
+
+        # Optional field for extra association data
+        association.extras = {}
+
         # Field names are the two first values in _properties
         field_names = list(vars(association)['_properties'])[0:2]
         for field_name in field_names:
             for asset in getattr(association, field_name):
-                assocs = list(asset.associations)
-                assocs.append(association)
-                asset.associations = assocs
+                # Add associations to assets that are part of them
+                asset_assocs = list(asset.associations)
+                asset_assocs.append(association)
+                asset.associations = asset_assocs
         self.associations.append(association)
 
     def remove_association(self, association):
@@ -220,8 +245,10 @@ class Model():
         Return:
         An asset matching the id if it exists in the model.
         """
-        logger.debug(f'Get asset with id \"{asset_id}\" from model '
-            f'\"{self.name}\".')
+        logger.debug(
+            'Get asset with id "%s" from model "%s".',
+            asset_id, self.name
+        )
         return next(
                 (asset for asset in self.assets
                 if asset.id == asset_id), None
@@ -237,8 +264,10 @@ class Model():
         Return:
         An asset matching the name if it exists in the model.
         """
-        logger.debug(f'Get asset with name \"{asset_name}\" from model '
-            f'\"{self.name}\".')
+        logger.debug(
+            'Get asset with name "%s" from model "%s".',
+            asset_name, self.name
+        )
         return next(
                 (asset for asset in self.assets
                 if asset.name == asset_name), None
@@ -254,8 +283,10 @@ class Model():
         Return:
         An attacker matching the id if it exists in the model.
         """
-        logger.debug(f'Get attacker with id \"{attacker_id}\" from model '
-            f'\"{self.name}\".')
+        logger.debug(
+            'Get attacker with id "%s" from model "%s".',
+            attacker_id, self.name
+        )
         return next(
                 (attacker for attacker in self.attackers
                 if attacker.id == attacker_id), None
@@ -274,8 +305,8 @@ class Model():
         field_name.
         """
         logger.debug(
-            f'Get associated assets for asset '
-            f'{asset.name}(id:{asset.id}) by field name {field_name}.'
+            'Get associated assets for asset %s(id:%s) by field name %s.',
+            asset.name, asset.id, field_name
         )
         associated_assets = []
         for association in asset.associations:
@@ -304,14 +335,16 @@ class Model():
 
         Arguments:
         asset       - asset to get dictionary representation of
+
+        Return: tuple with name of asset and the asset as dict
         """
         defenses = {}
-        logger.debug(f'Translating {asset.name} to json.')
+        logger.debug('Translating %s to dictionary.', asset.name)
 
         for key, value in asset._properties.items():
             property_schema = (
                 self.lang_classes_factory.json_schema['definitions']['LanguageAsset']
-                ['definitions'][asset.metaconcept]['properties'][key]
+                ['definitions'][asset.type]['properties'][key]
             )
 
             if "maximum" not in property_schema:
@@ -319,7 +352,7 @@ class Model():
                 # specific key. Skip if it is not a defense.
                 continue
 
-            logger.debug(f'Translating {key}: {value} defense to json.')
+            logger.debug('Translating %s: %s defense to dictionary.', key, value)
 
             if value == value.default():
                 # Skip the defense values if they are the default ones.
@@ -327,15 +360,20 @@ class Model():
 
             defenses[key] = float(value)
 
-        ret = (asset.id, {
-                'name': str(asset.name),
-                'metaconcept': str(asset.metaconcept),
-                }
-            )
-        if defenses:
-            ret[1]['defenses'] = defenses
+        asset_dict = {
+            'name': str(asset.name),
+            'type': str(asset.type)
+        }
 
-        return ret
+        if defenses:
+            asset_dict['defenses'] = defenses
+
+        if asset.extras:
+            # Add optional metadata to dict
+            asset_dict['extras'] = asset.extras
+
+        return (asset.id, asset_dict)
+
 
     def association_to_dict(self, association):
         """Get dictionary representation of the association.
@@ -346,16 +384,22 @@ class Model():
         first_field_name, second_field_name = association._properties.keys()
         first_field = getattr(association, first_field_name)
         second_field = getattr(association, second_field_name)
-        json_association = {
-            'metaconcept': association.__class__.__name__,
-            'association': {
+
+        association_dict = {
+            association.__class__.__name__ :
+            {
                 str(first_field_name):
                     [int(asset.id) for asset in first_field],
                 str(second_field_name):
                     [int(asset.id) for asset in second_field]
             }
         }
-        return json_association
+
+        if association.extras:
+            # Add optional metadata to dict
+            association_dict['extras'] = association.extras
+
+        return association_dict
 
     def attacker_to_dict(self, attacker):
         """Get dictionary representation of the attacker.
@@ -363,20 +407,20 @@ class Model():
         Arguments:
         attacker    - attacker to get dictionary representation of
         """
-        logger.debug(f'Translating {attacker.name} to json.')
-        json_attacker = {
+        logger.debug('Translating %s to dictionary.', attacker.name)
+        attacker_dict = {
             'name': str(attacker.name),
             'entry_points': {},
         }
         for (asset, attack_steps) in attacker.entry_points:
-            json_attacker['entry_points'][int(asset.id)] = {
+            attacker_dict['entry_points'][int(asset.id)] = {
                 'attack_steps' : attack_steps
             }
-        return (int(attacker.id), json_attacker)
+        return (int(attacker.id), attacker_dict)
 
     def _to_dict(self):
         """Get dictionary representation of the model."""
-        logger.debug(f'Translating model to dict.')
+        logger.debug('Translating model to dict.')
         contents = {
             'metadata': {},
             'assets': {},
@@ -388,20 +432,21 @@ class Model():
             'langVersion': self.lang_classes_factory.lang_graph.metadata['version'],
             'langID': self.lang_classes_factory.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
+            'MAL-Toolbox Version': __version__,
             'info': 'Created by the mal-toolbox model python module.'
         }
 
-        logger.debug('Translating assets to dict.')
+        logger.debug('Translating assets to dictionary.')
         for asset in self.assets:
             (asset_id, asset_dict) = self.asset_to_dict(asset)
             contents['assets'][int(asset_id)] = asset_dict
 
-        logger.debug('Translating associations to dict.')
+        logger.debug('Translating associations to dictionary.')
         for association in self.associations:
             assoc_dict = self.association_to_dict(association)
             contents['associations'].append(assoc_dict)
 
-        logger.debug('Translating attackers to dict.')
+        logger.debug('Translating attackers to dictionary.')
         for attacker in self.attackers:
             (attacker_id, attacker_dict) = self.attacker_to_dict(attacker)
             contents['attackers'][attacker_id] = attacker_dict
@@ -419,28 +464,35 @@ class Model():
         serialized_object    - Model in dict format
         lang_classes_factory -
         """
+        maltoolbox_version = serialized_object['metadata']['MAL Toolbox Version'] \
+            if 'MAL Toolbox Version' in serialized_object['metadata'] \
+            else __version__
         model = Model(
             serialized_object['metadata']['name'],
-            lang_classes_factory
-        )
+            lang_classes_factory,
+            mt_version = maltoolbox_version)
 
         # Reconstruct the assets
         for asset_id, asset_object in serialized_object['assets'].items():
-            logger.debug(
-                f"Loading asset:\n{json.dumps(asset_object, indent=2)}")
 
-            # Allow defining an asset via the metaconcept only.
+            if logger.isEnabledFor(logging.DEBUG):
+                # Avoid running json.dumps when not in debug
+                logger.debug(
+                    "Loading asset:\n%s", json.dumps(asset_object, indent=2)
+                )
+
+            # Allow defining an asset via type only.
             asset_object = (
                 asset_object
                 if isinstance(asset_object, dict)
                 else {
-                    'metaconcept': asset_object,
+                    'type': asset_object,
                     'name': f"{asset_object}:{asset_id}"
                 }
             )
 
             asset = getattr(model.lang_classes_factory.ns,
-                asset_object['metaconcept'])(name = asset_object['name'])
+                asset_object['type'])(name = asset_object['name'])
 
             for defense in (defenses:=asset_object.get('defenses', [])):
                 setattr(asset, defense, float(defenses[defense]))
@@ -448,14 +500,12 @@ class Model():
             model.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
-        for assoc_dict in serialized_object.get('associations', []):
-            association = getattr(model.lang_classes_factory.ns, assoc_dict.pop('metaconcept'))()
+        for assoc_entry in serialized_object.get('associations', []):
+            assoc = list(assoc_entry.keys())[0]
+            assoc_fields = assoc_entry[assoc]
+            association = getattr(model.lang_classes_factory.ns, assoc)()
 
-            # compatibility with old format
-            assoc_dict = assoc_dict.get('association', assoc_dict)
-            # TODO do we need the above compatibility?
-
-            for field, targets in assoc_dict.items():
+            for field, targets in assoc_fields.items():
                 targets = targets if isinstance(targets, list) else [targets]
                 setattr(
                     association,

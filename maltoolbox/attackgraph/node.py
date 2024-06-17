@@ -21,12 +21,12 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list['Attacker'] = field(default_factory=list)
-    extra: Optional[dict] = None
     mitre_info: Optional[str] = None
     tags: Optional[list[str]] = None
-    observations: Optional[dict] = None
     attributes: Optional[dict] = None
-    attacker: Optional['Attacker'] = None
+
+    # Optional extra metadata for AttackGraphNode
+    extras: Optional[dict] = None
 
     def to_dict(self):
         node_dict = {
@@ -36,13 +36,12 @@ class AttackGraphNode:
             'ttc': self.ttc,
             'children': [child.id for child in self.children],
             'parents': [parent.id for parent in self.parents],
-            'compromised_by': ['Attacker:' + attacker.id for attacker in \
+            'compromised_by': ['Attacker:' + str(attacker.id) for attacker in \
                 self.compromised_by]
         }
 
         if self.asset is not None:
-            node_dict['asset'] = self.asset.metaconcept + ':' \
-                + str(self.asset.id)
+            node_dict['asset'] = str(self.asset.name)
         if self.defense_status is not None:
             node_dict['defense_status'] = str(self.defense_status)
         if self.existence_status is not None:
@@ -55,10 +54,8 @@ class AttackGraphNode:
             node_dict['mitre_info'] = str(self.mitre_info)
         if self.tags:
             node_dict['tags'] = str(self.tags)
-        if self.observations is not None:
-            node_dict['observations'] = self.observations
-        if hasattr(self, 'reward') and self.reward is not None:
-            node_dict['reward'] = self.reward
+        if self.extras:
+            node_dict['extras'] = self.extras
 
         return node_dict
 

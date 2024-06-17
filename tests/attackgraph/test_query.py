@@ -8,7 +8,7 @@ from maltoolbox.attackgraph.query import (
 def test_query_is_node_traversable_by_attacker():
     """Make sure it returns True or False when expected"""
     # An attacker with no meaningful data
-    attacker = Attacker("attackerid", [], [], None)
+    attacker = Attacker("attackerid", [], [])
 
     # Node1 should be traversable since node type is OR
     node1 = AttackGraphNode("Node1", "or", "name", {})

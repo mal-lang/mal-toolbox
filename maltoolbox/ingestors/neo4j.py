@@ -93,10 +93,10 @@ def ingest_model(model,
     for asset in model.assets:
         nodeid = asset.name
 
-        nodes[str(asset.id)] = Node(str(asset.metaconcept),
+        nodes[str(asset.id)] = Node(str(asset.type),
                 name=str(asset.name),
                 asset_id=str(asset.id),
-                metaconcept=str(asset.metaconcept))
+                type=str(asset.type))
 
     for assoc in model.associations:
         firstElementName, secondElementName = assoc._properties.keys()
@@ -132,12 +132,13 @@ def get_model(uri,
     instance_model = Model('Neo4j imported model', lang_spec,
         lang_classes_factory)
     # Get all assets
-    assets_results = g.run('MATCH (a) WHERE a.metaconcept IS NOT NULL RETURN DISTINCT a').data()
+    assets_results = g.run('MATCH (a) WHERE a.type IS NOT NULL RETURN DISTINCT a').data()
     for asset in assets_results:
         asset_data = dict(asset['a'])
-        logger.debug('Loading asset from Neo4j instance:\n' \
-            + str(asset_data))
-        if asset_data['metaconcept'] == 'Attacker':
+        logger.debug(
+            'Loading asset from Neo4j instance:\n%s', str(asset_data)
+        )
+        if asset_data['type'] == 'Attacker':
             attacker_id = int(asset_data['asset_id'])
             attacker = AttackerAttachment()
             attacker.entry_points = []
@@ -145,12 +146,14 @@ def get_model(uri,
             continue
 
         if not hasattr(lang_classes_factory.ns,
-            asset_data['metaconcept']):
-            logger.error(f'Failed to find {asset_data["metaconcept"]} '
-                'asset in language specification!')
+            asset_data['type']):
+            logger.error(
+                'Failed to find %s asset in language specification!',
+                asset_data["type"]
+            )
             return None
         asset_obj = getattr(lang_classes_factory.ns,
-            asset_data['metaconcept'])(name = asset_data['name'])
+            asset_data['type'])(name = asset_data['name'])
         asset_id = int(asset_data['asset_id'])
 
         #TODO Process defense values when they are included in Neo4j
@@ -158,7 +161,7 @@ def get_model(uri,
         instance_model.add_asset(asset_obj, asset_id)
 
     # Get all relationships
-    assocs_results = g.run('MATCH (a)-[r1]->(b),(a)<-[r2]-(b) WHERE a.metaconcept IS NOT NULL RETURN DISTINCT a, r1, r2, b').data()
+    assocs_results = g.run('MATCH (a)-[r1]->(b),(a)<-[r2]-(b) WHERE a.type IS NOT NULL RETURN DISTINCT a, r1, r2, b').data()
 
     for assoc in assocs_results:
         left_field = list(assoc['r1'].types())[0]
@@ -166,12 +169,10 @@ def get_model(uri,
         left_asset = dict(assoc['a'])
         right_asset = dict(assoc['b'])
 
-        logger.debug(f'Load association '
-            f'(\"{left_field}\",'
-            f'\"{right_field}\",'
-            f'\"{left_asset["metaconcept"]}\",'
-            f'\"{right_asset["metaconcept"]}\") '
-            f'from Neo4j instance.')
+        logger.debug(
+            'Load association ("%s", "%s", "%s", "%s") from Neo4j instance.',
+            left_field, right_field, left_asset["type"], right_asset["type"]
+        )
 
         left_id = int(left_asset['asset_id'])
         right_id = int(right_asset['asset_id'])
@@ -188,13 +189,16 @@ def get_model(uri,
         if attacker_id:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
-                logger.error(f'Failed to find attacker with id {attacker_id} '
-                    'in model!')
+                logger.error(
+                    'Failed to find attacker with id %s in model!',
+                    attacker_id
+                )
                 return None
             target_asset = instance_model.get_asset_by_id(target_id)
             if not target_asset:
-                logger.error(f'Failed to find asset with id {target_id} '
-                    'in model!')
+                logger.error(
+                    'Failed to find asset with id %s in model!', target_id
+                )
                 return None
             attacker.entry_points.append((target_asset,
                 [target_prop]))
@@ -202,36 +206,38 @@ def get_model(uri,
 
         left_asset = instance_model.get_asset_by_id(left_id)
         if not left_asset:
-            logger.error(f'Failed to find asset with id {left_id} '
-                'in model!')
+            logger.error(
+                'Failed to find asset with id %s in model!', left_id)
             return None
         right_asset = instance_model.get_asset_by_id(right_id)
         if not right_asset:
-            logger.error(f'Failed to find asset with id {right_id} '
-                'in model!')
+            logger.error(
+                'Failed to find asset with id %s in model!', right_id)
             return None
 
         assoc_name = specification.get_association_by_fields_and_assets(
             lang_spec,
             left_field,
             right_field,
-            left_asset.metaconcept,
-            right_asset.metaconcept)
-        logger.debug(f'Found \"{assoc_name}\" association.')
+            left_asset.type,
+            right_asset.type)
+        logger.debug('Found "%s" association.', assoc_name)
 
         if not assoc_name:
-            logger.error(f'Failed to find '
-                f'(\"{left_asset.metaconcept}\",'
-                f'\"{right_asset.metaconcept}\",'
-                f'\"{left_field}\",'
-                f'\"{right_field}\") '
-                'association in language specification!')
+            logger.error(
+                'Failed to find ("%s", "%s", "%s", "%s")'
+                'association in language specification!',
+                left_asset.type, right_asset.type,
+                left_field, right_field
+            )
             return None
 
         if not hasattr(lang_classes_factory.ns,
             assoc_name):
-            logger.error(f'Failed to find {assoc_name} '
-                'association in language specification!')
+            logger.error(
+                'Failed to find %s association in language specification!',
+                assoc_name
+            )
             return None
 
         assoc = getattr(lang_classes_factory.ns, assoc_name)()
@@ -240,4 +246,3 @@ def get_model(uri,
         instance_model.add_association(assoc)
 
     return instance_model
-

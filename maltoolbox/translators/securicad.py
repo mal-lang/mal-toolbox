@@ -41,8 +41,14 @@ def load_model_from_scad_archive(scad_archive: str,
         lang_classes_factory)
 
     for child in root.iter('objects'):
-        logger.debug(f'Loading asset from \"{scad_archive}\":\n' \
-            + json.dumps(child.attrib, indent = 2))
+
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug(
+                'Loading asset from "%s": \n%s',
+                scad_archive, json.dumps(child.attrib, indent=2)
+            )
+
         if child.attrib['metaConcept'] == 'Attacker':
             attacker_id = int(child.attrib['id'])
             attacker = AttackerAttachment()
@@ -52,8 +58,10 @@ def load_model_from_scad_archive(scad_archive: str,
 
         if not hasattr(lang_classes_factory.ns,
             child.attrib['metaConcept']):
-            logger.error(f'Failed to find {child.attrib["metaConcept"]} '
-                'asset in language specification!')
+            logger.error(
+                'Failed to find %s asset in language specification!',
+                child.attrib["metaConcept"]
+            )
             return None
         asset = getattr(lang_classes_factory.ns,
             child.attrib['metaConcept'])(name = child.attrib['name'])
@@ -70,13 +78,12 @@ def load_model_from_scad_archive(scad_archive: str,
         instance_model.add_asset(asset, asset_id)
 
     for child in root.iter('associations'):
-        logger.debug(f'Load association '
-            f'(\"{child.attrib["sourceObject"]}\",'
-            f'\"{child.attrib["targetObject"]}\",'
-            f'\"{child.attrib["targetProperty"]}\",'
-            f'\"{child.attrib["sourceProperty"]}\") '
-            f'from \"{scad_archive}\"')
-
+        logger.debug(
+            'Load association ("%s", "%s", "%s", "%s") from %s',
+            child.attrib["sourceObject"], child.attrib["targetObject"],
+            child.attrib["targetProperty"], child.attrib["sourceProperty"],
+            scad_archive
+        )
         # Note: This is not a bug in the code. The fields and assets are
         # listed incorrectly in the securiCAD format where the source asset
         # matches the target field and vice versa.
@@ -95,13 +102,17 @@ def load_model_from_scad_archive(scad_archive: str,
         if attacker_id:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
-                logger.error(f'Failed to find attacker with id {attacker_id} '
-                    'in model!')
+                logger.error(
+                    'Failed to find attacker with id %s in model!',
+                    attacker_id
+                )
                 return None
             target_asset = instance_model.get_asset_by_id(target_id)
             if not target_asset:
-                logger.error(f'Failed to find asset with id {target_id} '
-                    'in model!')
+                logger.error(
+                    'Failed to find asset with id %s in model!',
+                    target_id
+                )
                 return None
             attacker.entry_points.append((target_asset,
                 [target_prop.split('.')[0]]))
@@ -109,13 +120,15 @@ def load_model_from_scad_archive(scad_archive: str,
 
         left_asset = instance_model.get_asset_by_id(left_id)
         if not left_asset:
-            logger.error(f'Failed to find asset with id {left_id} '
-                'in model!')
+            logger.error(
+                'Failed to find asset with id %s in model!', left_id
+            )
             return None
         right_asset = instance_model.get_asset_by_id(right_id)
         if not right_asset:
-            logger.error(f'Failed to find asset with id {right_id} '
-                'in model!')
+            logger.error(
+                'Failed to find asset with id %s in model!', right_id
+            )
             return None
 
         # Note: This is not a bug in the code. The fields and assets are
@@ -129,21 +142,23 @@ def load_model_from_scad_archive(scad_archive: str,
             right_field,
             left_asset.metaconcept,
             right_asset.metaconcept)
-        logger.debug(f'Found \"{assoc_name}\" association.')
+        logger.debug('Found "%s" association.', assoc_name)
 
         if not assoc_name:
-            logger.error(f'Failed to find '
-                f'(\"{left_asset.metaconcept}\",'
-                f'\"{right_asset.metaconcept}\",'
-                f'\"{left_field}\",'
-                f'\"{right_field}\") '
-                'association in language specification!')
+            logger.error(
+                'Failed to find ("%s", "%s", "%s", "%s")'
+                'association in lang specification',
+                left_asset.metaconcept, right_asset.metaconcept,
+                left_field, right_field
+            )
             return None
 
         if not hasattr(lang_classes_factory.ns,
             assoc_name):
-            logger.error(f'Failed to find {assoc_name} '
-                'association in language specification!')
+            logger.error(
+                'Failed to find %s association in language specification!',
+                assoc_name
+            )
             return None
 
         assoc = getattr(lang_classes_factory.ns, assoc_name)()

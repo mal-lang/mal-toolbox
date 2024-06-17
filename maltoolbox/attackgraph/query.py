@@ -22,8 +22,10 @@ def is_node_traversable_by_attacker(node, attacker) -> bool:
     attacker    - the attacker whose traversability we are interested in
     """
 
-    logger.debug(f'Evaluate if {node.id}, of type \'{node.type}\', is '\
-        f'traversable by Attacker {attacker.id}')
+    logger.debug(
+        'Evaluate if %s, of type "%s", is traversable by Attacker %s',
+        node.id, node.type, attacker.id
+    )
     if not node.is_viable:
         return False
 
@@ -44,7 +46,7 @@ def is_node_traversable_by_attacker(node, attacker) -> bool:
             return False
 
         case _:
-            logger.error(f'Unknown node type {node.type}.')
+            logger.error('Unknown node type %s.', node.type)
             return False
 
 def get_attack_surface(graph: AttackGraph,
@@ -59,11 +61,14 @@ def get_attack_surface(graph: AttackGraph,
     graph       - the attack graph
     attacker    - the Attacker whose attack surface is sought
     """
-    logger.debug(f'Get the attack surface for Attacker \"{attacker.id}\".')
+    logger.debug(
+        'Get the attack surface for Attacker "%s".', attacker.id)
     attack_surface = []
     for attack_step in attacker.reached_attack_steps:
-        logger.debug('Determine attack surface stemming from '
-            f'\"{attack_step.id}\" for Attacker \"{attacker.id}\".')
+        logger.debug(
+            'Determine attack surface stemming from '
+            '"%s" for Attacker "%s".', attack_step.id, attacker.id
+        )
         for child in attack_step.children:
             if is_node_traversable_by_attacker(child, attacker) and \
                     child not in attack_surface:
@@ -88,16 +93,20 @@ def update_attack_surface_add_nodes(
                               wish to see if any of their children should be
                               added to the attack surface
     """
-    logger.debug(f'Update the attack surface for Attacker \"{attacker.id}\".')
+    logger.debug('Update the attack surface for Attacker "%s".', attacker.id)
     attack_surface = current_attack_surface
     for attack_step in nodes:
-        logger.debug('Determine attack surface stemming from '
-            f'\"{attack_step.id}\" for Attacker \"{attacker.id}\".')
+        logger.debug(
+            'Determine attack surface stemming from "%s" for Attacker "%s".',
+            attack_step.id, attacker.id
+        )
         for child in attack_step.children:
             is_traversable = is_node_traversable_by_attacker(child, attacker)
             if is_traversable and child not in attack_surface:
-                logger.debug(f'Add node {child.id} to the attack surface '
-                    f'of Attacker  \"{attacker.id}\".')
+                logger.debug(
+                    'Add node %s to the attack surface of Attacker  "%s".',
+                    child.id, attacker.id
+                )
                 attack_surface.append(child)
     return attack_surface
 
@@ -109,7 +118,7 @@ def get_defense_surface(graph: AttackGraph):
     Arguments:
     graph       - the attack graph
     """
-    logger.debug(f'Get the defense surface.')
+    logger.debug('Get the defense surface.')
     return [node for node in graph.nodes if node.is_available_defense()]
 
 def get_enabled_defenses(graph: AttackGraph):
@@ -120,6 +129,5 @@ def get_enabled_defenses(graph: AttackGraph):
     Arguments:
     graph       - the attack graph
     """
-    logger.debug(f'Get the enabled defenses.')
+    logger.debug('Get the enabled defenses.')
     return [node for node in graph.nodes if node.is_enabled_defense()]
-

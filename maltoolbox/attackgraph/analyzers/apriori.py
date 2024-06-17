@@ -26,8 +26,10 @@ def propagate_viability_from_node(node: AttackGraphNode):
     node        - the attack graph node from which to propagate the viable
                   status
     """
-    logger.debug(f'Propagate viability from {node.id} with viability'
-        f' status {node.is_viable}.')
+    logger.debug(
+        'Propagate viability from %s with viability status %s.',
+        node.id, node.is_viable
+    )
     for child in node.children:
         original_value = child.is_viable
         if child.type == 'or':
@@ -46,8 +48,10 @@ def propagate_necessity_from_node(node: AttackGraphNode):
     node        - the attack graph node from which to propagate the necessary
                   status
     """
-    logger.debug(f'Propagate necessity from {node.id} with necessity'
-        f' status {node.is_necessary}.')
+    logger.debug(
+        'Propagate necessity from %s with necessity  status %s.',
+        node.id, node.is_necessary
+    )
     for child in node.children:
         original_value = child.is_necessary
         if child.type == 'or':

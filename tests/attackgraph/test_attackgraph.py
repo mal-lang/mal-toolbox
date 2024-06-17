@@ -31,7 +31,7 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
 
     attacker = AttackerAttachment()
     attacker.entry_points = [
-        (app1, ['attemptCredentialsReuse'])
+        (app1, ['networkConnectUninspected'])
     ]
     model.add_attacker(attacker)
 
@@ -95,23 +95,21 @@ def test_attackgraph_save_load_no_model_given(
     assert len(example_attackgraph.nodes) == len(loaded_attack_graph.nodes)
 
     # Loaded graph nodes will not have 'asset' since it does not have a model.
-    # Loaded graph nodes will have a 'reward' attribute which original
-    # nodes does not, otherwise they should be the same
     for i, loaded_node in enumerate(loaded_attack_graph.nodes):
         original_node = example_attackgraph.nodes[i]
 
         # Convert loaded and original node to dicts
         loaded_node_dict = loaded_node.to_dict()
         original_node_dict = original_node.to_dict()
-        # Remove keys that don't match
+
+        # Remove key that don't match
         del original_node_dict['asset']
-        del loaded_node_dict['reward']
 
         # Make sure nodes are the same (except for the excluded keys)
         assert loaded_node_dict == original_node_dict
 
 
-def test_attackgraph_from_to_from_json_yml_model_given(
+def test_attackgraph_save_and_load_json_yml_model_given(
         example_attackgraph: AttackGraph
     ):
     """Try to save and load attack graph from json and yml with model given,
@@ -122,13 +120,8 @@ def test_attackgraph_from_to_from_json_yml_model_given(
         loaded_attackgraph = AttackGraph.load_from_file(
             attackgraph_path, model=example_attackgraph.model)
 
-        # Loaded graph nodes will have a 'reward' attribute which original
-        # nodes does not, otherwise they should be the same
-        for i, loaded_node_dict in enumerate(loaded_attackgraph._to_dict()):
-            original_node_dict = example_attackgraph._to_dict()[i]
-
-            # Remove key that don't match
-            del loaded_node_dict['reward']
+        for i, loaded_node_dict in enumerate(loaded_attackgraph._to_dict()['attack_steps']):
+            original_node_dict = example_attackgraph._to_dict()['attack_steps'][i]
 
             # Make sure nodes are the same (except for the excluded keys)
             assert loaded_node_dict == original_node_dict
@@ -143,20 +136,25 @@ def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
 
 
 def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
-    """Make sure attackers are attached to graph"""
+    """Make sure attackers are properly attached to graph"""
 
-    nodes_before = list(example_attackgraph.nodes)
+    app1_ncu = example_attackgraph.get_node_by_id(
+        'Application 1:networkConnectUninspected'
+    )
+
+    assert app1_ncu
+    assert not example_attackgraph.attackers
+
     example_attackgraph.attach_attackers()
-    nodes_after = list(example_attackgraph.nodes)
 
-    # An attacker node should be added
-    assert len(nodes_after) == len(nodes_before) + 1
+    assert len(example_attackgraph.attackers) == 1
+    attacker = example_attackgraph.attackers[0]
 
-    # Make sure the Attacker node has correct ID
-    attacker_node = nodes_after[-1]
-    attacker_asset_id = example_attackgraph.model.attackers[0].id
-    assert attacker_node.id == \
-        f"Attacker:{attacker_asset_id}:{attacker_node.name}"
+    assert app1_ncu in attacker.reached_attack_steps
+
+    for node in attacker.reached_attack_steps:
+        # Make sure the Attacker is present on the nodes they have compromised
+        assert attacker in node.compromised_by
 
 def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     """Make sure the graph is correctly generated from model and lang"""
@@ -174,7 +172,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     for asset in example_attackgraph.model.assets:
         attack_steps = example_attackgraph.\
             lang_graph._get_attacks_for_asset_type(
-                asset.metaconcept
+                asset.type
             )
         num_assets_attack_steps += len(attack_steps)
 
