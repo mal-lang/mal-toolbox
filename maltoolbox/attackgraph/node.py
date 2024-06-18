@@ -2,6 +2,7 @@
 MAL-Toolbox Attack Graph Node Dataclass
 """
 
+from __future__ import annotations
 from dataclasses import field, dataclass
 from typing import Any, Optional
 
@@ -9,26 +10,28 @@ from . import Attacker
 
 @dataclass
 class AttackGraphNode:
+    """Node part of AttackGraph"""
     id: str
     type: str
     name: str
     ttc: dict
     asset: Any = None
-    children: list['AttackGraphNode'] = field(default_factory=list)
-    parents: list['AttackGraphNode'] = field(default_factory=list)
+    children: list[AttackGraphNode] = field(default_factory=list)
+    parents: list[AttackGraphNode] = field(default_factory=list)
     defense_status: Optional[float] = None
     existence_status: Optional[bool] = None
     is_viable: bool = True
     is_necessary: bool = True
-    compromised_by: list['Attacker'] = field(default_factory=list)
+    compromised_by: list[Attacker] = field(default_factory=list)
     mitre_info: Optional[str] = None
-    tags: Optional[list[str]] = None
+    tags: list[str] = field(default_factory=lambda: [])
     attributes: Optional[dict] = None
 
     # Optional extra metadata for AttackGraphNode
     extras: Optional[dict] = None
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Convert node to dictionary"""
         node_dict = {
             'id': self.id,
             'type': self.type,
@@ -59,17 +62,17 @@ class AttackGraphNode:
 
         return node_dict
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.to_dict())
 
-    def is_compromised(self):
+    def is_compromised(self) -> bool:
         """
         Return True if any attackers have compromised this node.
         False, otherwise.
         """
         return len(self.compromised_by) > 0
 
-    def is_compromised_by(self, attacker):
+    def is_compromised_by(self, attacker: Attacker) -> bool:
         """
         Return True if the attacker given as an argument has compromised this
         node.
@@ -80,7 +83,7 @@ class AttackGraphNode:
         """
         return attacker in self.compromised_by
 
-    def compromise(self, attacker):
+    def compromise(self, attacker: Attacker) -> None:
         """
         Have the attacker given as a parameter compromise this node.
 
@@ -89,7 +92,7 @@ class AttackGraphNode:
         """
         attacker.compromise(self)
 
-    def undo_compromise(self, attacker):
+    def undo_compromise(self, attacker: Attacker) -> None:
         """
         Remove the attacker given as a parameter from the list of attackers
         that have compromised this node.
@@ -100,7 +103,7 @@ class AttackGraphNode:
         """
         attacker.undo_compromise(self)
 
-    def is_enabled_defense(self):
+    def is_enabled_defense(self) -> bool:
         """
         Return True if this node is a defense node and it is enabled and not
         suppressed via tags.
@@ -110,11 +113,10 @@ class AttackGraphNode:
             'suppress' not in self.tags and \
             self.defense_status == 1.0
 
-    def is_available_defense(self):
+    def is_available_defense(self) -> bool:
         """
         Return True if this node is a defense node and it is not fully enabled
-        and not suppressed via tags.
-        False, otherwise.
+        and not suppressed via tags. False otherwise.
         """
         return self.type == 'defense' and \
             'suppress' not in self.tags and \

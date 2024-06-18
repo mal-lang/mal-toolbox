@@ -2,7 +2,6 @@
 
 # Apriori analyzer
 # TODO: Add apriori analyzer test implementations
-from maltoolbox.attackgraph.analyzers import apriori
 
 def test_analyzers_apriori_propagate_viability_from_node():
     """See if viability is propagated correctly"""

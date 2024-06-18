@@ -10,31 +10,37 @@ import json
 import zipfile
 
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
 from maltoolbox.file_utils import (
     load_dict_from_yaml_file, load_dict_from_json_file,
     save_dict_to_file
 )
 from .compiler import MalCompiler
-from ..exceptions import *
-
+from ..exceptions import (
+    LanguageGraphAssociationError,
+    LanguageGraphStepExpressionError,
+    LanguageGraphException,
+    LanguageGraphSuperAssetNotFoundError
+)
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class LanguageGraphAsset:
-    name: str = None
-    associations: list[LanguageGraphAssociation] = field(default_factory=[])
-    attack_steps: list[LanguageGraphAttackStep] = field(default_factory=[])
-    description: dict = field(default_factory={})
+    name: Optional[str] = None
+    associations: list[LanguageGraphAssociation] = field(default_factory=lambda: [])
+    attack_steps: list[LanguageGraphAttackStep] = field(default_factory=lambda: [])
+    description: dict = field(default_factory=lambda: {})
     # MAL languages currently do not support multiple inheritance, but this is
     # futureproofing at its most hopeful.
-    super_assets: list = None
-    sub_assets: list = None
-    is_abstract: bool = None
+    super_assets: list = field(default_factory=lambda: [])
+    sub_assets: list = field(default_factory=lambda: [])
+    is_abstract: Optional[bool] = None
 
-    def to_dict(self):
-        node_dict = {
+    def to_dict(self) -> dict:
+        """Convert LanguageGraphAsset to dictionary"""
+        node_dict: dict[str, Any] = {
             'name': self.name,
             'associations': [],
             'attack_steps': [],
@@ -55,10 +61,10 @@ class LanguageGraphAsset:
             node_dict['sub_assets'].append(sub_asset.name)
         return node_dict
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.to_dict())
 
-    def is_subasset_of(self, target_asset):
+    def is_subasset_of(self, target_asset: LanguageGraphAsset) -> bool:
         """
         Check if an asset extends the target asset through inheritance.
 
@@ -78,7 +84,7 @@ class LanguageGraphAsset:
             current_assets.extend(current_asset.super_assets)
         return False
 
-    def get_all_subassets(self):
+    def get_all_subassets(self) -> list[LanguageGraphAsset]:
         """
         Return a list of all of the assets that directly or indirectly extend
         this asset.
@@ -94,7 +100,7 @@ class LanguageGraphAsset:
             subassets.extend(current_asset.sub_assets)
         return subassets
 
-    def get_all_superassets(self):
+    def get_all_superassets(self) -> list[LanguageGraphAsset]:
         """
         Return a list of all of the assets that this asset directly or
         indirectly extends.
@@ -110,7 +116,9 @@ class LanguageGraphAsset:
             superassets.extend(current_asset.super_assets)
         return superassets
 
-    def get_all_common_superassets(self, other: LanguageGraphAsset):
+    def get_all_common_superassets(
+            self, other: LanguageGraphAsset
+        ) -> set[Optional[str]]:
         """Return a set of all common ancestors between this asset
         and the other asset given as parameter"""
         self_superassets = set(
@@ -135,9 +143,10 @@ class LanguageGraphAssociation:
     name: str
     left_field: LanguageGraphAssociationField
     right_field: LanguageGraphAssociationField
-    description: dict = None
+    description: Optional[dict] = None
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Convert LanguageGraphAssociation to dictionary"""
         node_dict = {
             'name': self.name,
             'left': {
@@ -157,10 +166,10 @@ class LanguageGraphAssociation:
 
         return node_dict
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.to_dict())
 
-    def contains_fieldname(self, fieldname):
+    def contains_fieldname(self, fieldname: str) -> bool:
         """
         Check if the association contains the field name given as a parameter.
 
@@ -175,7 +184,7 @@ class LanguageGraphAssociation:
             return True
         return False
 
-    def contains_asset(self, asset):
+    def contains_asset(self, asset: Any) -> bool:
         """
         Check if the association matches the asset given as a parameter. A
         match can either be an explicit one or if the asset given subassets
@@ -192,7 +201,7 @@ class LanguageGraphAssociation:
             return True
         return False
 
-    def get_opposite_fieldname(self, fieldname):
+    def get_opposite_fieldname(self, fieldname: str) -> str:
         """
         Return the opposite field name if the association contains the field
         name given as a parameter.
@@ -207,13 +216,14 @@ class LanguageGraphAssociation:
         if self.right_field.fieldname == fieldname:
             return self.left_field.fieldname
 
-        logger.warning(
-            'Requested fieldname "%s" from association %s'
-            'which did not contain it!', fieldname, self.name
-        )
-        return None
+        msg = ('Requested fieldname "%s" from association '
+               '%s which did not contain it!')
+        logger.error(msg, fieldname, self.name)
+        raise LanguageGraphAssociationError(msg % (fieldname, self.name))
 
-    def get_opposite_asset(self, asset):
+    def get_opposite_asset(
+            self, asset: LanguageGraphAsset
+        ) -> Optional[LanguageGraphAsset]:
         """
         Return the opposite asset if the association matches the asset given
         as a parameter. A match can either be an explicit one or if the asset
@@ -242,20 +252,21 @@ class LanguageGraphAssociation:
 
 @dataclass
 class LanguageGraphAttackStep:
-    name: str = None
-    type: str = None
-    asset: list[LanguageGraphAsset] = field(default_factory = [])
-    ttc: dict = field(default_factory = {})
-    children: dict = field(default_factory = {})
-    parents: dict = field(default_factory = {})
-    description: dict = field(default_factory = {})
+    name: str
+    type: str
+    asset: LanguageGraphAsset
+    ttc: dict = field(default_factory = lambda: {})
+    children: dict = field(default_factory = lambda: {})
+    parents: dict = field(default_factory = lambda: {})
+    description: dict = field(default_factory = lambda: {})
+    attributes: Optional[dict] = None
 
     @property
-    def qualified_name(self):
+    def qualified_name(self) -> str:
         return f"{self.asset.name}:{self.name}"
 
-    def to_dict(self):
-        node_dict = {
+    def to_dict(self) -> dict:
+        node_dict: dict[Any, Any] = {
             'name': self.name,
             'type': self.type,
             'asset': self.asset.name,
@@ -285,14 +296,20 @@ class LanguageGraphAttackStep:
 
         return node_dict
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.to_dict())
 
 
 class DependencyChain:
-    def __init__(self, type, next_link):
+    def __init__(self, type: str, next_link: Optional[DependencyChain]):
         self.type = type
-        self.next_link = next_link
+        self.next_link: Optional[DependencyChain] = next_link
+        self.fieldname: str = ""
+        self.association: Optional[LanguageGraphAssociation] = None
+        self.left_chain: Optional[DependencyChain] = None
+        self.right_chain: Optional[DependencyChain] = None
+        self.subtype: Optional[Any] = None
+        self.current_link: Optional[DependencyChain] = None
 
     def __iter__(self):
         self.current_link = self
@@ -305,50 +322,64 @@ class DependencyChain:
             return dep_chain
         raise StopIteration
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """Convert DependencyChain to dictionary"""
         match (self.type):
             case 'union' | 'intersection' | 'difference':
                 return {self.type: {
-                    'left': self.left_chain.to_dict(),
+                    'left': self.left_chain.to_dict()
+                            if self.left_chain else {},
                     'right': self.right_chain.to_dict()
+                             if self.right_chain else {}
                     }
                 }
 
             case 'field':
-                association = self.association
-                return {association.name:
+                if not self.association:
+                    raise LanguageGraphAssociationError("Missing association for dep chain")
+                return {self.association.name:
                     {'fieldname': self.fieldname,
                      'next_association':
-                          self.next_link.to_dict() if self.next_link else None
+                            self.next_link.to_dict()
+                            if self.next_link else {}
+                        }
                     }
-                }
 
             case 'transitive':
                 return {'transitive':
                     self.next_link.to_dict()
+                    if self.next_link else {}
                 }
 
             case 'subType':
+                if not self.subtype:
+                    raise LanguageGraphException(
+                        "No subtype for dependency chain"
+                    )
+                if not self.next_link:
+                    raise LanguageGraphException(
+                        "No next link for subtype dependency chain"
+                    )
                 return {'subType': self.subtype.name,
                     'expression': self.next_link.to_dict()
                 }
 
             case _:
-                msg = f'Unknown associations chain element {self.type}!'
-                raise LanguageGraphAssociationError(msg)
-                return None
+                msg = 'Unknown associations chain element %s!'
+                logger.error(msg, self.type)
+                raise LanguageGraphAssociationError(msg % self.type)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.to_dict())
 
 
 class LanguageGraph():
     """Graph representation of a MAL language"""
     def __init__(self, lang: dict):
-        self.assets = []
-        self.associations = []
-        self.attack_steps = []
-        self._lang_spec = lang
+        self.assets: list = []
+        self.associations: list = []
+        self.attack_steps: list = []
+        self._lang_spec: dict = lang
         self.metadata = {
             "version": lang["defines"]["version"],
             "id": lang["defines"]["id"],
@@ -356,7 +387,7 @@ class LanguageGraph():
         self._generate_graph()
 
     @classmethod
-    def from_mal_spec(cls, mal_spec_file: str):
+    def from_mal_spec(cls, mal_spec_file: str) -> LanguageGraph:
         """
         Create a LanguageGraph from a .mal file (a MAL spec).
 
@@ -367,7 +398,7 @@ class LanguageGraph():
         return LanguageGraph(MalCompiler().compile(mal_spec_file))
 
     @classmethod
-    def from_mar_archive(cls, mar_archive: str):
+    def from_mar_archive(cls, mar_archive: str) -> LanguageGraph:
         """
         Create a LanguageGraph from a ".mar" archive provided by malc
         (https://github.com/mal-lang/malc).
@@ -405,17 +436,17 @@ class LanguageGraph():
         }
         return serialized_graph
 
-    def save_to_file(self, filename):
+    def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
-    def _from_dict(cls, serialized_object):
+    def _from_dict(cls, serialized_object: dict) -> None:
         raise NotImplementedError(
             "Converting from dict feature is not implemented yet")
 
     @classmethod
-    def load_from_file(cls, filename):
+    def load_from_file(cls, filename: str) -> LanguageGraph:
         """Create LanguageGraph from mal, mar, yaml or json"""
         lang_graph = None
         if filename.endswith('.mal'):
@@ -426,13 +457,15 @@ class LanguageGraph():
             lang_graph = cls._from_dict(load_dict_from_yaml_file(filename))
         elif filename.endswith(('json')):
             lang_graph = cls._from_dict(load_dict_from_json_file(filename))
-        else:
-            raise TypeError(
-                "Unknown file extension, expected json/mal/mar/yml/yaml"
-            )
-        return lang_graph
 
-    def save_language_specification_to_json(self, filename: str) -> dict:
+        if lang_graph:
+            return lang_graph
+
+        raise TypeError(
+            "Unknown file extension, expected json/mal/mar/yml/yaml"
+        )
+
+    def save_language_specification_to_json(self, filename: str) -> None:
         """
         Save a MAL language specification dictionary to a JSON file
 
@@ -445,10 +478,11 @@ class LanguageGraph():
             json.dump(self._lang_spec, file, indent=4)
 
     def process_step_expression(self,
-        lang: dict,
-        target_asset,
-        dep_chain,
-        step_expression: dict):
+            lang: dict,
+            target_asset,
+            dep_chain,
+            step_expression: dict
+        ) -> tuple:
         """
         Recursively process an attack step expression.
 
@@ -602,9 +636,12 @@ class LanguageGraph():
                         step_expression['stepExpression'])
 
                 subtype_asset = next((asset for asset in self.assets if asset.name == subtype_name), None)
+
                 if not subtype_asset:
-                    logger.error(
-                        'Failed to find subtype attack step "%s', subtype_name)
+                    msg = 'Failed to find subtype attackstep "{subtype_name}"'
+                    logger.error(msg)
+                    raise LanguageGraphException(msg)
+
                 if not subtype_asset.is_subasset_of(result_target_asset):
                     logger.error(
                         'Found subtype "%s" which does not extend "%s", '
@@ -645,7 +682,11 @@ class LanguageGraph():
                 )
                 return (None, None, None)
 
-    def reverse_dep_chain(self, dep_chain, reverse_chain):
+    def reverse_dep_chain(
+            self,
+            dep_chain: Optional[DependencyChain],
+            reverse_chain: Optional[DependencyChain]
+        ) -> Optional[DependencyChain]:
         """
         Recursively reverse the associations chain. From parent to child or
         vice versa.
@@ -688,34 +729,45 @@ class LanguageGraph():
 
                 case 'field':
                     association = dep_chain.association
+
+                    if not association:
+                        raise LanguageGraphException(
+                            "Missing association for dep chain"
+                        )
+
                     opposite_fieldname = association.get_opposite_fieldname(
                         dep_chain.fieldname)
                     new_dep_chain = DependencyChain(
                         type = 'field',
-                        next_link = reverse_chain)
+                        next_link = reverse_chain
+                    )
                     new_dep_chain.fieldname = opposite_fieldname
                     new_dep_chain.association = association
-                    return self.reverse_dep_chain(dep_chain.next_link,
-                        new_dep_chain)
+                    return self.reverse_dep_chain(
+                                dep_chain.next_link,
+                                new_dep_chain
+                            )
 
                 case 'subType':
-                    result_reverse_chain = self.reverse_dep_chain(
-                        new_dep_chain.next_link,
-                        reverse_chain)
-                    new_dep_chain = DependencyChain(
-                        type = 'subtype',
-                        next_link = result_reverse_chain)
-                    new_dep_chain.subtype = dep_chain.subtype
-                    return new_dep_chain
+                    #TODO FIX BUG: new_dep_chain is undefined
+                    # result_reverse_chain = self.reverse_dep_chain(
+                    #     new_dep_chain.next_link,
+                    #     reverse_chain
+                    # )
+                    # new_dep_chain = DependencyChain(
+                    #     type = 'subtype',
+                    #     next_link = result_reverse_chain
+                    # )
+                    # new_dep_chain.subtype = dep_chain.subtype
+                    # return new_dep_chain
+                    return reverse_chain
 
                 case _:
-                    logger.error(
-                        'Unknown associations chain element %s!',
-                        dep_chain.type
-                    )
-                    return None
+                    msg = 'Unknown assoc chain element %s'
+                    logger.error(msg, dep_chain.type)
+                    raise LanguageGraphAssociationError(msg % dep_chain.type)
 
-    def _generate_graph(self):
+    def _generate_graph(self) -> None:
         """
         Generate language graph starting from the MAL language specification
         given in the constructor.
@@ -745,11 +797,12 @@ class LanguageGraph():
                 super_asset = next((asset for asset in self.assets \
                     if asset.name == asset_info['superAsset']), None)
                 if not super_asset:
-                    msg = 'Failed to find super asset ' \
-                        f'\"{asset_info["superAsset"]}\" ' \
-                        f'for asset \"{asset_info["name"]}\"!'
-                    logger.error(msg)
-                    raise LanguageGraphSuperAssetNotFoundError(msg)
+                    msg = 'Failed to find super asset "%s" for asset "%s"!'
+                    logger.error(
+                        msg, asset_info["superAsset"], asset_info["name"])
+                    raise LanguageGraphSuperAssetNotFoundError(
+                        msg % (asset_info["superAsset"], asset_info["name"]))
+
                 super_asset.sub_assets.append(asset)
                 asset.super_assets.append(super_asset)
 
@@ -759,24 +812,27 @@ class LanguageGraph():
                 'Create association language graph nodes for asset %s',
                 asset.name
             )
-            associations_nodes = []
+
             associations = self._get_associations_for_asset_type(asset.name)
             for association in associations:
                 left_asset = next((asset for asset in self.assets \
                     if asset.name == association['leftAsset']), None)
                 if not left_asset:
-                    msg = 'Failed to find left hand asset ' \
-                        f'\"{association["leftAsset"]}\" for ' \
-                        f'association \"{association["name"]}\"!'
-                    logger.error(msg)
-                    raise LanguageGraphAssociationError(msg)
+                    msg = 'Left asset "%s" for association "%s" not found!'
+                    logger.error(
+                        msg, association["leftAsset"], association["name"])
+                    raise LanguageGraphAssociationError(
+                        msg % (association["leftAsset"], association["name"]))
+
                 right_asset = next((asset for asset in self.assets \
                     if asset.name == association['rightAsset']), None)
                 if not right_asset:
-                    msg = 'Failed to find right hand asset ' \
-                        f'\"{association["rightAsset"]}\" for ' \
-                        f'association \"{association["name"]}\"!'
-                    raise LanguageGraphAssociationError(msg)
+                    msg = 'Right asset "%s" for association "%s" not found!'
+                    logger.error(
+                        msg, association["rightAsset"], association["name"])
+                    raise LanguageGraphAssociationError(
+                        msg % (association["rightAsset"], association["name"])
+                    )
 
                 # Technically we should be more exhaustive and check the
                 # flipped version too and all of the fieldnames as well.
@@ -821,7 +877,6 @@ class LanguageGraph():
                 'Create attack steps language graph nodes for asset %s',
                 asset.name
             )
-            attack_step_nodes = []
             attack_steps = self._get_attacks_for_asset_type(asset.name)
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(
@@ -862,22 +917,25 @@ class LanguageGraph():
                         step_expression)
                 if not target_asset:
                     msg = 'Failed to find target asset to link with for ' \
-                        'step expression:\n' + \
-                        json.dumps(step_expression, indent = 2)
-
-                    raise LanguageGraphStepExpressionError(msg)
+                        'step expression:\n%s'
+                    raise LanguageGraphStepExpressionError(
+                        msg % json.dumps(step_expression, indent = 2)
+                    )
 
                 target_attack_step = next((attack_step \
                     for attack_step in target_asset.attack_steps \
                         if attack_step.name == attack_step_name), None)
 
                 if not target_attack_step:
-                    msg = 'Failed to find target attack step ' \
-                        f'{attack_step_name} on ' \
-                        f'{target_asset.name} to link with for step ' \
-                        'expression:\n' + \
-                        json.dumps(step_expression, indent = 2)
-                    raise LanguageGraphStepExpressionError(msg)
+                    msg = 'Failed to find target attack step %s on %s to ' \
+                          'link with for step expression:\n%s'
+                    raise LanguageGraphStepExpressionError(
+                        msg % (
+                            attack_step_name,
+                            target_asset.name,
+                            json.dumps(step_expression, indent = 2)
+                        )
+                    )
 
                 # It is easier to create the parent associations chain due to
                 # the left-hand first progression.
@@ -914,7 +972,7 @@ class LanguageGraph():
         with a dictionary containing other characteristics of the attack such as
         type of attack, TTC distribution, child attack steps and other information
         """
-        attack_steps = {}
+        attack_steps: dict = {}
         try:
             asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == asset_type))
         except StopIteration:
@@ -922,17 +980,15 @@ class LanguageGraph():
                 'Failed to find asset type %s when looking'
                 'for attack steps.', asset_type
             )
-            return None
+            return attack_steps
 
         logger.debug(
             'Get attack steps for %s asset from '
             'language specification.', asset["name"]
         )
         if asset['superAsset']:
-            logger.debug(
-                'Asset extends another one, fetch the superclass'
-                'attack steps for it.'
-            )
+            logger.debug('Asset extends another one, fetch the superclass '\
+                'attack steps for it.')
             attack_steps = self._get_attacks_for_asset_type(asset['superAsset'])
 
         for step in asset['attackSteps']:
@@ -949,7 +1005,7 @@ class LanguageGraph():
 
         return attack_steps
 
-    def _get_associations_for_asset_type(self, asset_type: str) -> dict:
+    def _get_associations_for_asset_type(self, asset_type: str) -> list:
         """
         Get all Associations for a specific Class
 
@@ -967,7 +1023,7 @@ class LanguageGraph():
             'Get associations for %s asset from '
             'language specification.', asset_type
         )
-        associations = []
+        associations: list = []
 
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
@@ -976,13 +1032,11 @@ class LanguageGraph():
                 'Failed to find asset type %s when '
                 'looking for associations.', asset_type
             )
-            return None
+            return associations
 
         if asset['superAsset']:
-            logger.debug(
-                'Asset extends another one, fetch the superclass'
-                'associations for it.'
-            )
+            logger.debug('Asset extends another one, fetch the superclass '\
+                'associations for it.')
             associations.extend(self._get_associations_for_asset_type(asset['superAsset']))
         assoc_iter = (assoc for assoc in self._lang_spec['associations'] \
             if assoc['leftAsset'] == asset_type or \
@@ -995,7 +1049,7 @@ class LanguageGraph():
         return associations
 
     def _get_variable_for_asset_type_by_name(
-            self, asset_type: str, variable_name:str) -> dict:
+            self, asset_type: str, variable_name: str) -> dict:
         """
         Get a variables for a specific asset type by name.
         NOTE: Variables are the ones specified in MAL through `let` statements
@@ -1012,11 +1066,9 @@ class LanguageGraph():
         asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
         if not asset:
-            logger.error(
-                'Failed to find asset type %s when looking for variable.',
-                asset_type
-            )
-            return None
+            msg = 'Failed to find asset type %s when looking for variable.'
+            logger.error(msg, asset_type)
+            raise LanguageGraphException(msg % asset_type)
 
         variable_dict = next((variable for variable in \
             asset['variables'] if variable['name'] == variable_name), None)
@@ -1027,15 +1079,14 @@ class LanguageGraph():
             if variable_dict:
                 return variable_dict
             else:
-                logger.error(
-                    'Failed to find variable %s in %s lang specification.',
-                    variable_name, asset_type
-                )
-            return None
+                msg = 'Failed to find variable %s in %s lang specification.'
+                logger.error(msg, variable_name, asset_type)
+                raise LanguageGraphException(
+                    msg % (variable_name, asset_type))
 
         return variable_dict['stepExpression']
 
-    def regenerate_graph(self):
+    def regenerate_graph(self) -> None:
         """
         Regenerate language graph starting from the MAL language specification
         given in the constructor.

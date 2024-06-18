@@ -1,13 +1,12 @@
-from antlr4 import ParseTreeVisitor
-
-from .mal_parser import malParser
-
+# mypy: ignore-errors
 from collections.abc import MutableMapping, MutableSequence
+
+from antlr4 import ParseTreeVisitor
+from .mal_parser import malParser
 
 # In a rule like `rule: one? two* three`:
 #   - ctx.one() would be None if the token was not found on a matching line
 #   - ctx.two() would be []
-
 
 class malVisitor(ParseTreeVisitor):
     def __init__(self, compiler, *args, **kwargs):
@@ -394,7 +393,7 @@ class malVisitor(ParseTreeVisitor):
             key, subkey = mult_key.split(".")
 
             # upper limit equals lower limit if not given
-            if subkey == "max" and association[key][subkey] == None:
+            if subkey == "max" and association[key][subkey] is None:
                 association[key][subkey] = association[key]["min"]
 
             if association[key][subkey] == "*":

@@ -2,58 +2,68 @@
 MAL-Toolbox Model Module
 """
 
+from __future__ import annotations
+from dataclasses import dataclass, field
 import json
 import logging
+from typing import TYPE_CHECKING
 
-from dataclasses import dataclass
-from maltoolbox.file_utils import (
-    load_dict_from_json_file, load_dict_from_yaml_file,
+from .file_utils import (
+    load_dict_from_json_file,
+    load_dict_from_yaml_file,
     save_dict_to_file
 )
 
-from .__init__ import __version__
+from . import __version__
+
+if TYPE_CHECKING:
+    from typing import Any, Optional, TypeAlias
+    from .language import LanguageClassesFactory
+    from python_jsonschema_objects.classbuilder import ProtocolBase
+
+    SchemaGeneratedClass: TypeAlias = ProtocolBase
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class AttackerAttachment:
     """Used to attach attackers to attack step entrypoints of assets"""
-    id: int = None
-    name: str = None
-    entry_points: list[tuple] = None
+    id: Optional[int] = None
+    name: Optional[str] = None
+    entry_points: list[tuple] = field(default_factory=lambda: [])
 
 class Model():
     """An implementation of a MAL language with assets and associations"""
-    next_id = 0
+    next_id: int = 0
 
     def __repr__(self) -> str:
         return f'Model {self.name}'
 
     def __init__(
             self,
-            name,
-            lang_classes_factory,
-            mt_version = __version__
+            name: str,
+            lang_classes_factory: LanguageClassesFactory,
+            mt_version: str = __version__
         ):
 
         self.name = name
-        self.assets = []
-        self.associations = []
-        self.attackers = []
-        self.lang_classes_factory = lang_classes_factory
-        self.maltoolbox_version = mt_version
+        self.assets: list[SchemaGeneratedClass] = []
+        self.associations: list[SchemaGeneratedClass] = []
+        self.attackers: list[AttackerAttachment] = []
+        self.lang_classes_factory: LanguageClassesFactory = lang_classes_factory
+        self.maltoolbox_version: str = mt_version
 
         # Below sets used to check for duplicate names or ids,
         # better for optimization than iterating over all assets
-        self.asset_ids = set()
-        self.asset_names = set()
+        self.asset_ids: set[int] = set()
+        self.asset_names: set[str] = set()
 
     def add_asset(
             self,
-            asset,
-            asset_id: int = None,
-            allow_duplicate_names = True
-        ):
+            asset: SchemaGeneratedClass,
+            asset_id: Optional[int] = None,
+            allow_duplicate_names: bool = True
+        ) -> None:
         """Add an asset to the model.
 
         Arguments:
@@ -99,12 +109,13 @@ class Model():
         )
         self.assets.append(asset)
 
-    def remove_asset(self, asset):
+    def remove_asset(self, asset: SchemaGeneratedClass) -> None:
         """Remove an asset from the model.
 
         Arguments:
         asset     - the asset to remove
         """
+
         logger.debug(
             'Remove %s(id:%s) from model "%s".',
             asset.name, asset.id, self.name
@@ -120,7 +131,11 @@ class Model():
 
         self.assets.remove(asset)
 
-    def remove_asset_from_association(self, asset, association):
+    def remove_asset_from_association(
+            self,
+            asset: SchemaGeneratedClass,
+            association: SchemaGeneratedClass
+        ) -> None:
         """Remove an asset from an association and remove the association
         if any of the two sides is now empty.
 
@@ -162,7 +177,7 @@ class Model():
             raise LookupError(f'Asset {asset.id} is not part of the '
                 'association provided.')
 
-    def add_association(self, association):
+    def add_association(self, association: SchemaGeneratedClass) -> None:
         """Add an association to the model.
 
         An association will have 2 field names, each
@@ -185,12 +200,13 @@ class Model():
                 asset.associations = asset_assocs
         self.associations.append(association)
 
-    def remove_association(self, association):
+    def remove_association(self, association: SchemaGeneratedClass) -> None:
         """Remove an association from the model.
 
         Arguments:
         association     - the association to remove from the model
         """
+
         if association not in self.associations:
             raise LookupError(
                 f'Association is not part of model "{self.name}".'
@@ -218,13 +234,18 @@ class Model():
 
         self.associations.remove(association)
 
-    def add_attacker(self, attacker, attacker_id: int = None):
+    def add_attacker(
+            self,
+            attacker: AttackerAttachment,
+            attacker_id: Optional[int] = None
+        ) -> None:
         """Add an attacker to the model.
 
         Arguments:
         attacker        - the attacker to add
         attacker_id     - optional id for the attacker
         """
+
         if attacker_id is not None:
             attacker.id = attacker_id
         else:
@@ -235,7 +256,9 @@ class Model():
             attacker.name = 'Attacker:' + str(attacker.id)
         self.attackers.append(attacker)
 
-    def get_asset_by_id(self, asset_id):
+    def get_asset_by_id(
+            self, asset_id: int
+        ) -> Optional[SchemaGeneratedClass]:
         """
         Find an asset in the model based on its id.
 
@@ -254,7 +277,9 @@ class Model():
                 if asset.id == asset_id), None
              )
 
-    def get_asset_by_name(self, asset_name):
+    def get_asset_by_name(
+            self, asset_name: str
+        ) -> Optional[SchemaGeneratedClass]:
         """
         Find an asset in the model based on its name.
 
@@ -273,7 +298,9 @@ class Model():
                 if asset.name == asset_name), None
              )
 
-    def get_attacker_by_id(self, attacker_id):
+    def get_attacker_by_id(
+            self, attacker_id: int
+        ) -> Optional[AttackerAttachment]:
         """
         Find an attacker in the model based on its id.
 
@@ -292,7 +319,11 @@ class Model():
                 if attacker.id == attacker_id), None
             )
 
-    def get_associated_assets_by_field_name(self, asset, field_name):
+    def get_associated_assets_by_field_name(
+            self,
+            asset: SchemaGeneratedClass,
+            field_name: str
+        ) -> list[SchemaGeneratedClass]:
         """
         Get a list of associated assets for an asset given a field name.
 
@@ -304,6 +335,7 @@ class Model():
         A list of assets associated with the asset given that match the
         field_name.
         """
+
         logger.debug(
             'Get associated assets for asset %s(id:%s) by field name %s.',
             asset.name, asset.id, field_name
@@ -330,7 +362,7 @@ class Model():
 
         return associated_assets
 
-    def asset_to_dict(self, asset):
+    def asset_to_dict(self, asset: SchemaGeneratedClass) -> tuple[str, dict]:
         """Get dictionary representation of the asset.
 
         Arguments:
@@ -338,6 +370,7 @@ class Model():
 
         Return: tuple with name of asset and the asset as dict
         """
+
         defenses = {}
         logger.debug('Translating %s to dictionary.', asset.name)
 
@@ -360,7 +393,7 @@ class Model():
 
             defenses[key] = float(value)
 
-        asset_dict = {
+        asset_dict: dict[str, Any] = {
             'name': str(asset.name),
             'type': str(asset.type)
         }
@@ -375,12 +408,15 @@ class Model():
         return (asset.id, asset_dict)
 
 
-    def association_to_dict(self, association):
+    def association_to_dict(self, association: SchemaGeneratedClass) -> dict:
         """Get dictionary representation of the association.
 
         Arguments:
         association     - association to get dictionary representation of
+
+        Returns the association serialized to a dict
         """
+
         first_field_name, second_field_name = association._properties.keys()
         first_field = getattr(association, first_field_name)
         second_field = getattr(association, second_field_name)
@@ -401,14 +437,17 @@ class Model():
 
         return association_dict
 
-    def attacker_to_dict(self, attacker):
+    def attacker_to_dict(
+            self, attacker: AttackerAttachment
+        ) -> tuple[Optional[int], dict]:
         """Get dictionary representation of the attacker.
 
         Arguments:
         attacker    - attacker to get dictionary representation of
         """
+
         logger.debug('Translating %s to dictionary.', attacker.name)
-        attacker_dict = {
+        attacker_dict: dict[str, Any] = {
             'name': str(attacker.name),
             'entry_points': {},
         }
@@ -416,12 +455,12 @@ class Model():
             attacker_dict['entry_points'][int(asset.id)] = {
                 'attack_steps' : attack_steps
             }
-        return (int(attacker.id), attacker_dict)
+        return (attacker.id, attacker_dict)
 
-    def _to_dict(self):
+    def _to_dict(self) -> dict:
         """Get dictionary representation of the model."""
         logger.debug('Translating model to dict.')
-        contents = {
+        contents: dict[str, Any] = {
             'metadata': {},
             'assets': {},
             'associations': [],
@@ -452,18 +491,23 @@ class Model():
             contents['attackers'][attacker_id] = attacker_dict
         return contents
 
-    def save_to_file(self, filename):
+    def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
-    def _from_dict(cls, serialized_object, lang_classes_factory):
+    def _from_dict(
+        cls,
+        serialized_object: dict,
+        lang_classes_factory: LanguageClassesFactory
+        ) -> Model:
         """Create a model from dict representation
 
         Arguments:
         serialized_object    - Model in dict format
         lang_classes_factory -
         """
+
         maltoolbox_version = serialized_object['metadata']['MAL Toolbox Version'] \
             if 'MAL Toolbox Version' in serialized_object['metadata'] \
             else __version__
@@ -529,7 +573,11 @@ class Model():
         return model
 
     @classmethod
-    def load_from_file(cls, filename, lang_classes_factory):
+    def load_from_file(
+        cls,
+        filename: str,
+        lang_classes_factory: LanguageClassesFactory
+        ) -> Model:
         """Create from json or yaml file depending on file extension"""
         serialized_model = None
         if filename.endswith(('.yml', '.yaml')):
@@ -539,4 +587,3 @@ class Model():
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
         return cls._from_dict(serialized_model, lang_classes_factory)
-

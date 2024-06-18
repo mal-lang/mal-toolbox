@@ -1,30 +1,38 @@
 """
 MAL-Toolbox Attack Graph Module
 """
-
+from __future__ import annotations
 import logging
 import json
 
-from typing import Optional
-
-from maltoolbox.file_utils import (
-    load_dict_from_json_file, load_dict_from_yaml_file,
-    save_dict_to_file
-)
+from typing import TYPE_CHECKING
 
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
-from ..language import specification, LanguageGraph
+from ..language import specification
 from ..model import Model
+from ..exceptions import AttackGraphException
+from ..file_utils import (
+    load_dict_from_json_file,
+    load_dict_from_yaml_file,
+    save_dict_to_file
+)
 
+if TYPE_CHECKING:
+    from typing import Any, Optional
+    from ..language import LanguageGraph
 
 logger = logging.getLogger(__name__)
 
 # TODO see if (part of) this can be incorporated into the LanguageGraph, so that
 # the LanguageGraph's _lang_spec private property does not need to be accessed
-def _process_step_expression(lang_graph: LanguageGraph, model: Model,
-    target_assets: list, step_expression: dict):
+def _process_step_expression(
+        lang_graph: LanguageGraph,
+        model: Model,
+        target_assets: list[Any],
+        step_expression: dict[str, Any]
+    ) -> tuple[list, Optional[str]]:
     """
     Recursively process an attack step expression.
 
@@ -142,11 +150,11 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
                     step_expression['stepExpression'])
                 new_target_assets.extend(assets)
 
-            selected_new_target_assets = (asset for asset in \
+            selected_new_target_assets = [asset for asset in \
                 new_target_assets if specification.extends_asset(
-                    lang_graph,
+                    lang_graph._lang_spec,
                     asset.type,
-                    step_expression['subType']))
+                    step_expression['subType'])]
             return (selected_new_target_assets, None)
 
         case 'collect':
@@ -167,9 +175,9 @@ def _process_step_expression(lang_graph: LanguageGraph, model: Model,
 class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
-        self.nodes = []
-        self.id_to_node = {}  # to get nodes by id faster
-        self.attackers = []
+        self.nodes: list[AttackGraphNode] = []
+        self.id_to_node: dict[str, AttackGraphNode] = {}  # optimization
+        self.attackers: list[Attacker] = []
 
         self.model = model
         self.lang_graph = lang_graph
@@ -179,7 +187,7 @@ class AttackGraph():
     def __repr__(self) -> str:
         return f'AttackGraph({len(self.nodes)} nodes)'
 
-    def _to_dict(self):
+    def _to_dict(self) -> dict:
         """Convert AttackGraph to list"""
         serialized_attack_steps = []
         serialized_attackers = []
@@ -192,12 +200,16 @@ class AttackGraph():
             'attackers': serialized_attackers,
         }
 
-    def save_to_file(self, filename):
+    def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
-    def _from_dict(cls, serialized_object, model=None):
+    def _from_dict(
+            cls,
+            serialized_object: dict,
+            model: Optional[Model]=None
+        ) -> AttackGraph:
         """Create AttackGraph from dict
         Args:
         serialized_object   - AttackGraph in dict format
@@ -236,31 +248,27 @@ class AttackGraph():
         for node_dict in serialized_attack_steps:
             _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
-                logger.error(
-                    'Failed to find node with id %s when'
-                    'loading from attack graph from dict',
-                    node_dict["id"]
-                )
+                msg = ('Failed to find node with id %s when loading'
+                       ' attack graph from dict')
+                logger.error(msg, node_dict["id"])
+                raise LookupError(msg % node_dict["id"])
             else:
                 for child_id in node_dict['children']:
                     child = attack_graph.get_node_by_id(child_id)
                     if child is None:
-                        logger.error(
-                            'Failed to find child node with id %s when'
-                            'loading from attack graph from dict', child_id
-                        )
-                        return None
+                        msg = ('Failed to find child node with id %s'
+                               ' when loading from attack graph from dict')
+                        logger.error(msg, child_id)
+                        raise LookupError(msg % child_id)
                     _ag_node.children.append(child)
 
                 for parent_id in node_dict['parents']:
                     parent = attack_graph.get_node_by_id(parent_id)
                     if parent is None:
-                        logger.error(
-                            'Failed to find parent node with id %s '
-                            'when loading from attack graph from dict',
-                            parent_id
-                        )
-                        return None
+                        msg = ('Failed to find parent node with id %s '
+                               'when loading from attack graph from dict')
+                        logger.error(msg, parent_id)
+                        raise LookupError(msg % parent_id)
                     _ag_node.parents.append(parent)
 
                 # Also recreate asset links if model is available.
@@ -268,12 +276,10 @@ class AttackGraph():
                     asset = model.get_asset_by_name(
                         node_dict['asset'])
                     if asset is None:
-                        logger.error(
-                            'Failed to find asset with id %s'
-                            'when loading from attack graph dict',
-                            node_dict["asset"]
-                        )
-                        return None
+                        msg = ('Failed to find asset with id %s'
+                               'when loading from attack graph dict')
+                        logger.error(msg, node_dict["asset"])
+                        raise LookupError(msg % node_dict["asset"])
                     _ag_node.asset = asset
                     if hasattr(asset, 'attack_step_nodes'):
                         attack_step_nodes = list(asset.attack_step_nodes)
@@ -290,16 +296,32 @@ class AttackGraph():
             )
             for node_id in attacker.reached_attack_steps:
                 node = attack_graph.get_node_by_id(node_id)
-                ag_attacker.compromise(node)
+                if node:
+                    ag_attacker.compromise(node)
+                else:
+                    msg = ("Could not find node with id %s"
+                           "in reached attack steps")
+                    logger.error(msg, node_id)
+                    raise AttackGraphException(msg % node_id)
             for node_id in attacker.entry_points:
                 node = attack_graph.get_node_by_id(node_id)
-                ag_attacker.entry_points.append(node)
+                if node:
+                    ag_attacker.entry_points.append(node)
+                else:
+                    msg = ("Could not find node with id %s"
+                           "in attacker entrypoints")
+                    logger.error(msg, node_id)
+                    raise AttackGraphException(msg % node_id)
             attack_graph.attackers.append(ag_attacker)
 
         return attack_graph
 
     @classmethod
-    def load_from_file(cls, filename, model=None):
+    def load_from_file(
+            cls,
+            filename: str,
+            model: Optional[Model]=None
+        ) -> AttackGraph:
         """Create from json or yaml file depending on file extension"""
         serialized_model = None
         if filename.endswith(('.yml', '.yaml')):
@@ -324,18 +346,30 @@ class AttackGraph():
         logger.debug('Looking up node with id %s', node_id)
         return self.id_to_node.get(node_id)
 
-    def attach_attackers(self):
+    def attach_attackers(self) -> None:
         """
         Create attackers and their entry point nodes and attach them to the
         relevant attack step nodes and to the attackers.
         """
 
+        if not self.model:
+            msg = "Can not attach attackers without a model"
+            logger.error(msg)
+            raise AttackGraphException(msg)
+
         logger.info(
             'Attach attackers from "%s" model to the graph.', self.model.name
         )
+
         for attacker_info in self.model.attackers:
+
+            if not attacker_info.id:
+                msg = "Can not attach attacker %s without ID"
+                logger.error(msg, attacker_info.name)
+                raise AttackGraphException(msg, attacker_info.name)
+
             ag_attacker = Attacker(
-                id = int(attacker_info.id),
+                id = attacker_info.id,
                 entry_points = [],
                 reached_attack_steps = []
             )
@@ -355,11 +389,16 @@ class AttackGraph():
 
             ag_attacker.entry_points = ag_attacker.reached_attack_steps
 
-    def _generate_graph(self):
+    def _generate_graph(self) -> None:
         """
         Generate the attack graph based on the original model instance and the
         MAL language specification provided at initialization.
         """
+
+        if not self.model:
+            msg = "Can not generate AttackGraph without model"
+            logger.error(msg)
+            raise AttackGraphException(msg)
 
         # First, generate all of the nodes of the attack graph.
         for asset in self.model.assets:
@@ -380,7 +419,7 @@ class AttackGraph():
                 )
 
                 defense_status = None
-                existence_status: Optional[bool] = None
+                existence_status = None
                 node_id = asset.name + ':' + attack_step_name
 
                 match (attack_step_attribs['type']):
@@ -449,15 +488,16 @@ class AttackGraph():
                     target_node_id = target.name + ':' + attack_step
                     target_node = self.get_node_by_id(target_node_id)
                     if not target_node:
-                        msg = 'Failed to find target node ' \
-                        f'{target_node_id} to link with for attack step ' \
-                        f'{ag_node.id}!'
-                        logger.error(msg)
-                        raise AttackGraphStepExpressionError(msg)
+                        msg = ('Failed to find target node '
+                               '%s to link with for attack step %s!')
+                        logger.error(msg, target_node_id, ag_node.id)
+                        raise AttackGraphStepExpressionError(
+                            msg % (target_node_id % ag_node.id)
+                        )
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)
 
-    def regenerate_graph(self):
+    def regenerate_graph(self) -> None:
         """
         Regenerate the attack graph based on the original model instance and
         the MAL language specification provided at initialization.
@@ -467,14 +507,14 @@ class AttackGraph():
         self.attackers = []
         self._generate_graph()
 
-    def add_node(self, node: AttackGraphNode):
+    def add_node(self, node: AttackGraphNode) -> None:
         """Add a node to the graph and map from its ID in self.id_to_node
         Arguments:
         node    - the node to add"""
         self.nodes.append(node)
         self.id_to_node[node.id] = node
 
-    def remove_node(self, node):
+    def remove_node(self, node: AttackGraphNode) -> None:
         """
         Arguments:
         node    - the node we wish to remove from the attack graph

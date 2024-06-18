@@ -1,20 +1,29 @@
 """
 MAL-Toolbox Language Classes Factory Module
 """
-
-import python_jsonschema_objects as pjs
+from __future__ import annotations
 import json
 import logging
+from typing import TYPE_CHECKING
+
+import python_jsonschema_objects as pjs
+
+if TYPE_CHECKING:
+    from typing import Literal, TypeAlias
+    from maltoolbox.language import LanguageGraph
+    from python_jsonschema_objects.classbuilder import ProtocolBase
+
+    SchemaGeneratedClass: TypeAlias = ProtocolBase
 
 logger = logging.getLogger(__name__)
 
 class LanguageClassesFactory:
-    def __init__(self, lang_graph):
-        self.lang_graph = lang_graph
-        self.json_schema = {}
+    def __init__(self, lang_graph: LanguageGraph):
+        self.lang_graph: LanguageGraph = lang_graph
+        self.json_schema: dict = {}
         self._create_classes()
 
-    def _generate_assets(self):
+    def _generate_assets(self) -> None:
         """
         Generate JSON Schema for the assets in the language specification.
         """
@@ -56,11 +65,11 @@ class LanguageClassesFactory:
                 {'$ref': '#/definitions/LanguageAsset/definitions/' + asset.name}
             )
 
-    def _generate_associations(self):
+    def _generate_associations(self) -> None:
         """
         Generate JSON Schema for the associations in the language specification.
         """
-        def create_association_entry(assoc):
+        def create_association_entry(assoc: SchemaGeneratedClass):
             logger.debug('Creating %s association JSON schema entry.', assoc.name)
             assoc_json_entry = {'title': assoc.name, 'type': 'object', 'properties': {}}
 
@@ -68,7 +77,7 @@ class LanguageClassesFactory:
             create_association_field(assoc, assoc_json_entry, 'right')
             return assoc_json_entry
 
-        def create_association_with_subentries(assoc):
+        def create_association_with_subentries(assoc: SchemaGeneratedClass):
             if (assoc.name not in self.json_schema['definitions']\
                 ['LanguageAssociation']['definitions']):
                 logger.info(
@@ -100,7 +109,11 @@ class LanguageClassesFactory:
                     {'$ref': '#/definitions/LanguageAssociation/definitions/' \
                     + assoc.name + '/definitions/' + subentry_name})
 
-        def create_association_field(assoc, assoc_json_entry, position):
+        def create_association_field(
+                assoc: SchemaGeneratedClass,
+                assoc_json_entry: dict,
+                position: Literal['left', 'right']
+            ) -> None:
             field = getattr(assoc, position + "_field")
             assoc_json_entry['properties'][field.fieldname] = \
                 {
@@ -124,7 +137,7 @@ class LanguageClassesFactory:
                 # If there are multiple associations with the same name we
                 # will need to create separate entries for each using their
                 # fieldnames.
-                assoc_json_entry = create_association_with_subentries(assoc)
+                create_association_with_subentries(assoc)
             else:
                 assoc_json_entry = create_association_entry(assoc)
                 self.json_schema['definitions']['LanguageAssociation']\
@@ -133,7 +146,7 @@ class LanguageClassesFactory:
                     append({'$ref': '#/definitions/LanguageAssociation/' +
                     'definitions/' + assoc.name})
 
-    def _create_classes(self):
+    def _create_classes(self) -> None:
         """
         Create classes based on the language specification.
         """

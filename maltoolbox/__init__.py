@@ -33,7 +33,6 @@ __docformat__ = 'restructuredtext en'
 __all__ = ()
 
 import os
-import sys
 import configparser
 import logging
 

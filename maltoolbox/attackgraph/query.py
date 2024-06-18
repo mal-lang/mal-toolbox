@@ -4,15 +4,20 @@ MAL-Toolbox Attack Graph Query Submodule
 This submodule contains functions that analyze the information present in the
 attack graph, but do not alter the structure or nodes in any way.
 """
-
+from __future__ import annotations
 import logging
+from typing import TYPE_CHECKING
 
-from .attackgraph import AttackGraph
-from .attacker import Attacker
+from .attackgraph import AttackGraph, Attacker
+
+if TYPE_CHECKING:
+    from .attackgraph import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
-def is_node_traversable_by_attacker(node, attacker) -> bool:
+def is_node_traversable_by_attacker(
+        node: AttackGraphNode, attacker: Attacker
+    ) -> bool:
     """
     Return True or False depending if the node specified is traversable
     for the attacker given.
@@ -49,8 +54,9 @@ def is_node_traversable_by_attacker(node, attacker) -> bool:
             logger.error('Unknown node type %s.', node.type)
             return False
 
-def get_attack_surface(graph: AttackGraph,
-    attacker: Attacker):
+def get_attack_surface(
+        attacker: Attacker
+    ) -> list[AttackGraphNode]:
     """
     Get the current attack surface of an attacker. This includes all of the
     viable children nodes of already reached attack steps that are of 'or'
@@ -58,7 +64,6 @@ def get_attack_surface(graph: AttackGraph,
     parents in the attack steps reached.
 
     Arguments:
-    graph       - the attack graph
     attacker    - the Attacker whose attack surface is sought
     """
     logger.debug(
@@ -76,16 +81,15 @@ def get_attack_surface(graph: AttackGraph,
     return attack_surface
 
 def update_attack_surface_add_nodes(
-    graph: AttackGraph,
-    attacker: Attacker,
-    current_attack_surface,
-    nodes):
+        attacker: Attacker,
+        current_attack_surface: list[AttackGraphNode],
+        nodes: list[AttackGraphNode]
+    ) -> list[AttackGraphNode]:
     """
     Update the attack surface of an attacker with the new attack step nodes
     provided to see if any of their children can be added.
 
     Arguments:
-    graph                   - the attack graph
     attacker                - the Attacker whose attack surface is sought
     current_attack_surface  - the current attack surface that we wish to
                               expand
@@ -110,7 +114,7 @@ def update_attack_surface_add_nodes(
                 attack_surface.append(child)
     return attack_surface
 
-def get_defense_surface(graph: AttackGraph):
+def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
     """
     Get the defense surface. All non-suppressed defense steps that are not
     already fully enabled.
@@ -121,7 +125,7 @@ def get_defense_surface(graph: AttackGraph):
     logger.debug('Get the defense surface.')
     return [node for node in graph.nodes if node.is_available_defense()]
 
-def get_enabled_defenses(graph: AttackGraph):
+def get_enabled_defenses(graph: AttackGraph) -> list[AttackGraphNode]:
     """
     Get the defenses already enabled. All non-suppressed defense steps that
     are already fully enabled.

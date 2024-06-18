@@ -1,23 +1,24 @@
 """
 MAL-Toolbox Neo4j Ingestor Module
 """
+# mypy: ignore-errors
 
 import logging
 
 from py2neo import Graph, Node, Relationship, Subgraph
 
 from ..model import AttackerAttachment, Model
-from ..language import specification
+from ..language import specification, LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
 
 def ingest_attack_graph(graph,
-        uri,
-        username,
-        password,
-        dbname,
-        delete=False
-) -> None:
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        delete: bool = False
+    ) -> None:
     """
     Ingest an attack graph into a neo4j database
 
@@ -30,7 +31,6 @@ def ingest_attack_graph(graph,
     delete               - if True, the previous content of the database is deleted
                            before ingesting the new attack graph
     """
-
 
     g = Graph(uri=uri, user=username, password=password, name=dbname)
     if delete:
@@ -65,12 +65,12 @@ def ingest_attack_graph(graph,
 
 
 def ingest_model(model,
-        uri,
-        username,
-        password,
-        dbname,
-        delete=False
-) -> None:
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        delete: bool = False
+    ) -> None:
     """
     Ingest an instance model graph into a Neo4J database
 
@@ -91,7 +91,6 @@ def ingest_model(model,
     rels = []
 
     for asset in model.assets:
-        nodeid = asset.name
 
         nodes[str(asset.id)] = Node(str(asset.type),
                 name=str(asset.name),
@@ -119,18 +118,19 @@ def ingest_model(model,
     g.commit(tx)
 
 
-def get_model(uri,
-        username,
-        password,
-        dbname,
-        lang_spec,
-        lang_classes_factory
-) -> Model:
+def get_model(
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        lang_spec: dict,
+        lang_classes_factory: LanguageClassesFactory
+    ) -> Model:
+    """Load a model from Neo4j"""
 
     g = Graph(uri=uri, user=username, password=password, name=dbname)
 
-    instance_model = Model('Neo4j imported model', lang_spec,
-        lang_classes_factory)
+    instance_model = Model('Neo4j imported model', lang_classes_factory)
     # Get all assets
     assets_results = g.run('MATCH (a) WHERE a.type IS NOT NULL RETURN DISTINCT a').data()
     for asset in assets_results:
@@ -145,19 +145,16 @@ def get_model(uri,
             instance_model.add_attacker(attacker, attacker_id = attacker_id)
             continue
 
-        if not hasattr(lang_classes_factory.ns,
-            asset_data['type']):
-            logger.error(
-                'Failed to find %s asset in language specification!',
-                asset_data["type"]
-            )
-            return None
+        if not hasattr(lang_classes_factory.ns, asset_data['type']):
+            msg = 'Failed to find %s asset in language specification!'
+            logger.error(msg, asset_data["type"])
+            raise LookupError(msg % asset_data["type"])
+
         asset_obj = getattr(lang_classes_factory.ns,
             asset_data['type'])(name = asset_data['name'])
         asset_id = int(asset_data['asset_id'])
 
         #TODO Process defense values when they are included in Neo4j
-
         instance_model.add_asset(asset_obj, asset_id)
 
     # Get all relationships
@@ -176,6 +173,7 @@ def get_model(uri,
 
         left_id = int(left_asset['asset_id'])
         right_id = int(right_asset['asset_id'])
+
         attacker_id = None
         if left_field == 'firstSteps':
             attacker_id = right_id
@@ -189,31 +187,28 @@ def get_model(uri,
         if attacker_id:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
-                logger.error(
-                    'Failed to find attacker with id %s in model!',
-                    attacker_id
-                )
-                return None
+                msg = 'Failed to find attacker with id %s in model!'
+                logger.error(msg, attacker_id)
+                raise LookupError(msg % attacker_id)
             target_asset = instance_model.get_asset_by_id(target_id)
             if not target_asset:
-                logger.error(
-                    'Failed to find asset with id %s in model!', target_id
-                )
-                return None
+                msg = 'Failed to find asset with id %s in model!'
+                logger.error(msg, target_id)
+                raise LookupError(msg % target_id)
             attacker.entry_points.append((target_asset,
                 [target_prop]))
             continue
 
         left_asset = instance_model.get_asset_by_id(left_id)
         if not left_asset:
-            logger.error(
-                'Failed to find asset with id %s in model!', left_id)
-            return None
+            msg = 'Failed to find asset with id %s in model!'
+            logger.error(msg, left_id)
+            raise LookupError(msg % left_id)
         right_asset = instance_model.get_asset_by_id(right_id)
         if not right_asset:
-            logger.error(
-                'Failed to find asset with id %s in model!', right_id)
-            return None
+            msg = 'Failed to find asset with id %s in model!'
+            logger.error(msg, right_id)
+            raise LookupError(msg % right_id)
 
         assoc_name = specification.get_association_by_fields_and_assets(
             lang_spec,
@@ -234,11 +229,9 @@ def get_model(uri,
 
         if not hasattr(lang_classes_factory.ns,
             assoc_name):
-            logger.error(
-                'Failed to find %s association in language specification!',
-                assoc_name
-            )
-            return None
+            msg = 'Failed to find %s association in language specification!'
+            logger.error(msg, assoc_name)
+            raise LookupError(msg % assoc_name)
 
         assoc = getattr(lang_classes_factory.ns, assoc_name)()
         setattr(assoc, left_field, [left_asset])

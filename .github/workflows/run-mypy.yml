@@ -1,4 +1,4 @@
-name: Pytest maltoolbox
+name: MyPy maltoolbox
 on: [push]
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r tests/requirements.txt
-      - name: Test with pytest
+      - name: Type checking with MyPy
         run: |
-          pip install pytest
-          pytest tests
+          pip install mypy
+          mypy . --ignore-missing-imports
