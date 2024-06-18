@@ -416,7 +416,7 @@ class AttackGraph():
                 )
 
                 defense_status = None
-                existence_status: Optional[bool] = None
+                existence_status = None
                 node_id = asset.name + ':' + attack_step_name
 
                 match (attack_step_attribs['type']):
