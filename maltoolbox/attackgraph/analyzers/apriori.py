@@ -69,10 +69,17 @@ def evaluate_viability(node: AttackGraphNode) -> None:
     """
     match (node.type):
         case 'exist':
-            node.is_viable = bool(node.existence_status) # can be None
+            assert isinstance(node.existence_status, bool), \
+                f'Existence status not defined for {node.name}.'
+            node.is_viable = node.existence_status
         case 'notExist':
+            assert isinstance(node.existence_status, bool), \
+                f'Existence status not defined for {node.name}.'
             node.is_viable = not node.existence_status
         case 'defense':
+            assert node.defense_status is not None and \
+                   0.0 <= node.defense_status <= 1.0, \
+                f'{node.name} defense status invalid: {node.defense_status}.'
             node.is_viable = node.defense_status != 1.0
         case 'or':
             node.is_viable = False
@@ -95,10 +102,17 @@ def evaluate_necessity(node: AttackGraphNode) -> None:
     """
     match (node.type):
         case 'exist':
+            assert isinstance(node.existence_status, bool), \
+                f'Existence status not defined for {node.name}.'
             node.is_necessary = not node.existence_status
         case 'notExist':
-            node.is_necessary = bool(node.existence_status) # can be None
+            assert isinstance(node.existence_status, bool), \
+                f'Existence status not defined for {node.name}.'
+            node.is_necessary = bool(node.existence_status)
         case 'defense':
+            assert node.defense_status is not None and \
+                   0.0 <= node.defense_status <= 1.0, \
+                f'{node.name} defense status invalid: {node.defense_status}.'
             node.is_necessary = node.defense_status != 0.0
         case 'or':
             node.is_necessary = True
