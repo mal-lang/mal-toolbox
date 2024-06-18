@@ -9,8 +9,11 @@ from typing import TYPE_CHECKING
 import python_jsonschema_objects as pjs
 
 if TYPE_CHECKING:
-    from typing import Any, Literal
+    from typing import Literal, TypeAlias
     from maltoolbox.language import LanguageGraph
+    from python_jsonschema_objects.classbuilder import ProtocolBase
+
+    SchemaGeneratedClass: TypeAlias = ProtocolBase
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +70,7 @@ class LanguageClassesFactory:
         """
         Generate JSON Schema for the associations in the language specification.
         """
-        def create_association_entry(assoc: Any):
+        def create_association_entry(assoc: SchemaGeneratedClass):
             logger.debug(f'Creating {assoc.name} association JSON schema entry.')
             assoc_json_entry = {'title': assoc.name, 'type': 'object', 'properties': {}}
 
@@ -75,7 +78,7 @@ class LanguageClassesFactory:
             create_association_field(assoc, assoc_json_entry, 'right')
             return assoc_json_entry
 
-        def create_association_with_subentries(assoc: Any):
+        def create_association_with_subentries(assoc: SchemaGeneratedClass):
             if (assoc.name not in self.json_schema['definitions']\
                 ['LanguageAssociation']['definitions']):
                 logger.info('Multiple associations with the same '\
@@ -107,7 +110,7 @@ class LanguageClassesFactory:
                     + assoc.name + '/definitions/' + subentry_name})
 
         def create_association_field(
-                assoc: Any,
+                assoc: SchemaGeneratedClass,
                 assoc_json_entry: dict,
                 position: Literal['left', 'right']
             ) -> None:
