@@ -13,8 +13,10 @@ def test_attacker_to_dict():
     assert attacker.to_dict() == {
         "id": None,
         "name": "Test Attacker",
-        "entry_points": [],
-        "reached_attack_steps": [str(node1.id) + ':' + node1.name]
+        "entry_points": {},
+        "reached_attack_steps": {
+            node1.id : str(node1.id) + ':' + node1.name
+        }
     }
 
 def test_attacker_compromise():

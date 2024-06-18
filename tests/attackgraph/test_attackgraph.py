@@ -74,12 +74,15 @@ def test_attackgraph_init(corelang_lang_graph, model):
         )
         assert _generate_graph.call_count == 0
 
-
-def test_attackgraph_save_load_no_model_given(
-        example_attackgraph: AttackGraph
+def attackgraph_save_load_no_model_given(
+        example_attackgraph: AttackGraph,
+        attach_attackers: bool
     ):
     """Save AttackGraph to a file and load it
     Note: Will create file in /tmp"""
+
+    if attach_attackers:
+        example_attackgraph.attach_attackers()
 
     # Save the example attack graph to /tmp
     example_graph_path = "/tmp/example_graph.yml"
@@ -116,13 +119,46 @@ def test_attackgraph_save_load_no_model_given(
         # Make sure nodes are the same (except for the excluded keys)
         assert loaded_node_dict == original_node_dict
 
+    for loaded_attacker in loaded_attack_graph.attackers:
+        original_attacker = example_attackgraph.get_attacker_by_id(
+            loaded_attacker.id)
+        loaded_attacker_dict = loaded_attacker.to_dict()
+        original_attacker_dict = original_attacker.to_dict()
+        for step in original_attacker_dict['entry_points']:
+            attack_step_name = original_attacker_dict['entry_points'][step]
+            attack_step_name = str(step) + ':' + \
+                attack_step_name.split(':')[-1]
+            original_attacker_dict['entry_points'][step] = attack_step_name
+        for step in original_attacker_dict['reached_attack_steps']:
+            attack_step_name = \
+                original_attacker_dict['reached_attack_steps'][step]
+            attack_step_name = str(step) + ':' + \
+                attack_step_name.split(':')[-1]
+            original_attacker_dict['reached_attack_steps'][step] = \
+                attack_step_name
+        assert loaded_attacker_dict == original_attacker_dict
 
-def test_attackgraph_save_and_load_json_yml_model_given(
+def test_attackgraph_save_load_no_model_given_without_attackers(
         example_attackgraph: AttackGraph
+    ):
+    attackgraph_save_load_no_model_given(example_attackgraph, False)
+
+def test_attackgraph_save_load_no_model_given_with_attackers(
+        example_attackgraph: AttackGraph
+    ):
+    attackgraph_save_load_no_model_given(example_attackgraph, True)
+
+def attackgraph_save_and_load_json_yml_model_given(
+        example_attackgraph: AttackGraph,
+        attach_attackers: bool
     ):
     """Try to save and load attack graph from json and yml with model given,
     and make sure the dict represenation is the same (except for reward field)
     """
+
+    if attach_attackers:
+        example_attackgraph.attach_attackers()
+
     for attackgraph_path in ("/tmp/attackgraph.yml", "/tmp/attackgraph.json"):
         example_attackgraph.save_to_file(attackgraph_path)
         loaded_attackgraph = AttackGraph.load_from_file(
@@ -136,6 +172,28 @@ def test_attackgraph_save_and_load_json_yml_model_given(
             # Make sure nodes are the same (except for the excluded keys)
             assert loaded_node_dict == original_node_dict
 
+        for loaded_attacker in loaded_attackgraph.attackers:
+            original_attacker = example_attackgraph.get_attacker_by_id(
+                loaded_attacker.id)
+            loaded_attacker_dict = loaded_attacker.to_dict()
+            original_attacker_dict = original_attacker.to_dict()
+            assert loaded_attacker_dict == original_attacker_dict
+
+def test_attackgraph_save_and_load_json_yml_model_given_without_attackers(
+        example_attackgraph: AttackGraph
+    ):
+        attackgraph_save_and_load_json_yml_model_given(
+            example_attackgraph,
+            False
+        )
+
+def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
+        example_attackgraph: AttackGraph
+    ):
+        attackgraph_save_and_load_json_yml_model_given(
+            example_attackgraph,
+            True
+        )
 
 def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
     """Make sure get_node_by_id works as intended"""

@@ -6,26 +6,32 @@ MAL-Toolbox Attack Graph Attacker Class
 
 import logging
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class Attacker:
     name: str
-    entry_points: list[node.AttackGraphNode]
-    reached_attack_steps: list[node.AttackGraphNode]
+    entry_points: list[node.AttackGraphNode] = field(default_factory=list)
+    reached_attack_steps: list[node.AttackGraphNode] = \
+        field(default_factory=list)
     id: int = None
 
     def to_dict(self):
         attacker_dict = {
             'id': self.id,
             'name': self.name,
-            'entry_points': [entry_point.full_name for entry_point in
-                self.entry_points],
-            'reached_attack_steps': [attack_step.full_name for
-                attack_step in self.reached_attack_steps]
+            'entry_points': {},
+            'reached_attack_steps': {}
         }
+
+        for entry_point in self.entry_points:
+            attacker_dict['entry_points'][entry_point.id] = \
+                entry_point.full_name
+        for attack_step in self.reached_attack_steps:
+            attacker_dict['reached_attack_steps'][attack_step.id] = \
+                attack_step.full_name
 
         return attacker_dict
 

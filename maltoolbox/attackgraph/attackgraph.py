@@ -5,7 +5,7 @@ MAL-Toolbox Attack Graph Module
 import logging
 import json
 
-from typing import Optional, List
+from typing import Optional
 
 from maltoolbox.file_utils import (
     load_dict_from_json_file, load_dict_from_yaml_file,
@@ -195,7 +195,7 @@ class AttackGraph():
 
     def save_to_file(self, filename):
         """Save to json/yml depending on extension"""
-        logger.debug(f'Save attack graph to file\"%s\".', filename)
+        logger.debug('Save attack graph to file "%s".', filename)
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
@@ -256,8 +256,9 @@ class AttackGraph():
                     parent = attack_graph.get_node_by_id(int(parent_id))
                     if parent is None:
                         logger.error(
-                            f'Failed to find parent node with id {parent_id}'
-                            ' when loading from attack graph from dict'
+                            'Failed to find parent node with id %s'
+                            ' when loading from attack graph from dict',
+                            parent_id
                         )
                         return None
                     _ag_node.parents.append(parent)
@@ -287,10 +288,10 @@ class AttackGraph():
                 reached_attack_steps = []
             )
             attack_graph.add_attacker(
-                name = ag_attacker,
-                id = int(attacker['id']),
-                entry_points = attacker['entry_points'],
-                reached_attack_steps = attacker['reached_attack_steps']
+                attacker = ag_attacker,
+                attacker_id = int(attacker['id']),
+                entry_points = attacker['entry_points'].keys(),
+                reached_attack_steps = attacker['reached_attack_steps'].keys()
             )
 
         return attack_graph
@@ -299,10 +300,10 @@ class AttackGraph():
     def load_from_file(cls, filename, model=None):
         """Create from json or yaml file depending on file extension"""
         if model is not None:
-            logger.debug(f'Load attack graph from file\"%s\" with '
-            'model \"%s\".', filename, model.name)
+            logger.debug('Load attack graph from file "%s" with '
+            'model "%s".', filename, model.name)
         else:
-            logger.debug(f'Load attack graph from file\"%s\" '
+            logger.debug('Load attack graph from file "%s" '
             'without model.', filename)
         serialized_attack_graph = None
         if filename.endswith(('.yml', '.yaml')):
@@ -380,7 +381,8 @@ class AttackGraph():
                     if not ag_node:
                         logger.warning(
                             'Failed to find attacker entry point '
-                            f'{attack_step_id} for {attacker.name}.'
+                            '%s for %s.',
+                            full_name, attacker.name
                         )
                         continue
                     attacker.compromise(ag_node)
@@ -540,8 +542,8 @@ class AttackGraph():
             self,
             attacker: Attacker,
             attacker_id: int = None,
-            entry_points: List[int] = [],
-            reached_attack_steps: List[int] = []
+            entry_points: list[int] = [],
+            reached_attack_steps: list[int] = []
         ):
         """Add an attacker to the graph
         Arguments:
@@ -560,10 +562,10 @@ class AttackGraph():
 
         self.next_attacker_id = max(attacker.id + 1, self.next_attacker_id)
         for node_id in reached_attack_steps:
-            node = self.get_node_by_id(node_id)
+            node = self.get_node_by_id(int(node_id))
             attacker.compromise(node)
         for node_id in entry_points:
-            node = self.get_node_by_id(node_id)
+            node = self.get_node_by_id(int(node_id))
             attacker.entry_points.append(node)
         self.attackers.append(attacker)
         self._id_to_attacker[attacker.id] = attacker
