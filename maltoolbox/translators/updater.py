@@ -18,8 +18,10 @@ def load_model_from_older_version(
             return load_model_from_version_0_0_39(filename,
                 lang_classes_factory)
         case _:
-            logger.error(f'Unknown version \"{version}\" format. Could not '
-            f'load model from file \"{filename}\".')
+            msg = ('Unknown version "%s" format. Could not '
+            'load model from file "%s"')
+            logger.error(msg % (version, filename))
+            raise ValueError(msg % (version, filename))
 
 def load_model_from_version_0_0_39(
         filename: str,
@@ -124,5 +126,7 @@ def load_model_from_version_0_0_39(
     elif filename.endswith('.json'):
         return load_from_json(filename, lang_classes_factory)
     else:
-        logger.error('Unknown file extension for model file to load '
-            'from.')
+        msg = 'Unknown file extension for model file to load from.'
+        logger.error(msg)
+        raise ValueError(msg)
+    return None

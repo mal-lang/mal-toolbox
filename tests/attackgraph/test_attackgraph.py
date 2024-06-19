@@ -99,19 +99,28 @@ def attackgraph_save_load_no_model_given(
 
     # Loaded graph nodes will not have 'asset' since it does not have a model.
     for loaded_node in loaded_attack_graph.nodes:
+        if not isinstance(loaded_node.id, int):
+            raise ValueError(f'Invalid node id for loaded node.')
         original_node = example_attackgraph.get_node_by_id(loaded_node.id)
+
+        assert original_node, \
+            f'Failed to find original node for id {loaded_node.id}.'
 
         # Convert loaded and original node to dicts
         loaded_node_dict = loaded_node.to_dict()
         original_node_dict = original_node.to_dict()
         for child in original_node_dict['children']:
             child_node = example_attackgraph.get_node_by_id(child)
-            original_node_dict['children'][child] = str(child_node.id) + ":" + \
-                child_node.name
+            assert child_node, \
+                f'Failed to find child node for id {child}.'
+            original_node_dict['children'][child] = str(child_node.id) + \
+                ":" + child_node.name
         for parent in original_node_dict['parents']:
             parent_node = example_attackgraph.get_node_by_id(parent)
-            original_node_dict['parents'][parent] = str(parent_node.id) + ":" + \
-                parent_node.name
+            assert parent_node, \
+                f'Failed to find parent node for id {parent}.'
+            original_node_dict['parents'][parent] = str(parent_node.id) + \
+                ":" + parent_node.name
 
         # Remove key that is not expected to match.
         del original_node_dict['asset']
@@ -120,8 +129,12 @@ def attackgraph_save_load_no_model_given(
         assert loaded_node_dict == original_node_dict
 
     for loaded_attacker in loaded_attack_graph.attackers:
+        if not isinstance(loaded_attacker.id, int):
+            raise ValueError(f'Invalid attacker id for loaded attacker.')
         original_attacker = example_attackgraph.get_attacker_by_id(
             loaded_attacker.id)
+        assert original_attacker, \
+            f'Failed to find original attacker for id {loaded_attacker.id}.'
         loaded_attacker_dict = loaded_attacker.to_dict()
         original_attacker_dict = original_attacker.to_dict()
         for step in original_attacker_dict['entry_points']:
@@ -173,8 +186,13 @@ def attackgraph_save_and_load_json_yml_model_given(
             assert loaded_node_dict == original_node_dict
 
         for loaded_attacker in loaded_attackgraph.attackers:
+            if not isinstance(loaded_attacker.id, int):
+                raise ValueError(f'Invalid attacker id for loaded attacker.')
             original_attacker = example_attackgraph.get_attacker_by_id(
                 loaded_attacker.id)
+            assert original_attacker, \
+                f'Failed to find original attacker for id ' \
+                '{loaded_attacker.id}.'
             loaded_attacker_dict = loaded_attacker.to_dict()
             original_attacker_dict = original_attacker.to_dict()
             assert loaded_attacker_dict == original_attacker_dict
@@ -199,6 +217,8 @@ def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
     """Make sure get_node_by_id works as intended"""
     assert len(example_attackgraph.nodes)  # make sure loop is run
     for node in example_attackgraph.nodes:
+        if not isinstance(node.id, int):
+            raise ValueError(f'Invalid node id.')
         get_node = example_attackgraph.get_node_by_id(node.id)
         assert get_node == node
 

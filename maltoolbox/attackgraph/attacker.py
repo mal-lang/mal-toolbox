@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import logging
 
+from typing import Optional
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .attackgraph import AttackGraphNode
@@ -15,13 +16,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Attacker:
     name: str
-    entry_points: list[node.AttackGraphNode] = field(default_factory=list)
-    reached_attack_steps: list[node.AttackGraphNode] = \
+    entry_points: list[AttackGraphNode] = field(default_factory=list)
+    reached_attack_steps: list[AttackGraphNode] = \
         field(default_factory=list)
-    id: int = None
+    id: Optional[int] = None
 
     def to_dict(self) -> dict:
-        attacker_dict = {
+        attacker_dict: dict = {
             'id': self.id,
             'name': self.name,
             'entry_points': {},

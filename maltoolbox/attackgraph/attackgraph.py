@@ -548,7 +548,7 @@ class AttackGraph():
     def add_node(
             self,
             node: AttackGraphNode,
-            node_id: int = None
+            node_id: Optional[int] = None
         ) -> None:
         """Add a node to the graph
         Arguments:
@@ -584,13 +584,16 @@ class AttackGraph():
         for parent in node.parents:
             parent.children.remove(node)
         self.nodes.remove(node)
+
+        if not isinstance(node.id, int):
+            raise ValueError(f'Invalid node id.')
         del self._id_to_node[node.id]
         del self._full_name_to_node[node.full_name]
 
     def add_attacker(
             self,
             attacker: Attacker,
-            attacker_id: int = None,
+            attacker_id: Optional[int] = None,
             entry_points: list[int] = [],
             reached_attack_steps: list[int] = []
         ):
@@ -652,4 +655,6 @@ class AttackGraph():
         for node in attacker.reached_attack_steps:
             attacker.undo_compromise(node)
         self.attackers.remove(attacker)
+        if not isinstance(attacker.id, int):
+            raise ValueError(f'Invalid attacker id.')
         del self._id_to_attacker[attacker.id]

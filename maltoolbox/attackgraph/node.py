@@ -13,9 +13,9 @@ class AttackGraphNode:
     """Node part of AttackGraph"""
     type: str
     name: str
-    ttc: dict = None
-    id: int = None
-    asset: Any = None
+    ttc: Optional[dict] = None
+    id: Optional[int] = None
+    asset: Optional[Any] = None
     children: list[AttackGraphNode] = field(default_factory=list)
     parents: list[AttackGraphNode] = field(default_factory=list)
     defense_status: Optional[float] = None
@@ -32,7 +32,7 @@ class AttackGraphNode:
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
-        node_dict = {
+        node_dict: dict = {
             'id': self.id,
             'type': self.type,
             'name': self.name,
