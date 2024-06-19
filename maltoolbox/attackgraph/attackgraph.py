@@ -176,11 +176,17 @@ class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
         self.nodes: list[AttackGraphNode] = []
-        self.id_to_node: dict[str, AttackGraphNode] = {}  # optimization
         self.attackers: list[Attacker] = []
+        # Dictionaries used in optimization to get nodes and attackers by id
+        # or full name faster
+        self._id_to_node: dict[int, AttackGraphNode] = {}
+        self._full_name_to_node: dict[str, AttackGraphNode] = {}
+        self._id_to_attacker: dict[int, Attacker] = {}
 
         self.model = model
         self.lang_graph = lang_graph
+        self.next_node_id = 0
+        self.next_attacker_id = 0
         if self.model is not None and self.lang_graph is not None:
             self._generate_graph()
 
@@ -188,13 +194,14 @@ class AttackGraph():
         return f'AttackGraph({len(self.nodes)} nodes)'
 
     def _to_dict(self) -> dict:
-        """Convert AttackGraph to list"""
-        serialized_attack_steps = []
-        serialized_attackers = []
+        """Convert AttackGraph to dict"""
+        serialized_attack_steps = {}
+        serialized_attackers = {}
         for ag_node in self.nodes:
-            serialized_attack_steps.append(ag_node.to_dict())
+            serialized_attack_steps[ag_node.full_name] =\
+                ag_node.to_dict()
         for attacker in self.attackers:
-            serialized_attackers.append(attacker.to_dict())
+            serialized_attackers[attacker.name] = attacker.to_dict()
         return {
             'attack_steps': serialized_attack_steps,
             'attackers': serialized_attackers,
@@ -202,6 +209,7 @@ class AttackGraph():
 
     def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
+        logger.debug('Save attack graph to file "%s".', filename)
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
@@ -221,9 +229,8 @@ class AttackGraph():
         serialized_attackers = serialized_object['attackers']
 
         # Create all of the nodes in the imported attack graph.
-        for node_dict in serialized_attack_steps:
+        for node_full_name, node_dict in serialized_attack_steps.items():
             ag_node = AttackGraphNode(
-                id=node_dict['id'],
                 type=node_dict['type'],
                 name=node_dict['name'],
                 ttc=node_dict['ttc']
@@ -242,10 +249,10 @@ class AttackGraph():
             ag_node.tags = node_dict['tags'] if \
                 'tags' in node_dict else []
 
-            attack_graph.add_node(ag_node)
+            attack_graph.add_node(ag_node, node_id = node_dict['id'])
 
         # Re-establish links between nodes.
-        for node_dict in serialized_attack_steps:
+        for node_full_name, node_dict in serialized_attack_steps.items():
             _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
                 msg = ('Failed to find node with id %s when loading'
@@ -254,7 +261,7 @@ class AttackGraph():
                 raise LookupError(msg % node_dict["id"])
             else:
                 for child_id in node_dict['children']:
-                    child = attack_graph.get_node_by_id(child_id)
+                    child = attack_graph.get_node_by_id(int(child_id))
                     if child is None:
                         msg = ('Failed to find child node with id %s'
                                ' when loading from attack graph from dict')
@@ -263,7 +270,7 @@ class AttackGraph():
                     _ag_node.children.append(child)
 
                 for parent_id in node_dict['parents']:
-                    parent = attack_graph.get_node_by_id(parent_id)
+                    parent = attack_graph.get_node_by_id(int(parent_id))
                     if parent is None:
                         msg = ('Failed to find parent node with id %s '
                                'when loading from attack graph from dict')
@@ -288,31 +295,18 @@ class AttackGraph():
                     else:
                         asset.attack_step_nodes = [_ag_node]
 
-        for attacker in serialized_attackers:
+        for attacker_name, attacker in serialized_attackers.items():
             ag_attacker = Attacker(
-                id = int(attacker.id.split(':')[1]),
+                name = attacker['name'],
                 entry_points = [],
                 reached_attack_steps = []
             )
-            for node_id in attacker.reached_attack_steps:
-                node = attack_graph.get_node_by_id(node_id)
-                if node:
-                    ag_attacker.compromise(node)
-                else:
-                    msg = ("Could not find node with id %s"
-                           "in reached attack steps")
-                    logger.error(msg, node_id)
-                    raise AttackGraphException(msg % node_id)
-            for node_id in attacker.entry_points:
-                node = attack_graph.get_node_by_id(node_id)
-                if node:
-                    ag_attacker.entry_points.append(node)
-                else:
-                    msg = ("Could not find node with id %s"
-                           "in attacker entrypoints")
-                    logger.error(msg, node_id)
-                    raise AttackGraphException(msg % node_id)
-            attack_graph.attackers.append(ag_attacker)
+            attack_graph.add_attacker(
+                attacker = ag_attacker,
+                attacker_id = int(attacker['id']),
+                entry_points = attacker['entry_points'].keys(),
+                reached_attack_steps = attacker['reached_attack_steps'].keys()
+            )
 
         return attack_graph
 
@@ -323,28 +317,63 @@ class AttackGraph():
             model: Optional[Model]=None
         ) -> AttackGraph:
         """Create from json or yaml file depending on file extension"""
-        serialized_model = None
+        if model is not None:
+            logger.debug('Load attack graph from file "%s" with '
+            'model "%s".', filename, model.name)
+        else:
+            logger.debug('Load attack graph from file "%s" '
+            'without model.', filename)
+        serialized_attack_graph = None
         if filename.endswith(('.yml', '.yaml')):
-            serialized_model = load_dict_from_yaml_file(filename)
+            serialized_attack_graph = load_dict_from_yaml_file(filename)
         elif filename.endswith('.json'):
-            serialized_model = load_dict_from_json_file(filename)
+            serialized_attack_graph = load_dict_from_json_file(filename)
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
-        return cls._from_dict(serialized_model, model=model)
+        return cls._from_dict(serialized_attack_graph, model=model)
 
-    def get_node_by_id(self, node_id: str) -> Optional[AttackGraphNode]:
+    def get_node_by_id(self, node_id: int) -> Optional[AttackGraphNode]:
         """
         Return the attack node that matches the id provided.
 
         Arguments:
-        node_id     - the id of the attack graph none we are looking for
+        node_id     - the id of the attack graph node we are looking for
 
         Return:
         The attack step node that matches the given id.
         """
 
         logger.debug('Looking up node with id %s', node_id)
-        return self.id_to_node.get(node_id)
+        return self._id_to_node.get(node_id)
+
+    def get_node_by_full_name(self, full_name: str) -> Optional[AttackGraphNode]:
+        """
+        Return the attack node that matches the full name provided.
+
+        Arguments:
+        full_name   - the full name of the attack graph node we are looking
+                      for
+
+        Return:
+        The attack step node that matches the given full name.
+        """
+
+        logger.debug(f'Looking up node with id {full_name}')
+        return self._full_name_to_node.get(full_name)
+
+    def get_attacker_by_id(self, attacker_id: int) -> Optional[Attacker]:
+        """
+        Return the attacker that matches the id provided.
+
+        Arguments:
+        attacker_id     - the id of the attacker we are looking for
+
+        Return:
+        The attacker that matches the given id.
+        """
+
+        logger.debug(f'Looking up attacker with id {attacker_id}')
+        return self._id_to_attacker.get(attacker_id)
 
     def attach_attackers(self) -> None:
         """
@@ -363,31 +392,32 @@ class AttackGraph():
 
         for attacker_info in self.model.attackers:
 
-            if not attacker_info.id:
-                msg = "Can not attach attacker %s without ID"
-                logger.error(msg, attacker_info.name)
-                raise AttackGraphException(msg, attacker_info.name)
+            if not attacker_info.name:
+                msg = "Can not attach attacker without name"
+                logger.error(msg)
+                raise AttackGraphException(msg)
 
-            ag_attacker = Attacker(
-                id = attacker_info.id,
+            attacker = Attacker(
+                name = attacker_info.name,
                 entry_points = [],
                 reached_attack_steps = []
             )
-            self.attackers.append(ag_attacker)
+            self.add_attacker(attacker)
 
             for (asset, attack_steps) in attacker_info.entry_points:
                 for attack_step in attack_steps:
-                    attack_step_id = asset.name + ':' + attack_step
-                    ag_node = self.get_node_by_id(attack_step_id)
+                    full_name = asset.name + ':' + attack_step
+                    ag_node = self.get_node_by_full_name(full_name)
                     if not ag_node:
                         logger.warning(
-                            'Failed to find entry point %s for attacker: %s.',
-                            attack_step_id, ag_attacker.id
+                            'Failed to find attacker entry point '
+                            '%s for %s.',
+                            full_name, attacker.name
                         )
                         continue
-                    ag_attacker.compromise(ag_node)
+                    attacker.compromise(ag_node)
 
-            ag_attacker.entry_points = ag_attacker.reached_attack_steps
+            attacker.entry_points = attacker.reached_attack_steps
 
     def _generate_graph(self) -> None:
         """
@@ -420,7 +450,7 @@ class AttackGraph():
 
                 defense_status = None
                 existence_status = None
-                node_id = asset.name + ':' + attack_step_name
+                node_name = asset.name + ':' + attack_step_name
 
                 match (attack_step_attribs['type']):
                     case 'defense':
@@ -428,7 +458,7 @@ class AttackGraph():
                         defense_status = getattr(asset, attack_step_name)
                         logger.debug(
                             'Setting the defense status of %s to %s.',
-                            node_id, defense_status
+                            node_name, defense_status
                         )
 
                     case 'exist' | 'notExist':
@@ -446,7 +476,6 @@ class AttackGraph():
                 mitre_info = attack_step_attribs['meta']['mitre'] if 'mitre' in\
                     attack_step_attribs['meta'] else None
                 ag_node = AttackGraphNode(
-                    id = node_id,
                     type = attack_step_attribs['type'],
                     asset = asset,
                     name = attack_step_name,
@@ -469,7 +498,7 @@ class AttackGraph():
         # Then, link all of the nodes according to their associations.
         for ag_node in self.nodes:
             logger.debug(
-                'Determining children for attack step %s', ag_node.id
+                'Determining children for attack step %s', ag_node.full_name
             )
             step_expressions = \
                 ag_node.attributes['reaches']['stepExpressions'] if \
@@ -485,14 +514,23 @@ class AttackGraph():
                     step_expression)
 
                 for target in target_assets:
-                    target_node_id = target.name + ':' + attack_step
-                    target_node = self.get_node_by_id(target_node_id)
+                    target_node_full_name = target.name + ':' + attack_step
+                    target_node = self.get_node_by_full_name(
+                        target_node_full_name
+                    )
                     if not target_node:
                         msg = ('Failed to find target node '
                                '%s to link with for attack step %s!')
-                        logger.error(msg, target_node_id, ag_node.id)
+                        logger.error(
+                            msg,
+                            target_node_full_name,
+                            ag_node.full_name
+                        )
                         raise AttackGraphStepExpressionError(
-                            msg % (target_node_id % ag_node.id)
+                            msg % (
+                                target_node_full_name,
+                                ag_node.full_name
+                            )
                         )
                     ag_node.children.append(target_node)
                     target_node.parents.append(ag_node)
@@ -507,20 +545,111 @@ class AttackGraph():
         self.attackers = []
         self._generate_graph()
 
-    def add_node(self, node: AttackGraphNode) -> None:
-        """Add a node to the graph and map from its ID in self.id_to_node
+    def add_node(
+            self,
+            node: AttackGraphNode,
+            node_id: int = None
+        ) -> None:
+        """Add a node to the graph
         Arguments:
-        node    - the node to add"""
+        node    - the node to add
+        node_id - the id to assign to this node, usually used when loading
+                  an attack graph from a file
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug(f'Add node with id:{node_id}:\n' \
+                + json.dumps(node.to_dict(), indent = 2))
+
+        if node.id in self._id_to_node:
+            raise ValueError(f'Node index {node_id} already in use.')
+
+        node.id = node_id if node_id is not None else self.next_node_id
+        self.next_node_id = max(node.id + 1, self.next_node_id)
+
         self.nodes.append(node)
-        self.id_to_node[node.id] = node
+        self._id_to_node[node.id] = node
+        self._full_name_to_node[node.full_name] = node
 
     def remove_node(self, node: AttackGraphNode) -> None:
-        """
+        """Remove node from attack graph
         Arguments:
         node    - the node we wish to remove from the attack graph
         """
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug(f'Remove node %s(%d).', node.full_name, node.id)
         for child in node.children:
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
         self.nodes.remove(node)
+        del self._id_to_node[node.id]
+        del self._full_name_to_node[node.full_name]
+
+    def add_attacker(
+            self,
+            attacker: Attacker,
+            attacker_id: int = None,
+            entry_points: list[int] = [],
+            reached_attack_steps: list[int] = []
+        ):
+        """Add an attacker to the graph
+        Arguments:
+        attacker                - the attacker to add
+        attacker_id             - the id to assign to this attacker, usually
+                                  used when loading an attack graph from a
+                                  file
+        entry_points            - list of attack step ids that serve as entry
+                                  points for the attacker
+        reached_attack_steps    - list of ids of the attack steps that the
+                                  attacker has reached
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            if attacker_id is not None:
+                logger.debug('Add attacker %s with id:%d.', attacker.name,
+                    attacker_id)
+            else:
+                logger.debug('Add attacker %s without id.')
+
+
+        attacker.id = attacker_id or self.next_attacker_id
+        if attacker.id in self._id_to_attacker:
+            raise ValueError(f'Attacker index {attacker_id} already in use.')
+
+        self.next_attacker_id = max(attacker.id + 1, self.next_attacker_id)
+        for node_id in reached_attack_steps:
+            node = self.get_node_by_id(int(node_id))
+            if node:
+                attacker.compromise(node)
+            else:
+                msg = ("Could not find node with id %d"
+                       "in reached attack steps.")
+                logger.error(msg, node_id)
+                raise AttackGraphException(msg % node_id)
+        for node_id in entry_points:
+            node = self.get_node_by_id(int(node_id))
+            if node:
+                attacker.entry_points.append(node)
+            else:
+                msg = ("Could not find node with id %d"
+                       "in attacker entrypoints.")
+                logger.error(msg, node_id)
+                raise AttackGraphException(msg % node_id)
+        self.attackers.append(attacker)
+        self._id_to_attacker[attacker.id] = attacker
+
+    def remove_attacker(self, attacker: Attacker):
+        """Remove attacker from attack graph
+        Arguments:
+        attacker    - the attacker we wish to remove from the attack graph
+        """
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug('Remove attacker %s with id:%d.', attacker.name,
+                attacker.id)
+        for node in attacker.reached_attack_steps:
+            attacker.undo_compromise(node)
+        self.attackers.remove(attacker)
+        del self._id_to_attacker[attacker.id]

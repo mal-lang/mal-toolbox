@@ -74,12 +74,15 @@ def test_attackgraph_init(corelang_lang_graph, model):
         )
         assert _generate_graph.call_count == 0
 
-
-def test_attackgraph_save_load_no_model_given(
-        example_attackgraph: AttackGraph
+def attackgraph_save_load_no_model_given(
+        example_attackgraph: AttackGraph,
+        attach_attackers: bool
     ):
     """Save AttackGraph to a file and load it
     Note: Will create file in /tmp"""
+
+    if attach_attackers:
+        example_attackgraph.attach_attackers()
 
     # Save the example attack graph to /tmp
     example_graph_path = "/tmp/example_graph.yml"
@@ -95,37 +98,102 @@ def test_attackgraph_save_load_no_model_given(
     assert len(example_attackgraph.nodes) == len(loaded_attack_graph.nodes)
 
     # Loaded graph nodes will not have 'asset' since it does not have a model.
-    for i, loaded_node in enumerate(loaded_attack_graph.nodes):
-        original_node = example_attackgraph.nodes[i]
+    for loaded_node in loaded_attack_graph.nodes:
+        original_node = example_attackgraph.get_node_by_id(loaded_node.id)
 
         # Convert loaded and original node to dicts
         loaded_node_dict = loaded_node.to_dict()
         original_node_dict = original_node.to_dict()
+        for child in original_node_dict['children']:
+            child_node = example_attackgraph.get_node_by_id(child)
+            original_node_dict['children'][child] = str(child_node.id) + ":" + \
+                child_node.name
+        for parent in original_node_dict['parents']:
+            parent_node = example_attackgraph.get_node_by_id(parent)
+            original_node_dict['parents'][parent] = str(parent_node.id) + ":" + \
+                parent_node.name
 
-        # Remove key that don't match
+        # Remove key that is not expected to match.
         del original_node_dict['asset']
 
         # Make sure nodes are the same (except for the excluded keys)
         assert loaded_node_dict == original_node_dict
 
+    for loaded_attacker in loaded_attack_graph.attackers:
+        original_attacker = example_attackgraph.get_attacker_by_id(
+            loaded_attacker.id)
+        loaded_attacker_dict = loaded_attacker.to_dict()
+        original_attacker_dict = original_attacker.to_dict()
+        for step in original_attacker_dict['entry_points']:
+            attack_step_name = original_attacker_dict['entry_points'][step]
+            attack_step_name = str(step) + ':' + \
+                attack_step_name.split(':')[-1]
+            original_attacker_dict['entry_points'][step] = attack_step_name
+        for step in original_attacker_dict['reached_attack_steps']:
+            attack_step_name = \
+                original_attacker_dict['reached_attack_steps'][step]
+            attack_step_name = str(step) + ':' + \
+                attack_step_name.split(':')[-1]
+            original_attacker_dict['reached_attack_steps'][step] = \
+                attack_step_name
+        assert loaded_attacker_dict == original_attacker_dict
 
-def test_attackgraph_save_and_load_json_yml_model_given(
+def test_attackgraph_save_load_no_model_given_without_attackers(
         example_attackgraph: AttackGraph
+    ):
+    attackgraph_save_load_no_model_given(example_attackgraph, False)
+
+def test_attackgraph_save_load_no_model_given_with_attackers(
+        example_attackgraph: AttackGraph
+    ):
+    attackgraph_save_load_no_model_given(example_attackgraph, True)
+
+def attackgraph_save_and_load_json_yml_model_given(
+        example_attackgraph: AttackGraph,
+        attach_attackers: bool
     ):
     """Try to save and load attack graph from json and yml with model given,
     and make sure the dict represenation is the same (except for reward field)
     """
+
+    if attach_attackers:
+        example_attackgraph.attach_attackers()
+
     for attackgraph_path in ("/tmp/attackgraph.yml", "/tmp/attackgraph.json"):
         example_attackgraph.save_to_file(attackgraph_path)
         loaded_attackgraph = AttackGraph.load_from_file(
             attackgraph_path, model=example_attackgraph.model)
 
-        for i, loaded_node_dict in enumerate(loaded_attackgraph._to_dict()['attack_steps']):
-            original_node_dict = example_attackgraph._to_dict()['attack_steps'][i]
+        for node_full_name, loaded_node_dict in \
+                loaded_attackgraph._to_dict()['attack_steps'].items():
+            original_node_dict = \
+                example_attackgraph._to_dict()['attack_steps'][node_full_name]
 
             # Make sure nodes are the same (except for the excluded keys)
             assert loaded_node_dict == original_node_dict
 
+        for loaded_attacker in loaded_attackgraph.attackers:
+            original_attacker = example_attackgraph.get_attacker_by_id(
+                loaded_attacker.id)
+            loaded_attacker_dict = loaded_attacker.to_dict()
+            original_attacker_dict = original_attacker.to_dict()
+            assert loaded_attacker_dict == original_attacker_dict
+
+def test_attackgraph_save_and_load_json_yml_model_given_without_attackers(
+        example_attackgraph: AttackGraph
+    ):
+        attackgraph_save_and_load_json_yml_model_given(
+            example_attackgraph,
+            False
+        )
+
+def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
+        example_attackgraph: AttackGraph
+    ):
+        attackgraph_save_and_load_json_yml_model_given(
+            example_attackgraph,
+            True
+        )
 
 def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
     """Make sure get_node_by_id works as intended"""
@@ -138,7 +206,7 @@ def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
 def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     """Make sure attackers are properly attached to graph"""
 
-    app1_ncu = example_attackgraph.get_node_by_id(
+    app1_ncu = example_attackgraph.get_node_by_full_name(
         'Application 1:networkConnectUninspected'
     )
 
@@ -267,7 +335,6 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
         "successfulDeny"
     ]
     # Make sure children are also added for defense step notPresent
-    # Children of defense means that the defense protects against those steps (?)
     not_present_children = [
         n.name for n in attack_graph.nodes[0].children
     ]
@@ -275,7 +342,7 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
 
 def test_attackgraph_regenerate_graph():
     """Make sure graph is regenerated"""
-    pass  # we don't have to test this atm tbh plz
+    pass
 
 
 def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
@@ -294,9 +361,3 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
     for child in children:
         assert node_to_remove not in child.parents
 
-    # Make sure references were rewritten to merge parents with children
-    ## TODO: Is it expected behaviour that this test fails?
-    # for child in children:
-    #     for parent in parents:
-    #         assert child in parent.children
-    #         assert parent in child.parents

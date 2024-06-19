@@ -3,7 +3,7 @@ MAL-Toolbox Attack Graph Attacker Class
 """
 
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 
 from typing import TYPE_CHECKING
@@ -14,19 +14,28 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Attacker:
-    id: int
-    entry_points: list[AttackGraphNode]
-    reached_attack_steps: list[AttackGraphNode]
+    name: str
+    entry_points: list[node.AttackGraphNode] = field(default_factory=list)
+    reached_attack_steps: list[node.AttackGraphNode] = \
+        field(default_factory=list)
+    id: int = None
 
     def to_dict(self) -> dict:
-        """Convert the Attacker to a dict"""
-        return {
-            "id": self.id,
-            "entry_points": [entry_point.id for entry_point in
-                self.entry_points],
-            "reached_attack_steps": [attack_step.id for attack_step in
-                self.reached_attack_steps]
+        attacker_dict = {
+            'id': self.id,
+            'name': self.name,
+            'entry_points': {},
+            'reached_attack_steps': {}
         }
+
+        for entry_point in self.entry_points:
+            attacker_dict['entry_points'][entry_point.id] = \
+                entry_point.full_name
+        for attack_step in self.reached_attack_steps:
+            attacker_dict['reached_attack_steps'][attack_step.id] = \
+                attack_step.full_name
+
+        return attacker_dict
 
     def __repr__(self) -> str:
         return str(self.to_dict())
@@ -40,12 +49,18 @@ class Attacker:
         """
 
         logger.debug(
-            'Attacker "%s" is compromising node "%s".', self.id, node.id
+            'Attacker "%s(%d)" is compromising node "%s".',
+            self.name,
+            self.id,
+            node.full_name
         )
         if node.is_compromised_by(self):
             logger.info(
-                'Attacker "%s" already compromised node "%s". Do nothing.',
-                self.id, node.id
+                'Attacker "%s(%d)" already compromised node "%s". '
+                'Do nothing.',
+                self.name,
+                self.id,
+                node.full_name
             )
             return
 
@@ -62,13 +77,18 @@ class Attacker:
         """
 
         logger.debug(
-            'Removing attacker "%s" from compromised_by list of node "%s".',
-            self.id, node.id
+            'Removing attacker "%s(%d)" from compromised_by '
+            'list of node "%s".',
+            self.name,
+            self.id,
+            node.full_name
         )
         if not node.is_compromised_by(self):
             logger.info(
-                'Attacker "%s" had not compromised node "%s". Do nothing.',
-                self.id, node.id
+                'Attacker "%s(%d)" had not compromised node "%s". Do nothing.',
+                self.name,
+                self.id,
+                node.full_name
             )
             return
 

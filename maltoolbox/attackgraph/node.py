@@ -11,10 +11,10 @@ from . import Attacker
 @dataclass
 class AttackGraphNode:
     """Node part of AttackGraph"""
-    id: str
     type: str
     name: str
-    ttc: dict
+    ttc: dict = None
+    id: int = None
     asset: Any = None
     children: list[AttackGraphNode] = field(default_factory=list)
     parents: list[AttackGraphNode] = field(default_factory=list)
@@ -37,12 +37,16 @@ class AttackGraphNode:
             'type': self.type,
             'name': self.name,
             'ttc': self.ttc,
-            'children': [child.id for child in self.children],
-            'parents': [parent.id for parent in self.parents],
-            'compromised_by': ['Attacker:' + str(attacker.id) for attacker in \
+            'children': {},
+            'parents': {},
+            'compromised_by': [ attacker.name for attacker in \
                 self.compromised_by]
         }
 
+        for child in self.children:
+            node_dict['children'][child.id] = child.full_name
+        for parent in self.parents:
+            node_dict['parents'][parent.id] = parent.full_name
         if self.asset is not None:
             node_dict['asset'] = str(self.asset.name)
         if self.defense_status is not None:
@@ -121,3 +125,16 @@ class AttackGraphNode:
         return self.type == 'defense' and \
             'suppress' not in self.tags and \
             self.defense_status != 1.0
+
+    @property
+    def full_name(self) -> str:
+        """
+        Return the full name of the attack step. This is a combination of the
+        asset name to which the attack step belongs and attack step name
+        itself.
+        """
+        if self.asset:
+            full_name = self.asset.name + ':' + self.name
+        else:
+            full_name = str(self.id) + ':' + self.name
+        return full_name
