@@ -15,6 +15,7 @@ from .file_utils import (
 )
 
 from . import __version__
+from .exceptions import DuplicateModelAssociationError, ModelAssociationException
 
 if TYPE_CHECKING:
     from typing import Any, Optional, TypeAlias
@@ -49,6 +50,7 @@ class Model():
         self.name = name
         self.assets: list[SchemaGeneratedClass] = []
         self.associations: list[SchemaGeneratedClass] = []
+        self._type_to_association:dict = {} # optimization
         self.attackers: list[AttackerAttachment] = []
         self.lang_classes_factory: LanguageClassesFactory = lang_classes_factory
         self.maltoolbox_version: str = mt_version
@@ -178,6 +180,56 @@ class Model():
             raise LookupError(f'Asset "{asset.name}"({asset.id}) is not '
                 'part of the association provided.')
 
+    def _validate_association(self, association: SchemaGeneratedClass) -> None:
+        """Raise error if association is invalid or already part of the Model.
+
+        Raises:
+            DuplicateAssociationError - same association already exists
+            ModelAssociationException - association is not valid
+        """
+
+        # Optimization: only look for duplicates in associations of same type
+        association_type = association.__class__.__name__
+        associations_same_type = self._type_to_association.get(
+            association_type, []
+        )
+
+        # Check if identical association already exists
+        if association in associations_same_type:
+            raise DuplicateModelAssociationError(
+                f"Identical association {association_type} already exists"
+            )
+
+
+        # Check for duplicate assets in each field
+        left_field_name, right_field_name = association._properties.keys()
+
+        for field_name in (left_field_name, right_field_name):
+            field_assets = getattr(association, field_name)
+
+            unique_field_asset_names = {a.name for a in field_assets}
+            if len(field_assets) > len(unique_field_asset_names):
+                raise ModelAssociationException(
+                    "More than one asset share same name in field"
+                    f"{association_type}.{field_name}"
+                )
+
+        # For each asset in left field, go through each assets in right field
+        # to find all unique connections. Raise error if a connection between
+        # two assets already exist in a previously added association.
+        for left_asset in getattr(association, left_field_name):
+            for right_asset in getattr(association, right_field_name):
+
+                if self.association_exists_between_assets(
+                    association_type, left_asset, right_asset
+                ):
+                    # Assets already have the connection in another
+                    # association with same type
+                    raise DuplicateModelAssociationError(
+                        f"Association type {association_type} already exists"
+                        f" between {left_asset.name} and {right_asset.name}"
+                    )
+
     def add_association(self, association: SchemaGeneratedClass) -> None:
         """Add an association to the model.
 
@@ -186,20 +238,37 @@ class Model():
 
         Arguments:
         association     - the association to add to the model
+
+        Raises:
+        DuplicateAssociationError - same association already exists
+        ModelAssociationException - association is not valid
+
         """
+
+        # Check association is valid and not duplicate
+        self._validate_association(association)
 
         # Optional field for extra association data
         association.extras = {}
 
         # Field names are the two first values in _properties
         field_names = list(vars(association)['_properties'])[0:2]
+
+        # Add the association to all of the included assets
         for field_name in field_names:
             for asset in getattr(association, field_name):
-                # Add associations to assets that are part of them
                 asset_assocs = list(asset.associations)
                 asset_assocs.append(association)
                 asset.associations = asset_assocs
+
         self.associations.append(association)
+
+        # Add association to type->association mapping
+        association_type = association.__class__.__name__
+        self._type_to_association.setdefault(
+                association_type, []
+            ).append(association)
+
 
     def remove_association(self, association: SchemaGeneratedClass) -> None:
         """Remove an association from the model.
@@ -226,14 +295,24 @@ class Model():
 
         for asset in second_field:
             # In fringe cases we may have reflexive associations where the
-            # first element removed the association already. But generally the
-            # association should exist for the second element too.
+            # first element was removed  from the association already. But
+            # generally the association should exist for the second element
+            # too.
             if association in asset.associations:
                 assocs = list(asset.associations)
                 assocs.remove(association)
                 asset.associations = assocs
 
         self.associations.remove(association)
+
+        # Remove association from type->association mapping
+        association_type = association.__class__.__name__
+        self._type_to_association[association_type].remove(
+            association
+        )
+        # Remove type from type->association mapping if mapping empty
+        if len(self._type_to_association[association_type]) == 0:
+            del self._type_to_association[association_type]
 
     def add_attacker(
             self,
@@ -319,6 +398,18 @@ class Model():
                 (attacker for attacker in self.attackers
                 if attacker.id == attacker_id), None
             )
+
+    def association_exists_between_assets(
+            self, association_type, left_asset, right_asset
+        ):
+        """Return True if the association already exists between the assets"""
+        associations = self._type_to_association.get(association_type, [])
+        for association in associations:
+            field_name1, field_name2 = association._properties.keys()
+            if left_asset in getattr(association, field_name1):
+                if right_asset in getattr(association, field_name2):
+                    return True
+            return False
 
     def get_associated_assets_by_field_name(
             self,
