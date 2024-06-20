@@ -28,8 +28,13 @@ def is_node_traversable_by_attacker(
     """
 
     logger.debug(
-        'Evaluate if %s, of type "%s", is traversable by Attacker %s',
-        node.id, node.type, attacker.id
+        'Evaluate if "%s"(%d), of type "%s", is traversable by Attacker '
+            '"%s"(%d)',
+        node.full_name,
+        node.id,
+        node.type,
+        attacker.name,
+        attacker.id
     )
     if not node.is_viable:
         return False
@@ -67,12 +72,19 @@ def get_attack_surface(
     attacker    - the Attacker whose attack surface is sought
     """
     logger.debug(
-        'Get the attack surface for Attacker "%s".', attacker.id)
+        'Get the attack surface for Attacker "%s"(%d).',
+        attacker.name,
+        attacker.id
+    )
     attack_surface = []
     for attack_step in attacker.reached_attack_steps:
         logger.debug(
             'Determine attack surface stemming from '
-            '"%s" for Attacker "%s".', attack_step.id, attacker.id
+            '"%s"(%d) for Attacker "%s"(%d).',
+            attack_step.full_name,
+            attack_step.id,
+            attacker.name,
+            attacker.id
         )
         for child in attack_step.children:
             if is_node_traversable_by_attacker(child, attacker) and \
@@ -97,19 +109,29 @@ def update_attack_surface_add_nodes(
                               wish to see if any of their children should be
                               added to the attack surface
     """
-    logger.debug('Update the attack surface for Attacker "%s".', attacker.id)
+    logger.debug('Update the attack surface for Attacker "%s"(%d).',
+        attacker.name,
+        attacker.id)
     attack_surface = current_attack_surface
     for attack_step in nodes:
         logger.debug(
-            'Determine attack surface stemming from "%s" for Attacker "%s".',
-            attack_step.id, attacker.id
+            'Determine attack surface stemming from "%s"(%d) '
+            'for Attacker "%s"(%d).',
+            attack_step.full_name,
+            attack_step.id,
+            attacker.name,
+            attacker.id
         )
         for child in attack_step.children:
             is_traversable = is_node_traversable_by_attacker(child, attacker)
             if is_traversable and child not in attack_surface:
                 logger.debug(
-                    'Add node %s to the attack surface of Attacker  "%s".',
-                    child.id, attacker.id
+                    'Add node "%s"(%d) to the attack surface of '
+                    'Attacker "%s"(%d).',
+                    child.full_name,
+                    child.id,
+                    attacker.name,
+                    attacker.id
                 )
                 attack_surface.append(child)
     return attack_surface

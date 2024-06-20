@@ -26,8 +26,8 @@ def propagate_viability_from_node(node: AttackGraphNode) -> None:
                   status
     """
     logger.debug(
-        'Propagate viability from %s with viability status %s.',
-        node.id, node.is_viable
+        'Propagate viability from "%s"(%d) with viability status %s.',
+        node.full_name, node.id, node.is_viable
     )
     for child in node.children:
         original_value = child.is_viable
@@ -48,8 +48,8 @@ def propagate_necessity_from_node(node: AttackGraphNode) -> None:
                   status
     """
     logger.debug(
-        'Propagate necessity from %s with necessity  status %s.',
-        node.id, node.is_necessary
+        'Propagate necessity from "%s"(%d) with necessity status %s.',
+        node.full_name, node.id, node.is_necessary
     )
     for child in node.children:
         original_value = child.is_necessary
@@ -74,16 +74,16 @@ def evaluate_viability(node: AttackGraphNode) -> None:
     match (node.type):
         case 'exist':
             assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.name}.'
+                f'Existence status not defined for {node.full_name}.'
             node.is_viable = node.existence_status
         case 'notExist':
             assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.name}.'
+                f'Existence status not defined for {node.full_name}.'
             node.is_viable = not node.existence_status
         case 'defense':
             assert node.defense_status is not None and \
                    0.0 <= node.defense_status <= 1.0, \
-                f'{node.name} defense status invalid: {node.defense_status}.'
+                f'{node.full_name} defense status invalid: {node.defense_status}.'
             node.is_viable = node.defense_status != 1.0
         case 'or':
             node.is_viable = False
@@ -94,10 +94,10 @@ def evaluate_viability(node: AttackGraphNode) -> None:
             for parent in node.parents:
                 node.is_viable = node.is_viable and parent.is_viable
         case _:
-            msg = ('Evaluate viability was provided node "%s" which '
+            msg = ('Evaluate viability was provided node "%s"(%d) which '
                    'is of unknown type "%s"')
-            logger.error(msg, node.id, node.type)
-            raise ValueError(msg % (node.id, node.type))
+            logger.error(msg, node.full_name, node.id, node.type)
+            raise ValueError(msg % (node.full_name, node.id, node.type))
 
 def evaluate_necessity(node: AttackGraphNode) -> None:
     """
@@ -107,16 +107,16 @@ def evaluate_necessity(node: AttackGraphNode) -> None:
     match (node.type):
         case 'exist':
             assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.name}.'
+                f'Existence status not defined for {node.full_name}.'
             node.is_necessary = not node.existence_status
         case 'notExist':
             assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.name}.'
+                f'Existence status not defined for {node.full_name}.'
             node.is_necessary = bool(node.existence_status)
         case 'defense':
             assert node.defense_status is not None and \
                    0.0 <= node.defense_status <= 1.0, \
-                f'{node.name} defense status invalid: {node.defense_status}.'
+                f'{node.full_name} defense status invalid: {node.defense_status}.'
             node.is_necessary = node.defense_status != 0.0
         case 'or':
             node.is_necessary = True
@@ -127,10 +127,10 @@ def evaluate_necessity(node: AttackGraphNode) -> None:
             for parent in node.parents:
                 node.is_necessary = node.is_necessary or parent.is_necessary
         case _:
-            msg = ('Evaluate necessity was provided node "%s" which '
+            msg = ('Evaluate necessity was provided node "%s"(%d) which '
                    'is of unknown type "%s"')
-            logger.error(msg, node.id, node.type)
-            raise ValueError(msg % (node.id, node.type))
+            logger.error(msg, node.full_name, node.id, node.type)
+            raise ValueError(msg % (node.full_name, node.id, node.type))
 
 def evaluate_viability_and_necessity(node: AttackGraphNode) -> None:
     """

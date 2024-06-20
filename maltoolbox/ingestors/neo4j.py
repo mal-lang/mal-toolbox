@@ -43,7 +43,7 @@ def ingest_attack_graph(graph,
         nodes[node.id] = Node(
             node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
             name = node_dict['name'],
-            full_name = node_dict['id'],
+            full_name = node.full_name,
             type = node_dict['type'],
             ttc = str(node_dict['ttc']),
             is_necessary = str(node.is_necessary),

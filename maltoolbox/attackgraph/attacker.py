@@ -50,18 +50,20 @@ class Attacker:
         """
 
         logger.debug(
-            'Attacker "%s(%d)" is compromising node "%s".',
+            'Attacker "%s"(%d) is compromising node "%s"(%d).',
             self.name,
             self.id,
-            node.full_name
+            node.full_name,
+            node.id
         )
         if node.is_compromised_by(self):
             logger.info(
-                'Attacker "%s(%d)" already compromised node "%s". '
+                'Attacker "%s"(%d) already compromised node "%s"(%d). '
                 'Do nothing.',
                 self.name,
                 self.id,
-                node.full_name
+                node.full_name,
+                node.id
             )
             return
 
@@ -78,18 +80,21 @@ class Attacker:
         """
 
         logger.debug(
-            'Removing attacker "%s(%d)" from compromised_by '
-            'list of node "%s".',
+            'Removing attacker "%s"(%d) from compromised_by '
+            'list of node "%s"(%d).',
             self.name,
             self.id,
-            node.full_name
+            node.full_name,
+            node.id
         )
         if not node.is_compromised_by(self):
             logger.info(
-                'Attacker "%s(%d)" had not compromised node "%s". Do nothing.',
+                'Attacker "%s"(%d) had not compromised node "%s"(%d).'
+                ' Do nothing.',
                 self.name,
                 self.id,
-                node.full_name
+                node.full_name,
+                node.id
             )
             return
 

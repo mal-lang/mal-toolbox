@@ -39,7 +39,7 @@ class AttackGraphNode:
             'ttc': self.ttc,
             'children': {},
             'parents': {},
-            'compromised_by': [ attacker.name for attacker in \
+            'compromised_by': [attacker.name for attacker in \
                 self.compromised_by]
         }
 

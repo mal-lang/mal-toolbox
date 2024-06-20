@@ -105,7 +105,7 @@ class Model():
         asset.extras = {}
 
         logger.debug(
-            'Add %s(id:%s) to model "%s".', asset.name, asset.id, self.name
+            'Add "%s"(%d) to model "%s".', asset.name, asset.id, self.name
         )
         self.assets.append(asset)
 
@@ -117,12 +117,13 @@ class Model():
         """
 
         logger.debug(
-            'Remove %s(id:%s) from model "%s".',
+            'Remove "%s"(%d) from model "%s".',
             asset.name, asset.id, self.name
         )
         if asset not in self.assets:
             raise LookupError(
-                f'Asset {asset.id} is not part of model"{self.name}".'
+                f'Asset "{asset.name}"({asset.id}) is not part'
+                f' of model"{self.name}".'
             )
 
         # First remove all of the associations
@@ -145,13 +146,13 @@ class Model():
         """
 
         logger.debug(
-            'Remove %s(id:%s) from association of type "%s".',
+            'Remove "%s"(%d) from association of type "%s".',
             asset.name, asset.id, type(association)
         )
 
         if asset not in self.assets:
             raise LookupError(
-                f'Asset {asset.id} is not part of model '
+                f'Asset "{asset.name}"({asset.id}) is not part of model '
                 f'"{self.name}".'
             )
         if association not in self.associations:
@@ -174,8 +175,8 @@ class Model():
                 field.remove(asset)
 
         if not found:
-            raise LookupError(f'Asset {asset.id} is not part of the '
-                'association provided.')
+            raise LookupError(f'Asset "{asset.name}"({asset.id}) is not '
+                'part of the association provided.')
 
     def add_association(self, association: SchemaGeneratedClass) -> None:
         """Add an association to the model.
@@ -269,7 +270,7 @@ class Model():
         An asset matching the id if it exists in the model.
         """
         logger.debug(
-            'Get asset with id "%s" from model "%s".',
+            'Get asset with id %d from model "%s".',
             asset_id, self.name
         )
         return next(
@@ -311,7 +312,7 @@ class Model():
         An attacker matching the id if it exists in the model.
         """
         logger.debug(
-            'Get attacker with id "%s" from model "%s".',
+            'Get attacker with id %d from model "%s".',
             attacker_id, self.name
         )
         return next(
@@ -337,7 +338,7 @@ class Model():
         """
 
         logger.debug(
-            'Get associated assets for asset %s(id:%s) by field name %s.',
+            'Get associated assets for asset "%s"(%d) by field name %s.',
             asset.name, asset.id, field_name
         )
         associated_assets = []
@@ -372,7 +373,11 @@ class Model():
         """
 
         defenses = {}
-        logger.debug('Translating %s to dictionary.', asset.name)
+        logger.debug(
+            'Translating "%s"(%d) to dictionary.',
+            asset.name,
+            asset.id
+        )
 
         for key, value in asset._properties.items():
             property_schema = (
@@ -493,6 +498,7 @@ class Model():
 
     def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
+        logger.debug('Save instance model to file "%s".', filename)
         return save_dict_to_file(filename, self._to_dict())
 
     @classmethod
@@ -579,6 +585,7 @@ class Model():
         lang_classes_factory: LanguageClassesFactory
         ) -> Model:
         """Create from json or yaml file depending on file extension"""
+        logger.debug('Load instance model from file "%s".', filename)
         serialized_model = None
         if filename.endswith(('.yml', '.yaml')):
             serialized_model = load_dict_from_yaml_file(filename)

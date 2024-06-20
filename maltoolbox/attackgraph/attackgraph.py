@@ -498,7 +498,9 @@ class AttackGraph():
         # Then, link all of the nodes according to their associations.
         for ag_node in self.nodes:
             logger.debug(
-                'Determining children for attack step %s', ag_node.full_name
+                'Determining children for attack step "%s"(%d)',
+                ag_node.full_name,
+                ag_node.id
             )
             step_expressions = \
                 ag_node.attributes['reaches']['stepExpressions'] if \
@@ -520,16 +522,18 @@ class AttackGraph():
                     )
                     if not target_node:
                         msg = ('Failed to find target node '
-                               '%s to link with for attack step %s!')
+                               '"%s" to link with for attack step "%s"(%d)!')
                         logger.error(
                             msg,
                             target_node_full_name,
-                            ag_node.full_name
+                            ag_node.full_name,
+                            ag_node.id
                         )
                         raise AttackGraphStepExpressionError(
                             msg % (
                                 target_node_full_name,
-                                ag_node.full_name
+                                ag_node.full_name,
+                                ag_node.id
                             )
                         )
                     ag_node.children.append(target_node)
@@ -558,7 +562,8 @@ class AttackGraph():
         """
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
-            logger.debug(f'Add node with id:{node_id}:\n' \
+            logger.debug(f'Add node \"{node.full_name}\" '
+                'with id:{node_id}:\n' \
                 + json.dumps(node.to_dict(), indent = 2))
 
         if node.id in self._id_to_node:
@@ -578,7 +583,7 @@ class AttackGraph():
         """
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
-            logger.debug(f'Remove node %s(%d).', node.full_name, node.id)
+            logger.debug(f'Remove node "%s"(%d).', node.full_name, node.id)
         for child in node.children:
             child.parents.remove(node)
         for parent in node.parents:
@@ -611,10 +616,11 @@ class AttackGraph():
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
             if attacker_id is not None:
-                logger.debug('Add attacker %s with id:%d.', attacker.name,
+                logger.debug('Add attacker "%s" with id:%d.',
+                    attacker.name,
                     attacker_id)
             else:
-                logger.debug('Add attacker %s without id.')
+                logger.debug('Add attacker "%s" without id.')
 
 
         attacker.id = attacker_id or self.next_attacker_id
@@ -650,7 +656,8 @@ class AttackGraph():
         """
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
-            logger.debug('Remove attacker %s with id:%d.', attacker.name,
+            logger.debug('Remove attacker "%s" with id:%d.',
+                attacker.name,
                 attacker.id)
         for node in attacker.reached_attack_steps:
             attacker.undo_compromise(node)

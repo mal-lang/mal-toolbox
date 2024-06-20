@@ -1,6 +1,6 @@
 """Unit tests for AttackGraph functionality"""
 
-from maltoolbox.attackgraph import AttackGraphNode, Attacker
+from maltoolbox.attackgraph import AttackGraphNode, Attacker, AttackGraph
 from maltoolbox.attackgraph.query import (
     is_node_traversable_by_attacker,
 )
@@ -19,6 +19,9 @@ def test_query_is_node_traversable_by_attacker():
         type = "or",
         name = "node1"
     )
+    attack_graph = AttackGraph()
+    attack_graph.add_node(node1)
+    attack_graph.add_attacker(attacker)
     traversable = is_node_traversable_by_attacker(node1, attacker)
     assert traversable
 
@@ -27,6 +30,7 @@ def test_query_is_node_traversable_by_attacker():
         type = "and",
         name = "node2"
     )
+    attack_graph.add_node(node2)
     traversable = is_node_traversable_by_attacker(node2, attacker)
     assert traversable
 
@@ -43,5 +47,7 @@ def test_query_is_node_traversable_by_attacker():
     node4.parents = [node2, node3]
     node2.children = [node4]
     node3.children = [node4]
+    attack_graph.add_node(node3)
+    attack_graph.add_node(node4)
     traversable = is_node_traversable_by_attacker(node4, attacker)
     assert not traversable
