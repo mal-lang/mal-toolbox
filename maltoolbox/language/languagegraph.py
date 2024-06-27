@@ -622,7 +622,7 @@ class LanguageGraph():
                     new_dep_chain,
                     attack_step)
 
-            case 'subType':
+            case 'subtype':
                 # Create a subType tuple entry that applies to the next
                 # component of the step expression and changes the target
                 # asset to the subasset.
@@ -678,7 +678,7 @@ class LanguageGraph():
 
             case _:
                 logger.error(
-                    'Unknown attack step type: %s', step_expression["type"]
+                    'Unknown attack step type: "%s"', step_expression["type"]
                 )
                 return (None, None, None)
 
@@ -748,7 +748,7 @@ class LanguageGraph():
                                 new_dep_chain
                             )
 
-                case 'subType':
+                case 'subtype':
                     #TODO FIX BUG: new_dep_chain is undefined
                     # result_reverse_chain = self.reverse_dep_chain(
                     #     new_dep_chain.next_link,
@@ -763,7 +763,7 @@ class LanguageGraph():
                     return reverse_chain
 
                 case _:
-                    msg = 'Unknown assoc chain element %s'
+                    msg = 'Unknown assoc chain element "%s"'
                     logger.error(msg, dep_chain.type)
                     raise LanguageGraphAssociationError(msg % dep_chain.type)
 
