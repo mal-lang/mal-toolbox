@@ -162,11 +162,12 @@ class Model():
                 f'Association is not part of model "{self.name}".'
             )
 
-        first_field_name, second_field_name = association._properties.keys()
-        first_field = getattr(association, first_field_name)
-        second_field = getattr(association, second_field_name)
+        left_field_name, right_field_name = \
+            self.get_association_field_names(association)
+        left_field = getattr(association, left_field_name)
+        right_field = getattr(association, right_field_name)
         found = False
-        for field in [first_field, second_field]:
+        for field in [left_field, right_field]:
             if asset in field:
                 found = True
                 if len(field) == 1:
@@ -202,7 +203,8 @@ class Model():
 
 
         # Check for duplicate assets in each field
-        left_field_name, right_field_name = association._properties.keys()
+        left_field_name, right_field_name = \
+            self.get_association_field_names(association)
 
         for field_name in (left_field_name, right_field_name):
             field_assets = getattr(association, field_name)
@@ -251,8 +253,7 @@ class Model():
         # Optional field for extra association data
         association.extras = {}
 
-        # Field names are the two first values in _properties
-        field_names = list(vars(association)['_properties'])[0:2]
+        field_names = self.get_association_field_names(association)
 
         # Add the association to all of the included assets
         for field_name in field_names:
@@ -282,22 +283,20 @@ class Model():
                 f'Association is not part of model "{self.name}".'
             )
 
-        # An assocation goes from one field to another,
-        # both fields has a field_name and a list of assets
-        first_field_name, second_field_name = association._properties.keys()
-        first_field = getattr(association, first_field_name)
-        second_field = getattr(association, second_field_name)
+        left_field_name, right_field_name = \
+            self.get_association_field_names(association)
+        left_field = getattr(association, left_field_name)
+        right_field = getattr(association, right_field_name)
 
-        for asset in first_field:
+        for asset in left_field:
             assocs = list(asset.associations)
             assocs.remove(association)
             asset.associations = assocs
 
-        for asset in second_field:
+        for asset in right_field:
             # In fringe cases we may have reflexive associations where the
-            # first element was removed  from the association already. But
-            # generally the association should exist for the second element
-            # too.
+            # association was already removed when processing the left field
+            # assets therefore we have to check if it is still in the list.
             if association in asset.associations:
                 assocs = list(asset.associations)
                 assocs.remove(association)
@@ -410,11 +409,12 @@ class Model():
         )
         associations = self._type_to_association.get(association_type, [])
         for association in associations:
-            field_name1, field_name2 = association._properties.keys()
+            left_field_name, right_field_name = \
+                self.get_association_field_names(association)
             if (left_asset.id in [asset.id for asset in \
-                    getattr(association, field_name1)] and \
+                    getattr(association, left_field_name)] and \
                 right_asset.id in [asset.id for asset in \
-                    getattr(association, field_name2)]):
+                    getattr(association, right_field_name)]):
                     logger.debug(
                         'An association of type "%s" '
                         'already exists between "%s" and "%s".',
@@ -428,6 +428,64 @@ class Model():
         )
         return False
 
+    def get_asset_defenses(
+            self,
+            asset: SchemaGeneratedClass,
+            include_defaults: bool = False
+        ):
+        """
+        Get the two field names of the association as a list.
+        Arguments:
+        asset               - the asset to fetch the defenses for
+        include_defaults    - if not True the defenses that have default
+                              values will not be included in the list
+
+        Return:
+        A dictionary containing the defenses of the asset
+        """
+
+        defenses = {}
+        for key, value in asset._properties.items():
+            property_schema = (
+                self.lang_classes_factory.json_schema['definitions']['LanguageAsset']
+                ['definitions'][asset.type]['properties'][key]
+            )
+
+            if "maximum" not in property_schema:
+                # Check if property is a defense by looking up defense
+                # specific key. Skip if it is not a defense.
+                continue
+
+            logger.debug(
+                'Translating %s: %s defense to dictionary.',
+                key,
+                value
+            )
+
+            if not include_defaults and value == value.default():
+                # Skip the defense values if they are the default ones.
+                continue
+
+            defenses[key] = float(value)
+
+        return defenses
+
+    def get_association_field_names(
+            self,
+            association: SchemaGeneratedClass
+        ):
+        """
+        Get the two field names of the association as a list.
+        Arguments:
+        association     - the association to fetch the field names for
+
+        Return:
+        A two item list containing the field names of the association.
+        """
+
+        return association._properties.keys()
+
+
     def get_associated_assets_by_field_name(
             self,
             asset: SchemaGeneratedClass,
@@ -438,7 +496,7 @@ class Model():
 
         Arguments:
         asset           - the asset whose fields we are interested in
-        field_name       - the field name we are looking for
+        field_name      - the field name we are looking for
 
         Return:
         A list of assets associated with the asset given that match the
@@ -451,22 +509,19 @@ class Model():
         )
         associated_assets = []
         for association in asset.associations:
-            # Determine which two of the fields leads away from the asset.
-            # This is particularly relevant for associations between two
-            # assets of the same type.
-            field_name1, field_name2 = association._properties.keys()
+            # Determine which two of the fields matches the asset given.
+            # The other field will provide the associated assets.
+            left_field_name, right_field_name = \
+                self.get_association_field_names(association)
 
-            if asset in getattr(association, field_name1):
-                # If the asset is in the first field,
-                # the second one must lead away from it
-                field_name_away = field_name2
+            if asset in getattr(association, left_field_name):
+                opposite_field_name = right_field_name
             else:
-                # otherwise the first field must lead away
-                field_name_away = field_name1
+                opposite_field_name = left_field_name
 
-            if field_name_away == field_name:
+            if opposite_field_name == field_name:
                 associated_assets.extend(
-                    getattr(association, field_name_away)
+                    getattr(association, opposite_field_name)
                 )
 
         return associated_assets
@@ -480,36 +535,19 @@ class Model():
         Return: tuple with name of asset and the asset as dict
         """
 
-        defenses = {}
         logger.debug(
             'Translating "%s"(%d) to dictionary.',
             asset.name,
             asset.id
         )
 
-        for key, value in asset._properties.items():
-            property_schema = (
-                self.lang_classes_factory.json_schema['definitions']['LanguageAsset']
-                ['definitions'][asset.type]['properties'][key]
-            )
-
-            if "maximum" not in property_schema:
-                # Check if property is a defense by looking up defense
-                # specific key. Skip if it is not a defense.
-                continue
-
-            logger.debug('Translating %s: %s defense to dictionary.', key, value)
-
-            if value == value.default():
-                # Skip the defense values if they are the default ones.
-                continue
-
-            defenses[key] = float(value)
 
         asset_dict: dict[str, Any] = {
             'name': str(asset.name),
             'type': str(asset.type)
         }
+
+        defenses = self.get_asset_defenses(asset)
 
         if defenses:
             asset_dict['defenses'] = defenses
@@ -530,17 +568,18 @@ class Model():
         Returns the association serialized to a dict
         """
 
-        first_field_name, second_field_name = association._properties.keys()
-        first_field = getattr(association, first_field_name)
-        second_field = getattr(association, second_field_name)
+        left_field_name, right_field_name = \
+            self.get_association_field_names(association)
+        left_field = getattr(association, left_field_name)
+        right_field = getattr(association, right_field_name)
 
         association_dict = {
             association.__class__.__name__ :
             {
-                str(first_field_name):
-                    [int(asset.id) for asset in first_field],
-                str(second_field_name):
-                    [int(asset.id) for asset in second_field]
+                str(left_field_name):
+                    [int(asset.id) for asset in left_field],
+                str(right_field_name):
+                    [int(asset.id) for asset in right_field]
             }
         }
 
