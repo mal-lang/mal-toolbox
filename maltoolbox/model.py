@@ -403,13 +403,30 @@ class Model():
             self, association_type, left_asset, right_asset
         ):
         """Return True if the association already exists between the assets"""
+        logger.debug(
+            'Check to see if an association of type "%s" '
+            'already exists between "%s" and "%s".',
+            association_type, left_asset.name, right_asset.name
+        )
         associations = self._type_to_association.get(association_type, [])
         for association in associations:
             field_name1, field_name2 = association._properties.keys()
-            if left_asset in getattr(association, field_name1):
-                if right_asset in getattr(association, field_name2):
+            if (left_asset.id in [asset.id for asset in \
+                    getattr(association, field_name1)] and \
+                right_asset.id in [asset.id for asset in \
+                    getattr(association, field_name2)]):
+                    logger.debug(
+                        'An association of type "%s" '
+                        'already exists between "%s" and "%s".',
+                        association_type, left_asset.name, right_asset.name
+                    )
                     return True
-            return False
+        logger.debug(
+            'No association of type "%s" '
+            'exists between "%s" and "%s".',
+            association_type, left_asset.name, right_asset.name
+        )
+        return False
 
     def get_associated_assets_by_field_name(
             self,
