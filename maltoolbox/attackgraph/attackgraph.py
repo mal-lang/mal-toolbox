@@ -156,11 +156,11 @@ def _process_step_expression(
                 if asset.name == step_expression['subType']
             ].pop()
 
-            selected_new_target_assets = (
+            selected_new_target_assets = [
                 asset
                 for asset in new_target_assets
                 if subtype_asset.is_subasset_of(asset)
-            )
+            ]
             return (selected_new_target_assets, None)
 
         case 'collect':
