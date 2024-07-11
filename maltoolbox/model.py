@@ -104,7 +104,8 @@ class Model():
         self.asset_names.add(asset.name)
 
         # Optional field for extra asset data
-        asset.extras = {}
+        if not hasattr(asset, 'extras'):
+            asset.extras = {}
 
         logger.debug(
             'Add "%s"(%d) to model "%s".', asset.name, asset.id, self.name
@@ -691,6 +692,9 @@ class Model():
             asset = getattr(model.lang_classes_factory.ns,
                 asset_object['type'])(name = asset_object['name'])
 
+            if 'extras' in asset_object:
+                asset.extras = asset_object['extras']
+
             for defense in (defenses:=asset_object.get('defenses', [])):
                 setattr(asset, defense, float(defenses[defense]))
 
@@ -709,6 +713,9 @@ class Model():
                     field,
                     [model.get_asset_by_id(int(id)) for id in targets]
                 )
+
+            #TODO Properly handle extras
+
             model.add_association(association)
 
         # Reconstruct the attackers
