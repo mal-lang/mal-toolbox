@@ -5,7 +5,7 @@ from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 
 def test_attackgraphnode():
-    """Create a graph from nodes
+    r"""Create a graph from nodes
 
             node1
             /    \
