@@ -150,17 +150,17 @@ def _process_step_expression(
                     step_expression['stepExpression'])
                 new_target_assets.extend(assets)
 
-            subtype_asset = (
+            subtype_asset = [
                 asset
                 for asset in lang_graph.assets
                 if asset.name == step_expression['subType']
-            ).pop()
+            ].pop()
 
-            selected_new_target_assets = (
+            selected_new_target_assets = [
                 asset
                 for asset in new_target_assets
                 if subtype_asset.is_subasset_of(asset)
-            )
+            ]
             return (selected_new_target_assets, None)
 
         case 'collect':
