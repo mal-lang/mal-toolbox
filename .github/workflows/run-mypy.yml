@@ -21,4 +21,4 @@ jobs:
       - name: Type checking with MyPy
         run: |
           pip install mypy
-          mypy maltoolbox --ignore-missing-imports
+          mypy maltoolbox tests --ignore-missing-imports
