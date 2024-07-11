@@ -1,9 +1,11 @@
 """Unit tests for maltoolbox.model"""
 
 import pytest
-
+from python_jsonschema_objects.validators import ValidationError
 from conftest import empty_model, path_testdata
+
 from maltoolbox.model import Model, AttackerAttachment
+from maltoolbox.exceptions import ModelAssociationException, DuplicateModelAssociationError
 
 ### Helper functions
 
@@ -12,33 +14,37 @@ def create_application_asset(model, name):
     return model.lang_classes_factory.ns.Application(name=name)
 
 
+def create_data_asset(model, name):
+    """Helper function to create an asset of coreLang type Data"""
+    return model.lang_classes_factory.ns.Data(name=name)
+
+
 def create_association(
         model,
-        from_assets,
-        to_assets,
-        metaconcept="AppExecution",
-        from_fieldname="hostApp",
-        to_fieldname="appExecutedApps",
+        left_assets,
+        right_assets,
+        assoc_type="AppExecution",
+        left_fieldname="hostApp",
+        right_fieldname="appExecutedApps",
     ):
     """Helper function to create an association dict with
     given parameters, useful in tests"""
 
     # Simulate receiving the association from a json file
     association_dict = {
-      "metaconcept": metaconcept,
-      "association": {
-        from_fieldname: from_assets,
-        to_fieldname: to_assets
+      assoc_type: {
+        left_fieldname: left_assets,
+        right_fieldname: right_assets
       }
     }
 
     # Create the association using the lang_classes_factory
     association = getattr(
-        model.lang_classes_factory.ns,
-        association_dict['metaconcept'])()
+            model.lang_classes_factory.ns,
+            list(association_dict)[0])()
 
     # Add the assets
-    for field, assets in association_dict['association'].items():
+    for field, assets in association_dict[assoc_type].items():
         setattr(association, field, assets)
 
     return association
@@ -150,9 +156,9 @@ def test_model_add_association(model: Model):
 
     # Create an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
 
     associations_before = list(model.associations)
@@ -168,6 +174,94 @@ def test_model_add_association(model: Model):
     assert association in p2.associations
 
 
+def test_model_add_appexecution_association_two_assets(model: Model):
+    """coreLang specifies that AppExecution only can have one 'left' asset"""
+
+    # Add program assets
+    p1 = create_application_asset(model, 'Program 1')
+    p1_id = model.next_id
+    p2 = create_application_asset(model, 'Program 2')
+    p2_id = p1_id + 1
+    model.add_asset(p1, asset_id=p1_id)
+    model.add_asset(p2, asset_id=p2_id)
+
+    # Try create an association between (p1, p2) and p1
+    with pytest.raises(ValidationError):
+        # will raise error because two assets (p1,p2)
+        # are not allowed in the left field for AppExecution
+        create_association(
+            model, assoc_type="AppExecution",
+            left_fieldname="hostApp", right_fieldname="appExecutedApps",
+            left_assets=[p1, p2], right_assets=[p1]
+        )
+
+
+def test_model_add_association_duplicate(model: Model):
+    """Make sure same association is not added twice"""
+
+    # Create three data assets
+    d1 = create_data_asset(model, 'Data 1')
+    d1_id = model.next_id
+    d2 = create_data_asset(model, 'Data 2')
+    d2_id = d1_id + 1
+    d3 = create_data_asset(model, 'Data 3')
+    d3_id = d2_id + 1
+
+    # Add the assets with explicit IDs to keep track of them
+    model.add_asset(d1, asset_id=d1_id)
+    model.add_asset(d2, asset_id=d2_id)
+    model.add_asset(d3, asset_id=d3_id)
+
+    # Create an association between (d1, d2) and d3
+    association1 = create_association(
+        model, assoc_type="DataContainment",
+        left_fieldname="containingData", right_fieldname="containedData",
+        left_assets=[d1, d2], right_assets=[d3]
+    )
+    # Create an identical association, but from just d2
+    association2 = create_association(
+        model, assoc_type="DataContainment",
+        left_fieldname="containingData", right_fieldname="containedData",
+        left_assets=[d2], right_assets=[d3]
+    )
+    # Create association with duplicate assets in both fields
+    association3 = create_association(
+        model, assoc_type="DataContainment",
+        left_fieldname="containingData", right_fieldname="containedData",
+        left_assets=[d2, d2], right_assets=[d3, d3]
+    )
+
+    # Add the first association to the model - no problem
+    model.add_association(association1)
+    assert len(model.associations) == 1
+
+    # Add the first association again - should fail because duplicate
+    # associations are not allowed
+    with pytest.raises(DuplicateModelAssociationError) as e:
+        model.add_association(association1)
+
+    assert str(e.value) == (
+        'Identical association DataContainment already exists'
+    )
+
+    # Add the second (almost identical) association.
+    # Should fail because it contains d2 to d3 association
+    # which already was added by association1
+    with pytest.raises(DuplicateModelAssociationError) as e:
+        model.add_association(association2)
+
+    assert str(e.value) == (
+        "Association type DataContainment already exists"
+        " between Data 2 and Data 3"
+    )
+
+    # Add the third association, should fail because of duplicate
+    # assets in fields
+    with pytest.raises(ModelAssociationException):
+        model.add_association(association3)
+
+    assert len(model.associations) == 1
+
 def test_model_remove_association(model: Model):
     """Make sure association can be removed"""
 
@@ -178,19 +272,23 @@ def test_model_remove_association(model: Model):
     model.add_asset(p2)
 
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
 
     model.add_association(association)
     assert association in model.associations
     assert association in p1.associations
     assert association in p2.associations
+    assert "AppExecution" in model._type_to_association
+    assert model._type_to_association["AppExecution"]
+    assert association in model._type_to_association["AppExecution"]
 
     # Remove the association and make sure it was
     # removed from assets and model
     model.remove_association(association)
+    assert "AppExecution" not in model._type_to_association
     assert association not in model.associations
     assert association not in p1.associations
     assert association not in p2.associations
@@ -200,9 +298,9 @@ def test_model_remove_association_nonexisting(model: Model):
     """Make sure non existing association can not be removed"""
     # Create the association but don't add it
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[], to_assets=[]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[], right_assets=[]
     )
 
     # No associations exists
@@ -225,9 +323,9 @@ def test_model_remove_asset_from_association(model: Model):
 
     # Create and add association from p1 to p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -257,9 +355,9 @@ def test_model_remove_asset_from_association_nonexisting_asset(
 
     # Create an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -287,9 +385,9 @@ def test_model_remove_asset_from_association_nonexisting_association(
 
     # Create (but don't add!) an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     # We are removing an association that was never created -> LookupError
     with pytest.raises(LookupError):
@@ -367,6 +465,7 @@ def test_model_get_attacker_by_id(model: Model):
     attacker1.entry_points = []
     model.add_attacker(attacker1)
 
+    assert attacker1.id is not None
     assert model.get_attacker_by_id(attacker1.id) == attacker1
     assert model.get_attacker_by_id(1337) is None
 
@@ -383,9 +482,9 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -426,7 +525,7 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
 #     # be set as below for an 'Application' asset in coreLang
 #     p1_dict = ret[1]
 #     assert p1_dict.get('name') == p1.name
-#     assert p1_dict.get('metaconcept') == 'Application'
+#     assert p1_dict.get('type') == 'Application'
 #
 #     # Default values should not be saved
 #     assert p1_dict.get('defenses') == None
@@ -449,7 +548,7 @@ def test_model_get_associated_assets_by_fieldname(model: Model):
 #     # be set as below for an 'Application' asset in coreLang
 #     p1_dict = ret[1]
 #     assert p1_dict.get('name') == p1.name
-#     assert p1_dict.get('metaconcept') == 'Application'
+#     assert p1_dict.get('type') == 'Application'
 #
 #     # Default values for 'Application' defenses in coreLang
 #     assert p1_dict.get('defenses') == {
@@ -467,15 +566,16 @@ def test_model_association_to_dict(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
     association_dict = model.association_to_dict(association)
-    assert association_dict.get('metaconcept') == 'AppExecution'
-    assert association_dict.get('association') == {
+    association_type = list(association_dict.keys())[0]
+    assert association_type == 'AppExecution'
+    assert association_dict[association_type ] == {
         'hostApp': [p1.id],
         'appExecutedApps': [p2.id]
     }
@@ -508,6 +608,7 @@ def test_model_attacker_to_dict(model: Model):
 
     # attacker should be attached to p1, therefore p1s
     # id should be a key in the entrypoints_dict
+    assert p1.id is not None and entrypoints_dict
     assert p1.id in entrypoints_dict
 
     # The given steps should be inside the entrypoint of
@@ -528,9 +629,9 @@ def test_serialize(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -581,9 +682,9 @@ def test_model_save_and_load_model_from_scratch(model: Model):
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, metaconcept="AppExecution",
-        from_fieldname="hostApp", to_fieldname="appExecutedApps",
-        from_assets=[p1], to_assets=[p2]
+        model, assoc_type="AppExecution",
+        left_fieldname="hostApp", right_fieldname="appExecutedApps",
+        left_assets=[p1], right_assets=[p2]
     )
     model.add_association(association)
 
@@ -628,3 +729,15 @@ def test_model_save_and_load_model_example_model(model):
     )
 
     assert new_model._to_dict() == model._to_dict()
+
+def test_model_load_older_version_example_model(model):
+    """Load the older_version_example_model.json from testdata, and check if
+    its version is correct"""
+
+    # Load from example file
+    model = Model.load_from_file(
+        path_testdata("older_version_example_model.json"),
+        model.lang_classes_factory
+    )
+
+    assert model.maltoolbox_version == '0.0.38'

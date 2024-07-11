@@ -5,6 +5,7 @@ MAL-Toolbox Language Specification Module
 
 import logging
 
+from typing import Optional
 logger = logging.getLogger(__name__)
 
 # TODO move these functions to their relevant module/class
@@ -24,7 +25,7 @@ def extends_asset(lang_spec: dict, asset, target_asset):
     False otherwise.
     """
 
-    logger.debug(f'Check if {asset} extends {target_asset} via inheritance.')
+    logger.debug('Check if %s extends %s via inheritance.', asset, target_asset)
 
     if asset == target_asset:
         return True
@@ -32,8 +33,9 @@ def extends_asset(lang_spec: dict, asset, target_asset):
     asset_dict = next((asset_info for asset_info in lang_spec['assets'] \
         if asset_info['name'] == asset), None)
     if not asset_dict:
-        logger.error(f'Failed to find asset type {asset} when '\
-            'looking for variable.')
+        logger.error(
+            'Failed to find asset type %s when looking for variable.', asset
+        )
         return False
     if asset_dict['superAsset']:
         if asset_dict['superAsset'] == target_asset:
@@ -43,4 +45,3 @@ def extends_asset(lang_spec: dict, asset, target_asset):
                 target_asset)
 
     return False
-

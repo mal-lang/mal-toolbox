@@ -1,13 +1,16 @@
-# Overview
+# MAL Toolbox overview
 
-A collection of python modules to help developers create and work with MAL
-models and attack graphs.
+MAL Toolbox is a collection of python modules to help developers create and work with
+MAL ([Meta Attack Language](https://mal-lang.org/)) models and attack graphs.
 
-# The Language Module
+Attack graphs can be used to run simulations (see MAL Simulator) or analysis.
+MAL Toolbox also gives the ability to view the AttackGraph/Model graphically in neo4j.
+
+## The Language Module
 
 The language module provides various tools to process MAL languages.
 
-## The Language Specification Submodule
+### The Language Specification Submodule
 
 The language specification submodule provides functions to load the
 specification from a .mar archive(`load_language_specification_from_mar`) or a
@@ -16,7 +19,7 @@ then be used to generate python classes representing the assets and
 associations of the language and to determine the attack steps for each asset
 when generating the attack graph.
 
-## The Language Classes Factory Submodule
+### The Language Classes Factory Submodule
 
 The language classes factory submodule is used to generate python classes
 using the `python_jsonschema_objects` package from a language specification.
@@ -27,19 +30,23 @@ using JSON Schema validators they will enforce their restrictions when using
 the python objects created. These classes are typically used in conjunction
 with model module to create instance models.
 
-# The Model Module
+## The Model Module
 
-The model module is used to create MAL instance models. The model class will
-store all of the relevant information to the MAL instance model, most
-importantly the assets and associations that make it up. These assets and
-associations should be objects created using the language classes factory
-submodule. It also allows for `Attacker` objects to be created and associated
-with attack steps on assets in the model. The most relevant functions here are
-the ones used to add different elements to the model, `add_asset`,
-`add_association`, and `add_attacker`. Model objects can be used to generate
-attack graphs using the attack graph module.
+With a MAL language a Model (a MAL instance model) can be created either
+from a model file or empty.
 
-# The Attack Graph Module
+The model class will store all of the relevant information to the MAL
+instance model, most importantly the assets and associations that make it up.
+
+Assets and associations are objects of classes created using the language
+classes factory submodule in runtime. It also allows for `Attacker` objects
+to be created and associated with attack steps on assets in the model.
+The most relevant methods of the Model are the ones used to add different
+elements to the model, `add_asset`, `add_association`, and `add_attacker`.
+
+Model objects can be used to generate attack graphs with the AttackGraph module.
+
+## The Attack Graph Module
 
 The attack graph module contains tools used to generate attack graphs from
 existing MAL instance models and analyse MAL attack graphs. The function used
@@ -57,14 +64,21 @@ resulting attack graph with the instance model given as a parameter in order
 to create attack step nodes that represent the entry points of the attackers
 and attach them to the attack steps specified in the instance model.
 
-# Ingestors Module
+## Ingestors Module
 
 The ingestors module contains various tools that can make use of the instance
 model or attack graph. Currently the Neo4J ingestor is the only one available
 and it can be used to visualise the instance model and the attack graph.
 
-# Command Line Client
 
+# Usage
+
+## Configuration
+A default configuration file `default.conf` can be found in the package
+directory. This contains the default values to use for logging and can also be
+used to store the information needed to access the local Neo4J instance.
+
+## Command Line Client
 In addition to the modules that make up the MAL-Toolbox package it also
 provides a simple command line client that can be used to easily generate
 attack graphs from a .mar language specification file and a JSON instance
@@ -76,10 +90,10 @@ The usage is: `maltoolbox gen_ag [--neo4j] <model_json_file>
 If the `--neo4j` flag is specified the model and attack graph will be loaded
 into a local Neo4J instance.
 
-# Configuration
-A default configuration file `default.conf` can be found in the package
-directory. This contains the default values to use for logging and can also be
-used to store the information needed to access the local Neo4J instance.
+## Code examples / Tutorial
+
+To find code examples and tutorials, visit the
+[MAL Toolbox Tutorial](https://github.com/mal-lang/mal-toolbox-tutorial/tree/main) repository.
 
 # Tests
 There are unit tests inside of ./tests.

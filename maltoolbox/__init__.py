@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-# MAL Toolbox v0.0.40
+# MAL Toolbox v0.1.2
 # Copyright 2024, Andrei Buhaiu.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,7 @@ MAL-Toolbox Framework
 """
 
 __title__ = 'maltoolbox'
-__version__ = '0.0.40'
+__version__ = '0.1.2'
 __authors__ = ['Andrei Buhaiu',
     'Giuseppe Nebbione',
     'Nikolaos Kakouros',
@@ -33,7 +33,6 @@ __docformat__ = 'restructuredtext en'
 __all__ = ()
 
 import os
-import sys
 import configparser
 import logging
 
@@ -74,15 +73,18 @@ log_level = log_configs['log_level']
 if log_level != '':
     level = logging.getLevelName(log_level)
     logger.setLevel(level)
-    logger.info(f'Set loggin level of {__name__} to {log_level}.')
+    logger.info('Set loggin level of %s to %s.', __name__, log_level)
 
 if 'neo4j' in config:
     for term in ['uri', 'username', 'password', 'dbname']:
         if term not in config['neo4j']:
-            logger.critical('Config file is missing essential '\
-                f'Neo4J information: {term}, cannot proceed.')
-            raise ValueError('Config file is missing essential '\
-                f'Neo4J information: {term}, cannot proceed.')
+
+            msg = (
+                'Config file is missing essential Neo4J '
+                f'information: {term}, cannot proceed.'
+            )
+            logger.critical(msg)
+            raise ValueError(msg)
 
     neo4j_configs = {
         'uri': config['neo4j']['uri'],
@@ -90,4 +92,3 @@ if 'neo4j' in config:
         'password': config['neo4j']['password'],
         'dbname': config['neo4j']['dbname'],
     }
-

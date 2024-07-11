@@ -2,6 +2,7 @@
 
 from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.attackgraph.attacker import Attacker
+from maltoolbox.attackgraph.attackgraph import AttackGraph
 
 def test_attackgraphnode():
     """Create a graph from nodes
@@ -14,14 +15,32 @@ def test_attackgraphnode():
     """
 
     # Create a graph of nodes according to above diagram
-    node1 = AttackGraphNode("1", "or", "node1", ttc=None, tags=[])
+    node1 = AttackGraphNode(
+        type = "or",
+        name = "node1"
+    )
     node2 = AttackGraphNode(
-        "2", "defense", "node2", ttc=None, tags=[], defense_status=1.0)
+        type = "defense",
+        name = "node2",
+        defense_status=1.0
+    )
     node3 = AttackGraphNode(
-        "3", "defense", "node3", ttc=None, tags=[], defense_status=0.0)
-    node4 = AttackGraphNode("4", "or", "node4", ttc=None, tags=[])
-    node5 = AttackGraphNode("5", "and", "node5", ttc=None, tags=[])
-    node6 = AttackGraphNode("6", "or", "node6", ttc=None, tags=[])
+        type = "defense",
+        name = "node3",
+        defense_status=0.0
+    )
+    node4 = AttackGraphNode(
+        type = "or",
+        name = "node4"
+    )
+    node5 = AttackGraphNode(
+        type = "and",
+        name = "node5"
+    )
+    node6 = AttackGraphNode(
+        type = "or",
+        name = "node6"
+    )
 
     node1.children = [node2, node3]
     node2.children = [node4, node5]
@@ -34,8 +53,19 @@ def test_attackgraphnode():
 
     # Make sure compromised node has attacker added to it
     attacker = Attacker(
-        "1", entry_points=[node1], reached_attack_steps=[], node=node1
+        name = "Test Attacker",
+        entry_points = [node1],
+        reached_attack_steps = []
     )
+    attack_graph = AttackGraph()
+    attack_graph.add_node(node1)
+    attack_graph.add_node(node2)
+    attack_graph.add_node(node3)
+    attack_graph.add_node(node4)
+    attack_graph.add_node(node5)
+    attack_graph.add_node(node6)
+    attack_graph.add_attacker(attacker)
+
     node6.compromise(attacker)
     assert node6.compromised_by == [attacker]
     assert node6.is_compromised()
@@ -47,7 +77,6 @@ def test_attackgraphnode():
     assert not node6.is_compromised()
 
     # Node 3 is disabled defense
-    # TODO: is_available_defense->is_disabled defense?
     assert node3.is_available_defense()
     assert not node3.is_enabled_defense()
 

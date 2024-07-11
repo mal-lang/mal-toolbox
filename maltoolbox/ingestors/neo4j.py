@@ -1,6 +1,7 @@
 """
 MAL-Toolbox Neo4j Ingestor Module
 """
+# mypy: ignore-errors
 
 import logging
 
@@ -9,12 +10,12 @@ from py2neo import Graph, Node, Relationship, Subgraph
 logger = logging.getLogger(__name__)
 
 def ingest_attack_graph(graph,
-        uri,
-        username,
-        password,
-        dbname,
-        delete=False
-) -> None:
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        delete: bool = False
+    ) -> None:
     """
     Ingest an attack graph into a neo4j database
 
@@ -28,7 +29,6 @@ def ingest_attack_graph(graph,
                            before ingesting the new attack graph
     """
 
-
     g = Graph(uri=uri, user=username, password=password, name=dbname)
     if delete:
         g.delete_all()
@@ -40,7 +40,7 @@ def ingest_attack_graph(graph,
         nodes[node.id] = Node(
             node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
             name = node_dict['name'],
-            full_name = node_dict['id'],
+            full_name = node.full_name,
             type = node_dict['type'],
             ttc = str(node_dict['ttc']),
             is_necessary = str(node.is_necessary),
@@ -62,12 +62,12 @@ def ingest_attack_graph(graph,
 
 
 def ingest_model(model,
-        uri,
-        username,
-        password,
-        dbname,
-        delete=False
-) -> None:
+        uri: str,
+        username: str,
+        password: str,
+        dbname: str,
+        delete: bool = False
+    ) -> None:
     """
     Ingest an instance model graph into a Neo4J database
 
@@ -88,12 +88,11 @@ def ingest_model(model,
     rels = []
 
     for asset in model.assets:
-        nodeid = asset.name
 
-        nodes[str(asset.id)] = Node(str(asset.metaconcept),
+        nodes[str(asset.id)] = Node(str(asset.type),
                 name=str(asset.name),
                 asset_id=str(asset.id),
-                metaconcept=str(asset.metaconcept))
+                type=str(asset.type))
 
     for assoc in model.associations:
         firstElementName, secondElementName = assoc._properties.keys()
