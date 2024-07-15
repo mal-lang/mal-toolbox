@@ -225,6 +225,7 @@ class AttackGraph():
         """
 
         attack_graph = AttackGraph()
+        attack_graph.model = model
         serialized_attack_steps = serialized_object['attack_steps']
         serialized_attackers = serialized_object['attackers']
 

@@ -177,6 +177,9 @@ def attackgraph_save_and_load_json_yml_model_given(
         loaded_attackgraph = AttackGraph.load_from_file(
             attackgraph_path, model=example_attackgraph.model)
 
+        # Make sure model was 'attached' correctly
+        assert loaded_attackgraph.model == example_attackgraph.model
+
         for node_full_name, loaded_node_dict in \
                 loaded_attackgraph._to_dict()['attack_steps'].items():
             original_node_dict = \
