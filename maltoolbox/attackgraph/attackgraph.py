@@ -231,11 +231,32 @@ class AttackGraph():
 
         # Create all of the nodes in the imported attack graph.
         for node_full_name, node_dict in serialized_attack_steps.items():
+
+            # Recreate asset links if model is available.
+            node_asset = None
+            if model and 'asset' in node_dict:
+                node_asset = model.get_asset_by_name(node_dict['asset'])
+                if node_asset is None:
+                    msg = ('Failed to find asset with id %s'
+                            'when loading from attack graph dict')
+                    logger.error(msg, node_dict["asset"])
+                    raise LookupError(msg % node_dict["asset"])
+
             ag_node = AttackGraphNode(
                 type=node_dict['type'],
                 name=node_dict['name'],
-                ttc=node_dict['ttc']
+                ttc=node_dict['ttc'],
+                asset=node_asset
             )
+
+            if node_asset:
+                # Add AttackGraphNode to attack_step_nodes of asset
+                if hasattr(node_asset, 'attack_step_nodes'):
+                    node_attack_steps = list(node_asset.attack_step_nodes)
+                    node_attack_steps.append(ag_node)
+                    node_asset.attack_step_nodes = node_attack_steps
+                else:
+                    node_asset.attack_step_nodes = [ag_node]
 
             ag_node.defense_status = float(node_dict['defense_status']) if \
                 'defense_status' in node_dict else None
@@ -250,7 +271,8 @@ class AttackGraph():
             ag_node.tags = node_dict['tags'] if \
                 'tags' in node_dict else []
 
-            attack_graph.add_node(ag_node, node_id = node_dict['id'])
+            # Add AttackGraphNode to AttackGraph
+            attack_graph.add_node(ag_node, node_id=node_dict['id'])
 
         # Re-establish links between nodes.
         for node_full_name, node_dict in serialized_attack_steps.items():
@@ -278,23 +300,6 @@ class AttackGraph():
                         logger.error(msg, parent_id)
                         raise LookupError(msg % parent_id)
                     _ag_node.parents.append(parent)
-
-                # Also recreate asset links if model is available.
-                if model and 'asset' in node_dict:
-                    asset = model.get_asset_by_name(
-                        node_dict['asset'])
-                    if asset is None:
-                        msg = ('Failed to find asset with id %s'
-                               'when loading from attack graph dict')
-                        logger.error(msg, node_dict["asset"])
-                        raise LookupError(msg % node_dict["asset"])
-                    _ag_node.asset = asset
-                    if hasattr(asset, 'attack_step_nodes'):
-                        attack_step_nodes = list(asset.attack_step_nodes)
-                        attack_step_nodes.append(_ag_node)
-                        asset.attack_step_nodes = attack_step_nodes
-                    else:
-                        asset.attack_step_nodes = [_ag_node]
 
         for attacker_name, attacker in serialized_attackers.items():
             ag_attacker = Attacker(
