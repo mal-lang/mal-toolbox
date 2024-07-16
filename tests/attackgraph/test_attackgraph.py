@@ -188,6 +188,16 @@ def attackgraph_save_and_load_json_yml_model_given(
             # Make sure nodes are the same (except for the excluded keys)
             assert loaded_node_dict == original_node_dict
 
+        for node in loaded_attackgraph.nodes:
+            # Make sure node gets an asset when loaded with model
+            assert node.asset
+            assert node.full_name == node.asset.name + ":" + node.name
+
+            # Make sure node was added to lookup dict with correct id / name
+            assert node.id is not None
+            assert loaded_attackgraph.get_node_by_id(node.id) == node
+            assert loaded_attackgraph.get_node_by_full_name(node.full_name) == node
+
         for loaded_attacker in loaded_attackgraph.attackers:
             if not isinstance(loaded_attacker.id, int):
                 raise ValueError(f'Invalid attacker id for loaded attacker.')
@@ -383,4 +393,3 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
         assert node_to_remove not in parent.children
     for child in children:
         assert node_to_remove not in child.parents
-
