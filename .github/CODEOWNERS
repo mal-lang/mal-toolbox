@@ -1,0 +1,5 @@
+# Owners for everything in the repository
+*       @mal-lang/Core
+
+# Owners for a specific folder
+maltoolbox/language/compiler/ @nkakouros
