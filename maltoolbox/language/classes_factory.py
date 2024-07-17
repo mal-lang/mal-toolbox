@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import python_jsonschema_objects as pjs
 
 if TYPE_CHECKING:
-    from typing import Literal, TypeAlias
+    from typing import Literal, Optional, TypeAlias
     from maltoolbox.language import LanguageGraph
     from python_jsonschema_objects.classbuilder import ProtocolBase
 

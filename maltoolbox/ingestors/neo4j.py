@@ -184,7 +184,7 @@ def get_model(
             target_id = right_id
             target_prop = left_field
 
-        if not attacker_id == None:
+        if attacker_id is not None:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
                 msg = 'Failed to find attacker with id %s in model!'
@@ -200,12 +200,12 @@ def get_model(
             continue
 
         left_asset = instance_model.get_asset_by_id(left_id)
-        if left_asset == None:
+        if left_asset is None:
             msg = 'Failed to find asset with id %d in model!'
             logger.error(msg, left_id)
             raise LookupError(msg % left_id)
         right_asset = instance_model.get_asset_by_id(right_id)
-        if right_asset == None:
+        if right_asset is None:
             msg = 'Failed to find asset with id %d in model!'
             logger.error(msg, right_id)
             raise LookupError(msg % right_id)

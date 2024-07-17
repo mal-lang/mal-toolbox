@@ -152,7 +152,7 @@ def _process_step_expression(
 
             selected_new_target_assets = []
             for asset in new_target_assets:
-                lang_graph_asset = self.lang_graph.get_asset_by_name(
+                lang_graph_asset = lang_graph.get_asset_by_name(
                     asset.type
                 )
                 if not lang_graph_asset:
@@ -160,7 +160,7 @@ def _process_step_expression(
                         f'Failed to find asset \"{asset.type}\" in the '
                         'language graph.'
                     )
-                lang_graph_subtype_asset = self.lang_graph.get_asset_by_name(
+                lang_graph_subtype_asset = lang_graph.get_asset_by_name(
                     step_expression['subType']
                 )
                 if not lang_graph_subtype_asset:
