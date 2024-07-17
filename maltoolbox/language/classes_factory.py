@@ -184,3 +184,59 @@ class LanguageClassesFactory:
         # Once we have the JSON schema we create the actual classes.
         builder = pjs.ObjectBuilder(self.json_schema)
         self.ns = builder.build_classes(standardize_names=False)
+
+    def get_association_by_signature(
+        self,
+        assoc_name: str,
+        left_asset: str,
+        right_asset: str
+    ) -> Optional[str]:
+        """
+        Get association name based on its signature. This is primarily
+        relevant for getting the exact association full name when multiple
+        associations with the same name exist.
+
+        Arguments:
+        assoc_name          - the association name
+        left_asset          - the name of the left asset type
+        right_asset         - the name of the right asset type
+
+        Return: The matching association name if a match is found.
+        None if there is no match.
+        """
+        if not assoc_name in self.json_schema['definitions']\
+                ['LanguageAssociation']['definitions']:
+            raise LookupError(
+                'Failed to find "%s" association in the language json '
+                'schema.' % assoc_name
+            )
+        assoc_entry = self.json_schema['definitions']\
+                ['LanguageAssociation']['definitions'][assoc_name]
+        # If the association has a oneOf property it should always have more
+        # than just one alternative, but check just in case
+        if 'definitions' in assoc_entry and \
+                len(assoc_entry['definitions']) > 1:
+            full_name = '%s_%s_%s' % (
+                assoc_name,
+                left_asset,
+                right_asset
+            )
+            full_name_flipped = '%s_%s_%s' % (
+                assoc_name,
+                right_asset,
+                left_asset
+            )
+            if not full_name in assoc_entry['definitions']:
+                if not full_name_flipped in assoc_entry['definitions']:
+                    raise LookupError(
+                        'Failed to find "%s" or "%s" association in the '
+                        'language json schema.'
+                        % (full_name,
+                        full_name_flipped)
+                    )
+                else:
+                    return full_name_flipped
+            else:
+                return full_name
+        else:
+            return assoc_name
