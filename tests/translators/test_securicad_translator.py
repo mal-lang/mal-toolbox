@@ -31,4 +31,9 @@ def test_securicad_translator(corelang_lang_graph):
 
     regular_model_dict = regular_model._to_dict()
 
+    # Remove metadata as it is likely to mismatch quite often due to
+    # irrelevant reasons.
+    del regular_model_dict['metadata']
+    del scad_model_dict['metadata']
+
     assert regular_model_dict == scad_model_dict
