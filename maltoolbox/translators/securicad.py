@@ -8,13 +8,13 @@ import logging
 import xml.etree.ElementTree as ET
 
 from ..model import AttackerAttachment, Model
-from ..language import specification, LanguageClassesFactory
+from ..language import LanguageGraph, LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
 
 def load_model_from_scad_archive(
         scad_archive: str,
-        lang_spec: dict,
+        lang_graph: LanguageGraph,
         lang_classes_factory: LanguageClassesFactory
     ) -> Model:
     """
@@ -23,10 +23,10 @@ def load_model_from_scad_archive(
 
     Arguments:
     scad_archive            - the path to a '.sCAD' archive
-    lang_spec               - a dictionary containing the MAL language
-                              specification
+    lang_graph              - a language graph representing the MAL
+                              language specification
     lang_classes_factory    - a language classes factory that contains
-                              the same classes defined by the
+                              the classes defined by the
                               language specification
 
     Return:
@@ -39,7 +39,6 @@ def load_model_from_scad_archive(
         root = ET.fromstring(scad_model)
 
     instance_model = Model(scad_archive,
-        lang_spec,
         lang_classes_factory)
 
     for child in root.iter('objects'):
@@ -137,31 +136,27 @@ def load_model_from_scad_archive(
         # matches the target field and vice versa.
         left_field = child.attrib['sourceProperty']
         right_field = child.attrib['targetProperty']
-        assoc_name = specification.get_association_by_fields_and_assets(
-            lang_spec,
+        lang_graph_assoc = lang_graph.get_association_by_fields_and_assets(
             left_field,
             right_field,
-            left_asset.metaconcept,
-            right_asset.metaconcept)
-        logger.debug('Found "%s" association.', assoc_name)
+            left_asset.type,
+            right_asset.type)
+        logger.debug('Found "%s" association.', lang_graph_assoc.name)
 
-        if not assoc_name:
-            logger.error(
+        if not lang_graph_assoc:
+            raise LookupError(
                 'Failed to find ("%s", "%s", "%s", "%s")'
-                'association in lang specification',
-                left_asset.metaconcept, right_asset.metaconcept,
-                left_field, right_field
+                'association in lang specification.' %
+                (left_asset.type, right_asset.type,
+                left_field, right_field)
             )
             return None
 
-        if not hasattr(lang_classes_factory.ns,
-            assoc_name):
-            logger.error(
-                'Failed to find %s association in language specification!',
-                assoc_name
-            )
-            return None
-
+        assoc_name = lang_classes_factory.get_association_by_signature(
+            lang_graph_assoc.name,
+            left_asset.type,
+            right_asset.type
+        )
         assoc = getattr(lang_classes_factory.ns, assoc_name)()
         setattr(assoc, left_field, [left_asset])
         setattr(assoc, right_field, [right_asset])
