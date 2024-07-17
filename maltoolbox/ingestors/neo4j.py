@@ -8,7 +8,7 @@ import logging
 from py2neo import Graph, Node, Relationship, Subgraph
 
 from ..model import AttackerAttachment, Model
-from ..language import specification, LanguageClassesFactory
+from ..language import LanguageGraph, LanguageClassesFactory
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,7 @@ def get_model(
         username: str,
         password: str,
         dbname: str,
-        lang_spec: dict,
+        lang_graph: LanguageGraph,
         lang_classes_factory: LanguageClassesFactory
     ) -> Model:
     """Load a model from Neo4j"""
@@ -184,7 +184,7 @@ def get_model(
             target_id = right_id
             target_prop = left_field
 
-        if attacker_id:
+        if not attacker_id == None:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
                 msg = 'Failed to find attacker with id %s in model!'
@@ -192,7 +192,7 @@ def get_model(
                 raise LookupError(msg % attacker_id)
             target_asset = instance_model.get_asset_by_id(target_id)
             if not target_asset:
-                msg = 'Failed to find asset with id %s in model!'
+                msg = 'Failed to find asset with id %d in model!'
                 logger.error(msg, target_id)
                 raise LookupError(msg % target_id)
             attacker.entry_points.append((target_asset,
@@ -200,25 +200,23 @@ def get_model(
             continue
 
         left_asset = instance_model.get_asset_by_id(left_id)
-        if not left_asset:
-            msg = 'Failed to find asset with id %s in model!'
+        if left_asset == None:
+            msg = 'Failed to find asset with id %d in model!'
             logger.error(msg, left_id)
             raise LookupError(msg % left_id)
         right_asset = instance_model.get_asset_by_id(right_id)
-        if not right_asset:
-            msg = 'Failed to find asset with id %s in model!'
+        if right_asset == None:
+            msg = 'Failed to find asset with id %d in model!'
             logger.error(msg, right_id)
             raise LookupError(msg % right_id)
 
-        assoc_name = specification.get_association_by_fields_and_assets(
-            lang_spec,
+        assoc = lang_graph.get_association_by_fields_and_assets(
             left_field,
             right_field,
             left_asset.type,
             right_asset.type)
-        logger.debug('Found "%s" association.', assoc_name)
 
-        if not assoc_name:
+        if not assoc:
             logger.error(
                 'Failed to find ("%s", "%s", "%s", "%s")'
                 'association in language specification!',
@@ -227,15 +225,31 @@ def get_model(
             )
             return None
 
-        if not hasattr(lang_classes_factory.ns,
-            assoc_name):
-            msg = 'Failed to find %s association in language specification!'
-            logger.error(msg, assoc_name)
-            raise LookupError(msg % assoc_name)
+        logger.debug('Found "%s" association.', assoc.name)
+
+        assoc_name = lang_classes_factory.get_association_by_signature(
+            assoc.name,
+            left_asset.type,
+            right_asset.type
+        )
+
+        if not assoc_name:
+            msg = 'Failed to find \"%s\" association in language specification!'
+            logger.error(msg, assoc.name)
+            raise LookupError(msg % assoc.name)
 
         assoc = getattr(lang_classes_factory.ns, assoc_name)()
         setattr(assoc, left_field, [left_asset])
         setattr(assoc, right_field, [right_asset])
-        instance_model.add_association(assoc)
+        if not (instance_model.association_exists_between_assets(
+            assoc_name,
+            left_asset,
+            right_asset
+        ) or instance_model.association_exists_between_assets(
+            assoc_name,
+            right_asset,
+            left_asset
+        )):
+            instance_model.add_association(assoc)
 
     return instance_model
