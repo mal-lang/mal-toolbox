@@ -400,7 +400,10 @@ class Model():
             )
 
     def association_exists_between_assets(
-            self, association_type, left_asset, right_asset
+            self,
+            association_type: str,
+            left_asset: SchemaGeneratedClass,
+            right_asset: SchemaGeneratedClass
         ):
         """Return True if the association already exists between the assets"""
         logger.debug(
