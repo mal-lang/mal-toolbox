@@ -1000,8 +1000,17 @@ class LanguageGraph():
             elif step['reaches']['overrides'] == True:
                 attack_steps[step['name']] = copy.deepcopy(step)
             else:
-                attack_steps[step['name']]['reaches']['stepExpressions'].\
-                    extend(step['reaches']['stepExpressions'])
+                if attack_steps[step['name']]['reaches'] is not None and \
+                        'stepExpression' in \
+                        attack_steps[step['name']]['reaches']:
+                    attack_steps[step['name']]['reaches']['stepExpressions'].\
+                        extend(step['reaches']['stepExpressions'])
+                else:
+                    attack_steps[step['name']]['reaches'] = {
+                        'overrides': False,
+                        'stepExpressions': step['reaches']['stepExpressions']
+                    }
+
 
         return attack_steps
 
