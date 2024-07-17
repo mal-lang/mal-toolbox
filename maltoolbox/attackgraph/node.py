@@ -28,7 +28,7 @@ class AttackGraphNode:
     attributes: Optional[dict] = None
 
     # Optional extra metadata for AttackGraphNode
-    extras: Optional[dict] = None
+    extras: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
