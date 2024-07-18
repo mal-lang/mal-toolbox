@@ -1,0 +1,78 @@
+assets:
+  -2953439081723377585:
+    name: Data
+    type: Data
+  -1622070020351243270:
+    name: Internet
+    type: Network
+  -417196716273090511:
+    name: Program
+    type: Application
+  2244366896821059655:
+    name: Identity
+    type: Identity
+  5336733277926737003:
+    name: User
+    type: User
+  5666347064169940679:
+    name: SoftwareVulnerability
+    type: SoftwareVulnerability
+  6390007059522275841:
+    name: ConnectionRule
+    type: ConnectionRule
+  6772009123833071681:
+    name: OS
+    type: Application
+associations:
+- AppExecution:
+    appExecutedApps:
+    - -417196716273090511
+    hostApp:
+    - 6772009123833071681
+- ApplicationConnection:
+    appConnections:
+    - 6390007059522275841
+    applications:
+    - -417196716273090511
+- NetworkConnection:
+    netConnections:
+    - 6390007059522275841
+    networks:
+    - -1622070020351243270
+- AppContainment:
+    containedData:
+    - -2953439081723377585
+    containingApp:
+    - 6772009123833071681
+- ApplicationVulnerability_SoftwareVulnerability_Application:
+    application:
+    - 6772009123833071681
+    vulnerabilities:
+    - 5666347064169940679
+- ExecutionPrivilegeAccess:
+    execPrivApps:
+    - -417196716273090511
+    executionPrivIAMs:
+    - 2244366896821059655
+- UserAssignedIdentities:
+    userIds:
+    - 2244366896821059655
+    users:
+    - 5336733277926737003
+attackers:
+  -6367219559511342944:
+    entry_points:
+      -1622070020351243270:
+        attack_steps:
+        - accessUninspected
+      5336733277926737003:
+        attack_steps:
+        - attemptSocialEngineering
+    name: Attacker:-6367219559511342944
+metadata:
+  MAL-Toolbox Version: 0.1.2
+  info: Created by the mal-toolbox model python module.
+  langID: org.mal-lang.coreLang
+  langVersion: 1.0.0
+  malVersion: 0.1.0-SNAPSHOT
+  name: /home/andrew/mal-toolbox/tests/testdata/example_model.sCAD

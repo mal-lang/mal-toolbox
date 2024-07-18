@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError
-from ..language import specification
 from ..model import Model
 from ..exceptions import AttackGraphException
 from ..file_utils import (
@@ -37,7 +36,8 @@ def _process_step_expression(
     Recursively process an attack step expression.
 
     Arguments:
-    lang            - a dictionary representing the MAL language specification
+    lang_graph      - a language graph representing the MAL language
+                      specification
     model           - a maltoolbox.model.Model instance from which the attack
                       graph was generated
     target_assets   - the list of assets that this step expression should apply
@@ -150,11 +150,28 @@ def _process_step_expression(
                     step_expression['stepExpression'])
                 new_target_assets.extend(assets)
 
-            selected_new_target_assets = [asset for asset in \
-                new_target_assets if specification.extends_asset(
-                    lang_graph._lang_spec,
-                    asset.type,
-                    step_expression['subType'])]
+            selected_new_target_assets = []
+            for asset in new_target_assets:
+                lang_graph_asset = lang_graph.get_asset_by_name(
+                    asset.type
+                )
+                if not lang_graph_asset:
+                    raise LookupError(
+                        f'Failed to find asset \"{asset.type}\" in the '
+                        'language graph.'
+                    )
+                lang_graph_subtype_asset = lang_graph.get_asset_by_name(
+                    step_expression['subType']
+                )
+                if not lang_graph_subtype_asset:
+                    raise LookupError(
+                        'Failed to find asset '
+                        f'\"{step_expression["subType"]}\" in the '
+                        'language graph.'
+                    )
+                if lang_graph_asset.is_subasset_of(lang_graph_subtype_asset):
+                    selected_new_target_assets.append(asset)
+
             return (selected_new_target_assets, None)
 
         case 'collect':

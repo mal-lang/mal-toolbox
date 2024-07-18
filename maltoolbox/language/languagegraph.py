@@ -1105,3 +1105,81 @@ class LanguageGraph():
         self.associations = []
         self.attack_steps = []
         self._generate_graph()
+
+    def get_asset_by_name(
+            self,
+            asset_name
+    ) -> Optional[LanguageGraphAsset]:
+        """
+        Get an asset based on its name
+
+        Arguments:
+        asset_name  - a string containing the asset name
+
+        Return:
+        The asset matching the name.
+        None if there is no match.
+        """
+        for asset in self.assets:
+            if asset.name == asset_name:
+                return asset
+
+        return None
+
+    def get_association_by_fields_and_assets(
+            self,
+            first_field: str,
+            second_field: str,
+            first_asset_name: str,
+            second_asset_name: str
+        ) -> Optional[LanguageGraphAssociation]:
+        """
+        Get an association based on its field names and asset types
+
+        Arguments:
+        first_field         - a string containing the first field
+        second_field        - a string containing the second field
+        first_asset_name    - a string representing the first asset type
+        second_asset_name   - a string representing the second asset type
+
+        Return:
+        The association matching the fieldnames and asset types.
+        None if there is no match.
+        """
+        first_asset = self.get_asset_by_name(first_asset_name)
+        if first_asset is None:
+            raise LookupError(
+                f'Failed to find asset with name \"{first_asset_name}\" in '
+                'the language graph.'
+            )
+
+        second_asset = self.get_asset_by_name(second_asset_name)
+        if second_asset is None:
+            raise LookupError(
+                f'Failed to find asset with name \"{second_asset_name}\" in '
+                'the language graph.'
+            )
+
+        for assoc in self.associations:
+            logger.debug(
+                'Compare ("%s", "%s", "%s", "%s") to ("%s", "%s", "%s", "%s").',
+                first_asset_name, first_field,
+                second_asset_name, second_field,
+                assoc.left_field.asset.name, assoc.left_field.fieldname,
+                assoc.right_field.asset.name, assoc.right_field.fieldname
+            )
+
+            # If the asset and fields match either way we accept it as a match.
+            if assoc.left_field.fieldname == first_field and \
+                assoc.right_field.fieldname == second_field and \
+                first_asset.is_subasset_of(assoc.left_field.asset) and \
+                second_asset.is_subasset_of(assoc.right_field.asset):
+                return assoc
+
+            if assoc.left_field.fieldname == second_field and \
+                assoc.right_field.fieldname == first_field and \
+                second_asset.is_subasset_of(assoc.left_field.asset) and \
+                first_asset.is_subasset_of(assoc.right_field.asset):
+                return assoc
+
+        return None
