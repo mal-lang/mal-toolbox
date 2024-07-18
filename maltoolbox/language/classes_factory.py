@@ -204,14 +204,14 @@ class LanguageClassesFactory:
         Return: The matching association name if a match is found.
         None if there is no match.
         """
-        if not assoc_name in self.json_schema['definitions']\
-                ['LanguageAssociation']['definitions']:
+        lang_assocs_entries = self.json_schema['definitions']\
+                ['LanguageAssociation']['definitions']
+        if not assoc_name in lang_assocs_entries:
             raise LookupError(
                 'Failed to find "%s" association in the language json '
                 'schema.' % assoc_name
             )
-        assoc_entry = self.json_schema['definitions']\
-                ['LanguageAssociation']['definitions'][assoc_name]
+        assoc_entry = lang_assocs_entries[assoc_name]
         # If the association has a oneOf property it should always have more
         # than just one alternative, but check just in case
         if 'definitions' in assoc_entry and \

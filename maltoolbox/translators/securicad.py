@@ -104,7 +104,7 @@ def load_model_from_scad_archive(
             target_id = right_id
             target_prop = child.attrib['sourceProperty']
 
-        if  attacker_id is not None:
+        if attacker_id is not None:
             attacker = instance_model.get_attacker_by_id(attacker_id)
             if not attacker:
                 logger.error(
