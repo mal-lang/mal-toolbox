@@ -13,7 +13,9 @@ Subpackages
    :maxdepth: 4
 
    maltoolbox.attackgraph
+   maltoolbox.ingestors
    maltoolbox.language
+   maltoolbox.translators
 
 Submodules
 ----------

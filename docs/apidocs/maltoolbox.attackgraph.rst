@@ -6,6 +6,14 @@ maltoolbox.attackgraph package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   maltoolbox.attackgraph.analyzers
+
 Submodules
 ----------
 
