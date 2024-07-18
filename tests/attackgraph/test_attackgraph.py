@@ -8,6 +8,7 @@ from maltoolbox.attackgraph import AttackGraph
 from maltoolbox.model import Model, AttackerAttachment
 
 from test_model import create_application_asset, create_association
+from conftest import path_testdata
 
 
 @pytest.fixture
@@ -393,3 +394,28 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
         assert node_to_remove not in parent.children
     for child in children:
         assert node_to_remove not in child.parents
+
+def test_attackgraph_from_file():
+    from maltoolbox.wrappers import create_attack_graph
+
+    ag = create_attack_graph(
+        path_testdata('org.mal-lang.coreLang-1.0.0.mar'),
+        path_testdata('example_model.yml')
+    )
+
+    assert "OS App:fullAccess" in ag._full_name_to_node # SUCCESS
+    assert "Program 1:fullAccess" in ag._full_name_to_node # SUCCESS
+    assert "Identity:5:assume" in ag._full_name_to_node # SUCCESS
+
+    from maltoolbox.attackgraph.analyzers import apriori
+    apriori.calculate_viability_and_necessity(ag)
+
+    assert "OS App:fullAccess" in ag._full_name_to_node # SUCCESS
+    assert "Program 1:fullAccess" in ag._full_name_to_node # SUCCESS
+    assert "Identity:5:assume" in ag._full_name_to_node # SUCCESS
+    
+    # The ones below FAILS!!!
+    apriori.prune_unviable_and_unnecessary_nodes(ag)
+    assert "OS App:fullAccess" in ag._full_name_to_node # FAILS
+    assert "Program 1:fullAccess" in ag._full_name_to_node # FAILS
+    assert "Identity:5:assume" in ag._full_name_to_node # FAILS

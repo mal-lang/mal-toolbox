@@ -1,0 +1,105 @@
+assets:
+  0:
+    defenses:
+      notPresent: 0.0
+      supplyChainAuditing: 0.0
+    type: Application
+    name: OS App
+  1:
+    defenses:
+      notPresent: 0.0
+      supplyChainAuditing: 0.0
+    type: Application
+    name: Program 1
+  2:
+    defenses:
+      availabilityImpactLimitations: 0.0
+      confidentialityImpactLimitations: 0.0
+      highComplexityExploitRequired: 0.0
+      highPrivilegesRequired: 0.0
+      integrityImpactLimitations: 0.0
+      localAccessRequired: 0.0
+      lowPrivilegesRequired: 0.0
+      networkAccessRequired: 0.0
+      notPresent: 0.0
+      physicalAccessRequired: 0.0
+      userInteractionRequired: 0.0
+    type: SoftwareVulnerability
+    name: SoftwareVulnerability:2
+  3:
+    defenses:
+      notPresent: 0.0
+    type: Data
+    name: Data:3
+  4:
+    defenses:
+      notPhishable: 0.0
+    type: Credentials
+    name: Credentials:4
+  5:
+    defenses:
+      notPresent: 0.0
+    type: Identity
+    name: Identity:5
+  6:
+    defenses:
+      payloadInspection: 0.0
+      restricted: 0.0
+    type: ConnectionRule
+    name: ConnectionRule:6
+  7:
+    defenses:
+      notPresent: 0.0
+      supplyChainAuditing: 0.0
+    type: Application
+    name: Other OS App
+associations:
+- AppExecution:
+    appExecutedApps:
+    - 1
+    hostApp:
+    - 0
+- ApplicationVulnerability_SoftwareVulnerability_Application:
+    application:
+    - 0
+    vulnerabilities:
+    - 2
+- AppContainment:
+    containedData:
+    - 3
+    containingApp:
+    - 1
+- IdentityCredentials:
+    credentials:
+    - 4
+    identities:
+    - 5
+- InfoContainment:
+    containerData:
+    - 3
+    information:
+    - 4
+- ApplicationConnection:
+    appConnections:
+    - 6
+    applications:
+    - 0
+    - 7
+- ExecutionPrivilegeAccess:
+    execPrivApps:
+    - 7
+    executionPrivIAMs:
+    - 5
+attackers:
+  8:
+    entry_points:
+      0:
+        attack_steps:
+        - networkConnectUninspected
+    name: Attacker:8
+metadata:
+  info: Created by the mal-toolbox model python module.
+  langID: org.mal-lang.coreLang
+  langVersion: 1.0.0
+  malVersion: 0.1.0-SNAPSHOT
+  name: MAL Simulator Example Model
