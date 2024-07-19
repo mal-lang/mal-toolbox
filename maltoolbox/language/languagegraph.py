@@ -1001,7 +1001,7 @@ class LanguageGraph():
                 attack_steps[step['name']] = copy.deepcopy(step)
             else:
                 if attack_steps[step['name']]['reaches'] is not None and \
-                        'stepExpression' in \
+                        'stepExpressions' in \
                         attack_steps[step['name']]['reaches']:
                     attack_steps[step['name']]['reaches']['stepExpressions'].\
                         extend(step['reaches']['stepExpressions'])
