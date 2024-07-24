@@ -622,7 +622,7 @@ class LanguageGraph():
                     new_dep_chain,
                     attack_step)
 
-            case 'subtype':
+            case 'subType':
                 # Create a subType tuple entry that applies to the next
                 # component of the step expression and changes the target
                 # asset to the subasset.
@@ -651,7 +651,7 @@ class LanguageGraph():
                     return (None, None, None)
 
                 new_dep_chain = DependencyChain(
-                    type = 'subtype',
+                    type = 'subType',
                     next_link = result_dep_chain)
                 new_dep_chain.subtype = subtype_asset
                 return (subtype_asset,
@@ -748,19 +748,18 @@ class LanguageGraph():
                                 new_dep_chain
                             )
 
-                case 'subtype':
-                    #TODO FIX BUG: new_dep_chain is undefined
-                    # result_reverse_chain = self.reverse_dep_chain(
-                    #     new_dep_chain.next_link,
-                    #     reverse_chain
-                    # )
-                    # new_dep_chain = DependencyChain(
-                    #     type = 'subtype',
-                    #     next_link = result_reverse_chain
-                    # )
-                    # new_dep_chain.subtype = dep_chain.subtype
-                    # return new_dep_chain
-                    return reverse_chain
+                case 'subType':
+                    result_reverse_chain = self.reverse_dep_chain(
+                        dep_chain.next_link,
+                        reverse_chain
+                    )
+                    new_dep_chain = DependencyChain(
+                        type = 'subType',
+                        next_link = result_reverse_chain
+                    )
+                    new_dep_chain.subtype = dep_chain.subtype
+                    return new_dep_chain
+                    # return reverse_chain
 
                 case _:
                     msg = 'Unknown assoc chain element "%s"'
