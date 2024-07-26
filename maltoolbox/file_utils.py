@@ -30,6 +30,7 @@ def save_dict_to_yaml_file(filename: str, serialized_object: dict) -> None:
         lambda dumper, data: dumper.represent_data(data._value),
         yaml.SafeDumper
     )
+    yaml.SafeDumper.ignore_aliases = lambda *data: True
 
     with open(filename, 'w', encoding='utf-8') as f:
         yaml.dump(serialized_object, f, Dumper=yaml.SafeDumper)
