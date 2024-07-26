@@ -287,6 +287,7 @@ class AttackGraph():
                 'mitre_info' in node_dict else None
             ag_node.tags = node_dict['tags'] if \
                 'tags' in node_dict else []
+            ag_node.extras = node_dict.get('extras', [])
 
             # Add AttackGraphNode to AttackGraph
             attack_graph.add_node(ag_node, node_id=node_dict['id'])

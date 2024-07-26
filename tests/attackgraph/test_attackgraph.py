@@ -81,6 +81,10 @@ def attackgraph_save_load_no_model_given(
     """Save AttackGraph to a file and load it
     Note: Will create file in /tmp"""
 
+    reward = 1
+    node_with_reward_before = example_attackgraph.nodes[0]
+    node_with_reward_before.extras['reward'] = reward
+
     if attach_attackers:
         example_attackgraph.attach_attackers()
 
@@ -90,6 +94,12 @@ def attackgraph_save_load_no_model_given(
 
     # Load the attack graph
     loaded_attack_graph = AttackGraph.load_from_file(example_graph_path)
+    assert node_with_reward_before.id is not None
+    node_with_reward_after = loaded_attack_graph.get_node_by_id(
+        node_with_reward_before.id
+    )
+    assert node_with_reward_after is not None
+    assert node_with_reward_after.extras.get('reward') == reward
 
     # The model will not exist in the loaded attack graph
     assert loaded_attack_graph.model is None
