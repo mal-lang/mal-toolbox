@@ -114,8 +114,8 @@ def test_attackgraph_find_multiple():
                 lambda node: node.name == "Node1"
             ),
             SearchCondition(
-                lambda _: True, # Match any node any number of times
-                max_repeated=math.inf
+                SearchCondition.ANY, # Match any node
+                max_repeated=math.inf # Any number of times
             ),
             SearchCondition(
                 lambda node: node.name in ("Node6", "Node7")

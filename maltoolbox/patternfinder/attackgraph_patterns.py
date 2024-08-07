@@ -36,12 +36,14 @@ class SearchPattern:
             matching_paths.extend(
                 find_matches_recursively(node, self.conditions)
             )
-
         return matching_paths
 
 @dataclass
 class SearchCondition:
     """A condition that has to be true for a node to match"""
+
+    # Predefined search conditions
+    ANY = lambda _: True
 
     # `matches` should be a lambda that takes node as input and returns bool
     # If lamdba returns True for a node, the node matches
