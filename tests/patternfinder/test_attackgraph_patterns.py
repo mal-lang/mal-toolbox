@@ -26,7 +26,7 @@ def example_attackgraph(corelang_lang_graph, model: Model):
     model.add_asset(app2)
 
     # Create association between app1 and app2
-    assoc = create_association(model, from_assets=[app1], to_assets=[app2])
+    assoc = create_association(model, left_assets=[app1], right_assets=[app2])
     model.add_association(assoc)
 
     attacker = AttackerAttachment()
@@ -94,16 +94,16 @@ def test_attackgraph_find_multiple():
     attack_graph = AttackGraph()
 
     # Create the graph
-    node1 =AttackGraphNode("Application:Node1", "and", "Node1", {})
-    node2 =AttackGraphNode("Application:Node2", "and", "Node2", {}, parents=[node1])
-    node3 =AttackGraphNode("Application:Node3", "and", "Node3", {}, parents=[node1])
+    node1 = AttackGraphNode("and", "Node1", {})
+    node2 = AttackGraphNode("and", "Node2", {}, parents=[node1])
+    node3 = AttackGraphNode("and", "Node3", {}, parents=[node1])
     node1.children = [node2, node3]
-    node4 =AttackGraphNode("Application:Node4", "and", "Node4", {}, parents=[node2])
+    node4 = AttackGraphNode("and", "Node4", {}, parents=[node2])
     node2.children = [node4]
-    node5 =AttackGraphNode("Application:Node5", "and", "Node5", {}, parents=[node3])
-    node6 =AttackGraphNode("Application:Node6", "and", "Node6", {}, parents=[node3])
+    node5 = AttackGraphNode("and", "Node5", {}, parents=[node3])
+    node6 = AttackGraphNode("and", "Node6", {}, parents=[node3])
     node3.children = [node5, node6]
-    node7 =AttackGraphNode("Application:Node7", "and", "Node7", {}, parents=[node4])
+    node7 = AttackGraphNode("and", "Node7", {}, parents=[node4])
     node4.children = [node7]
     attack_graph.nodes = [node1, node2, node3, node4, node5, node6, node7]
     
@@ -144,17 +144,17 @@ def test_attackgraph_find_multiple_same_subpath():
     attack_graph = AttackGraph()
 
     # Create the graph
-    node1 = AttackGraphNode("Application:Node1", "and", "Node1", {})
+    node1 = AttackGraphNode("and", "Node1", {})
     node2 = AttackGraphNode(
-        "Application:Node2", "and", "Node2", {}, parents=[node1])
+        "and", "Node2", {}, parents=[node1])
     node3 = AttackGraphNode(
-        "Application:Node3", "and", "Node3", {}, parents=[node1])
+        "and", "Node3", {}, parents=[node1])
     node1.children = [node2, node3]
     node4 = AttackGraphNode(
-        "Application:Node4", "and", "Node4", {}, parents=[node2])
+        "and", "Node4", {}, parents=[node2])
     node2.children = [node4]
     node5 = AttackGraphNode(
-        "Application:Node5", "and", "Node5", {}, parents=[node3])
+        "and", "Node5", {}, parents=[node3])
     node3.children = [node5]
     attack_graph.nodes = [node1, node2, node3, node4, node5]
 
