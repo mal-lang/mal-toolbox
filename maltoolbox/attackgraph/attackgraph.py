@@ -623,8 +623,8 @@ class AttackGraph():
             self,
             attacker: Attacker,
             attacker_id: Optional[int] = None,
-            entry_points: list[int] = [],
-            reached_attack_steps: list[int] = []
+            entry_points: list[int | str] = [],
+            reached_attack_steps: list[int | str] = []
         ):
         """Add an attacker to the graph
         Arguments:
@@ -653,7 +653,10 @@ class AttackGraph():
 
         self.next_attacker_id = max(attacker.id + 1, self.next_attacker_id)
         for node_id in reached_attack_steps:
-            node = self.get_node_by_id(int(node_id))
+            if isinstance(node_id, str) and not node_id.isnumeric():
+                raise TypeError(f"Node id {node_id} in reached_attack_steps not numeric")
+            node_id = int(node_id)
+            node = self.get_node_by_id(node_id)
             if node:
                 attacker.compromise(node)
             else:
@@ -662,7 +665,10 @@ class AttackGraph():
                 logger.error(msg, node_id)
                 raise AttackGraphException(msg % node_id)
         for node_id in entry_points:
-            node = self.get_node_by_id(int(node_id))
+            if isinstance(node_id, str) and not node_id.isnumeric():
+                raise TypeError(f"Node id {node_id} in entry_points not numeric")
+            node_id = int(node_id)
+            node = self.get_node_by_id(node_id)
             if node:
                 attacker.entry_points.append(node)
             else:
