@@ -4,8 +4,9 @@ import pytest
 from unittest.mock import patch
 
 from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.attackgraph import AttackGraph, Attacker
 from maltoolbox.model import Model, AttackerAttachment
+from maltoolbox.exceptions import AttackGraphException
 
 from test_model import create_application_asset, create_association
 
@@ -386,6 +387,33 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
 def test_attackgraph_regenerate_graph():
     """Make sure graph is regenerated"""
     pass
+
+
+def test_attackgraph_add_attacker_bad_entrypoints(example_attackgraph):
+    """Make sure errors are thrown when attacker is added with bad
+    (wrong type/nonexistent) entrypoints or reached_attack_steps"""
+
+    # Add an attacker to the graph
+    attacker1 = Attacker("Attacker1")
+
+    with pytest.raises(TypeError):
+        example_attackgraph.add_attacker(
+            attacker1, reached_attack_steps=[0], entry_points=["STRING"])
+
+    with pytest.raises(TypeError):
+        example_attackgraph.add_attacker(
+            attacker1, reached_attack_steps=["STRING"], entry_points=[0])
+
+    with pytest.raises(AttackGraphException):
+        example_attackgraph.add_attacker(
+            attacker1, reached_attack_steps=["100000"], entry_points=[0])
+
+    with pytest.raises(AttackGraphException):
+        example_attackgraph.add_attacker(
+            attacker1, reached_attack_steps=[0], entry_points=["100000"])
+
+    example_attackgraph.add_attacker(
+        attacker1, reached_attack_steps=[0], entry_points=[0])
 
 
 def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
