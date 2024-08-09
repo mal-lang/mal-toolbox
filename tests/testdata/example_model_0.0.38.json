@@ -1,0 +1,140 @@
+{
+  "metadata": {
+    "name": "Example Model",
+    "langVersion": "1.0.0",
+    "langID": "org.mal-lang.coreLang",
+    "malVersion": "0.1.0-SNAPSHOT",
+    "info": "Created by the mal-toolbox model python module."
+  },
+  "assets": {
+    "0": {
+      "name": "OS App",
+      "metaconcept": "Application",
+      "eid": "0",
+      "defenses": {}
+    },
+    "1": {
+      "name": "Program 1",
+      "metaconcept": "Application",
+      "eid": "1",
+      "defenses": {}
+    },
+    "2": {
+      "name": "SoftwareVulnerability:2",
+      "metaconcept": "SoftwareVulnerability",
+      "eid": "2",
+      "defenses": {}
+    },
+    "3": {
+      "name": "Data:3",
+      "metaconcept": "Data",
+      "eid": "3",
+      "defenses": {}
+    },
+    "4": {
+      "name": "Credentials:4",
+      "metaconcept": "Credentials",
+      "eid": "4",
+      "defenses": {}
+    },
+    "5": {
+      "name": "Identity:5",
+      "metaconcept": "Identity",
+      "eid": "5",
+      "defenses": {}
+    },
+    "6": {
+      "name": "ConnectionRule:6",
+      "metaconcept": "ConnectionRule",
+      "eid": "6",
+      "defenses": {}
+    },
+    "7": {
+      "name": "Other OS App",
+      "metaconcept": "Application",
+      "eid": "7",
+      "defenses": {}
+    }
+  },
+  "associations": [
+    {
+      "metaconcept": "AppExecution",
+      "association": {
+        "hostApp": [
+          "0"
+        ],
+        "appExecutedApps": [
+          "1"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationVulnerability_SoftwareVulnerability_Application",
+      "association": {
+        "vulnerabilities": [
+          "2"
+        ],
+        "application": [
+          "0"
+        ]
+      }
+    },
+    {
+      "metaconcept": "AppContainment",
+      "association": {
+        "containedData": [
+          "3"
+        ],
+        "containingApp": [
+          "1"
+        ]
+      }
+    },
+    {
+      "metaconcept": "IdentityCredentials",
+      "association": {
+        "identities": [
+          "5"
+        ],
+        "credentials": [
+          "4"
+        ]
+      }
+    },
+    {
+      "metaconcept": "InfoContainment",
+      "association": {
+        "containerData": [
+          "3"
+        ],
+        "information": [
+          "4"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationConnection",
+      "association": {
+        "applications": [
+          "0",
+          "7"
+        ],
+        "appConnections": [
+          "6"
+        ]
+      }
+    }
+  ],
+  "attackers": {
+    "8": {
+      "name": "Attacker:8",
+      "entry_points": {
+        "0": {
+          "attack_steps": [
+            "networkConnectUninspected"
+          ]
+        }
+      }
+    }
+  }
+}
