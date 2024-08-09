@@ -1,10 +1,11 @@
+import argparse
 import json
 import logging
 
 import yaml
 
 from ..model import Model, AttackerAttachment
-from ..language import LanguageClassesFactory
+from ..language import LanguageClassesFactory, LanguageGraph
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,9 @@ def load_model_from_older_version(
         version: str
     ) -> Model:
     match (version):
+        case '0.0.38':
+            return load_model_from_version_0_0_39(filename,
+                lang_classes_factory)
         case '0.0.39':
             return load_model_from_version_0_0_39(filename,
                 lang_classes_factory)
@@ -130,3 +134,37 @@ def load_model_from_version_0_0_39(
         logger.error(msg)
         raise ValueError(msg)
     return None
+
+
+def load_model_and_save_to_new_format(
+        model_file_name,
+        lang_classes_factory,
+        new_model_file_name
+    ):
+    """A wrapper to decide version, load model and save to new maltoolbox format"""
+
+    with open(model_file_name, 'r', encoding='utf-8') as model_file:
+        if model_file_name.endswith('.yml') or model_file_name.endswith('.yaml'):
+            model_dict = yaml.safe_load(model_file)
+        elif model_file_name.endswith('json'):
+            model_dict = json.load(model_file)
+
+        version = model_dict['metadata']['MAL Toolbox Version']
+        model = load_model_from_older_version(
+            model_file_name, lang_classes_factory, version)
+        model.save_to_file(new_model_file_name)
+
+if __name__ == '__main__':
+    """CLI to load old version model and save to new format"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('model_file', type=str)
+    parser.add_argument('language', type=str, help=".mar file")
+    parser.add_argument('outfile', type=str, help="outfile for new converted model")
+    args = parser.parse_args()
+
+    lang_graph = LanguageGraph.from_mar_archive(args.language)
+    lang_classes_factory = LanguageClassesFactory(lang_graph)
+
+    load_model_and_save_to_new_format(
+        args.model_file, lang_classes_factory, args.outfile
+    )
