@@ -1,8 +1,10 @@
 """Tests for attack graph pattern matching"""
+
+import math
 import pytest
+
 from maltoolbox.model import Model, AttackerAttachment
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
-import math
 
 from maltoolbox.patternfinder.attackgraph_patterns import (
     SearchPattern, SearchCondition
@@ -181,3 +183,51 @@ def test_attackgraph_find_multiple_same_subpath():
     assert [node1, node3, node5] in paths
     assert [node1, node2] in paths
     assert [node1, node3] in paths
+
+
+def test_attackgraph_two_same_start_end_node():
+    """Create a simple AttackGraph, find paths which match pattern
+       where both matching paths start and end att the same node
+    
+                            Node1
+                          /       \
+                      Node2       Node3
+                          \        /
+                             Node4
+    """
+    attack_graph = AttackGraph()
+
+    # Create the graph
+    node1 = AttackGraphNode("and", "Node1", {})
+    assert node1.name == "Node1"
+    node2 = AttackGraphNode(
+        "and", "Node2", {}, parents=[node1])
+    node3 = AttackGraphNode(
+        "and", "Node3", {}, parents=[node1])
+    node1.children = [node2, node3]
+    node4 = AttackGraphNode(
+        "and", "Node4", {}, parents=[node2, node3])
+    node2.children = [node4]
+    node3.children = [node4]
+
+    attack_graph.nodes = [node1, node2, node3, node4]
+
+    # Create the search pattern to find paths from Node1 to any node
+    pattern = SearchPattern(
+        [
+            SearchCondition(
+                lambda node: node.name == "Node1"
+            ),
+            SearchCondition(
+                SearchCondition.ANY
+            ),
+            SearchCondition(
+                lambda node: node.name == "Node4"
+            )
+        ]
+    )
+    paths = pattern.find_matches(attack_graph)
+
+    # Make sure we find expected paths
+    assert [node1, node2, node4] in paths
+    assert [node1, node3, node4] in paths
