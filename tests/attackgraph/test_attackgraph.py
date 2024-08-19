@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch
 
 from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 from maltoolbox.model import Model, AttackerAttachment
 
 from test_model import create_application_asset, create_association
@@ -403,3 +403,68 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
         assert node_to_remove not in parent.children
     for child in children:
         assert node_to_remove not in child.parents
+
+def test_attackgraph_calculate_reachability(example_attackgraph: AttackGraph):
+    """Make sure reachability is set correctly"""
+    assert not example_attackgraph.attackers
+    example_attackgraph.attach_attackers()
+    attacker = example_attackgraph.attackers[0]
+
+    for node in attacker.reached_attack_steps:
+        # Lists should be empty first
+        assert attacker not in node.reachable_by
+        assert node not in attacker.reachable_attack_steps
+
+    # Run the function
+    example_attackgraph.calculate_reachability()
+
+    # Verify the reachability of the reached attack steps
+    reached_attack_steps_descendants: list[AttackGraphNode] = []
+    for node in attacker.reached_attack_steps:
+        assert attacker in node.reachable_by
+        reached_attack_steps_descendants.extend(node.children)
+
+    # Go through all descendants of the reached attack steps
+    # and verify their reachability
+    while reached_attack_steps_descendants:
+        node = reached_attack_steps_descendants.pop()
+
+        if node.type == "or":
+            # All or-nodes that are children of reachable nodes are reachable
+            assert node.is_reachable()
+            reached_attack_steps_descendants.extend(node.children)
+
+        elif node.type == "and":
+            # Check if all parents are reachable
+            all_parents_reachable = True
+            for parent in node.parents:
+                if not parent.is_reachable():
+                    all_parents_reachable = False
+                    continue
+
+            if node.is_reachable():
+                # Reachable and-node must have all parents reachable
+                assert all_parents_reachable
+                reached_attack_steps_descendants.extend(node.children)
+            else:
+                # Non-reachable and-node must have non-reachable parent
+                assert not all_parents_reachable
+        else:
+            # Only attack step nodes (and/or) are reachable
+            assert not node.is_reachable()
+
+
+def test_attackgraph_reachable_steps_added_to_attacker(
+        example_attackgraph: AttackGraph):
+    """Make sure node.is_reachable_by(attacker)
+    matches attacker.reachable_attack_steps"""
+
+    example_attackgraph.attach_attackers()
+    attacker = example_attackgraph.attackers[0]
+    example_attackgraph.calculate_reachability()
+
+    found_reachable = [
+        node for node in example_attackgraph.nodes
+        if node.is_reachable_by(attacker)
+    ]
+    assert len(found_reachable) == len(attacker.reachable_attack_steps)

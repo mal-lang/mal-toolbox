@@ -7,12 +7,15 @@ from maltoolbox.attackgraph.attackgraph import AttackGraph
 def test_attacker_to_dict():
     """Test Attacker to dict conversion"""
     node1 = AttackGraphNode(
+        id = 1,
         type = "or",
         name = "node1"
     )
-    attacker = Attacker("Test Attacker", [], [node1])
+    attacker_id = 0
+    attacker = Attacker("Test Attacker", attacker_id, [], [node1])
+
     assert attacker.to_dict() == {
-        "id": None,
+        "id": attacker.id,
         "name": "Test Attacker",
         "entry_points": {},
         "reached_attack_steps": {
