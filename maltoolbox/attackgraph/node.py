@@ -23,6 +23,7 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list[Attacker] = field(default_factory=list)
+    reachable_by: list[Attacker] = field(default_factory=list)
     mitre_info: Optional[str] = None
     tags: list[str] = field(default_factory=lambda: [])
     attributes: Optional[dict] = None
@@ -40,7 +41,9 @@ class AttackGraphNode:
             'children': {},
             'parents': {},
             'compromised_by': [attacker.name for attacker in \
-                self.compromised_by]
+                self.compromised_by],
+            'reachable_by': [attacker.name for attacker in \
+                self.reachable_by]
         }
 
         for child in self.children:
@@ -106,6 +109,23 @@ class AttackGraphNode:
                       list.
         """
         attacker.undo_compromise(self)
+
+    def is_reachable(self) -> bool:
+        """
+        Return True if any attackers can reach this node.
+        False, otherwise.
+        """
+        return len(self.reachable_by) > 0
+
+    def is_reachable_by(self, attacker: Attacker) -> bool:
+        """
+        Return True if the attacker given as argument can reach this node.
+        False, otherwise.
+
+        Arguments:
+        attacker    - the attacker we are interested in
+        """
+        return attacker in self.reachable_by
 
     def is_enabled_defense(self) -> bool:
         """

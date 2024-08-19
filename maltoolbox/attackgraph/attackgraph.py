@@ -512,7 +512,8 @@ class AttackGraph():
                     is_necessary = True,
                     mitre_info = mitre_info,
                     tags = attack_step_attribs['tags'],
-                    compromised_by = []
+                    compromised_by = [],
+                    reachable_by=[]
                 )
                 ag_node.attributes = attack_step_attribs
                 attack_step_nodes.append(ag_node)
@@ -689,3 +690,59 @@ class AttackGraph():
         if not isinstance(attacker.id, int):
             raise ValueError(f'Invalid attacker id.')
         del self._id_to_attacker[attacker.id]
+
+    def calculate_reachability_for_attacker(self, attacker: Attacker) -> None:
+        """Calculate the reachability for an attacker to all attack steps
+        starting from the reached attack steps and propagating to descendants
+
+        Args:
+        attacker - the attacker to calculate reachability for
+        """
+
+        def is_reachable_from_reachable_parent(node):
+            """Assumes that node is a child of a reachable attack step"""
+
+            if not node.is_viable:
+                return False
+
+            if node.type == "and":
+                for parent in node.parents:
+                    if not parent.is_reachable_by(attacker):
+                        return False
+            elif node.type == "or":
+                # True since it is child of a reachable step
+                return True
+
+            # If not 'and'/'or', it is not an attack step
+            return False
+
+        queue: list[AttackGraphNode] = []
+        for reached_node in attacker.reached_attack_steps:
+            # Set reached nodes to reachable, and add their children to queue
+            reached_node.reachable_by.append(attacker)
+            attacker.reachable_attack_steps.append(reached_node)
+            queue.extend(reached_node.children)
+
+        while queue:
+            node_to_check = queue.pop()
+
+            if is_reachable_from_reachable_parent(node_to_check):
+                node_to_check.reachable_by.append(attacker)
+                attacker.reachable_attack_steps.append(node_to_check)
+                queue.extend(node_to_check.children)
+            else:
+                if attacker in node_to_check.reachable_by:
+                    node_to_check.reachable_by.remove(attacker)
+                if node_to_check in attacker.reachable_attack_steps:
+                    attacker.reachable_attack_steps.remove(node_to_check)
+
+    def calculate_reachability(self) -> None:
+        """Mark nodes reachable by each attacker
+
+        Go through attackers reached steps, add attacker to `reachable_by`
+        Then go through the reached nodes descendants and add attacker
+        to `reachable_by` if they are possible to reach for the attacker
+        """
+
+        for attacker in self.attackers:
+            self.calculate_reachability_for_attacker(attacker)
