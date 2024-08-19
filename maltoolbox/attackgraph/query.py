@@ -136,6 +136,7 @@ def update_attack_surface_add_nodes(
                 attack_surface.append(child)
     return attack_surface
 
+
 def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
     """
     Get the defense surface. All non-suppressed defense steps that are not
@@ -146,6 +147,7 @@ def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
     """
     logger.debug('Get the defense surface.')
     return [node for node in graph.nodes if node.is_available_defense()]
+
 
 def get_enabled_defenses(graph: AttackGraph) -> list[AttackGraphNode]:
     """

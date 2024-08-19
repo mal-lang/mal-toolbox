@@ -41,6 +41,7 @@ def propagate_viability_from_node(node: AttackGraphNode) -> None:
         if child.is_viable != original_value:
             propagate_viability_from_node(child)
 
+
 def propagate_necessity_from_node(node: AttackGraphNode) -> None:
     """
     Arguments:
@@ -99,6 +100,7 @@ def evaluate_viability(node: AttackGraphNode) -> None:
             logger.error(msg, node.full_name, node.id, node.type)
             raise ValueError(msg % (node.full_name, node.id, node.type))
 
+
 def evaluate_necessity(node: AttackGraphNode) -> None:
     """
     Arguments:
@@ -132,6 +134,7 @@ def evaluate_necessity(node: AttackGraphNode) -> None:
             logger.error(msg, node.full_name, node.id, node.type)
             raise ValueError(msg % (node.full_name, node.id, node.type))
 
+
 def evaluate_viability_and_necessity(node: AttackGraphNode) -> None:
     """
     Arguments:
@@ -139,6 +142,7 @@ def evaluate_viability_and_necessity(node: AttackGraphNode) -> None:
     """
     evaluate_viability(node)
     evaluate_necessity(node)
+
 
 def calculate_viability_and_necessity(graph: AttackGraph) -> None:
     """
@@ -153,6 +157,7 @@ def calculate_viability_and_necessity(graph: AttackGraph) -> None:
                 propagate_viability_from_node(node)
             if not node.is_necessary:
                 propagate_necessity_from_node(node)
+
 
 def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
     """
