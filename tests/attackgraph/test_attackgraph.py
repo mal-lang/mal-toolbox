@@ -468,3 +468,22 @@ def test_attackgraph_reachable_steps_added_to_attacker(
         if node.is_reachable_by(attacker)
     ]
     assert len(found_reachable) == len(attacker.reachable_attack_steps)
+
+
+def test_attackgraph_reachable_steps_removed_parent_not_reachable(
+        example_attackgraph: AttackGraph):
+    """Make sure node.is_reachable_by and attacker.reachable_steps
+    are False when node is not in reached_attack_steps any more"""
+
+    example_attackgraph.attach_attackers()
+    attacker = example_attackgraph.attackers[0]
+
+    example_attackgraph.calculate_reachability()
+    assert attacker.reachable_attack_steps
+    attacker.reached_attack_steps = []
+    example_attackgraph.calculate_reachability()
+    assert not attacker.reachable_attack_steps
+
+    for node in example_attackgraph.nodes:
+        assert not node.is_reachable()
+        assert not node.is_reachable_by(attacker)

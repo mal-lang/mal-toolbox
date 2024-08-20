@@ -747,5 +747,11 @@ class AttackGraph():
         to `reachable_by` if they are possible to reach for the attacker
         """
 
+        # clear reachable_by for each node
+        for node in self.nodes:
+            node.reachable_by.clear()
+
         for attacker in self.attackers:
+            # clear attacker reachable attack steps
+            attacker.reachable_attack_steps.clear()
             self.calculate_reachability_for_attacker(attacker)
