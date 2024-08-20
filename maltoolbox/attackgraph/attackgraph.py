@@ -695,49 +695,54 @@ class AttackGraph():
         attacker - the attacker to calculate reachability for
         """
 
-        def node_is_reachable_by(node: AttackGraphNode, attacker) -> bool:
-            """Determine if a node is reachable by attacker based on
-            its parents reachability"""
-            if not node.is_viable:
+        visited_node_ids = set() # To prevent reprocessing nodes
+
+        def attack_step_reachable_by(
+                node_with_reachable_parent: AttackGraphNode,
+                attacker: Attacker
+            ) -> bool:
+            """
+            Decide if attack step node with at least one reachable parent
+            is reachable by attacker based on its viability, type and parents
+            """
+
+            if not node_with_reachable_parent.is_viable:
                 return False
 
-            if node.type == "or":
+            if node_with_reachable_parent.type == "or":
                 # OR-Node is reachable if any parent is reachable
-                return any(parent.is_reachable_by(attacker)
-                           for parent in node.parents)
-
-            if node.type == "and":
+                return True
+            if node_with_reachable_parent.type == "and":
                 # Node is reachable only if all parents are reachable
                 return all(parent.is_reachable_by(attacker)
-                           for parent in node.parents)
+                           for parent in node_with_reachable_parent.parents)
 
+            # Not an attack step -> Not reachable
             return False
 
-        queue: list[AttackGraphNode] = []
-        visited_node_ids = set() # To prevent reprocessing nodes
+        def propagate_reachable(
+            reachable_node: AttackGraphNode, attacker: Attacker) -> None:
+            """
+            Mark node reachable for attacker and propagate to 
+            reachable children recursively.
+            """
+
+            if reachable_node in visited_node_ids:
+                # Already visited/calculated
+                return
+
+            visited_node_ids.add(reachable_node.id)
+            reachable_node.reachable_by.add(attacker)
+            attacker.reachable_attack_steps.add(reachable_node)
+
+            for child in reachable_node.children:
+                if attack_step_reachable_by(child, attacker):
+                    propagate_reachable(child, attacker)
+
+        # All reached attack_steps are reachable,
+        # propagate reachability to their children
         for reached_node in attacker.reached_attack_steps:
-            if reached_node.id not in visited_node_ids:
-                # Set reached nodes to reachable, add their children to queue
-                reached_node.reachable_by.add(attacker)
-                attacker.reachable_attack_steps.add(reached_node)
-                queue.extend(reached_node.children)
-                visited_node_ids.add(reached_node.id)
-
-        while queue:
-            node = queue.pop()
-
-            if node.id in visited_node_ids:
-                continue
-
-            if node_is_reachable_by(node, attacker):
-                node.reachable_by.add(attacker)
-                attacker.reachable_attack_steps.add(node)
-                queue.extend(node.children)
-            else:
-                if attacker in node.reachable_by:
-                    node.reachable_by.remove(attacker)
-                if node in attacker.reachable_attack_steps:
-                    attacker.reachable_attack_steps.remove(node)
+            propagate_reachable(reached_node, attacker)
 
     def calculate_reachability(self) -> None:
         """Mark nodes reachable by each attacker
