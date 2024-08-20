@@ -700,18 +700,20 @@ class AttackGraph():
         """
 
         def is_reachable_from_reachable_parent(node):
-            """Assumes that node is a child of a reachable attack step"""
+            """Return True if a node is reachable,
+            assuming at least one parent is reachable"""
 
             if not node.is_viable:
                 return False
+
+            if node.type == "or":
+                # True since node is child of a reachable node
+                return True
 
             if node.type == "and":
                 for parent in node.parents:
                     if not parent.is_reachable_by(attacker):
                         return False
-            elif node.type == "or":
-                # True since it is child of a reachable step
-                return True
 
             # If not 'and'/'or', it is not an attack step
             return False
