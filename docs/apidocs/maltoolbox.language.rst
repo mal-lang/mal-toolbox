@@ -22,4 +22,3 @@ Submodules
 
    maltoolbox.language.classes_factory
    maltoolbox.language.languagegraph
-   maltoolbox.language.specification

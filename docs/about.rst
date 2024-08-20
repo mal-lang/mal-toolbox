@@ -91,11 +91,32 @@ AttackGraph
 
 From a Model it is possible to create an :class:`maltoolbox.attackgraph.AttackGraph`.
 
+The point of the AttackGraph is to give an abstraction that shows each step an Attacker can take, analyze
+paths for an attacker and run simulations.
+
 While a Model consists of assets and associations, an AttackGraph instead contains :class:`maltoolbox.attackgraph.AttackGraphNode`.
 The AttackGraphNode can be an attack or defense step (defined in the MAL language for each type of asset).
 
-The point of the AttackGraph is to give an abstraction that shows each step an Attacker can take, and a way to analyze viable
-paths for an attacker and run simulations.
+AttackGraphNode
+""""""""""""""""
+An AttackGraphNode is an attack step or a defense step, decided by its type.
+If the node has type `and` or `or`, it is considered an attack step.
+
+Nodes can have these properties:
+
+* Viable
+    - Determine if a node can be traversed under any circumstances or
+    if the model structure or active defense steps makes it unviable.
+* Necessary
+    - Determine if a node is necessary for the attacker or if the
+    model structure means it is not needed(it behaves as if it were already
+    compromised) to compromise children attack steps.
+* Compromised
+    - An attacker compromises an attack step by reaching it (performing the attack step)
+* Traversable
+    -  Determines whether an attack step can be compromised in the next step.
+* Reachable
+    - Determines if a specific or any attacker can reach an attack step any time in the future from its currently reached attack steps.
 
 Generating an AttackGraph
 """""""""""""""""""""""""
@@ -126,7 +147,4 @@ From AttackGraph file:
     from maltoolbox.attackgraph import AttackGraph
 
     # Load the attack graph
-    loaded_attack_graph = AttackGraph()
-    loaded_attack_graph.load_from_file(example_graph_path)
-
-Note: The `load_from_file` will most likely be a class method in the future.
+    loaded_attack_graph = AttackGraph.load_from_file(example_graph_path)
