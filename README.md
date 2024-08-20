@@ -6,6 +6,8 @@ MAL ([Meta Attack Language](https://mal-lang.org/)) models and attack graphs.
 Attack graphs can be used to run simulations (see MAL Simulator) or analysis.
 MAL Toolbox also gives the ability to view the AttackGraph/Model graphically in neo4j.
 
+[Documentation](https://mal-lang.org/mal-toolbox/index.html)(Work in progress)
+
 ## The Language Module
 
 The language module provides various tools to process MAL languages.
