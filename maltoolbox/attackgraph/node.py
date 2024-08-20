@@ -23,7 +23,7 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list[Attacker] = field(default_factory=list)
-    reachable_by: list[Attacker] = field(default_factory=list)
+    reachable_by: set[Attacker] = field(default_factory=set)
     mitre_info: Optional[str] = None
     tags: list[str] = field(default_factory=lambda: [])
     attributes: Optional[dict] = None
@@ -71,6 +71,9 @@ class AttackGraphNode:
 
     def __repr__(self) -> str:
         return str(self.to_dict())
+
+    def __hash__(self) -> int:
+        return hash((self.id, self.full_name))
 
     def is_compromised(self) -> bool:
         """

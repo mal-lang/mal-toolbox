@@ -19,7 +19,7 @@ class Attacker:
     id: Optional[int] = None
     entry_points: list[AttackGraphNode] = field(default_factory=list)
     reached_attack_steps: list[AttackGraphNode] = field(default_factory=list)
-    reachable_attack_steps: list[AttackGraphNode] = field(default_factory=list)
+    reachable_attack_steps: set[AttackGraphNode] = field(default_factory=set)
 
     def to_dict(self) -> dict:
         attacker_dict: dict = {
@@ -44,6 +44,9 @@ class Attacker:
 
     def __repr__(self) -> str:
         return str(self.to_dict())
+
+    def __hash__(self) -> int:
+        return hash((self.id, self.name))
 
     def compromise(self, node: AttackGraphNode) -> None:
         """
