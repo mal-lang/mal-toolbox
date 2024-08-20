@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch
 
 from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
+from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.model import Model, AttackerAttachment
 
 from test_model import create_application_asset, create_association
@@ -487,3 +487,94 @@ def test_attackgraph_reachable_steps_removed_parent_not_reachable(
     for node in example_attackgraph.nodes:
         assert not node.is_reachable()
         assert not node.is_reachable_by(attacker)
+
+
+def test_attackgraph_reachability_custom_graph():
+    """Make sure reachability works as expected
+
+                    Node1
+                    viable
+                    or
+                    /   \
+                Node2   Node3
+                viable  viable
+                and     and
+                /           \
+            Node4    Node5    Node6
+            viable   unviable viable
+            and      and      and
+            /           |   |
+        Node7           Node8       Node9
+        viable          unviable    viable
+        and             and         or
+                          |         /
+                            Node10
+                            viable
+                            or
+    """
+    node1 = AttackGraphNode(id=1, type = "or", name = "node1", is_viable=True)
+    node2 = AttackGraphNode(id=2, type = "and", name = "node2", is_viable=True)
+    node3 = AttackGraphNode(id=3, type = "and", name = "node3", is_viable=True)
+    node4 = AttackGraphNode(id=4, type = "and", name = "node4", is_viable=True)
+    node5 = AttackGraphNode(id=5, type = "and", name = "node5", is_viable=False)
+    node6 = AttackGraphNode(id=6, type = "and", name = "node6", is_viable=True)
+    node7 = AttackGraphNode(id=7, type = "and", name = "node7", is_viable=True)
+    node8 = AttackGraphNode(id=8, type = "and", name = "node8", is_viable=False)
+    node9 = AttackGraphNode(id=9, type = "or", name = "node9", is_viable=True)
+    node10 = AttackGraphNode(id=10, type = "or", name = "node10", is_viable=True)
+
+    node1.children = [node2, node3]
+    node2.children = [node4]
+    node3.children = [node6]
+    node4.children = [node7]
+    node5.children = [node8]
+    node6.children = [node8]
+    node8.children = [node10]
+    node9.children = [node10]
+
+    node2.parents = [node1]
+    node3.parents = [node1]
+    node4.parents = [node2]
+    node6.parents = [node3]
+    node7.parents = [node4]
+    node8.parents = [node5, node6]
+    node10.parents = [node9]
+
+    graph = AttackGraph()
+    graph.nodes = [
+        node1, node2, node3, node4, node5, node6, node7, node8, node9, node10
+    ]
+
+    attacker = Attacker(
+        "Attacker1")
+    graph.add_attacker(attacker)
+
+    # If attacker has reached node1,
+    # all nodes except node5, 8, 9 and 10 should be reachable
+    attacker.reached_attack_steps=[node1]
+    graph.calculate_reachability()
+    should_be_reachable = set([node1, node2, node3, node4, node6, node7])
+    assert attacker.reachable_attack_steps == should_be_reachable
+
+
+    # If attacker has reached node9,
+    # node9 and node10 should be reachable
+    attacker.reached_attack_steps=[node9]
+    graph.calculate_reachability()
+    should_be_reachable = set([node9, node10])
+    assert attacker.reachable_attack_steps == should_be_reachable
+
+    # If attacker has reached node4,
+    # node4 and node7 should be reachable
+    attacker.reached_attack_steps=[node4]
+    graph.calculate_reachability()
+    should_be_reachable = set([node4, node7])
+    assert attacker.reachable_attack_steps == should_be_reachable
+
+    # If attacker has reached node1 and node9,
+    # all nodes except node5 and node8 should be reachable
+    attacker.reached_attack_steps=[node1, node9]
+    graph.calculate_reachability()
+    should_be_reachable = set(
+        [node1, node2, node3, node4, node6, node7, node9, node10])
+    assert attacker.reachable_attack_steps == should_be_reachable
