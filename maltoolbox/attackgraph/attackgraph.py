@@ -744,7 +744,7 @@ class AttackGraph():
             propagate_reachable(reached_node, attacker)
 
     def calculate_reachability(self) -> None:
-        """Mark nodes reachable by each attacker
+        """Mark reachable nodes reachable by each attacker
 
         For each attacker, calculate which nodes they can reach and
         update values in node.reachable_by and attacker.reachable_attack_steps

@@ -578,3 +578,50 @@ def test_attackgraph_reachability_custom_graph():
     should_be_reachable = set(
         [node1, node2, node3, node4, node6, node7, node9, node10])
     assert attacker.reachable_attack_steps == should_be_reachable
+
+
+def test_attackgraph_reachability_two_paths_needed():
+    """Make sure reachability works as expected
+    when we have a graph where two nodes (node1, node2)
+    needs to be reached before last node is reachable (node4)
+
+        Node1               Node2
+        viable              viable
+        or                  or
+        |                     |
+        |                   Node3
+        |                   viable
+        |                   or
+        |                     |
+        |          -----------
+        |         /
+        |        /
+        |       /
+        Node4
+        viable
+        and
+    """
+    node1 = AttackGraphNode(id=1, type = "or", name = "node1", is_viable=True)
+    node2 = AttackGraphNode(id=2, type = "or", name = "node2", is_viable=True)
+    node3 = AttackGraphNode(id=3, type = "or", name = "node3", is_viable=True)
+    node4 = AttackGraphNode(id=4, type = "and", name = "node4", is_viable=True)
+
+    node1.children = [node4]
+    node2.children = [node3]
+    node3.children = [node4]
+
+    node3.parents = [node2]
+    node4.parents = [node1, node3]
+
+    graph = AttackGraph()
+    graph.nodes = [node1, node2, node3, node4]
+
+    attacker = Attacker(
+        "Attacker1")
+    graph.add_attacker(attacker)
+
+    # If attacker has reached node1 and node2, all nodes should be reachable
+    attacker.reached_attack_steps=[node1, node2]
+    graph.calculate_reachability()
+    should_be_reachable = set([node1, node2, node3, node4])
+    assert attacker.reachable_attack_steps == should_be_reachable

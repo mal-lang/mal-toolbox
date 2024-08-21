@@ -20,7 +20,9 @@ def test_attacker_to_dict():
         "entry_points": {},
         "reached_attack_steps": {
             node1.id : str(node1.id) + ':' + node1.name
-        }
+        },
+        # calculate_reachability not run - reachable_attack_steps empty
+        "reachable_attack_steps": {}
     }
 
 def test_attacker_compromise():
