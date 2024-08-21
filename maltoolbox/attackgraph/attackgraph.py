@@ -695,8 +695,6 @@ class AttackGraph():
         attacker - the attacker to calculate reachability for
         """
 
-        visited_node_ids = set() # To prevent reprocessing nodes
-
         def attack_step_reachable_by(
                 node_with_reachable_parent: AttackGraphNode,
                 attacker: Attacker
@@ -714,8 +712,10 @@ class AttackGraph():
                 return True
             if node_with_reachable_parent.type == "and":
                 # Node is reachable only if all parents are reachable
-                return all(parent.is_reachable_by(attacker)
-                           for parent in node_with_reachable_parent.parents)
+                return all(
+                    parent.is_reachable_by(attacker)
+                    for parent in node_with_reachable_parent.parents
+                )
 
             # Not an attack step -> Not reachable
             return False
@@ -727,11 +727,10 @@ class AttackGraph():
             reachable children recursively.
             """
 
-            if reachable_node in visited_node_ids:
-                # Already visited/calculated
+            if attacker in reachable_node.reachable_by:
+                # Already visited/calculated for attacker
                 return
 
-            visited_node_ids.add(reachable_node.id)
             reachable_node.reachable_by.add(attacker)
             attacker.reachable_attack_steps.add(reachable_node)
 
@@ -747,13 +746,12 @@ class AttackGraph():
     def calculate_reachability(self) -> None:
         """Mark nodes reachable by each attacker
 
-        Go through attackers reached steps, add attacker to `reachable_by`
-        Then go through the reached nodes descendants and add attacker
-        to `reachable_by` if they are possible to reach for the attacker
+        For each attacker, calculate which nodes they can reach and
+        update values in node.reachable_by and attacker.reachable_attack_steps
         """
 
-        # clear reachable_by for each node
         for node in self.nodes:
+            # clear reachable_by for each node
             node.reachable_by.clear()
 
         for attacker in self.attackers:
