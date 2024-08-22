@@ -48,6 +48,11 @@ class AttackerAttachment:
         attackstep_name - the name of the attack step to add as an entrypoint
         """
 
+        logger.debug(
+            f'Add entry point "{attackstep_name}" on asset "{asset.name}" '
+            f'to AttackerAttachment "{self.name}".'
+        )
+
         # Get the entrypoint tuple for the asset if it already exists
         entrypoint_tuple = next((ep_tuple for ep_tuple in self.entry_points
                                  if ep_tuple[0] == asset), None)
@@ -57,10 +62,47 @@ class AttackerAttachment:
                 # If it exists and does not already have the attack step,
                 # add it
                 entrypoint_tuple[1].append(attackstep_name)
+            else:
+                logger.info(
+                    f'Entry point "{attackstep_name}" on asset "{asset.name}"'
+                    f' already existed for AttackerAttachment "{self.name}".'
+                )
         else:
             # Otherwise, create the entrypoint tuple and the initial entry
             # point
             self.entry_points.append((asset, [attackstep_name]))
+
+    def remove_entrypoint(
+            self, asset: SchemaGeneratedClass, attackstep_name: str):
+        """Remove an entrypoint from an AttackerAttachment if it exists"""
+
+        logger.debug(
+            f'Remove entry point "{attackstep_name}" on asset "{asset.name}" '
+            f'from AttackerAttachment "{self.name}".'
+        )
+
+        # Get the entrypoint tuple for the asset if it exists
+        entrypoint_tuple = next((ep_tuple for ep_tuple in self.entry_points
+                                 if ep_tuple[0] == asset), None)
+
+        if entrypoint_tuple:
+            if attackstep_name in entrypoint_tuple[1]:
+                # If it exists and not already has the attack step, add it
+                entrypoint_tuple[1].remove(attackstep_name)
+            else:
+                logger.warning(
+                    f'Failed to find entry point "{attackstep_name}" on '
+                    f'asset "{asset.name}" for AttackerAttachment '
+                    f'"{self.name}". Nothing to remove.'
+                )
+
+            if not entrypoint_tuple[1]:
+                self.entry_points.remove(entrypoint_tuple)
+        else:
+            logger.warning(
+                f'Failed to find entry points on asset "{asset.name}" '
+                f'for AttackerAttachment "{self.name}". Nothing to remove.'
+            )
 
 
 class Model():
