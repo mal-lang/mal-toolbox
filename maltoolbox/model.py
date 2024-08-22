@@ -31,7 +31,37 @@ class AttackerAttachment:
     """Used to attach attackers to attack step entrypoints of assets"""
     id: Optional[int] = None
     name: Optional[str] = None
-    entry_points: list[tuple] = field(default_factory=lambda: [])
+    entry_points: list[tuple[SchemaGeneratedClass, list[str]]] = \
+        field(default_factory=lambda: [])
+
+
+    def add_entrypoint(
+            self, asset: SchemaGeneratedClass, attackstep_name: str):
+        """Add an entrypoint to an AttackerAttachment
+
+        self.entry_points contain tuples, first element of each tuple
+        is an asset, second element is a list of attack step names that
+        are entry points for the attacker.
+
+        Args:
+        asset           - the asset to add entrypoint to
+        attackstep_name - the name of the attack step to add as an entrypoint
+        """
+
+        # Get the entrypoint tuple for the asset if it already exists
+        entrypoint_tuple = next((ep_tuple for ep_tuple in self.entry_points
+                                 if ep_tuple[0] == asset), None)
+
+        if entrypoint_tuple:
+            if attackstep_name not in entrypoint_tuple[1]:
+                # If it exists and does not already have the attack step,
+                # add it
+                entrypoint_tuple[1].append(attackstep_name)
+        else:
+            # Otherwise, create the entrypoint tuple and the initial entry
+            # point
+            self.entry_points.append((asset, [attackstep_name]))
+
 
 class Model():
     """An implementation of a MAL language with assets and associations"""
