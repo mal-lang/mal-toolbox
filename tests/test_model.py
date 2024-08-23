@@ -51,7 +51,7 @@ def create_association(
 
 ### Tests
 
-def test_attacker_attachment_add_entrypoint(model: Model):
+def test_attacker_attachment_add_entry_point(model: Model):
     """"""
 
     asset1 = create_application_asset(model, "Asset1")
@@ -63,29 +63,29 @@ def test_attacker_attachment_add_entrypoint(model: Model):
     attacker1 = AttackerAttachment()
     model.add_attacker(attacker1)
 
-    attacker1.add_entrypoint(asset1, 'read')
+    attacker1.add_entry_point(asset1, 'read')
     assert len(attacker1.entry_points) == 1
     assert attacker1.entry_points[0][0] == asset1
     assert attacker1.entry_points[0][1] == ['read']
 
-    attacker1.add_entrypoint(asset1, 'access')
+    attacker1.add_entry_point(asset1, 'access')
     assert len(attacker1.entry_points) == 1
     assert attacker1.entry_points[0][0] == asset1
     assert attacker1.entry_points[0][1] == ['read', 'access']
 
     # Try to add already existing entry point
-    attacker1.add_entrypoint(asset1, 'access')
+    attacker1.add_entry_point(asset1, 'access')
     assert len(attacker1.entry_points) == 1
     assert attacker1.entry_points[0][0] == asset1
     assert attacker1.entry_points[0][1] == ['read', 'access']
 
-    attacker1.add_entrypoint(asset2, 'access')
+    attacker1.add_entry_point(asset2, 'access')
     assert len(attacker1.entry_points) == 2
     assert attacker1.entry_points[1][0] == asset2
     assert attacker1.entry_points[1][1] == ['access']
 
 
-def test_attacker_attachment_remove_entrypoint(model: Model):
+def test_attacker_attachment_remove_entry_point(model: Model):
     """"""
 
     asset1 = create_application_asset(model, "Asset1")
@@ -97,9 +97,9 @@ def test_attacker_attachment_remove_entrypoint(model: Model):
     attacker1 = AttackerAttachment()
     model.add_attacker(attacker1)
 
-    attacker1.add_entrypoint(asset1, 'read')
-    attacker1.add_entrypoint(asset1, 'access')
-    attacker1.add_entrypoint(asset2, 'access')
+    attacker1.add_entry_point(asset1, 'read')
+    attacker1.add_entry_point(asset1, 'access')
+    attacker1.add_entry_point(asset2, 'access')
 
     assert len(attacker1.entry_points) == 2
     assert attacker1.entry_points[0][0] == asset1
@@ -107,7 +107,7 @@ def test_attacker_attachment_remove_entrypoint(model: Model):
     assert attacker1.entry_points[1][0] == asset2
     assert attacker1.entry_points[1][1] == ['access']
 
-    attacker1.remove_entrypoint(asset1, 'read')
+    attacker1.remove_entry_point(asset1, 'read')
     assert len(attacker1.entry_points) == 2
     assert attacker1.entry_points[0][0] == asset1
     assert attacker1.entry_points[0][1] == ['access']
@@ -116,27 +116,83 @@ def test_attacker_attachment_remove_entrypoint(model: Model):
 
     # Try to remove inexistent entry point, but the asset is still present in
     # the list of entry points
-    attacker1.remove_entrypoint(asset1, 'read')
+    attacker1.remove_entry_point(asset1, 'read')
     assert len(attacker1.entry_points) == 2
     assert attacker1.entry_points[0][0] == asset1
     assert attacker1.entry_points[0][1] == ['access']
     assert attacker1.entry_points[1][0] == asset2
     assert attacker1.entry_points[1][1] == ['access']
 
-    attacker1.remove_entrypoint(asset1, 'access')
+    attacker1.remove_entry_point(asset1, 'access')
     assert len(attacker1.entry_points) == 1
     assert attacker1.entry_points[0][0] == asset2
     assert attacker1.entry_points[0][1] == ['access']
 
     # Try to remove inexistent entry point, where the asset is no longer in
     # the list of entry points
-    attacker1.remove_entrypoint(asset1, 'access')
+    attacker1.remove_entry_point(asset1, 'access')
     assert len(attacker1.entry_points) == 1
     assert attacker1.entry_points[0][0] == asset2
     assert attacker1.entry_points[0][1] == ['access']
 
-    attacker1.remove_entrypoint(asset2, 'access')
+    attacker1.remove_entry_point(asset2, 'access')
     assert len(attacker1.entry_points) == 0
+
+
+def test_attacker_attachment_remove_asset(model: Model):
+    """"""
+
+    asset1 = create_application_asset(model, "Asset1")
+    asset2 = create_application_asset(model, "Asset2")
+    model.add_asset(asset1)
+    model.add_asset(asset2)
+
+    attacker1 = AttackerAttachment()
+    model.add_attacker(attacker1)
+    attacker2 = AttackerAttachment()
+    model.add_attacker(attacker2)
+
+    attacker1.add_entry_point(asset1, 'read')
+    attacker1.add_entry_point(asset1, 'access')
+    attacker1.add_entry_point(asset2, 'access')
+
+    attacker2.add_entry_point(asset1, 'read')
+    attacker2.add_entry_point(asset2, 'read')
+    attacker2.add_entry_point(asset2, 'access')
+
+    assert len(attacker1.entry_points) == 2
+    assert attacker1.entry_points[0][0] == asset1
+    assert attacker1.entry_points[0][1] == ['read', 'access']
+    assert attacker1.entry_points[1][0] == asset2
+    assert attacker1.entry_points[1][1] == ['access']
+
+    assert len(attacker2.entry_points) == 2
+    assert attacker2.entry_points[0][0] == asset1
+    assert attacker2.entry_points[0][1] == ['read']
+    assert attacker2.entry_points[1][0] == asset2
+    assert attacker2.entry_points[1][1] == ['read', 'access']
+
+    model.remove_asset(asset2)
+    # All of the entry points of the asset removed should be gone, but the
+    # other assets should not be impacted.
+    assert len(attacker1.entry_points) == 1
+    assert attacker1.entry_points[0][0] == asset1
+    assert attacker1.entry_points[0][1] == ['read', 'access']
+
+    assert len(attacker2.entry_points) == 1
+    assert attacker2.entry_points[0][0] == asset1
+    assert attacker2.entry_points[0][1] == ['read']
+
+    # Try to remove inexistent entry point, where the asset is no longer in
+    # the list of entry points
+    attacker1.remove_entry_point(asset2, 'access')
+    assert len(attacker1.entry_points) == 1
+    assert attacker1.entry_points[0][0] == asset1
+    assert attacker1.entry_points[0][1] == ['read', 'access']
+
+    assert len(attacker2.entry_points) == 1
+    assert attacker2.entry_points[0][0] == asset1
+    assert attacker2.entry_points[0][1] == ['read']
 
 
 def test_model_add_asset(model: Model):
@@ -688,17 +744,17 @@ def test_model_attacker_to_dict(model: Model):
     attacker_dict = ret[1]
     assert attacker_dict.get('name') == attacker.name
 
-    # entrypoints_dict has asset IDs as keys
-    entrypoints_dict = attacker_dict.get('entry_points')
+    # entry_points_dict has asset IDs as keys
+    entry_points_dict = attacker_dict.get('entry_points')
 
     # attacker should be attached to p1, therefore p1s
-    # id should be a key in the entrypoints_dict
-    assert p1.id is not None and entrypoints_dict
-    assert p1.id in entrypoints_dict
+    # id should be a key in the entry_points_dict
+    assert p1.id is not None and entry_points_dict
+    assert p1.id in entry_points_dict
 
-    # The given steps should be inside the entrypoint of
+    # The given steps should be inside the entry_point of
     # the attacker for asset p1
-    assert entrypoints_dict[p1.id]['attack_steps'] == attack_steps
+    assert entry_points_dict[p1.id]['attack_steps'] == attack_steps
 
 
 def test_serialize(model: Model):
