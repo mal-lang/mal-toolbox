@@ -462,9 +462,12 @@ class DependencyChain:
                 }
 
             case 'transitive':
-                return {'transitive':
-                    self.next_link.to_dict()
-                    if self.next_link else {},
+                if not self.next_link:
+                    raise LanguageGraphException(
+                        "No next link for transitive dependency chain"
+                    )
+                return {
+                    'transitive': self.next_link.to_dict(),
                     'type': self.type
                 }
 
@@ -477,8 +480,19 @@ class DependencyChain:
                     raise LanguageGraphException(
                         "No next link for subtype dependency chain"
                     )
-                return {'subType': self.subtype.name,
+                return {
+                    'subType': self.subtype.name,
                     'expression': self.next_link.to_dict(),
+                    'type': self.type
+                }
+
+            case 'collect':
+                if not self.next_link:
+                    raise LanguageGraphException(
+                        "No next link for collect dependency chain"
+                    )
+                return {
+                    'collect': self.next_link.to_dict(),
                     'type': self.type
                 }
 
@@ -500,10 +514,14 @@ class DependencyChain:
                                   the dependency chain
         """
 
-        if serialized_dep_chain is None:
+        if serialized_dep_chain is None or not serialized_dep_chain:
             return None
 
         if 'type' not in serialized_dep_chain:
+            logger.debug(json.dumps(serialized_dep_chain, indent = 2))
+            msg = 'Missing depenency chain type!'
+            logger.error(msg)
+            raise LanguageGraphAssociationError(msg)
             return None
 
         dep_chain_type = serialized_dep_chain['type']
@@ -541,7 +559,6 @@ class DependencyChain:
                 return new_dep_chain
 
             case 'transitive':
-                assoc_name = list(serialized_dep_chain.keys())[0]
                 next_link = cls._from_dict(
                     serialized_dep_chain['transitive'],
                     lang_graph
@@ -553,19 +570,38 @@ class DependencyChain:
                 return new_dep_chain
 
             case 'subType':
-                assoc_name = list(serialized_dep_chain.keys())[0]
                 next_link = cls._from_dict(
-                    serialized_dep_chain[assoc_name]['next_association'],
+                    serialized_dep_chain['expression'],
+                    lang_graph
+                )
+                subtype_name = serialized_dep_chain['subType']
+                if subtype_name in lang_graph.assets:
+                    subtype_asset = lang_graph.assets[subtype_name]
+                else:
+                    msg = 'Failed to find subtype %s'
+                    logger.error(msg % subtype_name)
+                    raise LanguageGraphException(msg % subtype_name)
+
+                new_dep_chain = DependencyChain(
+                    type = 'subType',
+                    next_link = next_link
+                )
+                new_dep_chain.subtype = subtype_asset
+                return new_dep_chain
+
+            case 'collect':
+                next_link = cls._from_dict(
+                    serialized_dep_chain['collect'],
                     lang_graph
                 )
                 new_dep_chain = DependencyChain(
-                    type = 'subType',
+                    type = 'collect',
                     next_link = next_link
                 )
                 return new_dep_chain
 
             case _:
-                msg = 'Unknown associations chain element %s!'
+                msg = 'Unknown dependency chain type %s!'
                 logger.error(msg, serialized_dep_chain['type'])
                 raise LanguageGraphAssociationError(msg %
                     serialized_dep_chain['type'])
@@ -1048,12 +1084,12 @@ class LanguageGraph():
                         step_expression['stepExpression']
                     )
 
-                subtype_asset = next((asset for asset in self.assets if asset.name == subtype_name), None)
-
-                if not subtype_asset:
-                    msg = 'Failed to find subtype attackstep "{subtype_name}"'
-                    logger.error(msg)
-                    raise LanguageGraphException(msg)
+                if subtype_name in self.assets:
+                    subtype_asset = self.assets[subtype_name]
+                else:
+                    msg = 'Failed to find subtype %s'
+                    logger.error(msg % subtype_name)
+                    raise LanguageGraphException(msg % subtype_name)
 
                 if not subtype_asset.is_subasset_of(result_target_asset):
                     logger.error(
@@ -1090,9 +1126,12 @@ class LanguageGraph():
                         lh_dep_chain,
                         step_expression['rhs']
                     )
+                new_dep_chain = DependencyChain(
+                    type = 'collect',
+                    next_link = rh_dep_chain)
                 return (
                     rh_target_asset,
-                    rh_dep_chain,
+                    new_dep_chain,
                     rh_attack_step_name
                 )
 
@@ -1180,7 +1219,17 @@ class LanguageGraph():
                     )
                     new_dep_chain.subtype = dep_chain.subtype
                     return new_dep_chain
-                    # return reverse_chain
+
+                case 'collect':
+                    result_reverse_chain = self.reverse_dep_chain(
+                        dep_chain.next_link,
+                        reverse_chain
+                    )
+                    new_dep_chain = DependencyChain(
+                        type = 'collect',
+                        next_link = result_reverse_chain
+                    )
+                    return new_dep_chain
 
                 case _:
                     msg = 'Unknown assoc chain element "%s"'
