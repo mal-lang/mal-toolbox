@@ -3,20 +3,26 @@ from .mal_parser import malParser
 import logging
 import re
 
+from typing import Any, Tuple, List
+
 class malAnalyzerInterface:
     def checkMal(self, ctx: malParser.MalContext) -> None:
         pass
-    def checkDefine(self, ctx: malParser.DefineContext, obj: any) -> None:
+    def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, Any]) -> None:
         pass
-    def checkCategory(self, ctx: malParser.CategoryContext, category, assets) -> None:
+    def checkInclude(self, ctx: malParser.IncludeContext, data: Tuple[str, str]) -> None:
         pass
-    def checkAsset(self, ctx: malParser.AssetContext, asset) -> None:
+    def checkCategory(self, ctx: malParser.CategoryContext, data: Tuple[str, Tuple[List, Any]]) -> None:
         pass
-    def checkMeta(self, ctx: malParser.MetaContext, meta_name: str) -> None:
+    def checkAsset(self, ctx: malParser.AssetContext, asset: dict) -> None:
         pass
-    def checkStep(self, ctx: malParser.StepContext, step) -> None:
+    def checkMeta(self, ctx: malParser.MetaContext, data: Tuple[Tuple[str, str],]) -> None:
         pass
-    def checkVariable(self, ctx: malParser.VariableContext, var) -> None:
+    def checkStep(self, ctx: malParser.StepContext, step: dict) -> None:
+        pass
+    def checkVariable(self, ctx: malParser.VariableContext, var: dict) -> None:
+        pass
+    def checkAssociation(self, ctx: malParser.AssociationContext, association: dict) -> None:
         pass
 
 class malAnalyzer(malAnalyzerInterface):
@@ -25,16 +31,20 @@ class malAnalyzer(malAnalyzerInterface):
     '''
         
     def __init__(self, *args, **kwargs) -> None:
-        self._error:   bool = False
-        self._defines: dict = {}
-        self._assets: dict = {}
-        self._category: dict = {}
-        self._metas: dict = {}
-        self._steps: dict = {}
-        self._vars: dict = {}
-        self._error = False
-        super().__init__(*args, **kwargs)
+        self._error: bool = False
+        self._preform_post_analysis = True
 
+        self._defines: dict     = {}
+        self._assets: dict      = {}
+        self._category: dict    = {}
+        self._metas: dict       = {}
+        self._steps: dict       = {}
+        self._vars: dict        = {}
+
+        self._associations      = []
+
+        super().__init__(*args, **kwargs)
+        
     def has_error(self) -> bool:
         return self._error
 
@@ -47,6 +57,7 @@ class malAnalyzer(malAnalyzerInterface):
         self._analyse_extends()
         self._analyse_abstract()
         self._analyse_parents()
+        self._analyse_association()
     
     def _analyse_defines(self) -> None:
         '''
@@ -125,15 +136,39 @@ class malAnalyzer(malAnalyzerInterface):
             self._error = True
             raise
     
+    def _analyse_association(self) -> None:
+        for association in self._associations:
+            leftAsset = association['leftAsset']
+            rightAsset = association['rightAsset']
+
+            if (not leftAsset in self._assets.keys()):
+                logging.error(f'Left asset \'{leftAsset}\' is not defined')
+                self._error = True
+            if (not rightAsset in self._assets.keys()):
+                logging.error(f'Right asset \'{leftAsset}\' is not defined')
+                self._error = True
+        if (self._error):
+            raise
+
     def _get_assets_extendee(self, ctx: malParser.AssetContext) -> malParser.AssetContext:
         if (ctx.EXTENDS()):
             return self._assets[ctx.ID()[1].getText()]['ctx']
         return None
     
     def checkMal(self, ctx: malParser.MalContext) -> None:
-        self._post_analysis()
+        '''
+        We only want to preform _post_analysis as the very last step.
+        '''
+        if (self._preform_post_analysis):
+            self._post_analysis()
+        self._preform_post_analysis = True
 
-    def checkDefine(self, ctx: malParser.DefineContext, obj: any) -> None:
+    def checkInclude(self, ctx: malParser.MalContext, data: Tuple[str, str]) -> None:
+        self._preform_post_analysis = False
+
+    def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, Any]) -> None:
+        _, obj = data
+
         if(len(obj.keys()) != 1):
             raise 
         
@@ -146,7 +181,9 @@ class malAnalyzer(malAnalyzerInterface):
         
         self._defines[define_id] = {'ctx': ctx, 'obj': obj}
     
-    def checkCategory(self, ctx: malParser.CategoryContext, category, assets) -> None:
+    def checkCategory(self, ctx: malParser.CategoryContext, data: Tuple[str, Tuple[List, Any]]) -> None:
+        _, [[category], assets] = data
+
         if(str(category['name']) == '<missing <INVALID>>'):
             category_line = ctx.start.line
             logging.error(f'Category has no name at line {category_line}')
@@ -160,10 +197,14 @@ class malAnalyzer(malAnalyzerInterface):
         
         self._category[category['name']] = {'ctx': ctx, 'obj': {'category': category, 'assets': assets}}
 
-    def checkAsset(self, ctx: malParser.AssetContext, asset) -> None:
+    def checkAsset(self, ctx: malParser.AssetContext, asset: dict) -> None:
         asset_name = asset['name']
         category_name = ctx.parentCtx.ID()
-
+        
+        if (not asset_name or asset_name == '<missing <INVALID>>'):
+            logging.error(f"Asset was defined without a name at line {ctx.start.line}")
+            self._error = True
+            return
         # Check if asset was previously defined in same category.
         if asset_name in self._assets.keys() and str(self._assets[asset_name]['parent']['name']) == str(category_name):
             prev_asset_line = self._assets[asset_name]['ctx'].start.line
@@ -173,7 +214,8 @@ class malAnalyzer(malAnalyzerInterface):
         else:
             self._assets[asset_name] = {'ctx': ctx, 'obj': asset, 'parent': {'name': ctx.parentCtx.ID() ,'ctx': ctx.parentCtx}}
 
-    def checkMeta(self, ctx: malParser.MetaContext, meta_name: str) -> None:
+    def checkMeta(self, ctx: malParser.MetaContext, data: Tuple[Tuple[str, str],]) -> None:
+        ((meta_name, _),) = data
         parent_name = ''
         location_name = ''
 
@@ -202,7 +244,7 @@ class malAnalyzer(malAnalyzerInterface):
 
         # TODO: check for Associations
 
-    def checkStep(self, ctx: malParser.StepContext, step) -> None:
+    def checkStep(self, ctx: malParser.StepContext, step: dict) -> None:
         step_name = step['name']
 
         if isinstance(ctx.parentCtx, malParser.AssetContext):
@@ -258,7 +300,7 @@ class malAnalyzer(malAnalyzerInterface):
                 cias.append(letter)
             index += 1
 
-    def checkVariable(self, ctx: malParser.VariableContext, var) -> None:
+    def checkVariable(self, ctx: malParser.VariableContext, var: dict) -> None:
         '''
         self._vars = {
             <asset-name>: {
@@ -278,3 +320,6 @@ class malAnalyzer(malAnalyzerInterface):
                 prev_define_line = self._vars[asset_name][var_name].start.line
                 logging.error(f'Variable \'{var_name}\' previously defined at line {prev_define_line}')
                 self._error = True
+    
+    def checkAssociation(self, ctx: malParser.AssociationContext, association: dict):
+        self._associations.append(association)

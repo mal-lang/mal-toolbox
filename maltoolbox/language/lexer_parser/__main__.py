@@ -15,6 +15,7 @@ class MalCompiler:
     def __init__(self):
         self.path = None
         self.current_file = None
+        self._analyzer = malAnalyzer()
 
     def compile(self, malfile: str = None):
         if not self.path:
@@ -29,9 +30,7 @@ class MalCompiler:
         stream = CommonTokenStream(lexer)
         parser = malParser(stream)
         tree = parser.mal()
-
-        analyzer = malAnalyzer()
-        return malVisitor(compiler=self, analyzer=analyzer).visit(tree)
+        return malVisitor(compiler=self, analyzer=self._analyzer).visit(tree)
 
 
 if __name__ == "__main__":

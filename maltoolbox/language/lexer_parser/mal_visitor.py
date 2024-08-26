@@ -18,6 +18,28 @@ class malVisitor(ParseTreeVisitor):
         self.current_file = compiler.current_file  # for debug purposes
         super().__init__(*args, **kwargs)
 
+    def visit(self, ctx):
+        data = super().visit(ctx)
+
+        if (not ctx):
+            return data
+        
+        ctx_class_name: str = type(ctx).__name__
+        analyzer_method_name: str = f'check{ctx_class_name.replace("Context", "")}'
+        analyzer_method: function | None = getattr(self.analyzer, analyzer_method_name, None)
+        
+        if analyzer_method:
+            arguments = analyzer_method.__code__.co_argcount
+            if arguments in [2, 3]:
+                {
+                    3: lambda: analyzer_method(ctx, data),
+                    2: lambda: analyzer_method(ctx)
+                }[arguments]()
+            else:
+                raise ValueError(f'Unexpected number of arguments: {arguments}') 
+            
+        return data
+    
     def visitMal(self, ctx):
         langspec = {
             "formatVersion": "1.0.0",
@@ -59,7 +81,6 @@ class malVisitor(ParseTreeVisitor):
                     unique.append(item)
             langspec[key] = unique
 
-        self.analyzer.checkMal(ctx)
         return langspec
 
     def visitInclude(self, ctx):
@@ -67,7 +88,6 @@ class malVisitor(ParseTreeVisitor):
     
     def visitDefine(self, ctx):
         define_object = {ctx.ID().getText(): ctx.STRING().getText().strip('"')}
-        self.analyzer.checkDefine(ctx, define_object)
         return ("defines", define_object)
 
     def visitCategory(self, ctx):
@@ -76,12 +96,9 @@ class malVisitor(ParseTreeVisitor):
         category["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
 
         assets = [self.visit(asset) for asset in ctx.asset()]
-        
-        self.analyzer.checkCategory(ctx, category, assets)
         return ("categories", ([category], assets))
 
     def visitMeta(self, ctx):
-        self.analyzer.checkMeta(ctx, ctx.ID().getText())
         return ((ctx.ID().getText(), ctx.STRING().getText().strip('"')),)
 
     def visitAsset(self, ctx):
@@ -98,7 +115,6 @@ class malVisitor(ParseTreeVisitor):
         asset["variables"] = [self.visit(variable) for variable in ctx.variable()]
         asset["attackSteps"] = [self.visit(step) for step in ctx.step()]
 
-        self.analyzer.checkAsset(ctx, asset)
         return asset
     
     def visitStep(self, ctx):
@@ -114,7 +130,6 @@ class malVisitor(ParseTreeVisitor):
         )
         step["reaches"] = self.visit(ctx.reaches()) if ctx.reaches() else None
         
-        self.analyzer.checkStep(ctx, step)
         return step
 
     def visitSteptype(self, ctx):
@@ -250,7 +265,6 @@ class malVisitor(ParseTreeVisitor):
         ret = {}
         ret["name"] = ctx.ID().getText()
         ret["stepExpression"] = self.visit(ctx.expr())
-        self.analyzer.checkVariable(ctx, ret)
         return ret
 
     def visitExpr(self, ctx):
