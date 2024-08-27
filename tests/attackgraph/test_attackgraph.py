@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from maltoolbox.language import LanguageGraph
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
+from maltoolbox.attackgraph.query import calculate_reachability
 from maltoolbox.model import Model, AttackerAttachment
 
 from test_model import create_application_asset, create_association
@@ -404,6 +405,7 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
     for child in children:
         assert node_to_remove not in child.parents
 
+
 def test_attackgraph_calculate_reachability(example_attackgraph: AttackGraph):
     """Make sure reachability is set correctly"""
     assert not example_attackgraph.attackers
@@ -416,7 +418,7 @@ def test_attackgraph_calculate_reachability(example_attackgraph: AttackGraph):
         assert node not in attacker.reachable_attack_steps
 
     # Run the function
-    example_attackgraph.calculate_reachability()
+    calculate_reachability(example_attackgraph)
 
     # Verify the reachability of the reached attack steps
     reached_attack_steps_descendants: list[AttackGraphNode] = []
@@ -461,7 +463,7 @@ def test_attackgraph_reachable_steps_added_to_attacker(
 
     example_attackgraph.attach_attackers()
     attacker = example_attackgraph.attackers[0]
-    example_attackgraph.calculate_reachability()
+    calculate_reachability(example_attackgraph)
 
     found_reachable = [
         node for node in example_attackgraph.nodes
@@ -478,10 +480,10 @@ def test_attackgraph_reachable_steps_removed_parent_not_reachable(
     example_attackgraph.attach_attackers()
     attacker = example_attackgraph.attackers[0]
 
-    example_attackgraph.calculate_reachability()
+    calculate_reachability(example_attackgraph)
     assert attacker.reachable_attack_steps
     attacker.reached_attack_steps = []
-    example_attackgraph.calculate_reachability()
+    calculate_reachability(example_attackgraph)
     assert not attacker.reachable_attack_steps
 
     for node in example_attackgraph.nodes:
@@ -552,7 +554,7 @@ def test_attackgraph_reachability_custom_graph():
     # If attacker has reached node1,
     # all nodes except node5, 8, 9 and 10 should be reachable
     attacker.reached_attack_steps=[node1]
-    graph.calculate_reachability()
+    calculate_reachability(graph)
     should_be_reachable = set([node1, node2, node3, node4, node6, node7])
     assert attacker.reachable_attack_steps == should_be_reachable
 
@@ -560,21 +562,21 @@ def test_attackgraph_reachability_custom_graph():
     # If attacker has reached node9,
     # node9 and node10 should be reachable
     attacker.reached_attack_steps=[node9]
-    graph.calculate_reachability()
+    calculate_reachability(graph)
     should_be_reachable = set([node9, node10])
     assert attacker.reachable_attack_steps == should_be_reachable
 
     # If attacker has reached node4,
     # node4 and node7 should be reachable
     attacker.reached_attack_steps=[node4]
-    graph.calculate_reachability()
+    calculate_reachability(graph)
     should_be_reachable = set([node4, node7])
     assert attacker.reachable_attack_steps == should_be_reachable
 
     # If attacker has reached node1 and node9,
     # all nodes except node5 and node8 should be reachable
     attacker.reached_attack_steps=[node1, node9]
-    graph.calculate_reachability()
+    calculate_reachability(graph)
     should_be_reachable = set(
         [node1, node2, node3, node4, node6, node7, node9, node10])
     assert attacker.reachable_attack_steps == should_be_reachable
@@ -622,6 +624,6 @@ def test_attackgraph_reachability_two_paths_needed():
 
     # If attacker has reached node1 and node2, all nodes should be reachable
     attacker.reached_attack_steps=[node1, node2]
-    graph.calculate_reachability()
+    calculate_reachability(graph)
     should_be_reachable = set([node1, node2, node3, node4])
     assert attacker.reachable_attack_steps == should_be_reachable
