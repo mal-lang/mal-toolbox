@@ -8,7 +8,7 @@ from typing import Any, Tuple, List
 class malAnalyzerInterface:
     def checkMal(self, ctx: malParser.MalContext) -> None:
         pass
-    def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, Any]) -> None:
+    def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
         pass
     def checkInclude(self, ctx: malParser.IncludeContext, data: Tuple[str, str]) -> None:
         pass
@@ -23,6 +23,8 @@ class malAnalyzerInterface:
     def checkVariable(self, ctx: malParser.VariableContext, var: dict) -> None:
         pass
     def checkAssociation(self, ctx: malParser.AssociationContext, association: dict) -> None:
+        pass
+    def checkReaches(self, ctx: malParser.ReachesContext, data: dict) -> None:
         pass
 
 class malAnalyzer(malAnalyzerInterface):
@@ -57,6 +59,7 @@ class malAnalyzer(malAnalyzerInterface):
         self._analyse_extends()
         self._analyse_abstract()
         self._analyse_parents()
+        self._analyse_reaches()
         self._analyse_association()
     
     def _analyse_defines(self) -> None:
@@ -65,8 +68,8 @@ class malAnalyzer(malAnalyzerInterface):
         '''
 
         if 'id' in  self._defines.keys():
-            define_value: str = self._defines['id']['obj']['id']
-            if(len(define_value) == 0):
+            define_value: str = self._defines['id']['value']
+            if (len(define_value) == 0):
                 logging.error('Define \'id\' cannot be empty')
                 self._error = True
         else:
@@ -74,7 +77,7 @@ class malAnalyzer(malAnalyzerInterface):
             self._error = True
 
         if 'version' in self._defines:
-            version: str = self._defines['version']['obj']['version']
+            version: str = self._defines['version']['value']
             if not re.match(r"\d+\.\d+\.\d+", version):
                 logging.error(f'Define \'version\' must be valid semantic versioning without pre-release identifier and build metadata')
                 self._error = True
@@ -135,7 +138,65 @@ class malAnalyzer(malAnalyzerInterface):
         if error:
             self._error = True
             raise
-    
+
+    def _analyse_reaches(self) -> None:
+        for asset in self._assets.keys():
+            attack_steps = self._assets[asset]['obj']['attackSteps']
+            for attack_step in attack_steps:
+                if (attack_step['type'] in ['exist', 'notExist']):
+                    if (attack_step['ttc']):
+                        logging.error(f'Attack step of type \'{attack_step["type"]}\' must not have TTC')
+                        self._error = True
+                        continue
+                    if (attack_step['requires']):
+                        for expr in attack_step['requires']['stepExpressions']:
+                            self._check_to_asset(asset, expr)
+                    else:
+                        logging.error(f'Attack step of type \'{attack_step["type"]}\' must have require \'<-\'')
+                        self._error = True
+                        continue  
+                elif (attack_step['requires']):
+                        logging.error('Require \'<-\' may only be defined for attack step type exist \'E\' or not-exist \'!E\'')
+                        self._error = True
+                        continue 
+                
+                if (attack_step['reaches']):
+                    for expr in attack_step['reaches']['stepExpressions']:
+                        self._check_to_step(asset, expr)
+                
+        if (False):
+            raise ''
+        
+    def _check_to_step(self, asset, expr) -> None:
+        pass
+
+    def _check_to_asset(self, asset, expr) -> None:
+        match (expr['type']):
+            case 'StepExpr':
+                raise
+            case 'IDExpr':
+                raise
+            case 'union' | 'intersection' | 'difference':
+                return self._check_set_expr(asset, expr)
+            case 'transitive':
+                return self._check_transitive_expr(asset, expr)
+            case 'subType':
+                return self._check_sub_type_expr(asset, expr)
+            case 'CallExpr':
+                raise
+            case _:
+                logging.error(f'Unexpected expression \'{expr["type"]}\'')
+                self._error = True
+                # exit(1)
+                return None
+            
+    def _check_set_expr(self, asset, expr) -> None:
+        pass
+    def _check_sub_type_expr(self, asset, expr) -> None:
+        pass
+    def _check_transitive_expr(self, asset, expr) -> None:
+        pass
+
     def _analyse_association(self) -> None:
         for association in self._associations:
             leftAsset = association['leftAsset']
@@ -166,20 +227,17 @@ class malAnalyzer(malAnalyzerInterface):
     def checkInclude(self, ctx: malParser.MalContext, data: Tuple[str, str]) -> None:
         self._preform_post_analysis = False
 
-    def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, Any]) -> None:
+    def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
         _, obj = data
-
-        if(len(obj.keys()) != 1):
-            raise 
+        key, value = list(obj.items())[0]
         
-        define_id = next(iter(obj))
-        if(define_id in self._defines.keys()):
-            prev_define_line = self._defines[define_id]['ctx'].start.line
-            logging.error(f'Define \'{define_id}\' previously defined at line {prev_define_line}')
+        if(key in self._defines.keys()):
+            prev_define_line = self._defines[key]['ctx'].start.line
+            logging.error(f'Define \'{key}\' previously defined at line {prev_define_line}')
             self._error = True
             return 
         
-        self._defines[define_id] = {'ctx': ctx, 'obj': obj}
+        self._defines[key] = {'ctx': ctx, 'value': value}
     
     def checkCategory(self, ctx: malParser.CategoryContext, data: Tuple[str, Tuple[List, Any]]) -> None:
         _, [[category], assets] = data
@@ -192,8 +250,6 @@ class malAnalyzer(malAnalyzerInterface):
 
         if len(category['meta']) == 0 and len(assets) == 0:
             logging.warning(f'Category \'{category["name"]}\' contains no assets or metadata')
-            # Warning might not be checked as error.
-            # self._error = True
         
         self._category[category['name']] = {'ctx': ctx, 'obj': {'category': category, 'assets': assets}}
 
@@ -216,8 +272,8 @@ class malAnalyzer(malAnalyzerInterface):
 
     def checkMeta(self, ctx: malParser.MetaContext, data: Tuple[Tuple[str, str],]) -> None:
         ((meta_name, _),) = data
-        parent_name = ''
-        location_name = ''
+        parent_name: str = ''
+        location_name: str = ''
 
         # Finding metadata type
         if isinstance(ctx.parentCtx, malParser.CategoryContext):
@@ -229,7 +285,10 @@ class malAnalyzer(malAnalyzerInterface):
         elif isinstance(ctx.parentCtx, malParser.StepContext):
             parent_name = str(ctx.parentCtx.ID())
             location_name = 'step'
-        
+        elif isinstance(ctx.parentCtx, malParser.AssociationContext):
+            parent_name = str(ctx.parentCtx.ID())
+            location_name = 'association'
+
         # Validate that the metadata is unique
         if not location_name in self._metas.keys():
             self._metas[location_name] = {parent_name: {meta_name: ctx}}
@@ -242,23 +301,52 @@ class malAnalyzer(malAnalyzerInterface):
             logging.error(f'Metadata {meta_name} previously defined at {prev_ctx.start.line}')
             self._error = True
 
-        # TODO: check for Associations
-
     def checkStep(self, ctx: malParser.StepContext, step: dict) -> None:
         step_name = step['name']
 
-        if isinstance(ctx.parentCtx, malParser.AssetContext):
+        if isinstance(ctx.parentCtx, malParser.AssetContext):        
             asset_name = ctx.parentCtx.ID()[0]   
+            # Check if the step is defined in other assets.
+            for other_asset_name in self._steps.keys():
+                if (asset_name == other_asset_name):
+                    continue
+                if not (self._steps[other_asset_name] and step_name in self._steps[other_asset_name].keys()):
+                    continue
+                
+                other_step = self._steps[other_asset_name][step_name]
+                other_type = other_step['step']['type']
+                current_type = step['type']
+                if (other_type == current_type):
+                    self._steps[asset_name] = {step_name: {'ctx': ctx, 'step': step}}
+                    return
+                
+                prev_ctx = other_step['ctx']
+                logging.error(f'Cannot override attack step \'{step_name}\' previously defined at {prev_ctx.start.line} with different type \'{current_type}\' =/= \'{other_type}\'')
+                self._error = True
+                return
+            
+            if ((step['reaches'] and not step['reaches']['overrides'])):
+                logging.error(f'Cannot inherit attack step \'{step_name}\' without previous definition')
+                self._error = True
+                return
 
-            # TODO: Validate step
-            # if (not asset_name in self._steps.keys()):
-            #     self._steps[asset_name] = {step_name: ctx}
+            # Check if the step is already defined in the parent asset.
+            if not asset_name in self._steps.keys():
+                self._steps[asset_name] = {step_name: {'ctx': ctx, 'step': step}}
+            elif not step_name in self._steps[asset_name].keys():
+                self._steps[asset_name][step_name] = {'ctx': ctx, 'step': step}
+            else:
+                prev_ctx = self._steps[asset_name][step_name]['ctx']
+                logging.error(f'Attack step \'{step_name}\' previously defined at {prev_ctx.start.line}')
+                self._error = True
+
             self._validate_CIA(ctx, step)
             self._validate_TTC(ctx, step)
 
-        return step
-    
-    def _validate_TTC(self, ctx: malParser.StepContext, step) -> None:
+    def checkReaches(self, ctx: malParser.ReachesContext, data: dict) -> None:
+        pass
+
+    def _validate_TTC(self, ctx: malParser.StepContext, step: dict) -> None:
         if not step['ttc']:
             return
         
@@ -272,7 +360,7 @@ class malAnalyzer(malAnalyzerInterface):
             #    ERROR   Defense %s.%s may only have 'Enabled', 'Disabled', or 'Bernoulli(p)' as TTC"
             pass
 
-    def _validate_CIA(self, ctx: malParser.StepContext, step) -> None:
+    def _validate_CIA(self, ctx: malParser.StepContext, step: dict) -> None:
         if not ctx.cias():
             return
         

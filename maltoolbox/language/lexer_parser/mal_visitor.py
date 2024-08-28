@@ -1,10 +1,9 @@
+from antlr4 import ParseTreeVisitor
 
 from .mal_parser import malParser
 from .mal_analyzer import malAnalyzerInterface
 
-from antlr4 import ParseTreeVisitor
 from collections.abc import MutableMapping, MutableSequence
-
 
 # In a rule like `rule: one? two* three`:
 #   - ctx.one() would be None if the token was not found on a matching line
@@ -16,6 +15,7 @@ class malVisitor(ParseTreeVisitor):
         self.compiler = compiler
         self.analyzer = analyzer
         self.current_file = compiler.current_file  # for debug purposes
+
         super().__init__(*args, **kwargs)
 
     def visit(self, ctx):
@@ -85,10 +85,9 @@ class malVisitor(ParseTreeVisitor):
 
     def visitInclude(self, ctx):
         return ("include", ctx.STRING().getText().strip('"'))
-    
+
     def visitDefine(self, ctx):
-        define_object = {ctx.ID().getText(): ctx.STRING().getText().strip('"')}
-        return ("defines", define_object)
+        return ("defines", {ctx.ID().getText(): ctx.STRING().getText().strip('"')})
 
     def visitCategory(self, ctx):
         category = {}
@@ -96,6 +95,7 @@ class malVisitor(ParseTreeVisitor):
         category["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
 
         assets = [self.visit(asset) for asset in ctx.asset()]
+
         return ("categories", ([category], assets))
 
     def visitMeta(self, ctx):
@@ -116,7 +116,7 @@ class malVisitor(ParseTreeVisitor):
         asset["attackSteps"] = [self.visit(step) for step in ctx.step()]
 
         return asset
-    
+
     def visitStep(self, ctx):
         step = {}
         step["name"] = ctx.ID().getText()
@@ -129,7 +129,7 @@ class malVisitor(ParseTreeVisitor):
             self.visit(ctx.precondition()) if ctx.precondition() else None
         )
         step["reaches"] = self.visit(ctx.reaches()) if ctx.reaches() else None
-        
+
         return step
 
     def visitSteptype(self, ctx):
@@ -265,6 +265,7 @@ class malVisitor(ParseTreeVisitor):
         ret = {}
         ret["name"] = ctx.ID().getText()
         ret["stepExpression"] = self.visit(ctx.expr())
+
         return ret
 
     def visitExpr(self, ctx):
@@ -278,7 +279,7 @@ class malVisitor(ParseTreeVisitor):
             ret["lhs"] = lhs
             ret["rhs"] = self.visit(ctx.parts()[i])
             lhs = ret.copy()
-
+        
         return ret
 
     def visitParts(self, ctx):

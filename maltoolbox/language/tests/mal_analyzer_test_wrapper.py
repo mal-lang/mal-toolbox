@@ -45,7 +45,7 @@ class AnalyzerTestWrapper(malAnalyzer):
         except RuntimeError:
             self._error = True
     
-    def test(self, error:bool=False, defines:list=[], categories:list=[], assets:list=[], lets:list=[], steps:list=[]):
+    def test(self, error:bool=False, defines:list=[], categories:list=[], assets:list=[], lets:list=[]):
         assert(self.has_error() == error)
         if (defines):
             assert(set(defines) == set(self._defines.keys()))
@@ -58,8 +58,6 @@ class AnalyzerTestWrapper(malAnalyzer):
                 where, name = let
                 if (not (self._vars[where] and self._vars[where][name])):
                     assert(False)
-        if (steps):
-            assert(set(steps) == set(self._steps.keys()))
 
 
 
