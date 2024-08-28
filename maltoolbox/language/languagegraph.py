@@ -1596,11 +1596,10 @@ class LanguageGraph():
         The asset matching the name.
         None if there is no match.
         """
-        for asset in self.assets:
-            if asset.name == asset_name:
-                return asset
-
-        return None
+        if asset_name in self.assets:
+            return self.assets[asset_name]
+        else:
+            return None
 
 
     def get_association_by_fields_and_assets(
