@@ -296,7 +296,7 @@ class Model():
         """
 
         # Optimization: only look for duplicates in associations of same type
-        association_type = association.__class__.__name__
+        association_type = association.type
         associations_same_type = self._type_to_association.get(
             association_type, []
         )
@@ -371,7 +371,7 @@ class Model():
         self.associations.append(association)
 
         # Add association to type->association mapping
-        association_type = association.__class__.__name__
+        association_type = association.type
         self._type_to_association.setdefault(
                 association_type, []
             ).append(association)
@@ -411,7 +411,7 @@ class Model():
         self.associations.remove(association)
 
         # Remove association from type->association mapping
-        association_type = association.__class__.__name__
+        association_type = association.type
         self._type_to_association[association_type].remove(
             association
         )
@@ -556,8 +556,9 @@ class Model():
         defenses = {}
         for key, value in asset._properties.items():
             property_schema = (
-                self.lang_classes_factory.json_schema['definitions']['LanguageAsset']
-                ['definitions'][asset.type]['properties'][key]
+                self.lang_classes_factory.json_schema['definitions']
+                ['LanguageAsset'] ['definitions']
+                ['Asset_' + asset.type]['properties'][key]
             )
 
             if "maximum" not in property_schema:
@@ -592,7 +593,7 @@ class Model():
         A two item list containing the field names of the association.
         """
 
-        return association._properties.keys()
+        return list(association._properties.keys())[1:]
 
 
     def get_associated_assets_by_field_name(
@@ -683,7 +684,7 @@ class Model():
         right_field = getattr(association, right_field_name)
 
         association_dict = {
-            association.__class__.__name__ :
+            str(association.type) :
             {
                 str(left_field_name):
                     [int(asset.id) for asset in left_field],
@@ -797,7 +798,7 @@ class Model():
                 }
             )
 
-            asset = getattr(model.lang_classes_factory.ns,
+            asset = model.lang_classes_factory.get_asset_class(
                 asset_object['type'])(name = asset_object['name'])
 
             if 'extras' in asset_object:
@@ -812,7 +813,8 @@ class Model():
         for assoc_entry in serialized_object.get('associations', []):
             assoc = list(assoc_entry.keys())[0]
             assoc_fields = assoc_entry[assoc]
-            association = getattr(model.lang_classes_factory.ns, assoc)()
+            association = model.lang_classes_factory.\
+                get_association_class(assoc)()
 
             for field, targets in assoc_fields.items():
                 targets = targets if isinstance(targets, list) else [targets]
