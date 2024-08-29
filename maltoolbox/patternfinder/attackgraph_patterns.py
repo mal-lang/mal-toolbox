@@ -26,16 +26,12 @@ class SearchPattern:
 
         # Find the starting nodes which match the first condition
         condition = self.conditions[0]
-        starting_nodes = []
+        matching_paths = []
         for node in graph.nodes:
             if condition.matches(node):
-                starting_nodes.append(node)
-
-        matching_paths = []
-        for node in starting_nodes:
-            matching_paths.extend(
-                find_matches_recursively(node, self.conditions)
-            )
+                matching_paths.extend(
+                    find_matches_recursively(node, self.conditions)
+                )
         return matching_paths
 
 @dataclass
