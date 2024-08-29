@@ -30,6 +30,9 @@ class AttackGraphNode:
     # Optional extra metadata for AttackGraphNode
     extras: dict = field(default_factory=dict)
 
+    def __hash__(self) -> int:
+        return hash((self.id))
+
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict: dict = {

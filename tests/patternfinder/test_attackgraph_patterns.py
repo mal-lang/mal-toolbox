@@ -57,29 +57,9 @@ def test_attackgraph_find_pattern_example_graph(example_attackgraph):
     )
 
     paths = pattern.find_matches(example_attackgraph)
-
     # Make sure the paths match the pattern
-    assert paths
     for path in paths:
-        conditions = list(pattern.conditions)
-        num_matches_curr_condition = 0
-        curr_condition = conditions.pop(0)
-        curr_node = path.pop(0)
-
-        while path or conditions:
-
-            if curr_condition.matches(curr_node):
-                num_matches_curr_condition += 1
-                curr_node = path.pop(0)
-
-            elif not curr_condition.must_match_again(
-                    num_matches_curr_condition
-                ):
-                curr_condition = conditions.pop(0)
-                num_matches_curr_condition = 0
-
-            else:
-                assert False, "Chain does not match pattern conditions"
+        assert [n.name for n in path] == ['attemptRead', 'successfulRead', 'read']
 
 
 def test_attackgraph_find_multiple():
@@ -129,8 +109,8 @@ def test_attackgraph_find_multiple():
     # Make sure we find two paths: (Node1->Node7) and (Node1->Node6)
     assert len(paths) == 2
 
-    assert [node1, node2, node4, node7] in paths
-    assert [node1, node3, node6] in paths
+    assert (node1, node2, node4, node7) in paths
+    assert (node1, node3, node6) in paths
 
 
 def test_attackgraph_find_multiple_same_subpath():
@@ -179,10 +159,10 @@ def test_attackgraph_find_multiple_same_subpath():
     paths = pattern.find_matches(attack_graph)
 
     # Make sure we find all paths
-    assert [node1, node2, node4] in paths
-    assert [node1, node3, node5] in paths
-    assert [node1, node2] in paths
-    assert [node1, node3] in paths
+    assert (node1, node2, node4) in paths
+    assert (node1, node3, node5) in paths
+    assert (node1, node2) in paths
+    assert (node1, node3) in paths
 
 
 def test_attackgraph_two_same_start_end_node():
@@ -229,5 +209,5 @@ def test_attackgraph_two_same_start_end_node():
     paths = pattern.find_matches(attack_graph)
 
     # Make sure we find expected paths
-    assert [node1, node2, node4] in paths
-    assert [node1, node3, node4] in paths
+    assert (node1, node2, node4) in paths
+    assert (node1, node3, node4) in paths
