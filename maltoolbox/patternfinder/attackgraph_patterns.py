@@ -75,10 +75,11 @@ def find_matches_recursively(
     Args:
     node                  - node to check if current `condition` matches for
     condition_list        - first condition in list will attempt match `node`
-    matching_nodes        - list of matched nodes so far (recursively built)
+    current_path          - list of matched nodes so far (recursively built)
+    matching_paths        - set of matched paths so far (recursively built)
     condition_match_count - number of matches on current condition so far
 
-    Return: list of lists (paths) of AttackGraphNodes that match the condition
+    Return: set of tuples (paths) of AttackGraphNodes that match the condition
     """
 
     # Init path lists if None, or copy/init into new lists for each iteration
