@@ -386,6 +386,11 @@ class LanguageGraphAttackStep:
                 else:
                     node_dict['parents'][parent].append(None)
 
+        if hasattr(self, 'requirements'):
+            node_dict['requirements'] = []
+            for requirement in self.requirements:
+                node_dict['requirements'].append(requirement.to_dict())
+
         return node_dict
 
 
@@ -868,6 +873,19 @@ class LanguageGraph():
                         else:
                             attack_step.parents[target_attack_step.full_name] = \
                                 [(target_attack_step, dep_chain)]
+
+                # Recreate the requirements of exist and notExist attack steps
+                if attack_step.type == 'exist' or \
+                        attack_step.type == 'notExist':
+                    if 'requirements' in attack_step_info:
+                        dep_chains = attack_step_info['requirements']
+                        attack_step.requirements = []
+                        for dep_chain_dict in dep_chains:
+                            dep_chain = DependencyChain._from_dict(
+                                dep_chain_dict,
+                                lang_graph
+                            )
+                            attack_step.requirements.append(dep_chain)
 
         return lang_graph
 
@@ -1469,6 +1487,35 @@ class LanguageGraph():
                             [(target_attack_step,
                             self.reverse_dep_chain(dep_chain,
                                 None))]
+
+                # Evaluate the requirements of exist and notExist attack steps
+                if attack_step.type == 'exist' or \
+                        attack_step.type == 'notExist':
+                    step_expressions = \
+                        attack_step.attributes['requires']['stepExpressions'] \
+                            if attack_step.attributes['requires'] else []
+                    if not step_expressions:
+                        msg = 'Failed to find requirements for attack step' \
+                        ' "%s" of type "%s":\n%s'
+                        raise LanguageGraphStepExpressionError(
+                            msg % (
+                                attack_step_name,
+                                attack_step.type,
+                                json.dumps(attack_step.attributes, indent = 2)
+                            )
+                        )
+
+                    attack_step.requirements = []
+                    for step_expression in step_expressions:
+                        _, \
+                        result_dep_chain, \
+                        _ = \
+                            self.process_step_expression(
+                                attack_step.asset,
+                                None,
+                                step_expression
+                            )
+                        attack_step.requirements.append(result_dep_chain)
 
     def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
         """
