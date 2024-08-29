@@ -67,9 +67,9 @@ class SearchCondition:
 def find_matches_recursively(
         node: AttackGraphNode,
         condition_list: list[SearchCondition],
-        current_path=None,
-        matching_paths=None,
-        condition_match_count=0
+        current_path: tuple[AttackGraphNode] = None,
+        matching_paths: list[tuple[AttackGraphNode]] = None,
+        condition_match_count: int = 0
     ):
     """Find all paths of nodes that match the list of conditions.
     When a sequence of conditions is fulfilled for a path of nodes,
@@ -87,7 +87,7 @@ def find_matches_recursively(
 
     # Init path lists if None, or copy/init into new lists for each iteration
     current_path = [] if current_path is None else list(current_path)
-    matching_paths = [] if matching_paths is None else list(matching_paths)
+    matching_paths = set() if matching_paths is None else matching_paths
 
     curr_cond, *next_conds = condition_list
 
@@ -130,8 +130,8 @@ def find_matches_recursively(
                     condition_match_count=condition_match_count
                 )
 
-        if not next_conds and current_path not in matching_paths:
+        if not next_conds:
             # Congrats - matched a full unique search pattern!
-            matching_paths.append(current_path)
+            matching_paths.add(tuple(current_path)) # tuple is hashable
 
     return matching_paths
