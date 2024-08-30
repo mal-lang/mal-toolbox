@@ -396,6 +396,17 @@ class LanguageGraphAttackStep:
         return node_dict
 
 
+    def get_requirements(self):
+        if not hasattr(self, 'requirements'):
+            requirements = []
+        else:
+            requirements = self.requirements
+
+        if self.inherits:
+            requirements.extend(self.inherits.get_requirements())
+        return requirements
+
+
     def __repr__(self) -> str:
         return str(self.to_dict())
 
