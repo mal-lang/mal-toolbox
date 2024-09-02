@@ -168,13 +168,37 @@ class malAnalyzer(malAnalyzerInterface):
             raise ''
         
     def _check_to_step(self, asset, expr) -> None:
-        pass
-
+        match (expr['type']):
+            case 'attackStep':
+                if (asset in self._assets.keys()):
+                    for attackStep in self._assets[asset]['obj']['attackSteps']:
+                        if (attackStep['name'] == expr['name']):
+                            return attackStep
+                        
+                logging.error(f'Attack step \'{expr["name"]}\' not defined for asset \'{asset}\'')
+                self._error = True
+                return None
+            case 'collect' | 'union' | 'intersection' | 'difference': #'AST.StepExpr':
+                if (left_target := self._check_to_asset(asset, expr['lhs'])):
+                    return self._check_to_step(left_target, expr['rhs'])
+                return None
+            case 'subType':
+                if (sub_type := self._get_asset_name(expr['subType'])):
+                    return self._check_association_expr(sub_type, expr['stepExpression'])
+                return None
+            case _:
+                logging.error('Last step is not attack step')
+                self._error = True
+                return None
+                
     def _check_to_asset(self, asset, expr) -> None:
         match (expr['type']):
-            case 'StepExpr':
-                raise
-            case 'IDExpr':
+            case 'field' | 'attackStep': 
+                # This is an implementation of IDExpr & CallExpr
+                return self._check_association_expr(asset, expr)
+            case 'collect': #'StepExpr':
+                return self._check_step_expr(asset, expr)
+            case 'IDExpr' | 'CallExpr':
                 raise
             case 'union' | 'intersection' | 'difference':
                 return self._check_set_expr(asset, expr)
@@ -182,20 +206,105 @@ class malAnalyzer(malAnalyzerInterface):
                 return self._check_transitive_expr(asset, expr)
             case 'subType':
                 return self._check_sub_type_expr(asset, expr)
-            case 'CallExpr':
-                raise
             case _:
                 logging.error(f'Unexpected expression \'{expr["type"]}\'')
                 self._error = True
                 # exit(1)
                 return None
             
+    def _check_association_expr(self, asset, expr):
+        '''
+        Check field for association or variable reference to asset.
+        '''
+        for association in self._associations:
+            if (expr['name'] == association['leftField']):
+                if (self._get_asset_name(association['leftAsset'])):
+                    return association['leftAsset']
+            if (expr['name'] == association['rightField']):
+                if (self._get_asset_name(association['rightAsset'])):
+                    return association['rightAsset']
+        
+        if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
+            return self._check_to_asset(asset, self._vars[asset][expr['name']]['var']['stepExpression']) 
+
+        # logging.error(f'Variable \'{expr["name"]}\' is not defined')
+        logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\'')
+        self._error = True
+        return None
+    
+    def _check_step_expr(self, asset, expr):
+        if (left_target := self._check_to_asset(asset, expr['lhs'])):
+            return self._check_to_asset(left_target, expr['rhs'])
+        return None
+    
     def _check_set_expr(self, asset, expr) -> None:
-        pass
+        lhs_target = self._check_to_asset(asset, expr['lhs'])
+        rhs_target = self._check_to_asset(asset, expr['rhs'])
+        if (not lhs_target or not rhs_target):
+            return None
+
+        if (target := self._get_LCA(lhs_target, rhs_target)):
+            return target
+        
+        logging.error(f'Types \'{lhs_target["name"]}\' and \'{rhs_target["name"]}\' have no common ancestor')
+        self._error = True
+        return None
+
+    def _get_LCA(self, lhs_target, rhs_target):
+        if (self._is_child(lhs_target, rhs_target)):
+            return lhs_target
+        elif (self._is_child(rhs_target, lhs_target)):
+            return rhs_target
+        else:
+            lhs_ctx = self._assets[lhs_target]['ctx']
+            rhs_ctx = self._assets[rhs_target]['ctx']
+            lhs_parent_ctx = self._get_assets_extendee(lhs_ctx)
+            rhs_parent_ctx = self._get_assets_extendee(rhs_ctx)
+            if (not lhs_parent_ctx or not rhs_parent_ctx):
+                return None
+            return self._get_LCA(lhs_parent_ctx.ID()[0].getText(), rhs_parent_ctx.ID()[0].getText())
+
     def _check_sub_type_expr(self, asset, expr) -> None:
-        pass
+        target = self._check_to_asset(asset, expr['stepExpression'])
+        if (not target):
+            return None
+
+        if (asset_type := self._get_asset_name(expr['subType'])):
+            if (self._is_child(target, asset_type)):
+                return asset_type
+
+            logging.error(f'Asset \'{target}\' cannot be of type \'{asset_type}\'')
+            self._error = True
+        return None
+
     def _check_transitive_expr(self, asset, expr) -> None:
-        pass
+        if (res := self._check_to_asset(asset, expr['stepExpression'])):
+            if (self._is_child(res, asset)):
+                return res
+   
+            logging.error(f'Previous asset \'{asset}\' is not of type \'{res}\'')
+            self._error = True
+        return None
+    
+    def _is_child(self, parent_name, child_name):
+        if (parent_name == child_name):
+            return True
+        
+        if (valid_asset := self._get_asset_name(child_name)):
+            asset_context: malParser.AssetContext = self._assets[valid_asset]['ctx']
+            if (parent_ctx := self._get_assets_extendee(asset_context)):
+                child_parent_name = self._get_asset_name(parent_ctx.ID()[0].getText())
+                return self._is_child(parent_name, child_parent_name)
+            
+        return False
+
+    def _get_asset_name(self, name):
+        if (name in self._assets.keys()):
+            return name
+
+        logging.error(f'Asset \'{name}\' not defined')
+        self._error = True
+        return None
 
     def _analyse_association(self) -> None:
         for association in self._associations:
@@ -255,7 +364,7 @@ class malAnalyzer(malAnalyzerInterface):
 
     def checkAsset(self, ctx: malParser.AssetContext, asset: dict) -> None:
         asset_name = asset['name']
-        category_name = ctx.parentCtx.ID()
+        category_name = ctx.parentCtx.ID().getText()
         
         if (not asset_name or asset_name == '<missing <INVALID>>'):
             logging.error(f"Asset was defined without a name at line {ctx.start.line}")
@@ -268,7 +377,7 @@ class malAnalyzer(malAnalyzerInterface):
             self._error = True
             return
         else:
-            self._assets[asset_name] = {'ctx': ctx, 'obj': asset, 'parent': {'name': ctx.parentCtx.ID() ,'ctx': ctx.parentCtx}}
+            self._assets[asset_name] = {'ctx': ctx, 'obj': asset, 'parent': {'name': ctx.parentCtx.ID().getText() ,'ctx': ctx.parentCtx}}
 
     def checkMeta(self, ctx: malParser.MetaContext, data: Tuple[Tuple[str, str],]) -> None:
         ((meta_name, _),) = data
@@ -277,16 +386,16 @@ class malAnalyzer(malAnalyzerInterface):
 
         # Finding metadata type
         if isinstance(ctx.parentCtx, malParser.CategoryContext):
-            parent_name = str(ctx.parentCtx.ID())
+            parent_name = str(ctx.parentCtx.ID().getText())
             location_name = 'category'
         elif isinstance(ctx.parentCtx, malParser.AssetContext):
-            parent_name = str(ctx.parentCtx.ID()[0])
+            parent_name = str(ctx.parentCtx.ID()[0].getText())
             location_name = 'asset'
         elif isinstance(ctx.parentCtx, malParser.StepContext):
-            parent_name = str(ctx.parentCtx.ID())
+            parent_name = str(ctx.parentCtx.ID().getText())
             location_name = 'step'
         elif isinstance(ctx.parentCtx, malParser.AssociationContext):
-            parent_name = str(ctx.parentCtx.ID())
+            parent_name = str(ctx.parentCtx.ID()[0].getText())
             location_name = 'association'
 
         # Validate that the metadata is unique
@@ -305,7 +414,7 @@ class malAnalyzer(malAnalyzerInterface):
         step_name = step['name']
 
         if isinstance(ctx.parentCtx, malParser.AssetContext):        
-            asset_name = ctx.parentCtx.ID()[0]   
+            asset_name = ctx.parentCtx.ID()[0].getText()   
             # Check if the step is defined in other assets.
             for other_asset_name in self._steps.keys():
                 if (asset_name == other_asset_name):
@@ -341,31 +450,66 @@ class malAnalyzer(malAnalyzerInterface):
                 self._error = True
 
             self._validate_CIA(ctx, step)
-            self._validate_TTC(ctx, step)
+            self._validate_TTC(ctx, asset_name, step)
 
     def checkReaches(self, ctx: malParser.ReachesContext, data: dict) -> None:
         pass
 
-    def _validate_TTC(self, ctx: malParser.StepContext, step: dict) -> None:
+    def _validate_TTC(self, ctx: malParser.StepContext, asset_name, step: dict) -> None:
         if not step['ttc']:
             return
+        match step['type']:
+            case  'defense':
+                if (step['ttc']['type'] != 'function'):
+                    logging.error(f'Defense {asset_name}.{step["name"]} may not have advanced TTC expressions')
+                    self._error = True
+                    return
+                
+                match step['ttc']['name']:
+                    case 'Enabled' | 'Disabled' | 'Bernoulli':
+                        #   try/catch Distributions.validate(name, params)
+                        return
+                    case _:
+                        logging.error(f'Defense {asset_name}.{step["name"]} may only have \'Enabled\', \'Disabled\', or \'Bernoulli(p)\' as TTC')
+                        self._error = True
+                        return
+            case 'exist' | 'notExist':
+                pass
+            case _:
+                self._check_TTC_expr(step['ttc'])
         
-        if step['type'] == 'defense':
-            # TODO: TTCFuncExpr
-            # if !(ttc instanceof AST.TTCFuncExpr)
-            #      error
-            # elif fname = Enabled, Disabled, Bernoulli
-            #   Distributions.validate(fname, fparams);
-            # else 
-            #    ERROR   Defense %s.%s may only have 'Enabled', 'Disabled', or 'Bernoulli(p)' as TTC"
-            pass
+    def _check_TTC_expr(self, expr, isSubDivExp = False):
+        match expr['type']:
+            case 'function':
+                if (expr['name'] == 'Enabled' or expr['name'] == 'Disabled'):
+                    logging.error('Distributions \'Enabled\' or \'Disabled\' may not be used as TTC values in \'&\' and \'|\' attack steps')
+                    self._error = True
+                    return
+                if (isSubDivExp and expr['name'] in ['Bernoulli', 'EasyAndUncertain']):
+                    logging.error(f'TTC distribution \'{expr["name"]}\' is not available in subtraction, division or exponential expressions.')
+                    self._error = True
+                    return
+                # try/catch  Distributions.validate(name, params)
+            case  'subtraction' | 'exponentiation' | 'division':
+                self._check_TTC_expr(expr['lhs'], True)
+                self._check_TTC_expr(expr['rhs'], True)
+            case 'multiplication' | 'addition':
+                self._check_TTC_expr(expr['lhs'], False)
+                self._check_TTC_expr(expr['rhs'], False)
+            case 'number':
+                pass
+            case _:
+                logging.error(f'Unexpected expression {expr}')
+                self._error = True
+                # exit(1)
+
 
     def _validate_CIA(self, ctx: malParser.StepContext, step: dict) -> None:
         if not ctx.cias():
             return
         
         step_name = step['name']
-        asset_name = ctx.parentCtx.ID()[0] 
+        asset_name = ctx.parentCtx.ID()[0].getText() 
 
         if (step['type'] == 'defense' or step['type'] == 'exist' or step['type'] == 'notExist'):
             logging.error(f'{step_name}: Defenses cannot have CIA classifications')
@@ -401,13 +545,16 @@ class malAnalyzer(malAnalyzerInterface):
             asset_name: str = str(parent.ID()[0].getText())
             var_name: str = var['name']
             if (asset_name not in self._vars.keys()):
-                self._vars[asset_name] = {var_name: ctx} 
+                self._vars[asset_name] = {var_name: {'ctx': ctx, 'var': var}} 
             elif (var_name not in self._vars[asset_name]):
-                self._vars[asset_name][var_name] = ctx
+                self._vars[asset_name][var_name] = {'ctx': ctx, 'var': var}
             else: 
-                prev_define_line = self._vars[asset_name][var_name].start.line
+                prev_define_line = self._vars[asset_name][var_name]['ctx'].start.line
                 logging.error(f'Variable \'{var_name}\' previously defined at line {prev_define_line}')
                 self._error = True
-    
+        else:
+            # TODO
+            raise 
+
     def checkAssociation(self, ctx: malParser.AssociationContext, association: dict):
         self._associations.append(association)

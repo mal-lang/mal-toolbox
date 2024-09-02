@@ -155,12 +155,14 @@ def test_step_6() -> None:
         {
         | spyware
             -> logKeystrokes
+        | logKeystrokes
         }
 
         asset Linux
         {
         | spyware
             +> readBashHistory
+        & readBashHistory
         }
     } 
                                         
@@ -234,6 +236,7 @@ def test_step_9() -> None:
             asset OperatingSystem {
             | spyware
                 -> logKeystrokes
+            | logKeystrokes
             }
         } 
         ''')
@@ -247,6 +250,7 @@ def test_step_9() -> None:
         asset Linux {
         | spyware
             +> readBashHistory
+        & readBashHistory
         }
     } 
                            
@@ -263,17 +267,27 @@ def test_step_10() -> None:
     AnalyzerTestWrapper('''
     #id: "org.mal-lang.testAnalyzer"
     #version:"0.0.0"
+    
 
-    category System {
+    category System {          
         asset Linux {
-        E hasCamera
-        <- hardware[Camera]
-        -> hijackCamera
+            E hasCamera
+            <- hardware[Camera]
+            -> hijackCamera
+            | hijackCamera
+        }
+        asset Camera {
+            | photo
         }
     } 
+                        
+    associations 
+    {
+        Linux [linux] * <-- L --> * [hardware] Camera
+    }  
                            
     ''').test(
         defines=['id', 'version'],
         categories=['System'],
-        assets=['Linux']
+        assets=['Linux', 'Camera']
     )

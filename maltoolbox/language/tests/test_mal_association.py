@@ -81,3 +81,59 @@ def test_association_3() -> None:
         categories=['System'],
         assets=['Asset2']
     )
+
+
+def test_association_4() -> None:
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+
+    category Example {
+        asset Asset1 
+        {
+            | compromise
+            -> b.compromise
+        }
+        asset Asset2 
+        {
+            | compromise
+        }
+    }
+    associations 
+    {
+        Asset1 [a] * <-- L --> * [b] Asset2
+    }               
+                                        
+    ''').test(
+        defines=['id', 'version'],
+        categories=['Example'],
+        assets=['Asset1', 'Asset2']
+    )
+
+def test_association_5() -> None:
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+
+    category Example {
+        asset Asset1 
+        {
+            | compromise
+            -> b.compromise
+        }
+        asset Asset2 
+        {
+            | compromise
+        }
+    }
+    associations 
+    {
+        Asset1 [a] * <-- L --> * [c] Asset2
+    }               
+                                        
+    ''').test(
+        error=True,
+        defines=['id', 'version'],
+        categories=['Example'],
+        assets=['Asset1', 'Asset2']
+    )

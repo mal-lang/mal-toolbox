@@ -83,3 +83,36 @@ def test_let_3() -> None:
         assets=['Computer'],
         lets=[('Computer', 'components')]
     )
+
+def test_let_4() -> None:
+    '''
+    Defines correct version and ID.
+    Defines category with name.
+    Defines asset with name.
+    Defines same let twice.
+    '''
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+
+    category System {
+        asset Asset1 {
+            | compromise
+        }
+        asset Computer {
+            let var1 = asset1
+            | compromise
+            -> var1.compromise
+        }
+    }
+
+    associations 
+    {
+        Computer [computer] * <-- L --> * [asset1] Asset1
+    }                                    
+    ''').test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Computer', 'Asset1'],
+        lets=[('Computer', 'var1')]
+    )
