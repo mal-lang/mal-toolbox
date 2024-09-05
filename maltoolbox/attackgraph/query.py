@@ -37,10 +37,21 @@ def is_node_traversable_by_attacker(
         attacker.id
     )
     if not node.is_viable:
+        logger.debug(
+            '"%s"(%d) is not traversable because it is non-viable',
+            node.full_name,
+            node.id,
+        )
         return False
 
     match(node.type):
         case 'or':
+            logger.debug(
+                '"%s"(%d) is traversable because it is viable and '
+                'of type "or".',
+                node.full_name,
+                node.id
+            )
             return True
 
         case 'and':
@@ -49,14 +60,44 @@ def is_node_traversable_by_attacker(
                     not parent.is_compromised_by(attacker):
                     # If the parent is not present in the attacks steps
                     # already reached and is necessary.
+                    logger.debug(
+                        '"%s"(%d) is not traversable because while it is '
+                        'viable, and of type "and", its necessary parent '
+                        '"%s(%d)" has not already been compromised.',
+                        node.full_name,
+                        node.id,
+                        parent.full_name,
+                        parent.id
+                    )
                     return False
+            logger.debug(
+                '"%s"(%d) is traversable because it is viable, '
+                'of type "and", and all of its necessary parents have '
+                'already been compromised.',
+                node.full_name,
+                node.id
+            )
             return True
 
-        case 'exist' | 'notExist' |  'defense':
+        case 'exist' | 'notExist' | 'defense':
+            logger.warning(
+                'Nodes of type "exist", "notExist", and "defense" are never '
+                'marked as traversable. However, we do not normally check '
+                'if they are traversable. Node "%s"(%d) of type "%s" was '
+                'checked for traversability.',
+                node.full_name,
+                node.id,
+                node.type
+            )
             return False
 
         case _:
-            logger.error('Unknown node type %s.', node.type)
+            logger.error(
+                'Node "%s"(%d) has an unknown type "%s".',
+                node.full_name,
+                node.id,
+                node.type
+            )
             return False
 
 def get_attack_surface(
