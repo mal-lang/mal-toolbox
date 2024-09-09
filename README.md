@@ -75,6 +75,12 @@ and it can be used to visualise the instance model and the attack graph.
 
 # Usage
 
+## Installation
+
+```
+pip install mal-toolbox
+```
+
 ## Configuration
 A default configuration file `default.conf` can be found in the package
 directory. This contains the default values to use for logging and can also be
