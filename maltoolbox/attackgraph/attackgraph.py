@@ -504,15 +504,12 @@ class AttackGraph():
                     asset = asset,
                     name = attack_step_name,
                     ttc = attack_step_attribs['ttc'],
-                    children = [],
-                    parents = [],
                     defense_status = defense_status,
                     existence_status = existence_status,
                     is_viable = True,
                     is_necessary = True,
                     mitre_info = mitre_info,
                     tags = attack_step_attribs['tags'],
-                    compromised_by = []
                 )
                 ag_node.attributes = attack_step_attribs
                 attack_step_nodes.append(ag_node)
