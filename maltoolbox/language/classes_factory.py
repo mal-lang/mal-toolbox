@@ -26,7 +26,7 @@ class LanguageClassesFactory:
 
     def _generate_assets(self) -> None:
         """
-        Generate JSON Schema for asset types in language specification.
+        Generate JSON Schema for asset types in the language specification.
         """
         for asset in self.lang_graph.assets:
             logger.debug('Creating %s asset JSON schema entry.', asset.name)
@@ -68,7 +68,7 @@ class LanguageClassesFactory:
 
     def _generate_associations(self) -> None:
         """
-        Generate JSON Schema for association types in language specification.
+        Generate JSON Schema for association types in the language specification.
         """
         def create_association_entry(assoc: SchemaGeneratedClass):
             logger.debug('Creating %s association JSON schema entry.', assoc.name)
