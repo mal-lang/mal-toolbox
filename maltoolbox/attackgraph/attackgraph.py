@@ -2,6 +2,7 @@
 MAL-Toolbox Attack Graph Module
 """
 from __future__ import annotations
+import copy
 import logging
 import json
 
@@ -223,6 +224,30 @@ class AttackGraph():
             'attack_steps': serialized_attack_steps,
             'attackers': serialized_attackers,
         }
+
+    def __deepcopy__(self, memo):
+        copied_attackgraph = AttackGraph(self.lang_graph)
+        copied_attackgraph.model = self.model
+
+        # Deep copy nodes and add references to them
+        copied_attackgraph.nodes = copy.deepcopy(self.nodes, memo)
+
+        # Deep copy attackers and references to them
+        copied_attackgraph.attackers = copy.deepcopy(self.attackers, memo)
+
+        # Copy lookup dicts
+        copied_attackgraph._id_to_attacker = \
+            copy.deepcopy(self._id_to_attacker, memo)
+        copied_attackgraph._id_to_node = \
+            copy.deepcopy(self._id_to_node, memo)
+        copied_attackgraph._full_name_to_node = \
+            copy.deepcopy(self._full_name_to_node, memo)
+
+        # Copy counters
+        copied_attackgraph.next_node_id = self.next_node_id
+        copied_attackgraph.next_attacker_id = self.next_attacker_id
+
+        return copied_attackgraph
 
     def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""

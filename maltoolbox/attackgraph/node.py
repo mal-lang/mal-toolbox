@@ -3,6 +3,7 @@ MAL-Toolbox Attack Graph Node Dataclass
 """
 
 from __future__ import annotations
+import copy
 from dataclasses import field, dataclass
 from typing import Any, Optional
 
@@ -68,6 +69,39 @@ class AttackGraphNode:
 
     def __repr__(self) -> str:
         return str(self.to_dict())
+
+    def __deepcopy__(self, memo) -> AttackGraphNode:
+        """Deep copy an attackgraph node"""
+
+        copied_node = AttackGraphNode(
+            self.type,
+            self.name,
+            self.ttc,
+            self.id,
+            self.asset,
+            [],
+            [],
+            self.defense_status,
+            self.existence_status,
+            self.is_viable,
+            self.is_necessary,
+            copy.deepcopy(self.compromised_by, memo),
+            self.mitre_info,
+            copy.deepcopy(self.tags, memo),
+            copy.deepcopy(self.attributes, memo),
+            copy.deepcopy(self.extras, memo)
+        )
+
+        # Remember that self was already copied
+        memo[id(self)] = copied_node
+
+        # Deep copy children and parents, send memo (avoid infinite recursion)
+        if self.parents:
+            copied_node.parents = copy.deepcopy(self.parents, memo)
+        if self.children:
+            copied_node.children = copy.deepcopy(self.children, memo)
+
+        return copied_node
 
     def is_compromised(self) -> bool:
         """

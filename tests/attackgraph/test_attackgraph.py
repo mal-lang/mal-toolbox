@@ -1,5 +1,6 @@
 """Unit tests for AttackGraph functionality"""
 
+import copy
 import pytest
 from unittest.mock import patch
 
@@ -403,3 +404,46 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
         assert node_to_remove not in parent.children
     for child in children:
         assert node_to_remove not in child.parents
+
+
+def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
+    """
+    Try to deepcopy an attackgraph object. The nodes of the attack graph
+    and attackers should be duplicated into new objects, while references to
+    the instance model should remain the same.
+    """
+    copied_attackgraph: AttackGraph = copy.deepcopy(example_attackgraph)
+
+    assert copied_attackgraph != example_attackgraph
+    assert copied_attackgraph._to_dict() == example_attackgraph._to_dict()
+
+    assert copied_attackgraph.next_node_id == example_attackgraph.next_node_id
+    assert copied_attackgraph.next_attacker_id == example_attackgraph.next_attacker_id
+
+    assert len(copied_attackgraph.nodes) == len(example_attackgraph.nodes)
+
+    assert list(copied_attackgraph._id_to_node.keys()) \
+        == list(example_attackgraph._id_to_node.keys())
+
+    assert list(copied_attackgraph._id_to_attacker.keys()) \
+        == list(example_attackgraph._id_to_attacker.keys())
+
+    assert list(copied_attackgraph._full_name_to_node.keys()) \
+        == list(example_attackgraph._full_name_to_node.keys())
+
+    assert id(copied_attackgraph.model) == id(example_attackgraph.model)
+
+    for node in copied_attackgraph.nodes:
+        assert node.id is not None
+        original_node = example_attackgraph.get_node_by_id(node.id)
+        assert original_node
+        assert id(original_node) != id(node)
+        assert original_node.to_dict() == node.to_dict()
+        assert id(original_node.asset) == id(node.asset)
+
+    for attacker in copied_attackgraph.attackers:
+        assert attacker.id is not None
+        original_attacker = example_attackgraph.get_attacker_by_id(attacker.id)
+        assert original_attacker
+        assert id(original_attacker) != id(attacker)
+        assert original_attacker.to_dict() == attacker.to_dict()
