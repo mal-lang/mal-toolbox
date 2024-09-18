@@ -11,6 +11,8 @@ tmp/
 # Virtual Environment
 env/
 venv/
+.env/
+.venv/
 
 # C extensions
 *.so
