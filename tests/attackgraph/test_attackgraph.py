@@ -14,6 +14,7 @@ from test_model import create_application_asset, create_association
 @pytest.fixture
 def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """Fixture that generates an example attack graph
+       with unattached attacker
 
     Uses coreLang specification and model with two applications
     with an association and an attacker to create and return
@@ -412,6 +413,7 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
     and attackers should be duplicated into new objects, while references to
     the instance model should remain the same.
     """
+    example_attackgraph.attach_attackers()
     copied_attackgraph: AttackGraph = copy.deepcopy(example_attackgraph)
 
     assert copied_attackgraph != example_attackgraph
@@ -433,6 +435,8 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
 
     assert id(copied_attackgraph.model) == id(example_attackgraph.model)
 
+    assert len(copied_attackgraph.nodes) \
+        == len(example_attackgraph.nodes)
     for node in copied_attackgraph.nodes:
         assert node.id is not None
         original_node = example_attackgraph.get_node_by_id(node.id)
@@ -440,6 +444,11 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
         assert id(original_node) != id(node)
         assert original_node.to_dict() == node.to_dict()
         assert id(original_node.asset) == id(node.asset)
+
+    assert len(copied_attackgraph.attackers) \
+        == len(example_attackgraph.attackers)
+    assert id(copied_attackgraph.attackers) \
+        != id(example_attackgraph.attach_attackers)
 
     for attacker in copied_attackgraph.attackers:
         assert attacker.id is not None
