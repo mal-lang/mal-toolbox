@@ -669,7 +669,8 @@ class AttackGraph():
                     attacker.name,
                     attacker_id)
             else:
-                logger.debug('Add attacker "%s" without id.')
+                logger.debug('Add attacker "%s" without id.',
+                    attacker.name)
 
 
         attacker.id = attacker_id or self.next_attacker_id
