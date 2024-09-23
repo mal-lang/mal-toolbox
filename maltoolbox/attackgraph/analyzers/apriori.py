@@ -169,6 +169,7 @@ def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
     graph       - the attack graph for which we wish to remove the
                   the nodes which are not viable or necessary.
     """
+    logger.debug('Prune unviable and unnecessary nodes from the attack graph.')
     for node in graph.nodes:
         if (node.type == 'or' or node.type == 'and') and \
             (not node.is_viable or not node.is_necessary):
