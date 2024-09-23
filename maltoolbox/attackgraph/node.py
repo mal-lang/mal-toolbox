@@ -25,7 +25,7 @@ class AttackGraphNode:
     is_necessary: bool = True
     compromised_by: list[Attacker] = field(default_factory=list)
     mitre_info: Optional[str] = None
-    tags: list[str] = field(default_factory=lambda: [])
+    tags: set[str] = field(default_factory=lambda: {})
     attributes: Optional[dict] = None
 
     # Optional extra metadata for AttackGraphNode
@@ -61,7 +61,7 @@ class AttackGraphNode:
         if self.mitre_info is not None:
             node_dict['mitre_info'] = str(self.mitre_info)
         if self.tags:
-            node_dict['tags'] = str(self.tags)
+            node_dict['tags'] = list(self.tags)
         if self.extras:
             node_dict['extras'] = self.extras
 

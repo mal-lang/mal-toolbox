@@ -174,7 +174,7 @@ class LanguageGraphAsset:
             if var_name in current_asset.variables:
                 return current_asset.variables[var_name]
             current_assets.extend(current_asset.super_assets)
-        return (None, None)
+        return None
 
 
     def get_all_common_superassets(
@@ -344,7 +344,7 @@ class LanguageGraphAttackStep:
     description: dict = field(default_factory = lambda: {})
     attributes: Optional[dict] = None
     inherits: Optional[LanguageGraphAttackStep] = None
-    tags: list = field(default_factory = lambda: [])
+    tags: set = field(default_factory = lambda: {})
 
     @property
     def full_name(self) -> str:
@@ -367,7 +367,7 @@ class LanguageGraphAttackStep:
             'description': self.description,
             'overrides': self.overrides,
             'inherits': self.inherits.full_name if self.inherits else None,
-            'tags': self.tags
+            'tags': list(self.tags)
         }
 
         for child in self.children:
@@ -813,7 +813,7 @@ class LanguageGraph():
                     children = {},
                     parents = {},
                     description = attack_step_info['description'],
-                    tags = attack_step_info['tags']
+                    tags = set(attack_step_info['tags'])
                 )
                 asset.attack_steps[attack_step_name] = attack_step_node
 
@@ -1395,7 +1395,7 @@ class LanguageGraph():
                     children = {},
                     parents = {},
                     description = attack_step_attribs['meta'],
-                    tags = attack_step_attribs['tags']
+                    tags = set(attack_step_attribs['tags'])
                 )
                 attack_step_node.attributes = attack_step_attribs
                 asset.attack_steps[attack_step_name] = attack_step_node
@@ -1418,12 +1418,11 @@ class LanguageGraph():
                                 type = attack_step.type,
                                 asset = asset,
                                 ttc = attack_step.ttc,
-                                overrides = attack_step_attribs['reaches']['overrides'] \
-                                    if attack_step_attribs['reaches'] else False,
+                                overrides = False,
                                 children = {},
                                 parents = {},
-                                description = attack_step_attribs['meta'],
-                                tags = attack_step_attribs['tags']
+                                description = attack_step.description,
+                                tags = set(attack_step.tags)
                             )
                             attack_step_node.inherits = attack_step
                             asset.attack_steps[attack_step_name] = attack_step_node
@@ -1433,6 +1432,8 @@ class LanguageGraph():
                         else:
                             asset.attack_steps[attack_step_name].inherits = \
                                 attack_step
+                            asset.attack_steps[attack_step_name].tags |= \
+                                attack_step.tags
 
         # Then, link all of the attack step nodes according to their
         # associations.
