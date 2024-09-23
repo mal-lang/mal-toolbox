@@ -612,7 +612,7 @@ class AttackGraph():
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
             logger.debug(f'Add node \"{node.full_name}\" '
-                'with id:{node_id}:\n' \
+                f'with id:{node_id}:\n' \
                 + json.dumps(node.to_dict(), indent = 2))
 
         if node.id in self._id_to_node:
