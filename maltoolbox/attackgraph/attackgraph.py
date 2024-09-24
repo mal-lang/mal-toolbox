@@ -354,7 +354,10 @@ class AttackGraph():
                 attacker = ag_attacker,
                 attacker_id = int(attacker['id']),
                 entry_points = attacker['entry_points'].keys(),
-                reached_attack_steps = attacker['reached_attack_steps'].keys()
+                reached_attack_steps = [
+                    int(node_id) # Convert to int since they can be strings
+                    for node_id in attacker['reached_attack_steps'].keys()
+                ]
             )
 
         return attack_graph
@@ -679,7 +682,7 @@ class AttackGraph():
 
         self.next_attacker_id = max(attacker.id + 1, self.next_attacker_id)
         for node_id in reached_attack_steps:
-            node = self.get_node_by_id(int(node_id))
+            node = self.get_node_by_id(node_id)
             if node:
                 attacker.compromise(node)
             else:
