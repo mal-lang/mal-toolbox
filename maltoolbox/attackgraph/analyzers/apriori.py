@@ -51,6 +51,15 @@ def propagate_necessity_from_node(node: AttackGraphNode) -> None:
         'Propagate necessity from "%s"(%d) with necessity status %s.',
         node.full_name, node.id, node.is_necessary
     )
+
+    if node.ttc and 'name' in node.ttc:
+        if node.ttc['name'] not in ['Enabled', 'Disabled']:
+            # Do not propagate unnecessary state from nodes that have a TTC
+            # probability distribution associated with them.
+            # TODO: Evaluate this more carefully, how do we want to have TTCs
+            # impact necessity and viability.
+            return
+
     for child in node.children:
         original_value = child.is_necessary
         if child.type == 'or':
