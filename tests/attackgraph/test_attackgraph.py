@@ -254,8 +254,13 @@ def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     app1_ncu = example_attackgraph.get_node_by_full_name(
         'Application 1:networkConnectUninspected'
     )
+    app1_auv = example_attackgraph.get_node_by_full_name(
+        'Application 1:attemptUseVulnerability'
+    )
 
     assert app1_ncu
+    assert app1_auv
+
     assert not example_attackgraph.attackers
 
     example_attackgraph.attach_attackers()
@@ -263,7 +268,15 @@ def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     assert len(example_attackgraph.attackers) == 1
     attacker = example_attackgraph.attackers[0]
 
+    assert app1_ncu in attacker.entry_points
     assert app1_ncu in attacker.reached_attack_steps
+    assert not app1_auv in attacker.entry_points
+    assert not app1_auv in attacker.reached_attack_steps
+
+    attacker.compromise(app1_auv)
+    assert app1_auv in attacker.reached_attack_steps
+    assert app1_auv not in attacker.entry_points
+
 
     for node in attacker.reached_attack_steps:
         # Make sure the Attacker is present on the nodes they have compromised

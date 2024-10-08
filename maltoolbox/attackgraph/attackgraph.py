@@ -469,7 +469,7 @@ class AttackGraph():
                         continue
                     attacker.compromise(ag_node)
 
-            attacker.entry_points = attacker.reached_attack_steps
+            attacker.entry_points = list(attacker.reached_attack_steps)
 
     def _generate_graph(self) -> None:
         """

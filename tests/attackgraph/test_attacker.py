@@ -27,13 +27,17 @@ def test_attacker_compromise():
         name = "node1"
     )
     attacker = Attacker("Test Attacker", [], [])
+    assert not attacker.entry_points
     attack_graph = AttackGraph()
     attack_graph.add_node(node1)
     attack_graph.add_attacker(attacker)
 
     attacker.compromise(node1)
     assert attacker.reached_attack_steps == [node1]
+    assert not attacker.entry_points
+
     assert node1.compromised_by == [attacker]
+
     attacker.compromise(node1) # Compromise same node again not a problem
     assert attacker.reached_attack_steps == [node1]
     assert node1.compromised_by == [attacker]
