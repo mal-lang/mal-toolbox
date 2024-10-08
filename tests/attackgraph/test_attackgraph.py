@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import patch
 
 from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.model import Model, AttackerAttachment
 
 from test_model import create_application_asset, create_association
@@ -450,22 +450,111 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
 
     assert len(copied_attackgraph.nodes) \
         == len(example_attackgraph.nodes)
+
     for node in copied_attackgraph.nodes:
         assert node.id is not None
         original_node = example_attackgraph.get_node_by_id(node.id)
+
         assert original_node
         assert id(original_node) != id(node)
         assert original_node.to_dict() == node.to_dict()
         assert id(original_node.asset) == id(node.asset)
 
+        # Make sure thes node in the copied attack graph are the same
+        same_node = copied_attackgraph.get_node_by_id(node.id)
+        assert id(same_node) == id(node)
+
+        for attacker in node.compromised_by:
+            assert id(attacker) == id(copied_attackgraph.attackers[0])
+            original_node.compromised_by
+
+    # Make sure parents and children are same as those in the copied attack graph
+    for node in copied_attackgraph.nodes:
+        for parent in node.parents:
+            assert parent.id is not None
+            attack_graph_parent = copied_attackgraph.get_node_by_id(parent.id)
+            assert id(attack_graph_parent) == id(parent)
+        for child in node.children:
+            assert child.id is not None
+            attack_graph_child = copied_attackgraph.get_node_by_id(child.id)
+            assert id(attack_graph_child) == id(child)
+
     assert len(copied_attackgraph.attackers) \
         == len(example_attackgraph.attackers)
     assert id(copied_attackgraph.attackers) \
-        != id(example_attackgraph.attach_attackers)
+        != id(example_attackgraph.attackers)
 
     for attacker in copied_attackgraph.attackers:
+
+        for entry_point in attacker.entry_points:
+            assert entry_point.id
+            entry_point_in_attack_graph = copied_attackgraph.get_node_by_id(entry_point.id)
+            assert entry_point_in_attack_graph
+            assert entry_point == entry_point_in_attack_graph
+            assert id(entry_point) == id(entry_point_in_attack_graph)
+
         assert attacker.id is not None
         original_attacker = example_attackgraph.get_attacker_by_id(attacker.id)
         assert original_attacker
         assert id(original_attacker) != id(attacker)
         assert original_attacker.to_dict() == attacker.to_dict()
+
+
+def test_attackgraph_deepcopy_attackers(example_attackgraph: AttackGraph):
+    """
+    Make sure attackers entry points and reached steps are copied correctly
+    """
+    example_attackgraph.attach_attackers()
+
+    original_attacker = example_attackgraph.attackers[0]
+    for reached in original_attacker.reached_attack_steps:
+        assert reached.id
+        node = example_attackgraph.get_node_by_id(reached.id)
+        assert node
+        assert id(node) == id(reached)
+
+    for entrypoint in original_attacker.entry_points:
+        assert entrypoint.id
+        node = example_attackgraph.get_node_by_id(entrypoint.id)
+        assert node
+        assert id(node) == id(entrypoint)
+
+    copied_attackgraph = copy.deepcopy(example_attackgraph)
+    copied_attacker = copied_attackgraph.attackers[0]
+    for reached in copied_attacker.reached_attack_steps:
+        assert reached.id
+        node = copied_attackgraph.get_node_by_id(reached.id)
+        assert node
+        assert id(node) == id(reached)
+
+    for entrypoint in copied_attacker.entry_points:
+        assert entrypoint.id
+        node = copied_attackgraph.get_node_by_id(entrypoint.id)
+        assert node
+        assert id(node) == id(entrypoint)
+
+
+def test_deepcopy_memo_test(example_attackgraph: AttackGraph):
+    """
+    Make sure memo is filled up with expected number of objects
+    """
+    example_attackgraph.attach_attackers()
+    memo: dict = {}
+
+    # Deep copy nodes
+    copied_nodes = copy.deepcopy(example_attackgraph.nodes, memo)
+
+    # Make sure memo contains all of the nodes
+    memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
+    assert len(copied_nodes) == len(memo_nodes) == len(example_attackgraph.nodes)
+
+    # Deep copy attackers
+    copied_attackers = copy.deepcopy(example_attackgraph.attackers, memo)
+
+    # Make sure memo stored all of the attackers
+    memo_attackers = [o for o in memo.values() if isinstance(o, Attacker)]
+    assert len(copied_attackers) == len(memo_attackers) == len(example_attackgraph.attackers)
+
+    # Make sure memo didn't store any new nodes
+    memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
+    assert len(memo_nodes) == len(example_attackgraph.nodes)

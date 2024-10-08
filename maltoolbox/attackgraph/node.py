@@ -92,7 +92,7 @@ class AttackGraphNode:
             [],
             self.mitre_info,
             [],
-            [],
+            {},
             {}
         )
 
