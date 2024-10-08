@@ -73,6 +73,10 @@ class AttackGraphNode:
     def __deepcopy__(self, memo) -> AttackGraphNode:
         """Deep copy an attackgraph node"""
 
+        # Check if the object is already in the memo dictionary
+        if id(self) in memo:
+            return memo[id(self)]
+
         copied_node = AttackGraphNode(
             self.type,
             self.name,
@@ -85,15 +89,20 @@ class AttackGraphNode:
             self.existence_status,
             self.is_viable,
             self.is_necessary,
-            copy.deepcopy(self.compromised_by, memo),
+            [],
             self.mitre_info,
-            copy.deepcopy(self.tags, memo),
-            copy.deepcopy(self.attributes, memo),
-            copy.deepcopy(self.extras, memo)
+            [],
+            [],
+            {}
         )
 
         # Remember that self was already copied
         memo[id(self)] = copied_node
+
+        copied_node.compromised_by = copy.deepcopy(self.compromised_by, memo)
+        copied_node.tags = copy.deepcopy(self.tags, memo)
+        copied_node.attributes = copy.deepcopy(self.attributes, memo)
+        copied_node.extras = copy.deepcopy(self.extras, memo)
 
         # Deep copy children and parents, send memo (avoid infinite recursion)
         if self.parents:

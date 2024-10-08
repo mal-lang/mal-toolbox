@@ -226,10 +226,15 @@ class AttackGraph():
         }
 
     def __deepcopy__(self, memo):
+
+        # Check if the object is already in the memo dictionary
+        if id(self) in memo:
+            return memo[id(self)]
+
         copied_attackgraph = AttackGraph(self.lang_graph)
         copied_attackgraph.model = self.model
 
-        # Deep copy nodes and add references to them
+        # Deep copy nodes and references to them
         copied_attackgraph.nodes = copy.deepcopy(self.nodes, memo)
 
         # Deep copy attackers and references to them
