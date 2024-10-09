@@ -234,11 +234,28 @@ class AttackGraph():
         copied_attackgraph = AttackGraph(self.lang_graph)
         copied_attackgraph.model = self.model
 
-        # Deep copy nodes and references to them
-        copied_attackgraph.nodes = copy.deepcopy(self.nodes, memo)
+        copied_attackgraph.nodes = []
+
+        # Deep copy nodes
+        for node in self.nodes:
+            copied_node = copy.deepcopy(node, memo)
+            copied_attackgraph.nodes.append(copied_node)
+
+        # Re-link node references
+        for node in self.nodes:
+            if node.parents:
+                memo[id(node)].parents = copy.deepcopy(node.parents, memo)
+            if node.children:
+                memo[id(node)].children = copy.deepcopy(node.children, memo)
 
         # Deep copy attackers and references to them
         copied_attackgraph.attackers = copy.deepcopy(self.attackers, memo)
+
+        # Re-link attacker references
+        for node in self.nodes:
+            if node.compromised_by:
+                memo[id(node)].compromised_by = copy.deepcopy(
+                    node.compromised_by, memo)
 
         # Copy lookup dicts
         copied_attackgraph._id_to_attacker = \

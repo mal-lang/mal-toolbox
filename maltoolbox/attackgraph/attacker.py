@@ -50,17 +50,17 @@ class Attacker:
             return memo[id(self)]
 
         copied_attacker = Attacker(
-            id=self.id,
-            name=self.name,
+            id = self.id,
+            name = self.name,
         )
 
         # Remember that self was already copied
         memo[id(self)] = copied_attacker
 
         copied_attacker.entry_points = copy.deepcopy(
-            self.entry_points, memo=memo)
+            self.entry_points, memo = memo)
         copied_attacker.reached_attack_steps = copy.deepcopy(
-            self.reached_attack_steps, memo=memo)
+            self.reached_attack_steps, memo = memo)
 
         return copied_attacker
 
