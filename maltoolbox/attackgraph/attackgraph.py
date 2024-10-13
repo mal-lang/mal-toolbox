@@ -10,14 +10,14 @@ from typing import TYPE_CHECKING
 
 from .node import AttackGraphNode
 from .attacker import Attacker
-from ..exceptions import AttackGraphStepExpressionError
+from ..exceptions import AttackGraphStepExpressionError, AttackGraphException
 from ..model import Model
-from ..exceptions import AttackGraphException
 from ..file_utils import (
     load_dict_from_json_file,
     load_dict_from_yaml_file,
     save_dict_to_file
 )
+
 
 if TYPE_CHECKING:
     from typing import Any, Optional
@@ -25,170 +25,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# TODO see if (part of) this can be incorporated into the LanguageGraph, so that
-# the LanguageGraph's _lang_spec private property does not need to be accessed
-def _process_step_expression(
-        lang_graph: LanguageGraph,
-        model: Model,
-        target_assets: list[Any],
-        step_expression: dict[str, Any]
-    ) -> tuple[list, Optional[str]]:
-    """
-    Recursively process an attack step expression.
-
-    Arguments:
-    lang_graph      - a language graph representing the MAL language
-                      specification
-    model           - a maltoolbox.model.Model instance from which the attack
-                      graph was generated
-    target_assets   - the list of assets that this step expression should apply
-                      to. Initially it will contain the asset to which the
-                      attack step belongs
-    step_expression - a dictionary containing the step expression
-
-    Return:
-    A tuple pair containing a list of all of the target assets and the name of
-    the attack step.
-    """
-
-    if logger.isEnabledFor(logging.DEBUG):
-        # Avoid running json.dumps when not in debug
-        logger.debug(
-            'Processing Step Expression:\n%s',
-            json.dumps(step_expression, indent = 2)
-        )
-
-    match (step_expression['type']):
-        case 'attackStep':
-            # The attack step expression just adds the name of the attack
-            # step. All other step expressions only modify the target assets.
-            return (target_assets, step_expression['name'])
-
-        case 'union' | 'intersection' | 'difference':
-            # The set operators are used to combine the left hand and right
-            # hand targets accordingly.
-            lh_targets, lh_attack_steps = _process_step_expression(
-                lang_graph, model, target_assets, step_expression['lhs'])
-            rh_targets, rh_attack_steps = _process_step_expression(
-                lang_graph, model, target_assets, step_expression['rhs'])
-
-            new_target_assets = []
-            match (step_expression['type']):
-                case 'union':
-                    new_target_assets = lh_targets
-                    for ag_node in rh_targets:
-                        if next((lnode for lnode in new_target_assets \
-                            if lnode.id != ag_node.id), None):
-                            new_target_assets.append(ag_node)
-
-                case 'intersection':
-                    for ag_node in rh_targets:
-                        if next((lnode for lnode in lh_targets \
-                            if lnode.id == ag_node.id), None):
-                            new_target_assets.append(ag_node)
-
-                case 'difference':
-                    new_target_assets = lh_targets
-                    for ag_node in lh_targets:
-                        if next((rnode for rnode in rh_targets \
-                            if rnode.id != ag_node.id), None):
-                            new_target_assets.remove(ag_node)
-
-            return (new_target_assets, None)
-
-        case 'variable':
-            # Fetch the step expression associated with the variable from
-            # the language specification and resolve that.
-            for target_asset in target_assets:
-                if (hasattr(target_asset, 'type')):
-                    # TODO how can this info be accessed in the lang_graph
-                    # directly without going through the private method?
-                    variable_step_expr = lang_graph._get_variable_for_asset_type_by_name(
-                        target_asset.type, step_expression['name'])
-                    return _process_step_expression(
-                        lang_graph, model, target_assets, variable_step_expr)
-
-                else:
-                    logger.error(
-                        'Requested variable from non-asset target node:'
-                        '%s which cannot be resolved.', target_asset
-                    )
-            return ([], None)
-
-        case 'field':
-            # Change the target assets from the current ones to the associated
-            # assets given the specified field name.
-            new_target_assets = []
-            for target_asset in target_assets:
-                new_target_assets.extend(model.\
-                    get_associated_assets_by_field_name(target_asset,
-                        step_expression['name']))
-            return (new_target_assets, None)
-
-        case 'transitive':
-            # The transitive expression is very similar to the field
-            # expression, but it proceeds recursively until no target is
-            # found and it and it sets the new targets to the entire list
-            # of assets identified during the entire transitive recursion.
-            new_target_assets = []
-            for target_asset in target_assets:
-                new_target_assets.extend(model.\
-                    get_associated_assets_by_field_name(target_asset,
-                        step_expression['stepExpression']['name']))
-            if new_target_assets:
-                (additional_assets, _) = _process_step_expression(
-                    lang_graph, model, new_target_assets, step_expression)
-                new_target_assets.extend(additional_assets)
-                return (new_target_assets, None)
-            else:
-                return ([], None)
-
-        case 'subType':
-            new_target_assets = []
-            for target_asset in target_assets:
-                (assets, _) = _process_step_expression(
-                    lang_graph, model, target_assets,
-                    step_expression['stepExpression'])
-                new_target_assets.extend(assets)
-
-            selected_new_target_assets = []
-            for asset in new_target_assets:
-                lang_graph_asset = lang_graph.get_asset_by_name(
-                    asset.type
-                )
-                if not lang_graph_asset:
-                    raise LookupError(
-                        f'Failed to find asset \"{asset.type}\" in the '
-                        'language graph.'
-                    )
-                lang_graph_subtype_asset = lang_graph.get_asset_by_name(
-                    step_expression['subType']
-                )
-                if not lang_graph_subtype_asset:
-                    raise LookupError(
-                        'Failed to find asset '
-                        f'\"{step_expression["subType"]}\" in the '
-                        'language graph.'
-                    )
-                if lang_graph_asset.is_subasset_of(lang_graph_subtype_asset):
-                    selected_new_target_assets.append(asset)
-
-            return (selected_new_target_assets, None)
-
-        case 'collect':
-            # Apply the right hand step expression to left hand step
-            # expression target assets.
-            lh_targets, _ = _process_step_expression(
-                lang_graph, model, target_assets, step_expression['lhs'])
-            return _process_step_expression(lang_graph, model, lh_targets,
-                step_expression['rhs'])
-
-
-        case _:
-            logger.error(
-                'Unknown attack step type: %s', step_expression["type"]
-            )
-            return ([], None)
 
 class AttackGraph():
     """Graph representation of attack steps"""
@@ -220,6 +56,9 @@ class AttackGraph():
                 ag_node.to_dict()
         for attacker in self.attackers:
             serialized_attackers[attacker.name] = attacker.to_dict()
+        logger.debug('Serialized %d attack steps and %d attackers.' %
+            (len(self.nodes), len(self.attackers))
+        )
         return {
             'attack_steps': serialized_attack_steps,
             'attackers': serialized_attackers,
@@ -332,8 +171,8 @@ class AttackGraph():
                 'is_necessary' in node_dict else True
             ag_node.mitre_info = str(node_dict['mitre_info']) if \
                 'mitre_info' in node_dict else None
-            ag_node.tags = node_dict['tags'] if \
-                'tags' in node_dict else []
+            ag_node.tags = set(node_dict['tags']) if \
+                'tags' in node_dict else {}
             ag_node.extras = node_dict.get('extras', {})
 
             # Add AttackGraphNode to AttackGraph
@@ -432,7 +271,7 @@ class AttackGraph():
         The attack step node that matches the given full name.
         """
 
-        logger.debug(f'Looking up node with full name "{full_name}"')
+        logger.debug(f'Looking up node with full name "%s"', full_name)
         return self._full_name_to_node.get(full_name)
 
     def get_attacker_by_id(self, attacker_id: int) -> Optional[Attacker]:
@@ -493,6 +332,163 @@ class AttackGraph():
 
             attacker.entry_points = list(attacker.reached_attack_steps)
 
+    def _follow_dep_chain(
+            self,
+            model: Model,
+            target_assets: list[Any],
+            dep_chain: DependencyChain
+        ) -> list:
+        """
+        Recursively follow a language graph dependency chain on an instance
+        model.
+
+        Arguments:
+        model           - a maltoolbox.model.Model on which to follow the
+                          dependency chain
+        target_assets   - the list of assets that this dependency chain should
+                          apply to. Initially it will contain the asset to
+                          which the attack step belongs
+        dep_chain       - the dependency chain we are following
+
+        Return:
+        A list of all of the target assets.
+        """
+
+        if dep_chain is None:
+            # This is an attack step targeting the same assets
+            return target_assets
+
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug(
+                'Following Dependency Chain:\n%s',
+                json.dumps(dep_chain.to_dict(), indent = 2)
+            )
+
+        match (dep_chain.type):
+            case 'union' | 'intersection' | 'difference':
+                # The set operators are used to combine the left hand and right
+                # hand targets accordingly.
+                lh_targets = self._follow_dep_chain(
+                    model,
+                    target_assets,
+                    dep_chain.left_chain
+                )
+                rh_targets = self._follow_dep_chain(
+                    model,
+                    target_assets,
+                    dep_chain.right_chain
+                )
+
+                new_target_assets = []
+                match (dep_chain.type):
+                    case 'union':
+                        new_target_assets = lh_targets
+                        for ag_node in rh_targets:
+                            if next((lnode for lnode in new_target_assets \
+                                if lnode.id != ag_node.id), None):
+                                new_target_assets.append(ag_node)
+
+                    case 'intersection':
+                        for ag_node in rh_targets:
+                            if next((lnode for lnode in lh_targets \
+                                if lnode.id == ag_node.id), None):
+                                new_target_assets.append(ag_node)
+
+                    case 'difference':
+                        new_target_assets = lh_targets
+                        for ag_node in lh_targets:
+                            if next((rnode for rnode in rh_targets \
+                                if rnode.id != ag_node.id), None):
+                                new_target_assets.remove(ag_node)
+
+                return new_target_assets
+
+            case 'field':
+                # Change the target assets from the current ones to the associated
+                # assets given the specified field name.
+                new_target_assets = []
+                for target_asset in target_assets:
+                    new_target_assets.extend(model.\
+                        get_associated_assets_by_field_name(target_asset,
+                            dep_chain.fieldname))
+                return self._follow_dep_chain(model,
+                    new_target_assets,
+                    dep_chain.next_link)
+
+            case 'transitive':
+                # TODO: Re-implement this to work with the dependency chains.
+
+                # The transitive expression is very similar to the field
+                # expression, but it proceeds recursively until no target is
+                # found and it and it sets the new targets to the entire list
+                # of assets identified during the entire transitive recursion.
+
+                new_target_assets = []
+                return []
+                # for target_asset in target_assets:
+                #     new_target_assets.extend(model.\
+                #         get_associated_assets_by_field_name(target_asset,
+                #             step_expression['stepExpression']['name']))
+                # if new_target_assets:
+                #     (additional_assets, _) = _process_step_expression(
+                #         lang_graph, model, new_target_assets, step_expression)
+                #     new_target_assets.extend(additional_assets)
+                #     return new_target_assets
+                # else:
+                #     return []
+
+            case 'subType':
+                new_target_assets = []
+                for target_asset in target_assets:
+                    (assets, _) = _process_step_expression(
+                        lang_graph, model, target_assets,
+                        step_expression['stepExpression'])
+                    new_target_assets.extend(assets)
+
+                selected_new_target_assets = []
+                for asset in new_target_assets:
+                    lang_graph_asset = self.lang_graph.get_asset_by_name(
+                        asset.type
+                    )
+                    if not lang_graph_asset:
+                        raise LookupError(
+                            f'Failed to find asset \"{asset.type}\" in the '
+                            'language graph.'
+                        )
+                    lang_graph_subtype_asset = self.lang_graph.get_asset_by_name(
+                        step_expression['subType']
+                    )
+                    if not lang_graph_subtype_asset:
+                        raise LookupError(
+                            'Failed to find asset '
+                            f'\"{step_expression["subType"]}\" in the '
+                            'language graph.'
+                        )
+                    if lang_graph_asset.is_subasset_of(lang_graph_subtype_asset):
+                        selected_new_target_assets.append(asset)
+
+                return selected_new_target_assets
+
+            case 'collect':
+                new_target_assets = []
+                for asset in target_assets:
+                    new_target_assets.extend(self._follow_dep_chain(
+                        model, [asset], dep_chain.next_link))
+                return new_target_assets
+
+
+            case _:
+                msg = 'Unknown attack dependency chain type: %s'
+                logger.error(
+                    msg,
+                    dep_chain.type
+                )
+                raise AttackGraphStepExpressionError(
+                    msg % dep_chain.type
+                )
+                return None
+
     def _generate_graph(self) -> None:
         """
         Generate the attack graph based on the original model instance and the
@@ -514,46 +510,57 @@ class AttackGraph():
 
             attack_step_nodes = []
 
-            # TODO probably part of what happens here is already done in lang_graph
-            attack_steps = self.lang_graph._get_attacks_for_asset_type(asset.type)
+            lang_graph_asset = self.lang_graph.get_asset_by_name(asset.type)
+            if lang_graph_asset is None:
+                raise LookupError(
+                    f'Failed to find asset with name \"{asset.type}\" in '
+                    'the language graph.'
+                )
 
-            for attack_step_name, attack_step_attribs in attack_steps.items():
+            for attack_step_name, attack_step in \
+                    lang_graph_asset.attack_steps.items():
                 logger.debug(
                     'Generating attack step node for %s.', attack_step_name
                 )
 
                 defense_status = None
                 existence_status = None
-                node_name = asset.name + ':' + attack_step_name
+                node_name = asset.name + ':' + attack_step.name
 
-                match (attack_step_attribs['type']):
+                match (attack_step.type):
                     case 'defense':
                         # Set the defense status for defenses
-                        defense_status = getattr(asset, attack_step_name)
+                        defense_status = getattr(asset, attack_step.name)
                         logger.debug(
-                            'Setting the defense status of %s to %s.',
+                            'Setting the defense status of \"%s\" to '
+                            '\"%s\".',
                             node_name, defense_status
                         )
 
                     case 'exist' | 'notExist':
                         # Resolve step expression associated with (non-)existence
                         # attack steps.
-                        (target_assets, attack_step) = _process_step_expression(
-                            self.lang_graph,
-                            self.model,
-                            [asset],
-                            attack_step_attribs['requires']['stepExpressions'][0])
-                        # If the step expression resolution yielded the target
-                        # assets then the required assets exist in the model.
-                        existence_status = target_assets != []
+                        existence_status = True
+                        for requirement in attack_step.get_requirements():
+                            target_assets = self._follow_dep_chain(
+                                    self.model,
+                                    [asset],
+                                    requirement
+                                )
+                            # If the step expression resolution yielded
+                            # the target assets then the required assets
+                            # exist in the model.
+                            if not target_assets:
+                                existence_status = False
+                                break
 
-                mitre_info = attack_step_attribs['meta']['mitre'] if 'mitre' in\
-                    attack_step_attribs['meta'] else None
+                mitre_info = attack_step.description['mitre'] if\
+                    'mitre' in attack_step.description else None
                 ag_node = AttackGraphNode(
-                    type = attack_step_attribs['type'],
+                    type = attack_step.type,
                     asset = asset,
                     name = attack_step_name,
-                    ttc = attack_step_attribs['ttc'],
+                    ttc = attack_step.ttc,
                     children = [],
                     parents = [],
                     defense_status = defense_status,
@@ -561,10 +568,9 @@ class AttackGraph():
                     is_viable = True,
                     is_necessary = True,
                     mitre_info = mitre_info,
-                    tags = attack_step_attribs['tags'],
+                    tags = set(attack_step.tags),
                     compromised_by = []
                 )
-                ag_node.attributes = attack_step_attribs
                 attack_step_nodes.append(ag_node)
                 self.add_node(ag_node)
             asset.attack_step_nodes = attack_step_nodes
@@ -576,42 +582,69 @@ class AttackGraph():
                 ag_node.full_name,
                 ag_node.id
             )
-            step_expressions = \
-                ag_node.attributes['reaches']['stepExpressions'] if \
-                    isinstance(ag_node.attributes, dict) and ag_node.attributes['reaches'] else []
 
-            for step_expression in step_expressions:
-                # Resolve each of the attack step expressions listed for this
-                # attack step to determine children.
-                (target_assets, attack_step) = _process_step_expression(
-                    self.lang_graph,
-                    self.model,
-                    [ag_node.asset],
-                    step_expression)
+            lang_graph_asset = self.lang_graph.get_asset_by_name(
+                ag_node.asset.type)
 
-                for target in target_assets:
-                    target_node_full_name = target.name + ':' + attack_step
-                    target_node = self.get_node_by_full_name(
-                        target_node_full_name
-                    )
-                    if not target_node:
-                        msg = ('Failed to find target node '
-                               '"%s" to link with for attack step "%s"(%d)!')
-                        logger.error(
-                            msg,
-                            target_node_full_name,
-                            ag_node.full_name,
-                            ag_node.id
+            lang_graph_attack_step = lang_graph_asset.attack_steps[\
+                ag_node.name]
+
+            while lang_graph_attack_step:
+                for child in lang_graph_attack_step.children:
+                    for target_attack_step, dep_chain in \
+                            lang_graph_attack_step.children[child]:
+                        logger.debug(f'TAS: {target_attack_step.full_name}')
+                        if dep_chain is not None:
+                            logger.debug('DEP CHAIN' + json.dumps(dep_chain.to_dict(), indent = 2))
+                        else:
+                            logger.debug('DEP CHAIN NONE')
+                        target_assets = self._follow_dep_chain(
+                            self.model,
+                            [ag_node.asset],
+                            dep_chain
                         )
-                        raise AttackGraphStepExpressionError(
-                            msg % (
-                                target_node_full_name,
-                                ag_node.full_name,
-                                ag_node.id
-                            )
-                        )
-                    ag_node.children.append(target_node)
-                    target_node.parents.append(ag_node)
+
+                        for target_asset in target_assets:
+                            if target_asset is not None:
+                                target_node_full_name = target_asset.name + \
+                                    ':' + target_attack_step.name
+                                target_node = self.get_node_by_full_name(
+                                    target_node_full_name)
+                                if target_node is None:
+                                    msg = ('Failed to find target node '
+                                           '"%s" to link with for attack step "%s"(%d)!')
+                                    logger.error(
+                                        msg,
+                                        target_node_full_name,
+                                        ag_node.full_name,
+                                        ag_node.id
+                                    )
+                                    raise AttackGraphStepExpressionError(
+                                        msg % (
+                                            target_node_full_name,
+                                            ag_node.full_name,
+                                            ag_node.id
+                                        )
+                                    )
+                                logger.debug('Linking attack step "%s"(%d) to '
+                                    'attack step "%s"(%d)' %
+                                    (
+                                        ag_node.full_name,
+                                        ag_node.id,
+                                        target_node.full_name,
+                                        target_node.id
+                                    )
+                                )
+                                ag_node.children.append(target_node)
+                                target_node.parents.append(ag_node)
+                print(f'OVERRIDES:{lang_graph_attack_step.overrides}')
+                if bool(lang_graph_attack_step.overrides):
+                    break
+                print(f'FULL_NAME:{lang_graph_attack_step.full_name}')
+                lang_graph_attack_step = lang_graph_attack_step.inherits
+                if lang_graph_attack_step:
+                    print(f'POST FULL_NAME:{lang_graph_attack_step.full_name}')
+
 
     def regenerate_graph(self) -> None:
         """
@@ -687,16 +720,18 @@ class AttackGraph():
         reached_attack_steps    - list of ids of the attack steps that the
                                   attacker has reached
         """
+
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
             if attacker_id is not None:
                 logger.debug('Add attacker "%s" with id:%d.',
                     attacker.name,
-                    attacker_id)
+                    attacker_id
+                )
             else:
                 logger.debug('Add attacker "%s" without id.',
-                    attacker.name)
-
+                    attacker.name
+                )
 
         attacker.id = attacker_id or self.next_attacker_id
         if attacker.id in self._id_to_attacker:
