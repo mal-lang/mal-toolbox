@@ -8,6 +8,7 @@ from .mal_parser import malParser
 #   - ctx.one() would be None if the token was not found on a matching line
 #   - ctx.two() would be []
 
+
 class malVisitor(ParseTreeVisitor):
     def __init__(self, compiler, *args, **kwargs):
         self.compiler = compiler
@@ -64,6 +65,31 @@ class malVisitor(ParseTreeVisitor):
     def visitDefine(self, ctx):
         return ("defines", {ctx.ID().getText(): ctx.STRING().getText().strip('"')})
 
+    def visitDetector(self, ctx):
+        detector = {}
+        detector["name"] = (
+            self.visit(ctx.detectorname()) if ctx.detectorname() else None
+        )
+        detector["context"] = self.visit(ctx.context()) if ctx.context() else None
+        detector["type"] = (
+            self.visit(ctx.detectortype()) if ctx.detectortype() else None
+        )
+        detector["tprate"] = self.visit(ctx.tprate()) if ctx.tprate() else None
+
+        return detector
+
+    def visitDetectorname(self, ctx):
+        return ctx.getText()
+
+    def visitContext(self, ctx):
+        return {
+            cpart.contextasset().getText(): cpart.contextlabel().getText()
+            for cpart in ctx.contextpart()
+        }
+
+    def visitDetectortype(self, ctx):
+        return ctx.getText()
+
     def visitCategory(self, ctx):
         category = {}
         category["name"] = ctx.ID().getText()
@@ -96,10 +122,14 @@ class malVisitor(ParseTreeVisitor):
         step = {}
         step["name"] = ctx.ID().getText()
         step["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
+        step["detectors"] = [self.visit(detector) for detector in ctx.detector()]
         step["type"] = self.visit(ctx.steptype())
         step["tags"] = [self.visit(tag) for tag in ctx.tag()]
         step["risk"] = self.visit(ctx.cias()) if ctx.cias() else None
-        step["ttc"] = self.visit(ctx.ttc()) if ctx.ttc() else None
+
+        # TODO: left as "ttc" for compatibility reasons
+        step["ttc"] = self.visit(ctx.pdist()) if ctx.pdist() else None
+
         step["requires"] = (
             self.visit(ctx.precondition()) if ctx.precondition() else None
         )
@@ -150,13 +180,13 @@ class malVisitor(ParseTreeVisitor):
 
         return {key: True}
 
-    def visitTtc(self, ctx):
-        ret = self.visit(ctx.ttcexpr())
+    def visitPdist(self, ctx):
+        ret = self.visit(ctx.pdistexpr())
 
         return ret
 
-    def visitTtcexpr(self, ctx):
-        if len(terms := ctx.ttcterm()) == 1:
+    def visitPdistexpr(self, ctx):
+        if len(terms := ctx.pdistterm()) == 1:
             return self.visit(terms[0])
 
         ret = {}
@@ -175,8 +205,8 @@ class malVisitor(ParseTreeVisitor):
 
         return ret
 
-    def visitTtcterm(self, ctx):
-        if len(factors := ctx.ttcfact()) == 1:
+    def visitPdistterm(self, ctx):
+        if len(factors := ctx.pdistfact()) == 1:
             ret = self.visit(factors[0])
         else:
             ret = {}
@@ -186,8 +216,8 @@ class malVisitor(ParseTreeVisitor):
 
         return ret
 
-    def visitTtcfact(self, ctx):
-        if len(atoms := ctx.ttcatom()) == 1:
+    def visitPdistfact(self, ctx):
+        if len(atoms := ctx.pdistatom()) == 1:
             ret = self.visit(atoms[0])
         else:
             ret = {}
@@ -197,17 +227,17 @@ class malVisitor(ParseTreeVisitor):
 
         return ret
 
-    def visitTtcatom(self, ctx):
-        if ctx.ttcdist():
-            ret = self.visit(ctx.ttcdist())
-        elif ctx.ttcexpr():
-            ret = self.visit(ctx.ttcexpr())
+    def visitPdistatom(self, ctx):
+        if ctx.pdistdist():
+            ret = self.visit(ctx.pdistdist())
+        elif ctx.pdistexpr():
+            ret = self.visit(ctx.pdistexpr())
         elif ctx.number():
             ret = self.visit(ctx.number())
 
         return ret
 
-    def visitTtcdist(self, ctx):
+    def visitPdistdist(self, ctx):
         ret = {"type": "function"}
         ret["name"] = ctx.ID().getText()
         ret["arguments"] = []
@@ -306,7 +336,7 @@ class malVisitor(ParseTreeVisitor):
         # (saying "topmost" as expr can be nested) or the root of the tree.
         while pctx and not isinstance(
             pctx,
-            malParser.ReachesContext
+            malParser.ReachesContext,
             # Expressions are also valid in `let` variable assignments, but
             # there every lexical component of expr is considered a "field",
             # no need to resolve the type in that case. Similarly, preconditions
