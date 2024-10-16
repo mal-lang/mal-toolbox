@@ -1010,7 +1010,7 @@ class LanguageGraph():
                         'stepExpressions': step['reaches']['stepExpressions']
                     }
 
-
+        attack_steps = copy.deepcopy(attack_steps)
         return attack_steps
 
     def _get_associations_for_asset_type(self, asset_type: str) -> list:
