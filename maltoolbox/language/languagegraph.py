@@ -375,7 +375,7 @@ class DependencyChain:
 
 class LanguageGraph():
     """Graph representation of a MAL language"""
-    def __init__(self, lang: dict):
+    def __init__(self, lang: dict, with_extra_deepcopy):
         self.assets: list = []
         self.associations: list = []
         self.attack_steps: list = []
@@ -384,6 +384,7 @@ class LanguageGraph():
             "version": lang["defines"]["version"],
             "id": lang["defines"]["id"],
         }
+        self.with_extra_deepcopy = with_extra_deepcopy
         self._generate_graph()
 
     @classmethod
@@ -398,7 +399,7 @@ class LanguageGraph():
         return LanguageGraph(MalCompiler().compile(mal_spec_file))
 
     @classmethod
-    def from_mar_archive(cls, mar_archive: str) -> LanguageGraph:
+    def from_mar_archive(cls, mar_archive: str, with_extra_deepcopy) -> LanguageGraph:
         """
         Create a LanguageGraph from a ".mar" archive provided by malc
         (https://github.com/mal-lang/malc).
@@ -409,7 +410,7 @@ class LanguageGraph():
         logger.info('Loading mar archive %s', mar_archive)
         with zipfile.ZipFile(mar_archive, 'r') as archive:
             langspec = archive.read('langspec.json')
-            return LanguageGraph(json.loads(langspec))
+            return LanguageGraph(json.loads(langspec), with_extra_deepcopy)
 
     def _to_dict(self):
         """Converts LanguageGraph into a dict"""
@@ -876,7 +877,8 @@ class LanguageGraph():
                 'Create attack steps language graph nodes for asset %s',
                 asset.name
             )
-            attack_steps = self._get_attacks_for_asset_type(asset.name)
+            attack_steps = self._get_attacks_for_asset_type(asset.name,
+                self.with_extra_deepcopy)
             for attack_step_name, attack_step_attribs in attack_steps.items():
                 logger.debug(
                     'Create attack step language graph nodes for %s',
@@ -957,7 +959,7 @@ class LanguageGraph():
                         self.reverse_dep_chain(dep_chain,
                             None))]
 
-    def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
+    def _get_attacks_for_asset_type(self, asset_type: str, with_extra_deepcopy) -> dict:
         """
         Get all Attack Steps for a specific Class
 
@@ -988,7 +990,10 @@ class LanguageGraph():
         if asset['superAsset']:
             logger.debug('Asset extends another one, fetch the superclass '\
                 'attack steps for it.')
-            attack_steps = self._get_attacks_for_asset_type(asset['superAsset'])
+            attack_steps = self._get_attacks_for_asset_type(
+                asset['superAsset'],
+                with_extra_deepcopy
+            )
 
         for step in asset['attackSteps']:
             if step['name'] not in attack_steps:
@@ -1009,8 +1014,8 @@ class LanguageGraph():
                         'overrides': False,
                         'stepExpressions': step['reaches']['stepExpressions']
                     }
-
-        attack_steps = copy.deepcopy(attack_steps)
+        if with_extra_deepcopy:
+            attack_steps = copy.deepcopy(attack_steps)
         return attack_steps
 
     def _get_associations_for_asset_type(self, asset_type: str) -> list:
