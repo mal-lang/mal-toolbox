@@ -83,7 +83,10 @@ class malVisitor(ParseTreeVisitor):
 
     def visitContext(self, ctx):
         return {
-            cpart.contextasset().getText(): cpart.contextlabel().getText()
+            # Using labels as the dict keys since multiple contextparts can
+            # share the same asset type.
+            # TODO: add analyzer check if two labels are same in a context
+            cpart.contextlabel().getText(): cpart.contextasset().getText()
             for cpart in ctx.contextpart()
         }
 
@@ -122,7 +125,11 @@ class malVisitor(ParseTreeVisitor):
         step = {}
         step["name"] = ctx.ID().getText()
         step["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
-        step["detectors"] = [self.visit(detector) for detector in ctx.detector()]
+
+        # TODO: add analyzer check for conflicting detector names
+        step["detectors"] = {
+            (d := self.visit(detector))["name"]: d for detector in ctx.detector()
+        }
         step["type"] = self.visit(ctx.steptype())
         step["tags"] = [self.visit(tag) for tag in ctx.tag()]
         step["risk"] = self.visit(ctx.cias()) if ctx.cias() else None

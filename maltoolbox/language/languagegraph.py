@@ -27,6 +27,29 @@ from ..exceptions import (
 logger = logging.getLogger(__name__)
 
 @dataclass
+class Detector:
+    context: Context
+    name: Optional[str]
+    type: Optional[str]
+    tprate: Optional[dict]
+
+    def to_dict(self) -> dict:
+        return {
+            "context": {label: asset.name for label, asset in self.context.items()},
+            "name": self.name,
+            "type": self.type,
+            "tprate": self.tprate,
+        }
+
+
+class Context(dict):
+    def __init__(self, context) -> None:
+        super().__init__(context)
+        for label, asset in context.items():
+            setattr(self, label, asset)
+
+
+@dataclass
 class LanguageGraphAsset:
     name: Optional[str] = None
     associations: list[LanguageGraphAssociation] = field(default_factory=lambda: [])
@@ -259,6 +282,7 @@ class LanguageGraphAttackStep:
     children: dict = field(default_factory = lambda: {})
     parents: dict = field(default_factory = lambda: {})
     description: dict = field(default_factory = lambda: {})
+    detectors: dict = field(default_factory = lambda: {})
     attributes: Optional[dict] = None
 
     @property
@@ -273,7 +297,8 @@ class LanguageGraphAttackStep:
             'ttc': self.ttc,
             'children': {},
             'parents': {},
-            'description': self.description
+            'description': self.description,
+            'detectors': {label: detector.to_dict() for label, detector in self.detectors.items()},
         }
 
         for child in self.children:
@@ -890,11 +915,24 @@ class LanguageGraph():
                     ttc = attack_step_attribs['ttc'],
                     children = {},
                     parents = {},
-                    description = attack_step_attribs['meta']
+                    description = attack_step_attribs['meta'],
                 )
                 attack_step_node.attributes = attack_step_attribs
                 asset.attack_steps.append(attack_step_node)
                 self.attack_steps.append(attack_step_node)
+
+                for detector in attack_step_attribs.get("detectors", {}).values():
+                    attack_step_node.detectors[detector["name"]] = Detector(
+                        context=Context(
+                            {
+                                label: self.get_asset_by_name(asset)
+                                for label, asset in detector["context"].items()
+                            }
+                        ),
+                        name=detector.get("name"),
+                        type=detector.get("type"),
+                        tprate=detector.get("tprate"),
+                    )
 
         # Then, link all of the attack step nodes according to their associations.
         for attack_step in self.attack_steps:
