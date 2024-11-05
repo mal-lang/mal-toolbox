@@ -96,19 +96,19 @@ class malVisitor(ParseTreeVisitor):
     def visitCategory(self, ctx):
         category = {}
         category["name"] = ctx.ID().getText()
-        category["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
+        category["meta"] = {(info := self.visit(meta))[0]: info[1] for meta in ctx.meta()}
 
         assets = [self.visit(asset) for asset in ctx.asset()]
 
         return ("categories", ([category], assets))
 
     def visitMeta(self, ctx):
-        return ((ctx.ID().getText(), ctx.STRING().getText().strip('"')),)
+        return (ctx.ID().getText(), ctx.text().getText().strip('"\''))
 
     def visitAsset(self, ctx):
         asset = {}
         asset["name"] = ctx.ID()[0].getText()
-        asset["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
+        asset["meta"] = {(info := self.visit(meta))[0]: info[1] for meta in ctx.meta()}
         asset["category"] = ctx.parentCtx.ID().getText()
         asset["isAbstract"] = ctx.ABSTRACT() is not None
 
@@ -124,7 +124,7 @@ class malVisitor(ParseTreeVisitor):
     def visitStep(self, ctx):
         step = {}
         step["name"] = ctx.ID().getText()
-        step["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
+        step["meta"] = {(info := self.visit(meta))[0]: info[1] for meta in ctx.meta()}
 
         # TODO: add analyzer check for conflicting detector names
         step["detectors"] = {
@@ -396,7 +396,7 @@ class malVisitor(ParseTreeVisitor):
     def visitAssociation(self, ctx):
         association = {}
         association["name"] = self.visit(ctx.linkname())
-        association["meta"] = {k: v for meta in ctx.meta() for k, v in self.visit(meta)}
+        association["meta"] = {(info := self.visit(meta))[0]: info[1] for meta in ctx.meta()}
         association["leftAsset"] = ctx.ID()[0].getText()
         association["leftField"] = self.visit(ctx.field()[0])
 

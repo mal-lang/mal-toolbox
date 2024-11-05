@@ -12,7 +12,8 @@ include: INCLUDE STRING;
 define: HASH ID COLON STRING; // TODO version and id are mandatory
 
 category: CATEGORY ID meta* LCURLY asset* RCURLY;
-meta: ID INFO COLON STRING;
+meta: ID INFO COLON text;
+text: STRING | MULTILINE_STRING;
 asset: ABSTRACT? ASSET ID (EXTENDS ID)? meta* LCURLY (step|variable)* RCURLY;
 
 step: steptype ID tag* cias? pdist? meta* detector* precondition? reaches?;
@@ -72,7 +73,9 @@ INFO: 'info';
 LET: 'let';
 
 // patterns
-STRING: '"' .*? '"';
+STRING: '"' ( ~["\\\r\n] | '\\' . )* '"';
+MULTILINE_STRING: '"""' ( ~["] | '"'.? | '""'.? | '\n' | '\r' )* '"""';
+
 INT: [0-9]+;
 FLOAT: [0-9]* DOT [0-9]+;
 EXISTS: 'E';  //
