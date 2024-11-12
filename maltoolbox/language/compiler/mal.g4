@@ -31,7 +31,7 @@ pdistdist: ID (LPAREN (number (COMMA number)*)? RPAREN)?;
 detector: bang detectorname? context detectortype tprate?;
 bang: EXCLAMATION;
 detectorname: ID;
-context: LPAREN contextpart (COMMA contextpart) RPAREN;
+context: LPAREN contextpart (COMMA contextpart)* RPAREN;
 contextpart: contextasset contextlabel;
 contextasset: ID;
 contextlabel: ID;
@@ -74,7 +74,7 @@ LET: 'let';
 
 // patterns
 STRING: '"' ( ~["\\\r\n] | '\\' . )* '"';
-MULTILINE_STRING: '"""' ( ~["] | '"'.? | '""'.? | '\n' | '\r' )* '"""';
+MULTILINE_STRING: '"""' ( '"'? '"'? ~["] | '\n' | '\r' )* '"""';
 
 INT: [0-9]+;
 FLOAT: [0-9]* DOT [0-9]+;
