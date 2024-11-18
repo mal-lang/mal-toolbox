@@ -815,6 +815,7 @@ def test_model_save_and_load_model_from_scratch(model: Model):
 
     # Create and add 3 applications
     p1 = create_application_asset(model, "Program 1")
+    p1.extras = {"testing": "testing"}
     p2 = create_application_asset(model, "Program 2")
     p3 = create_application_asset(model, "Program 3")
     model.add_asset(p1)

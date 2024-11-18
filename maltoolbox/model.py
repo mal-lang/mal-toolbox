@@ -659,7 +659,7 @@ class Model():
 
         if asset.extras:
             # Add optional metadata to dict
-            asset_dict['extras'] = asset.extras
+            asset_dict['extras'] = asset.extras.as_dict()
 
         return (asset.id, asset_dict)
 
