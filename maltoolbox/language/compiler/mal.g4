@@ -30,7 +30,7 @@ pdistatom: pdistdist | LPAREN pdistexpr RPAREN | number;
 pdistdist: ID (LPAREN (number (COMMA number)*)? RPAREN)?;
 detector: bang detectorname? context detectortype tprate?;
 bang: EXCLAMATION;
-detectorname: ID;
+detectorname: ID (DOT ID)*;
 context: LPAREN contextpart (COMMA contextpart)* RPAREN;
 contextpart: contextasset contextlabel;
 contextasset: ID;

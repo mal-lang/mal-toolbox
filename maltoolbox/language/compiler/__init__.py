@@ -28,13 +28,17 @@ class MalCompiler(ParseTreeVisitor):
         self.visited_files: set[Path] = set()
         self.path_stack: list[Path] = []
 
+        # TODO: The toolbox does not support assocs with the same name.
+        self.assoc_names: list[str] = []
+
         super().__init__(*args, **kwargs)
 
 
     def compile(self, malfile: Path|str):
         current_file = Path(malfile)
 
-        if not current_file.is_absolute():
+        if not current_file.is_absolute() and self.path_stack:
+            # Only for the first file self.path_stack will be empty.
             current_file = self.path_stack[-1] / current_file
 
         if current_file in self.visited_files:
@@ -98,6 +102,12 @@ class MalCompiler(ParseTreeVisitor):
                 if item not in unique:
                     unique.append(item)
             langspec[key] = unique
+
+        # TODO: The toolbox does not support assets and associations sharing the same name.
+        _asset_names = (asset["name"] for asset in langspec["assets"])
+        for assoc in langspec["associations"]:
+            if assoc["name"] in _asset_names:
+                assoc["name"] = f"{assoc['name']}Assoc"
 
         return langspec
 
@@ -437,7 +447,20 @@ class MalCompiler(ParseTreeVisitor):
 
     def visitAssociation(self, ctx):
         association = {}
-        association["name"] = self.visit(ctx.linkname())
+
+        # TODO: The toolbox does not support underscores in association names.
+        association["name"] = self.visit(ctx.linkname()).replace("_", "")
+
+        # TODO: The toolbox does not support multiple assocs with the same name.
+        # Add the name as is to be able to count it correctly.
+        self.assoc_names.append(association["name"])
+
+        if association["name"] in self.assoc_names:
+            association["name"] = f"{association['name']}{self.assoc_names.count(association['name'])}"
+
+        # Add the changed name in case it already exists in the list, to be able to count it.
+        self.assoc_names.append(association["name"])
+
         association["meta"] = {(info := self.visit(meta))[0]: info[1] for meta in ctx.meta()}
         association["leftAsset"] = ctx.ID()[0].getText()
         association["leftField"] = self.visit(ctx.field()[0])
