@@ -1,0 +1,282 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>maltoolbox.attackgraph.node module &mdash; MAL Toolbox  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="maltoolbox.attackgraph.query module" href="maltoolbox.attackgraph.query.html" />
+    <link rel="prev" title="maltoolbox.attackgraph.attackgraph module" href="maltoolbox.attackgraph.attackgraph.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            MAL Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About MAL Toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="maltoolbox.html">API documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="maltoolbox.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="maltoolbox.attackgraph.html">maltoolbox.attackgraph package</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="maltoolbox.attackgraph.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="maltoolbox.attackgraph.html#submodules">Submodules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="maltoolbox.ingestors.html">maltoolbox.ingestors package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="maltoolbox.language.html">maltoolbox.language package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="maltoolbox.translators.html">maltoolbox.translators package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="maltoolbox.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MAL Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="maltoolbox.html">maltoolbox package</a></li>
+          <li class="breadcrumb-item"><a href="maltoolbox.attackgraph.html">maltoolbox.attackgraph package</a></li>
+      <li class="breadcrumb-item active">maltoolbox.attackgraph.node module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/apidocs/maltoolbox.attackgraph.node.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-maltoolbox.attackgraph.node">
+<span id="maltoolbox-attackgraph-node-module"></span><h1>maltoolbox.attackgraph.node module<a class="headerlink" href="#module-maltoolbox.attackgraph.node" title="Link to this heading"></a></h1>
+<p>MAL-Toolbox Attack Graph Node Dataclass</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maltoolbox.attackgraph.node.</span></span><span class="sig-name descname"><span class="pre">AttackGraphNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttc:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asset:</span> <span class="pre">~typing.Any</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">children:</span> <span class="pre">list[~maltoolbox.attackgraph.node.AttackGraphNode]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents:</span> <span class="pre">list[~maltoolbox.attackgraph.node.AttackGraphNode]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defense_status:</span> <span class="pre">float</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">existence_status:</span> <span class="pre">bool</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_viable:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_necessary:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compromised_by:</span> <span class="pre">list[~maltoolbox.attackgraph.attacker.Attacker]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mitre_info:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags:</span> <span class="pre">list[str]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attributes:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extras:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Node part of AttackGraph</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.asset">
+<span class="sig-name descname"><span class="pre">asset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.asset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.attributes">
+<span class="sig-name descname"><span class="pre">attributes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.attributes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.children">
+<span class="sig-name descname"><span class="pre">children</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#maltoolbox.attackgraph.node.AttackGraphNode" title="maltoolbox.attackgraph.node.AttackGraphNode"><span class="pre">AttackGraphNode</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.children" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.compromise">
+<span class="sig-name descname"><span class="pre">compromise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attacker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="maltoolbox.attackgraph.attacker.html#maltoolbox.attackgraph.attacker.Attacker" title="maltoolbox.attackgraph.attacker.Attacker"><span class="pre">Attacker</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode.compromise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.compromise" title="Link to this definition"></a></dt>
+<dd><p>Have the attacker given as a parameter compromise this node.</p>
+<p>Arguments:
+attacker    - the attacker that will compromise the node</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.compromised_by">
+<span class="sig-name descname"><span class="pre">compromised_by</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="maltoolbox.attackgraph.attacker.html#maltoolbox.attackgraph.attacker.Attacker" title="maltoolbox.attackgraph.attacker.Attacker"><span class="pre">Attacker</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.compromised_by" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.defense_status">
+<span class="sig-name descname"><span class="pre">defense_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.defense_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.existence_status">
+<span class="sig-name descname"><span class="pre">existence_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.existence_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.extras">
+<span class="sig-name descname"><span class="pre">extras</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.extras" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.full_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">full_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.full_name" title="Link to this definition"></a></dt>
+<dd><p>Return the full name of the attack step. This is a combination of the
+asset name to which the attack step belongs and attack step name
+itself.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.id">
+<span class="sig-name descname"><span class="pre">id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.is_available_defense">
+<span class="sig-name descname"><span class="pre">is_available_defense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode.is_available_defense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.is_available_defense" title="Link to this definition"></a></dt>
+<dd><p>Return True if this node is a defense node and it is not fully enabled
+and not suppressed via tags. False otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.is_compromised">
+<span class="sig-name descname"><span class="pre">is_compromised</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode.is_compromised"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.is_compromised" title="Link to this definition"></a></dt>
+<dd><p>Return True if any attackers have compromised this node.
+False, otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.is_compromised_by">
+<span class="sig-name descname"><span class="pre">is_compromised_by</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attacker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="maltoolbox.attackgraph.attacker.html#maltoolbox.attackgraph.attacker.Attacker" title="maltoolbox.attackgraph.attacker.Attacker"><span class="pre">Attacker</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode.is_compromised_by"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.is_compromised_by" title="Link to this definition"></a></dt>
+<dd><p>Return True if the attacker given as an argument has compromised this
+node.
+False, otherwise.</p>
+<p>Arguments:
+attacker    - the attacker we are interested in</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.is_enabled_defense">
+<span class="sig-name descname"><span class="pre">is_enabled_defense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode.is_enabled_defense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.is_enabled_defense" title="Link to this definition"></a></dt>
+<dd><p>Return True if this node is a defense node and it is enabled and not
+suppressed via tags.
+False, otherwise.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.is_necessary">
+<span class="sig-name descname"><span class="pre">is_necessary</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.is_necessary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.is_viable">
+<span class="sig-name descname"><span class="pre">is_viable</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.is_viable" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.mitre_info">
+<span class="sig-name descname"><span class="pre">mitre_info</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.mitre_info" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.parents">
+<span class="sig-name descname"><span class="pre">parents</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#maltoolbox.attackgraph.node.AttackGraphNode" title="maltoolbox.attackgraph.node.AttackGraphNode"><span class="pre">AttackGraphNode</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.parents" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.tags">
+<span class="sig-name descname"><span class="pre">tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.tags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Convert node to dictionary</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.ttc">
+<span class="sig-name descname"><span class="pre">ttc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.ttc" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.attackgraph.node.AttackGraphNode.undo_compromise">
+<span class="sig-name descname"><span class="pre">undo_compromise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attacker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="maltoolbox.attackgraph.attacker.html#maltoolbox.attackgraph.attacker.Attacker" title="maltoolbox.attackgraph.attacker.Attacker"><span class="pre">Attacker</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/maltoolbox/attackgraph/node.html#AttackGraphNode.undo_compromise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.attackgraph.node.AttackGraphNode.undo_compromise" title="Link to this definition"></a></dt>
+<dd><p>Remove the attacker given as a parameter from the list of attackers
+that have compromised this node.</p>
+<p>Arguments:
+attacker    - the attacker that we wish to remove from the compromised</p>
+<blockquote>
+<div><p>list.</p>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="maltoolbox.attackgraph.attackgraph.html" class="btn btn-neutral float-left" title="maltoolbox.attackgraph.attackgraph module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="maltoolbox.attackgraph.query.html" class="btn btn-neutral float-right" title="maltoolbox.attackgraph.query module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Andrei Buhaiu, Giuseppe Nebbione, Nikolaos Kakouros, Jakob Nyberg, Joakim Loxdal.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
