@@ -811,8 +811,7 @@ class Model():
 
         # Reconstruct the associations
         for assoc_entry in serialized_object.get('associations', []):
-            assoc = list(assoc_entry.keys())[0]
-            assoc_fields = assoc_entry[assoc]
+            [(assoc, assoc_fields)] = assoc_entry.items()
             association = model.lang_classes_factory.\
                 get_association_class(assoc)()
 

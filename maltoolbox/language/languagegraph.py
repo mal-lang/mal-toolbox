@@ -41,7 +41,7 @@ class LanguageGraphAsset:
         field(default_factory=lambda: {})
     attack_steps: dict[str, LanguageGraphAttackStep] = \
         field(default_factory = lambda: {})
-    description: dict = field(default_factory=lambda: {})
+    info: dict = field(default_factory=lambda: {})
     # MAL languages currently do not support multiple inheritance, but this is
     # futureproofing at its most hopeful.
     super_assets: list[LanguageGraphAsset] = field(default_factory=lambda: [])
@@ -55,7 +55,7 @@ class LanguageGraphAsset:
             'name': self.name,
             'associations': {},
             'attack_steps': {},
-            'description': self.description,
+            'info': self.info,
             'super_assets': [],
             'sub_assets': [],
             'variables': {},
@@ -139,7 +139,7 @@ class LanguageGraphAsset:
         return superassets
 
 
-    def get_associations(self) -> dict[str, LanguageGraphAssociation]:
+    def get_all_associations(self) -> dict[str, LanguageGraphAssociation]:
         """
         Return a list of all of the associations that belong to this asset
         directly or indirectly via inheritance.
@@ -151,7 +151,7 @@ class LanguageGraphAsset:
 
         associations = dict(self.associations)
         for super_asset in self.super_assets:
-            associations |= super_asset.get_associations()
+            associations |= super_asset.get_all_associations()
         return associations
 
 
@@ -204,13 +204,13 @@ class LanguageGraphAssociation:
     name: str
     left_field: LanguageGraphAssociationField
     right_field: LanguageGraphAssociationField
-    description: dict = field(default_factory=lambda: {})
+    info: dict = field(default_factory=lambda: {})
 
     def to_dict(self) -> dict:
         """Convert LanguageGraphAssociation to dictionary"""
         assoc_dict = {
             'name': self.name,
-            'description': self.description,
+            'info': self.info,
             'left': {
                 'asset': self.left_field.asset.name,
                 'fieldname': self.left_field.fieldname,
@@ -341,10 +341,10 @@ class LanguageGraphAttackStep:
     overrides: bool = False
     children: dict = field(default_factory = lambda: {})
     parents: dict = field(default_factory = lambda: {})
-    description: dict = field(default_factory = lambda: {})
-    attributes: Optional[dict] = None
+    info: dict = field(default_factory = lambda: {})
     inherits: Optional[LanguageGraphAttackStep] = None
     tags: set = field(default_factory = lambda: {})
+    _attributes: Optional[dict] = None
 
     @property
     def full_name(self) -> str:
@@ -364,7 +364,7 @@ class LanguageGraphAttackStep:
             'ttc': self.ttc,
             'children': {},
             'parents': {},
-            'description': self.description,
+            'info': self.info,
             'overrides': self.overrides,
             'inherits': self.inherits.full_name if self.inherits else None,
             'tags': list(self.tags)
@@ -698,40 +698,40 @@ class LanguageGraph():
         logger.debug('Create language graph from dictionary.')
         lang_graph = LanguageGraph()
         # Recreate all of the assets
-        for asset_name, asset_info in serialized_graph.items():
+        for asset_name, asset_dict in serialized_graph.items():
             logger.debug(
                 'Create asset language graph nodes for asset %s',
-                asset_info['name']
+                asset_dict['name']
             )
             asset_node = LanguageGraphAsset(
-                name = asset_info['name'],
+                name = asset_dict['name'],
                 associations = {},
                 attack_steps = {},
-                description = asset_info['description'],
+                info = asset_dict['info'],
                 super_assets = [],
                 sub_assets = [],
                 variables = {},
-                is_abstract = asset_info['is_abstract']
+                is_abstract = asset_dict['is_abstract']
             )
-            lang_graph.assets[asset_info['name']] = asset_node
+            lang_graph.assets[asset_dict['name']] = asset_node
 
         # Relink assets based on inheritance
-        for asset_name, asset_info in serialized_graph.items():
+        for asset_name, asset_dict in serialized_graph.items():
             asset = lang_graph.assets[asset_name]
-            for super_asset_name in asset_info['super_assets']:
+            for super_asset_name in asset_dict['super_assets']:
                 super_asset = lang_graph.assets[super_asset_name]
                 if not super_asset:
                     msg = 'Failed to find super asset "%s" for asset "%s"!'
                     logger.error(
-                        msg, asset_info["super_assets"], asset_info["name"])
+                        msg, asset_dict["super_assets"], asset_dict["name"])
                     raise LanguageGraphSuperAssetNotFoundError(
-                        msg % (asset_info["super_assets"], asset_info["name"]))
+                        msg % (asset_dict["super_assets"], asset_dict["name"]))
 
                 super_asset.sub_assets.append(asset)
                 asset.super_assets.append(super_asset)
 
         # Generate all of the association nodes of the language graph.
-        for asset_name, asset_info in serialized_graph.items():
+        for asset_name, asset_dict in serialized_graph.items():
             logger.debug(
                 'Create association language graph nodes for asset %s',
                 asset.name
@@ -739,7 +739,7 @@ class LanguageGraph():
 
             asset = lang_graph.assets[asset_name]
             for association_name, association in \
-                    asset_info['associations'].items():
+                    asset_dict['associations'].items():
                 left_asset = lang_graph.assets[association['left']['asset']]
                 if not left_asset:
                     msg = 'Left asset "%s" for association "%s" not found!'
@@ -773,7 +773,7 @@ class LanguageGraph():
                         association['right']['fieldname'],
                         association['right']['min'],
                         association['right']['max']),
-                    description = association['description']
+                    info = association['info']
                 )
 
                 # Add the association to the left and right asset
@@ -784,10 +784,10 @@ class LanguageGraph():
                         asset.associations[assoc_node.full_name] = assoc_node
 
         # Recreate the variables
-        for asset_name, asset_info in serialized_graph.items():
+        for asset_name, asset_dict in serialized_graph.items():
             asset = lang_graph.assets[asset_name]
-            for variable_name, var_info in asset_info['variables'].items():
-                (target_asset_name, dep_chain_dict) = var_info
+            for variable_name, var_target in asset_dict['variables'].items():
+                (target_asset_name, dep_chain_dict) = var_target
                 target_asset = lang_graph.assets[target_asset_name]
                 dep_chain = DependencyChain._from_dict(
                     dep_chain_dict,
@@ -796,40 +796,40 @@ class LanguageGraph():
                 asset.variables[variable_name] = (target_asset, dep_chain)
 
         # Recreate the attack steps
-        for asset_name, asset_info in serialized_graph.items():
+        for asset_name, asset_dict in serialized_graph.items():
             asset = lang_graph.assets[asset_name]
             logger.debug(
                 'Create attack steps language graph nodes for asset %s',
                 asset.name
             )
-            for attack_step_name, attack_step_info in \
-                    asset_info['attack_steps'].items():
+            for attack_step_name, attack_step_dict in \
+                    asset_dict['attack_steps'].items():
                 attack_step_node = LanguageGraphAttackStep(
                     name = attack_step_name,
-                    type = attack_step_info['type'],
+                    type = attack_step_dict['type'],
                     asset = asset,
-                    ttc = attack_step_info['ttc'],
-                    overrides = attack_step_info['overrides'],
+                    ttc = attack_step_dict['ttc'],
+                    overrides = attack_step_dict['overrides'],
                     children = {},
                     parents = {},
-                    description = attack_step_info['description'],
-                    tags = set(attack_step_info['tags'])
+                    info = attack_step_dict['info'],
+                    tags = set(attack_step_dict['tags'])
                 )
                 asset.attack_steps[attack_step_name] = attack_step_node
 
         # Relink attack steps based on inheritence
-        for asset_name, asset_info in serialized_graph.items():
+        for asset_name, asset_dict in serialized_graph.items():
             asset = lang_graph.assets[asset_name]
-            for attack_step_name, attack_step_info in \
-                    asset_info['attack_steps'].items():
-                if 'inherits' in attack_step_info and \
-                        attack_step_info['inherits'] is not None:
+            for attack_step_name, attack_step_dict in \
+                    asset_dict['attack_steps'].items():
+                if 'inherits' in attack_step_dict and \
+                        attack_step_dict['inherits'] is not None:
                     attack_step = asset.attack_steps[attack_step_name]
                     ancestor_asset_name = get_asset_name_from_full_attack_step(
-                        attack_step_info['inherits'])
+                        attack_step_dict['inherits'])
                     ancestor_attack_step_name = \
                         get_attack_step_name_from_full_attack_step(
-                            attack_step_info['inherits'])
+                            attack_step_dict['inherits'])
                     ancestor_asset = lang_graph.assets[ancestor_asset_name]
                     ancestor_attack_step = ancestor_asset.attack_steps[\
                         ancestor_attack_step_name]
@@ -837,14 +837,14 @@ class LanguageGraph():
 
 
         # Relink attack steps based on dependency chains
-        for asset_name, asset_info in serialized_graph.items():
+        for asset_name, asset_dict in serialized_graph.items():
             asset = lang_graph.assets[asset_name]
-            for attack_step_name, attack_step_info in \
-                    asset_info['attack_steps'].items():
+            for attack_step_name, attack_step_dict in \
+                    asset_dict['attack_steps'].items():
                 attack_step = asset.attack_steps[attack_step_name]
-                for child_info in attack_step_info['children'].items():
-                    target_full_attack_step_name = child_info[0]
-                    dep_chains = child_info[1]
+                for child_target in attack_step_dict['children'].items():
+                    target_full_attack_step_name = child_target[0]
+                    dep_chains = child_target[1]
                     target_asset_name = get_asset_name_from_full_attack_step(
                         target_full_attack_step_name)
                     target_attack_step_name = \
@@ -865,9 +865,9 @@ class LanguageGraph():
                             attack_step.children[target_attack_step.full_name] = \
                                 [(target_attack_step, dep_chain)]
 
-                for parent_info in attack_step_info['parents'].items():
-                    target_full_attack_step_name = parent_info[0]
-                    dep_chains = parent_info[1]
+                for parent_target in attack_step_dict['parents'].items():
+                    target_full_attack_step_name = parent_target[0]
+                    dep_chains = parent_target[1]
                     target_asset_name = get_asset_name_from_full_attack_step(
                         target_full_attack_step_name)
                     target_attack_step_name = \
@@ -891,8 +891,8 @@ class LanguageGraph():
                 # Recreate the requirements of exist and notExist attack steps
                 if attack_step.type == 'exist' or \
                         attack_step.type == 'notExist':
-                    if 'requirements' in attack_step_info:
-                        dep_chains = attack_step_info['requirements']
+                    if 'requirements' in attack_step_dict:
+                        dep_chains = attack_step_dict['requirements']
                         attack_step.requirements = []
                         for dep_chain_dict in dep_chains:
                             dep_chain = DependencyChain._from_dict(
@@ -1051,7 +1051,7 @@ class LanguageGraph():
 
                 new_target_asset = None
                 for association_name, association in \
-                        target_asset.get_associations().items():
+                        target_asset.get_all_associations().items():
                     if (association.left_field.fieldname == fieldname and \
                         target_asset.is_subasset_of(
                             association.right_field.asset)):
@@ -1275,34 +1275,34 @@ class LanguageGraph():
         given in the constructor.
         """
         # Generate all of the asset nodes of the language graph.
-        for asset_info in self._lang_spec['assets']:
+        for asset_dict in self._lang_spec['assets']:
             logger.debug(
                 'Create asset language graph nodes for asset %s',
-                asset_info['name']
+                asset_dict['name']
             )
             asset_node = LanguageGraphAsset(
-                name = asset_info['name'],
+                name = asset_dict['name'],
                 associations = {},
                 attack_steps = {},
-                description = asset_info['meta'],
+                info = asset_dict['meta'],
                 super_assets = [],
                 sub_assets = [],
                 variables = {},
-                is_abstract = asset_info['isAbstract']
+                is_abstract = asset_dict['isAbstract']
             )
-            self.assets[asset_info['name']] = asset_node
+            self.assets[asset_dict['name']] = asset_node
 
         # Link assets based on inheritance
-        for asset_info in self._lang_spec['assets']:
-            asset = self.assets[asset_info['name']]
-            if asset_info['superAsset']:
-                super_asset = self.assets[asset_info['superAsset']]
+        for asset_dict in self._lang_spec['assets']:
+            asset = self.assets[asset_dict['name']]
+            if asset_dict['superAsset']:
+                super_asset = self.assets[asset_dict['superAsset']]
                 if not super_asset:
                     msg = 'Failed to find super asset "%s" for asset "%s"!'
                     logger.error(
-                        msg, asset_info["superAsset"], asset_info["name"])
+                        msg, asset_dict["superAsset"], asset_dict["name"])
                     raise LanguageGraphSuperAssetNotFoundError(
-                        msg % (asset_info["superAsset"], asset_info["name"]))
+                        msg % (asset_dict["superAsset"], asset_dict["name"]))
 
                 super_asset.sub_assets.append(asset)
                 asset.super_assets.append(super_asset)
@@ -1345,7 +1345,7 @@ class LanguageGraph():
                         association['rightField'],
                         association['rightMultiplicity']['min'],
                         association['rightMultiplicity']['max']),
-                    description = association['meta']
+                    info = association['meta']
                 )
 
                 # Add the association to the left and right asset
@@ -1394,10 +1394,10 @@ class LanguageGraph():
                         if attack_step_attribs['reaches'] else False,
                     children = {},
                     parents = {},
-                    description = attack_step_attribs['meta'],
+                    info = attack_step_attribs['meta'],
                     tags = set(attack_step_attribs['tags'])
                 )
-                attack_step_node.attributes = attack_step_attribs
+                attack_step_node._attributes = attack_step_attribs
                 asset.attack_steps[attack_step_name] = attack_step_node
 
         # Create the inherited attack steps
@@ -1421,7 +1421,7 @@ class LanguageGraph():
                                 overrides = False,
                                 children = {},
                                 parents = {},
-                                description = attack_step.description,
+                                info = attack_step.info,
                                 tags = set(attack_step.tags)
                             )
                             attack_step_node.inherits = attack_step
@@ -1444,13 +1444,13 @@ class LanguageGraph():
                     attack_step_name
                 )
 
-                if attack_step.attributes is None:
+                if attack_step._attributes is None:
                     # This is simply an empty inherited attack step
                     continue
 
                 step_expressions = \
-                    attack_step.attributes['reaches']['stepExpressions'] if \
-                        attack_step.attributes['reaches'] else []
+                    attack_step._attributes['reaches']['stepExpressions'] if \
+                        attack_step._attributes['reaches'] else []
 
                 for step_expression in step_expressions:
                     # Resolve each of the attack step expressions listed for this
@@ -1509,8 +1509,8 @@ class LanguageGraph():
                 if attack_step.type == 'exist' or \
                         attack_step.type == 'notExist':
                     step_expressions = \
-                        attack_step.attributes['requires']['stepExpressions'] \
-                            if attack_step.attributes['requires'] else []
+                        attack_step._attributes['requires']['stepExpressions'] \
+                            if attack_step._attributes['requires'] else []
                     if not step_expressions:
                         msg = 'Failed to find requirements for attack step' \
                         ' "%s" of type "%s":\n%s'
@@ -1518,7 +1518,7 @@ class LanguageGraph():
                             msg % (
                                 attack_step_name,
                                 attack_step.type,
-                                json.dumps(attack_step.attributes, indent = 2)
+                                json.dumps(attack_step._attributes, indent = 2)
                             )
                         )
 
@@ -1563,12 +1563,10 @@ class LanguageGraph():
 
         logger.debug(
             'Get attack steps for %s asset from '
-            'language specification.', asset["name"]
+            'language specification.', asset['name']
         )
 
-        for step in asset['attackSteps']:
-            if step['name'] not in attack_steps:
-                attack_steps[step['name']] = copy.deepcopy(step)
+        attack_steps = {step['name']: step for step in asset['attackSteps']}
 
         return attack_steps
 
@@ -1626,15 +1624,15 @@ class LanguageGraph():
             belonging to the asset.
         """
 
-        asset_info = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
+        asset_dict = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
             asset_type), None)
-        if not asset_info:
+        if not asset_dict:
             msg = 'Failed to find asset type %s in language specification '\
                 'when looking for variables.'
             logger.error(msg, asset_type)
             raise LanguageGraphException(msg % asset_type)
 
-        return asset_info['variables']
+        return asset_dict['variables']
 
     def regenerate_graph(self) -> None:
         """
@@ -1644,26 +1642,6 @@ class LanguageGraph():
 
         self.assets = {}
         self._generate_graph()
-
-
-    def get_asset_by_name(
-            self,
-            asset_name
-    ) -> Optional[LanguageGraphAsset]:
-        """
-        Get an asset based on its name
-
-        Arguments:
-        asset_name  - a string containing the asset name
-
-        Return:
-        The asset matching the name.
-        None if there is no match.
-        """
-        if asset_name in self.assets:
-            return self.assets[asset_name]
-        else:
-            return None
 
 
     def get_association_by_fields_and_assets(
@@ -1686,21 +1664,21 @@ class LanguageGraph():
         The association matching the fieldnames and asset types.
         None if there is no match.
         """
-        first_asset = self.get_asset_by_name(first_asset_name)
+        first_asset = self.assets[first_asset_name]
         if first_asset is None:
             raise LookupError(
                 f'Failed to find asset with name \"{first_asset_name}\" in '
                 'the language graph.'
             )
 
-        second_asset = self.get_asset_by_name(second_asset_name)
+        second_asset = self.assets[second_asset_name]
         if second_asset is None:
             raise LookupError(
                 f'Failed to find asset with name \"{second_asset_name}\" in '
                 'the language graph.'
             )
 
-        for assoc_name, assoc in first_asset.get_associations().items():
+        for assoc_name, assoc in first_asset.get_all_associations().items():
             logger.debug(
                 'Compare ("%s", "%s", "%s", "%s") to ("%s", "%s", "%s", "%s").',
                 first_asset_name, first_field,
