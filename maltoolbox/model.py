@@ -207,6 +207,10 @@ class Model():
         )
         self.assets.append(asset)
 
+    def remove_attacker(self, attacker: AttackerAttachment) -> None:
+        """Remove attacker"""
+        self.attackers.remove(attacker)
+
     def remove_asset(self, asset: SchemaGeneratedClass) -> None:
         """Remove an asset from the model.
 

@@ -195,6 +195,27 @@ def test_attacker_attachment_remove_asset(model: Model):
     assert attacker2.entry_points[0][1] == ['read']
 
 
+def test_add_remove_attacker(model: Model):
+    """"""
+
+    asset1 = create_application_asset(model, "Asset1")
+    model.add_asset(asset1)
+
+    attacker1 = AttackerAttachment()
+    model.add_attacker(attacker1)
+    attacker2 = AttackerAttachment()
+    model.add_attacker(attacker2)
+
+    attacker1.add_entry_point(asset1, 'read')
+    attacker1.add_entry_point(asset1, 'access')
+    attacker2.add_entry_point(asset1, 'read')
+
+    assert len(model.attackers) == 2
+    model.remove_attacker(attacker1)
+    assert len(model.attackers) == 1
+    model.remove_attacker(attacker2)
+    assert len(model.attackers) == 0
+
 def test_model_add_asset(model: Model):
     """Make sure assets are added correctly"""
 
