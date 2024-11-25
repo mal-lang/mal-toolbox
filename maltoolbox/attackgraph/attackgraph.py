@@ -448,17 +448,14 @@ class AttackGraph():
 
                 selected_new_target_assets = []
                 for asset in new_target_assets:
-                    lang_graph_asset = self.lang_graph.get_asset_by_name(
-                        asset.type
-                    )
+                    lang_graph_asset = self.lang_graph.assets[asset.type]
                     if not lang_graph_asset:
                         raise LookupError(
                             f'Failed to find asset \"{asset.type}\" in the '
                             'language graph.'
                         )
-                    lang_graph_subtype_asset = self.lang_graph.get_asset_by_name(
-                        step_expression['subType']
-                    )
+                    lang_graph_subtype_asset = self.lang_graph.assets[
+                        step_expression['subType']]
                     if not lang_graph_subtype_asset:
                         raise LookupError(
                             'Failed to find asset '
@@ -510,7 +507,7 @@ class AttackGraph():
 
             attack_step_nodes = []
 
-            lang_graph_asset = self.lang_graph.get_asset_by_name(asset.type)
+            lang_graph_asset = self.lang_graph.assets[asset.type]
             if lang_graph_asset is None:
                 raise LookupError(
                     f'Failed to find asset with name \"{asset.type}\" in '
@@ -554,8 +551,8 @@ class AttackGraph():
                                 existence_status = False
                                 break
 
-                mitre_info = attack_step.description['mitre'] if\
-                    'mitre' in attack_step.description else None
+                mitre_info = attack_step.info['mitre'] if\
+                    'mitre' in attack_step.info else None
                 ag_node = AttackGraphNode(
                     type = attack_step.type,
                     asset = asset,
@@ -583,8 +580,7 @@ class AttackGraph():
                 ag_node.id
             )
 
-            lang_graph_asset = self.lang_graph.get_asset_by_name(
-                ag_node.asset.type)
+            lang_graph_asset = self.lang_graph.assets[ag_node.asset.type]
 
             lang_graph_attack_step = lang_graph_asset.attack_steps[\
                 ag_node.name]
