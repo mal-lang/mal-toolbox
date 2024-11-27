@@ -1532,7 +1532,8 @@ class LanguageGraph():
                                 None,
                                 step_expression
                             )
-                        attack_step.requirements.append(result_dep_chain)
+                        attack_step.requirements.append(
+                            self.reverse_dep_chain(result_dep_chain, None))
 
     def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
         """
