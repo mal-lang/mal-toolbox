@@ -551,6 +551,9 @@ class AttackGraph():
                                 existence_status = False
                                 break
 
+                    case _:
+                        pass
+
                 mitre_info = attack_step.info['mitre'] if\
                     'mitre' in attack_step.info else None
                 ag_node = AttackGraphNode(
