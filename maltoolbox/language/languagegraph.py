@@ -1434,6 +1434,8 @@ class LanguageGraph():
                                 attack_step
                             asset.attack_steps[attack_step_name].tags |= \
                                 attack_step.tags
+                            asset.attack_steps[attack_step_name].info |= \
+                                attack_step.info
 
         # Then, link all of the attack step nodes according to their
         # associations.
