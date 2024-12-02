@@ -431,13 +431,11 @@ class Model():
         attacker_id     - optional id for the attacker
         """
 
-        if attacker_id is not None:
-            attacker.id = attacker_id
-        else:
-            attacker.id = self.next_id
+        attacker.id = attacker_id or self.next_id
+
         self.next_id = max(attacker.id + 1, self.next_id)
 
-        if not hasattr(attacker, 'name') or not attacker.name:
+        if not getattr(attacker, 'name', None):
             attacker.name = 'Attacker:' + str(attacker.id)
         self.attackers.append(attacker)
 
