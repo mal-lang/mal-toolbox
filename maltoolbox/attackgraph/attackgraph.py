@@ -537,7 +537,7 @@ class AttackGraph():
                     case 'exist' | 'notExist':
                         # Resolve step expression associated with (non-)existence
                         # attack steps.
-                        existence_status = True
+                        existence_status = False
                         for requirement in attack_step.get_requirements():
                             target_assets = self._follow_dep_chain(
                                     self.model,
@@ -547,8 +547,8 @@ class AttackGraph():
                             # If the step expression resolution yielded
                             # the target assets then the required assets
                             # exist in the model.
-                            if not target_assets:
-                                existence_status = False
+                            if target_assets:
+                                existence_status = True
                                 break
 
                     case _:
