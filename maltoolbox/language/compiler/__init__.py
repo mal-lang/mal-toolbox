@@ -103,12 +103,6 @@ class MalCompiler(ParseTreeVisitor):
                     unique.append(item)
             langspec[key] = unique
 
-        # TODO: The toolbox does not support assets and associations sharing the same name.
-        _asset_names = (asset["name"] for asset in langspec["assets"])
-        for assoc in langspec["associations"]:
-            if assoc["name"] in _asset_names:
-                assoc["name"] = f"{assoc['name']}Assoc"
-
         return langspec
 
     def visitInclude(self, ctx):
@@ -448,19 +442,7 @@ class MalCompiler(ParseTreeVisitor):
     def visitAssociation(self, ctx):
         association = {}
 
-        # TODO: The toolbox does not support underscores in association names.
-        association["name"] = self.visit(ctx.linkname()).replace("_", "")
-
-        # TODO: The toolbox does not support multiple assocs with the same name.
-        # Add the name as is to be able to count it correctly.
-        self.assoc_names.append(association["name"])
-
-        if association["name"] in self.assoc_names:
-            association["name"] = f"{association['name']}{self.assoc_names.count(association['name'])}"
-
-        # Add the changed name in case it already exists in the list, to be able to count it.
-        self.assoc_names.append(association["name"])
-
+        association["name"] = self.visit(ctx.linkname())
         association["meta"] = {(info := self.visit(meta))[0]: info[1] for meta in ctx.meta()}
         association["leftAsset"] = ctx.ID()[0].getText()
         association["leftField"] = self.visit(ctx.field()[0])
@@ -477,6 +459,10 @@ class MalCompiler(ParseTreeVisitor):
             "min": (multatoms := ctx.mult()[1].multatom()).pop(0).getText(),
             "max": multatoms.pop().getText() if multatoms else None,
         }
+
+        # TODO: hotfix until proper support in mal-toolbox
+        association["name"] += association["leftField"] + association["rightField"]
+        association["name"] = association["name"].replace("_", "")
 
         self._post_process_multitudes(association)
         return association
