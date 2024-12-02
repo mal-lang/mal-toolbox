@@ -53,7 +53,7 @@ def propagate_necessity_from_node(node: AttackGraphNode) -> None:
     )
 
     if node.ttc and 'name' in node.ttc:
-        if node.ttc['name'] not in ['Enabled', 'Disabled']:
+        if node.ttc['name'] not in ['Enabled', 'Disabled', 'Instant']:
             # Do not propagate unnecessary state from nodes that have a TTC
             # probability distribution associated with them.
             # TODO: Evaluate this more carefully, how do we want to have TTCs
