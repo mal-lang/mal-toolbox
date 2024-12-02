@@ -1,0 +1,136 @@
+assets:
+  0:
+    name: OS App
+    type: Application
+  1:
+    defenses:
+      notPresent: 1.0
+    name: Program 1
+    type: Application
+  2:
+    name: Program 2
+    type: Application
+  3:
+    name: IDPS 1
+    type: IDPS
+  4:
+    defenses:
+      availabilityImpactLimitations: 1.0
+      lowPrivilegesRequired: 1.0
+    name: SoftwareVulnerability:4
+    type: SoftwareVulnerability
+  5:
+    name: Data:5
+    type: Data
+  6:
+    defenses:
+      unique: 0.0
+    name: Credentials:6
+    type: Credentials
+  7:
+    defenses:
+      unique: 0.0
+    name: Credentials:7
+    type: Credentials
+  8:
+    name: Identity:8
+    type: Identity
+  9:
+    defenses:
+      unique: 0.0
+    name: Credentials:9
+    type: Credentials
+  10:
+    name: Credentials:10
+    type: Credentials
+  11:
+    name: Identity:11
+    type: Identity
+  12:
+    defenses:
+      noPasswordReuse: 0.0
+    name: User:12
+    type: User
+  13:
+    name: Group:13
+    type: Group
+associations:
+- AppExecution_hostApp_Application_appExecutedApps_Application:
+    appExecutedApps:
+    - 1
+    - 2
+    - 3
+    hostApp:
+    - 0
+- ApplicationVulnerability_vulnerabilities_SoftwareVulnerability_application_Application:
+    application:
+    - 2
+    vulnerabilities:
+    - 4
+- AppContainment_containedData_Data_containingApp_Application:
+    containedData:
+    - 5
+    containingApp:
+    - 2
+- EncryptionCredentials_encryptCreds_Credentials_encryptedData_Data:
+    encryptCreds:
+    - 6
+    encryptedData:
+    - 5
+- ConditionalAuthentication_credentials_Credentials_requiredFactors_Credentials:
+    credentials:
+    - 6
+    requiredFactors:
+    - 7
+- IdentityCredentials_identities_Identity_credentials_Credentials:
+    credentials:
+    - 6
+    identities:
+    - 8
+- IdentityCredentials_identities_Identity_credentials_Credentials:
+    credentials:
+    - 9
+    - 10
+    identities:
+    - 11
+- UserAssignedIdentities_users_User_userIds_Identity:
+    userIds:
+    - 8
+    - 11
+    users:
+    - 12
+- Dependence_infoDependedUpon_Information_dependentApps_Application:
+    dependentApps:
+    - 3
+    infoDependedUpon:
+    - 13
+attackers:
+  14:
+    entry_points:
+      0:
+        attack_steps:
+        - softwareProductAbuse
+      6:
+        attack_steps:
+        - attemptCredentialsReuse
+      7:
+        attack_steps:
+        - attemptCredentialsReuse
+        - guessCredentials
+      9:
+        attack_steps:
+        - attemptCredentialsReuse
+    name: Attacker:14
+  15:
+    entry_points:
+      0:
+        attack_steps:
+        - fullAccess
+    name: Attacker:15
+metadata:
+  MAL-Toolbox Version: 0.1.8
+  info: Created by the mal-toolbox model python module.
+  langID: org.mal-lang.coreLang
+  langVersion: 1.0.0
+  malVersion: 0.1.0-SNAPSHOT
+  name: Simple Example Model
