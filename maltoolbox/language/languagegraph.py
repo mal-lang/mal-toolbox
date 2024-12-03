@@ -1052,6 +1052,8 @@ class LanguageGraph():
                         'overrides': False,
                         'stepExpressions': step['reaches']['stepExpressions']
                     }
+                detectors = step['detectors'] | attack_steps[step['name']]['detectors']
+                attack_steps[step['name']]['detectors'] = detectors
         if with_extra_deepcopy:
             attack_steps = copy.deepcopy(attack_steps)
         return attack_steps
