@@ -175,6 +175,7 @@ class Model():
         An asset matching the name if it exists in the model.
         """
 
+        # TODO: simplify these lines
         # Set asset ID and check for duplicates
         asset.id = asset_id or self.next_id
         if asset.id in self.asset_ids:
@@ -537,48 +538,6 @@ class Model():
         )
         return False
 
-    def get_asset_defenses(
-            self,
-            asset: SchemaGeneratedClass,
-            include_defaults: bool = False
-        ):
-        """
-        Get the two field names of the association as a list.
-        Arguments:
-        asset               - the asset to fetch the defenses for
-        include_defaults    - if not True the defenses that have default
-                              values will not be included in the list
-
-        Return:
-        A dictionary containing the defenses of the asset
-        """
-
-        defenses = {}
-        for key, value in asset._properties.items():
-            property_schema = (
-                self.lang_classes_factory.json_schema['definitions']
-                ['LanguageAsset'] ['definitions']
-                ['Asset_' + asset.type]['properties'][key]
-            )
-
-            if "maximum" not in property_schema:
-                # Check if property is a defense by looking up defense
-                # specific key. Skip if it is not a defense.
-                continue
-
-            logger.debug(
-                'Translating %s: %s defense to dictionary.',
-                key,
-                value
-            )
-
-            if not include_defaults and value == value.default():
-                # Skip the defense values if they are the default ones.
-                continue
-
-            defenses[key] = float(value)
-
-        return defenses
 
     def get_association_field_names(
             self,
@@ -644,10 +603,8 @@ class Model():
             'type': str(asset.type)
         }
 
-        defenses = self.get_asset_defenses(asset)
-
-        if defenses:
-            asset_dict['defenses'] = defenses
+        if asset.defenses:
+            asset_dict['defenses'] = asset.defenses
 
         if asset.extras:
             # Add optional metadata to dict
@@ -786,16 +743,11 @@ class Model():
                 }
             )
 
-            asset_type_class = model.lang_classes_factory.get_asset_class(
-                asset_object['type'])
-
-            # TODO: remove this when factory goes away
-            asset_type_class.__hash__ = lambda self: hash(self.name)  # type: ignore[method-assign,misc]
-
-            if asset_type_class is None:
-                raise LookupError('Failed to find asset "%s" in language'
-                ' classes factory' % asset_object['type'])
-            asset = asset_type_class(name = asset_object['name'])
+            asset = ModelAsset(
+                name=f"Asset_{asset_object['type']}",
+                lg_asset=lang_graph.assets[asset_object['type']],
+                metaconcept=asset_object['type']
+            )
 
             if 'extras' in asset_object:
                 asset.extras = asset_object['extras']
@@ -808,19 +760,21 @@ class Model():
         # Reconstruct the associations
         for assoc_entry in serialized_object.get('associations', []):
             [(assoc, assoc_fields)] = assoc_entry.items()
-            assoc_keys_iter = iter(assoc_fields)
-            field1 = next(assoc_keys_iter)
-            field2 = next(assoc_keys_iter)
-            assoc_type_class = model.lang_classes_factory.\
-                get_association_class_by_fieldnames(assoc, field1, field2)
-            if assoc_type_class is None:
-                raise LookupError('Failed to find association "%s" with '
-                    'fields "%s" and "%s" in language classes factory' %
-                        (assoc, field1, field2)
-                )
-            association = assoc_type_class()
+            association = ModelAssociation(
+                name=f"Assoc_{assoc}",
+                metaconcept=assoc,
+                lg_assoc=lang_graph.associations[assoc],
+            )
 
             for field, targets in assoc_fields.items():
+                if (
+                    association._properties[field].minimum and
+                    len(targets) < association._properties[field].minimum or
+                    association._properties[field].maximum and
+                    len(targets) > association._properties[field].maximum
+                ):
+                    raise Exception('BAD assoc')
+                targets = targets if isinstance(targets, list) else [targets]
                 setattr(
                     association,
                     field,
@@ -865,3 +819,32 @@ class Model():
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
         return cls._from_dict(serialized_model, lang_classes_factory)
+
+class ModelAsset:
+    def __init__(self, *, name, metaconcept, lg_asset, **kwargs):
+        self.__dict__ |= kwargs
+        self.defenses = kwargs.pop('defenses', {})
+        self.name = name
+        self.type = metaconcept
+        self.lg_asset = lg_asset
+        for defense, status in self.defenses.items():
+            setattr(self, defense, status)
+
+    def __getattr__(self, name):
+        if name in ["info"]:
+            return self.lg_asset.info
+        if (astep := self.lg_asset.attack_steps.get(name, None)):
+            if astep.type == 'defense':
+                return 1. if astep.ttc and astep.ttc['name'] == 'Enabled' else 0.
+        raise AttributeError
+
+class ModelAssociation:
+    def __init__(self, *, name, metaconcept, **kwargs):
+        self.__dict__ |= kwargs
+        self.name = name
+        self.type = metaconcept
+        self._properties = {
+            "type": self.type,
+            self.lg_assoc.left_field.fieldname: self.lg_assoc.left_field,
+            self.lg_assoc.right_field.fieldname: self.lg_assoc.right_field,
+        }
