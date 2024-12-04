@@ -19,7 +19,7 @@ from .exceptions import DuplicateModelAssociationError, ModelAssociationExceptio
 
 if TYPE_CHECKING:
     from typing import Any, Optional, TypeAlias
-    from .language import LanguageClassesFactory
+    from .language import LanguageGraph
     from python_jsonschema_objects.classbuilder import ProtocolBase
 
     SchemaGeneratedClass: TypeAlias = ProtocolBase
@@ -138,7 +138,7 @@ class Model():
     def __init__(
             self,
             name: str,
-            lang_classes_factory: LanguageClassesFactory,
+            lang_graph: LanguageGraph,
             mt_version: str = __version__
         ):
 
@@ -147,7 +147,7 @@ class Model():
         self.associations: list[SchemaGeneratedClass] = []
         self._type_to_association:dict = {} # optimization
         self.attackers: list[AttackerAttachment] = []
-        self.lang_classes_factory: LanguageClassesFactory = lang_classes_factory
+        self.lang_graph = lang_graph
         self.maltoolbox_version: str = mt_version
 
         # Below sets used to check for duplicate names or ids,
@@ -675,8 +675,8 @@ class Model():
         }
         contents['metadata'] = {
             'name': self.name,
-            'langVersion': self.lang_classes_factory.lang_graph.metadata['version'],
-            'langID': self.lang_classes_factory.lang_graph.metadata['id'],
+            'langVersion': self.lang_graph.metadata['version'],
+            'langID': self.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
             'MAL-Toolbox Version': __version__,
             'info': 'Created by the mal-toolbox model python module.'
@@ -707,13 +707,13 @@ class Model():
     def _from_dict(
         cls,
         serialized_object: dict,
-        lang_classes_factory: LanguageClassesFactory
+        lang_graph: LanguageGraph,
         ) -> Model:
         """Create a model from dict representation
 
         Arguments:
         serialized_object    - Model in dict format
-        lang_classes_factory -
+        lang_graph -
         """
 
         maltoolbox_version = serialized_object['metadata']['MAL Toolbox Version'] \
@@ -721,7 +721,7 @@ class Model():
             else __version__
         model = Model(
             serialized_object['metadata']['name'],
-            lang_classes_factory,
+            lang_graph,
             mt_version = maltoolbox_version)
 
         # Reconstruct the assets
@@ -807,7 +807,7 @@ class Model():
     def load_from_file(
         cls,
         filename: str,
-        lang_classes_factory: LanguageClassesFactory
+        lang_graph: LanguageGraph,
         ) -> Model:
         """Create from json or yaml file depending on file extension"""
         logger.debug('Load instance model from file "%s".', filename)
@@ -818,7 +818,7 @@ class Model():
             serialized_model = load_dict_from_json_file(filename)
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
-        return cls._from_dict(serialized_model, lang_classes_factory)
+        return cls._from_dict(serialized_model, lang_graph)
 
 class ModelAsset:
     def __init__(self, *, name, metaconcept, lg_asset, **kwargs):

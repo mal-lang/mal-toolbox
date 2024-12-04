@@ -5,7 +5,7 @@ import sys
 import zipfile
 
 from maltoolbox.model import Model
-from maltoolbox.language import LanguageGraph, LanguageClassesFactory
+from maltoolbox.language import LanguageGraph
 from maltoolbox.attackgraph import AttackGraph
 from maltoolbox.attackgraph.analyzers.apriori import (
     calculate_viability_and_necessity
@@ -38,8 +38,7 @@ def create_attack_graph(
     if log_configs['langspec_file']:
         lang_graph.save_to_file(log_configs['langspec_file'])
 
-    lang_classes_factory = LanguageClassesFactory(lang_graph)
-    instance_model = Model.load_from_file(model_file, lang_classes_factory)
+    instance_model = Model.load_from_file(model_file, lang_graph)
 
     if log_configs['model_file']:
         instance_model.save_to_file(log_configs['model_file'])
