@@ -21,23 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LanguageClassesFactory():
-    def __init__(self, lang_graph: LanguageGraph):
-        self.lang_graph = lang_graph
-
-    def get_asset_class(self, asset_type):
-        lg_asset = self.lang_graph.assets[asset_type]
-
-        return type(f"Asset_{asset_type}", (ModelAsset,), {"lg_asset": lg_asset})
-
-    def get_association_class(self, assoc_name):
-        lg_assoc = self.lang_graph.associations[assoc_name]
-
-        return type(f"Assoc_{assoc_name}", (ModelAssociation,),
-                    {"lg_assoc": lg_assoc, "type": assoc_name})
-
-
-class LanguageClassesFactory2:
+class LanguageClassesFactory:
     # TODO: needed by ingestors/translators
     def get_association_by_signature(
         self, assoc_name: str, left_asset: str, right_asset: str
