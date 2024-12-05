@@ -19,7 +19,7 @@ from .exceptions import DuplicateModelAssociationError, ModelAssociationExceptio
 
 if TYPE_CHECKING:
     from typing import Any, Optional, TypeAlias
-    from .language import LanguageClassesFactory
+    from .language import LanguageGraph
     from python_jsonschema_objects.classbuilder import ProtocolBase
 
     SchemaGeneratedClass: TypeAlias = ProtocolBase
@@ -138,7 +138,7 @@ class Model():
     def __init__(
             self,
             name: str,
-            lang_classes_factory: LanguageClassesFactory,
+            lang_graph: LanguageGraph,
             mt_version: str = __version__
         ):
 
@@ -147,7 +147,7 @@ class Model():
         self.associations: list[SchemaGeneratedClass] = []
         self._type_to_association:dict = {} # optimization
         self.attackers: list[AttackerAttachment] = []
-        self.lang_classes_factory: LanguageClassesFactory = lang_classes_factory
+        self.lang_graph = lang_graph
         self.maltoolbox_version: str = mt_version
 
         # Below sets used to check for duplicate names or ids,
@@ -175,6 +175,7 @@ class Model():
         An asset matching the name if it exists in the model.
         """
 
+        # TODO: simplify these lines
         # Set asset ID and check for duplicates
         asset.id = asset_id or self.next_id
         if asset.id in self.asset_ids:
@@ -537,48 +538,6 @@ class Model():
         )
         return False
 
-    def get_asset_defenses(
-            self,
-            asset: SchemaGeneratedClass,
-            include_defaults: bool = False
-        ):
-        """
-        Get the two field names of the association as a list.
-        Arguments:
-        asset               - the asset to fetch the defenses for
-        include_defaults    - if not True the defenses that have default
-                              values will not be included in the list
-
-        Return:
-        A dictionary containing the defenses of the asset
-        """
-
-        defenses = {}
-        for key, value in asset._properties.items():
-            property_schema = (
-                self.lang_classes_factory.json_schema['definitions']
-                ['LanguageAsset'] ['definitions']
-                ['Asset_' + asset.type]['properties'][key]
-            )
-
-            if "maximum" not in property_schema:
-                # Check if property is a defense by looking up defense
-                # specific key. Skip if it is not a defense.
-                continue
-
-            logger.debug(
-                'Translating %s: %s defense to dictionary.',
-                key,
-                value
-            )
-
-            if not include_defaults and value == value.default():
-                # Skip the defense values if they are the default ones.
-                continue
-
-            defenses[key] = float(value)
-
-        return defenses
 
     def get_association_field_names(
             self,
@@ -657,10 +616,8 @@ class Model():
             'type': str(asset.type)
         }
 
-        defenses = self.get_asset_defenses(asset)
-
-        if defenses:
-            asset_dict['defenses'] = defenses
+        if asset.defenses:
+            asset_dict['defenses'] = asset.defenses
 
         if asset.extras:
             # Add optional metadata to dict
@@ -730,8 +687,8 @@ class Model():
         }
         contents['metadata'] = {
             'name': self.name,
-            'langVersion': self.lang_classes_factory.lang_graph.metadata['version'],
-            'langID': self.lang_classes_factory.lang_graph.metadata['id'],
+            'langVersion': self.lang_graph.metadata['version'],
+            'langID': self.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
             'MAL-Toolbox Version': __version__,
             'info': 'Created by the mal-toolbox model python module.'
@@ -762,13 +719,13 @@ class Model():
     def _from_dict(
         cls,
         serialized_object: dict,
-        lang_classes_factory: LanguageClassesFactory
+        lang_graph: LanguageGraph,
         ) -> Model:
         """Create a model from dict representation
 
         Arguments:
         serialized_object    - Model in dict format
-        lang_classes_factory -
+        lang_graph -
         """
 
         maltoolbox_version = serialized_object['metadata']['MAL Toolbox Version'] \
@@ -776,7 +733,7 @@ class Model():
             else __version__
         model = Model(
             serialized_object['metadata']['name'],
-            lang_classes_factory,
+            lang_graph,
             mt_version = maltoolbox_version)
 
         # Reconstruct the assets
@@ -798,24 +755,32 @@ class Model():
                 }
             )
 
-            asset = model.lang_classes_factory.get_asset_class(
-                asset_object['type'])(name = asset_object['name'])
-
-            if 'extras' in asset_object:
-                asset.extras = asset_object['extras']
-
-            for defense in (defenses:=asset_object.get('defenses', [])):
-                setattr(asset, defense, float(defenses[defense]))
+            asset = ModelAsset(
+                name=f"Asset_{asset_object['type']}",
+                lg_asset=lang_graph.assets[asset_object['type']],
+                metaconcept=asset_object['type']
+            )
 
             model.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
         for assoc_entry in serialized_object.get('associations', []):
             [(assoc, assoc_fields)] = assoc_entry.items()
-            association = model.lang_classes_factory.\
-                get_association_class(assoc)()
+
+            association = ModelAssociation(
+                name=f"Assoc_{assoc}",
+                metaconcept=assoc,
+                lg_assoc=lang_graph.associations[assoc],
+            )
 
             for field, targets in assoc_fields.items():
+                if (
+                    association._properties[field].minimum and
+                    len(targets) < association._properties[field].minimum or
+                    association._properties[field].maximum and
+                    len(targets) > association._properties[field].maximum
+                ):
+                    raise Exception('BAD assoc')
                 targets = targets if isinstance(targets, list) else [targets]
                 setattr(
                     association,
@@ -845,7 +810,7 @@ class Model():
     def load_from_file(
         cls,
         filename: str,
-        lang_classes_factory: LanguageClassesFactory
+        lang_graph: LanguageGraph,
         ) -> Model:
         """Create from json or yaml file depending on file extension"""
         logger.debug('Load instance model from file "%s".', filename)
@@ -856,4 +821,33 @@ class Model():
             serialized_model = load_dict_from_json_file(filename)
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
-        return cls._from_dict(serialized_model, lang_classes_factory)
+        return cls._from_dict(serialized_model, lang_graph)
+
+class ModelAsset:
+    def __init__(self, *, name, metaconcept, lg_asset, **kwargs):
+        self.__dict__ |= kwargs
+        self.defenses = kwargs.pop('defenses', {})
+        self.name = name
+        self.type = metaconcept
+        self.lg_asset = lg_asset
+        for defense, status in self.defenses.items():
+            setattr(self, defense, status)
+
+    def __getattr__(self, name):
+        if name in ["info"]:
+            return self.lg_asset.info
+        if (astep := self.lg_asset.attack_steps.get(name, None)):
+            if astep.type == 'defense':
+                return 1. if astep.ttc and astep.ttc['name'] == 'Enabled' else 0.
+        raise AttributeError
+
+class ModelAssociation:
+    def __init__(self, *, name, metaconcept, **kwargs):
+        self.__dict__ |= kwargs
+        self.name = name
+        self.type = metaconcept
+        self._properties = {
+            "type": self.type,
+            self.lg_assoc.left_field.fieldname: self.lg_assoc.left_field,
+            self.lg_assoc.right_field.fieldname: self.lg_assoc.right_field,
+        }
