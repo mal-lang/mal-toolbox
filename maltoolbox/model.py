@@ -755,11 +755,11 @@ class Model():
                 }
             )
 
-            asset = type(
-                f"Asset_{asset_object['type']}",
-                (ModelAsset,),
-                {"lg_asset": lang_graph.assets[asset_object['type']]},
-            )(**asset_object)
+            asset = ModelAsset(
+                name=f"Asset_{asset_object['type']}",
+                lg_asset=lang_graph.assets[asset_object['type']],
+                metaconcept=asset_object['type']
+            )
 
             model.add_asset(asset, asset_id = int(asset_id))
 
@@ -767,11 +767,11 @@ class Model():
         for assoc_entry in serialized_object.get('associations', []):
             [(assoc, assoc_fields)] = assoc_entry.items()
 
-            association = type(
-                f"Assoc_{assoc}",
-                (ModelAssociation,),
-                {"type": assoc, "lg_assoc": lang_graph.associations[assoc]},
-            )()
+            association = ModelAssociation(
+                name=f"Assoc_{assoc}",
+                metaconcept=assoc,
+                lg_assoc=lang_graph.associations[assoc],
+            )
 
             for field, targets in assoc_fields.items():
                 if (
@@ -824,9 +824,12 @@ class Model():
         return cls._from_dict(serialized_model, lang_graph)
 
 class ModelAsset:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *, name, metaconcept, lg_asset, **kwargs):
         self.__dict__ |= kwargs
         self.defenses = kwargs.pop('defenses', {})
+        self.name = name
+        self.type = metaconcept
+        self.lg_asset = lg_asset
         for defense, status in self.defenses.items():
             setattr(self, defense, status)
 
@@ -839,11 +842,12 @@ class ModelAsset:
         raise AttributeError
 
 class ModelAssociation:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *, name, metaconcept, **kwargs):
         self.__dict__ |= kwargs
+        self.name = name
+        self.type = metaconcept
         self._properties = {
             "type": self.type,
             self.lg_assoc.left_field.fieldname: self.lg_assoc.left_field,
             self.lg_assoc.right_field.fieldname: self.lg_assoc.right_field,
         }
-        # breakpoint()
