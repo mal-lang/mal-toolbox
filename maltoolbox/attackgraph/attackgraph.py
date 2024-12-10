@@ -417,33 +417,26 @@ class AttackGraph():
                     dep_chain.next_link)
 
             case 'transitive':
-                # TODO: Re-implement this to work with the dependency chains.
+                accumulated_target_assets = list(target_assets)
+                new_target_assets = list(target_assets)
+                while new_target_assets:
+                    additional_assets = self._follow_dep_chain(
+                        model, new_target_assets, dep_chain.next_link)
 
-                # The transitive expression is very similar to the field
-                # expression, but it proceeds recursively until no target is
-                # found and it and it sets the new targets to the entire list
-                # of assets identified during the entire transitive recursion.
+                    new_target_assets = []
+                    for additional_asset in additional_assets:
+                        if additional_asset not in accumulated_target_assets:
+                            accumulated_target_assets.append(additional_asset)
+                            new_target_assets.append(additional_asset)
 
-                new_target_assets = []
-                return []
-                # for target_asset in target_assets:
-                #     new_target_assets.extend(model.\
-                #         get_associated_assets_by_field_name(target_asset,
-                #             step_expression['stepExpression']['name']))
-                # if new_target_assets:
-                #     (additional_assets, _) = _process_step_expression(
-                #         lang_graph, model, new_target_assets, step_expression)
-                #     new_target_assets.extend(additional_assets)
-                #     return new_target_assets
-                # else:
-                #     return []
+                return accumulated_target_assets
 
             case 'subType':
                 new_target_assets = []
                 for target_asset in target_assets:
-                    (assets, _) = _process_step_expression(
-                        lang_graph, model, target_assets,
-                        step_expression['stepExpression'])
+                    assets = self._follow_dep_chain(
+                        model, target_assets,
+                        dep_chain.next_link)
                     new_target_assets.extend(assets)
 
                 selected_new_target_assets = []
@@ -454,8 +447,7 @@ class AttackGraph():
                             f'Failed to find asset \"{asset.type}\" in the '
                             'language graph.'
                         )
-                    lang_graph_subtype_asset = self.lang_graph.assets[
-                        step_expression['subType']]
+                    lang_graph_subtype_asset = dep_chain.subtype
                     if not lang_graph_subtype_asset:
                         raise LookupError(
                             'Failed to find asset '
@@ -468,11 +460,17 @@ class AttackGraph():
                 return selected_new_target_assets
 
             case 'collect':
-                new_target_assets = []
-                for asset in target_assets:
-                    new_target_assets.extend(self._follow_dep_chain(
-                        model, [asset], dep_chain.next_link))
-                return new_target_assets
+                lh_targets = self._follow_dep_chain(
+                    model,
+                    target_assets,
+                    dep_chain.left_chain
+                )
+                rh_targets = self._follow_dep_chain(
+                    model,
+                    lh_targets,
+                    dep_chain.right_chain
+                )
+                return rh_targets
 
 
             case _:

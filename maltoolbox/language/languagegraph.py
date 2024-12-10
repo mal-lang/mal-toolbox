@@ -505,12 +505,13 @@ class DependencyChain:
                 }
 
             case 'collect':
-                if not self.next_link:
-                    raise LanguageGraphException(
-                        "No next link for collect dependency chain"
-                    )
                 return {
-                    'collect': self.next_link.to_dict(),
+                    self.type: {
+                        'left': self.left_chain.to_dict()
+                                if self.left_chain else {},
+                        'right': self.right_chain.to_dict()
+                                 if self.right_chain else {}
+                    },
                     'type': self.type
                 }
 
@@ -544,7 +545,7 @@ class DependencyChain:
 
         dep_chain_type = serialized_dep_chain['type']
         match (dep_chain_type ):
-            case 'union' | 'intersection' | 'difference':
+            case 'union' | 'intersection' | 'difference' | 'collect':
                 new_dep_chain = DependencyChain(
                     type = dep_chain_type,
                     next_link = None
@@ -605,17 +606,6 @@ class DependencyChain:
                     next_link = next_link
                 )
                 new_dep_chain.subtype = subtype_asset
-                return new_dep_chain
-
-            case 'collect':
-                next_link = cls._from_dict(
-                    serialized_dep_chain['collect'],
-                    lang_graph
-                )
-                new_dep_chain = DependencyChain(
-                    type = 'collect',
-                    next_link = next_link
-                )
                 return new_dep_chain
 
             case _:
@@ -984,7 +974,7 @@ class LanguageGraph():
                 # asset and parent associations chain.
                 return (
                     target_asset,
-                    dep_chain,
+                    None,
                     step_expression['name']
                 )
 
@@ -1155,12 +1145,14 @@ class LanguageGraph():
                     rh_attack_step_name) = \
                     self.process_step_expression(
                         lh_target_asset,
-                        lh_dep_chain,
+                        None,
                         step_expression['rhs']
                     )
                 new_dep_chain = DependencyChain(
                     type = 'collect',
-                    next_link = rh_dep_chain)
+                    next_link = None)
+                new_dep_chain.left_chain = lh_dep_chain
+                new_dep_chain.right_chain = rh_dep_chain
                 return (
                     rh_target_asset,
                     new_dep_chain,
@@ -1253,14 +1245,17 @@ class LanguageGraph():
                     return new_dep_chain
 
                 case 'collect':
-                    result_reverse_chain = self.reverse_dep_chain(
-                        dep_chain.next_link,
-                        reverse_chain
-                    )
+                    left_reverse_chain = \
+                        self.reverse_dep_chain(dep_chain.left_chain,
+                        reverse_chain)
+                    right_reverse_chain = \
+                        self.reverse_dep_chain(dep_chain.right_chain,
+                        reverse_chain)
                     new_dep_chain = DependencyChain(
                         type = 'collect',
-                        next_link = result_reverse_chain
-                    )
+                        next_link = None)
+                    new_dep_chain.left_chain = left_reverse_chain
+                    new_dep_chain.right_chain = right_reverse_chain
                     return new_dep_chain
 
                 case _:
