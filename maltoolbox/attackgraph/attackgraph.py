@@ -76,23 +76,21 @@ def _process_step_expression(
             match (step_expression['type']):
                 case 'union':
                     new_target_assets = lh_targets
-                    for ag_node in rh_targets:
-                        if next((lnode for lnode in new_target_assets \
-                            if lnode.id != ag_node.id), None):
-                            new_target_assets.append(ag_node)
+                    new_target_assets.extend(rh_targets)
+                    for target in new_target_assets.copy():
+                        if new_target_assets.count(target) > 1:
+                            new_target_assets.remove(target)
 
                 case 'intersection':
-                    for ag_node in rh_targets:
-                        if next((lnode for lnode in lh_targets \
-                            if lnode.id == ag_node.id), None):
-                            new_target_assets.append(ag_node)
+                    new_target_assets = []
+                    for target in rh_targets:
+                        if target in lh_targets:
+                            new_target_assets.append(target)
 
                 case 'difference':
                     new_target_assets = lh_targets
-                    for ag_node in lh_targets:
-                        if next((rnode for rnode in rh_targets \
-                            if rnode.id != ag_node.id), None):
-                            new_target_assets.remove(ag_node)
+                    for target in rh_targets:
+                        new_target_assets.remove(target)
 
             return (new_target_assets, None)
 
@@ -105,8 +103,9 @@ def _process_step_expression(
                     # directly without going through the private method?
                     variable_step_expr = lang_graph._get_variable_for_asset_type_by_name(
                         target_asset.type, step_expression['name'])
-                    return _process_step_expression(
+                    ret = _process_step_expression(
                         lang_graph, model, target_assets, variable_step_expr)
+                    return ret
 
                 else:
                     logger.error(
@@ -126,22 +125,21 @@ def _process_step_expression(
             return (new_target_assets, None)
 
         case 'transitive':
-            # The transitive expression is very similar to the field
-            # expression, but it proceeds recursively until no target is
-            # found and it and it sets the new targets to the entire list
-            # of assets identified during the entire transitive recursion.
-            new_target_assets = []
+            # The transitive expression is very similar to the field expression,
+            # but it proceeds recursively until no target is found and it sets
+            # the new targets to the entire list of assets identified during the
+            # entire transitive recursion.
+            new_target_assets = target_assets
             for target_asset in target_assets:
                 new_target_assets.extend(model.\
-                    get_associated_assets_by_field_name(target_asset,
-                        step_expression['stepExpression']['name']))
+                                         get_associated_assets_by_field_name(target_asset,
+                                                                             step_expression['stepExpression']['name']))
             if new_target_assets:
                 (additional_assets, _) = _process_step_expression(
                     lang_graph, model, new_target_assets, step_expression)
                 new_target_assets.extend(additional_assets)
-                return (new_target_assets, None)
-            else:
-                return ([], None)
+
+            return (new_target_assets, None)
 
         case 'subType':
             new_target_assets = []
@@ -180,8 +178,16 @@ def _process_step_expression(
             # expression target assets.
             lh_targets, _ = _process_step_expression(
                 lang_graph, model, target_assets, step_expression['lhs'])
-            return _process_step_expression(lang_graph, model, lh_targets,
-                step_expression['rhs'])
+
+            ret = []
+
+            step_name = None
+            for target in lh_targets:
+                new_targets, step_name = _process_step_expression(lang_graph,
+                                      model, [target], step_expression['rhs'])
+                ret.extend(new_targets)
+
+            return (ret, step_name)
 
 
         case _:
@@ -538,14 +544,20 @@ class AttackGraph():
                     case 'exist' | 'notExist':
                         # Resolve step expression associated with (non-)existence
                         # attack steps.
-                        (target_assets, attack_step) = _process_step_expression(
-                            self.lang_graph,
-                            self.model,
-                            [asset],
-                            attack_step_attribs['requires']['stepExpressions'][0])
-                        # If the step expression resolution yielded the target
-                        # assets then the required assets exist in the model.
-                        existence_status = target_assets != []
+                        existence_status = False
+                        for expression in attack_step_attribs['requires']['stepExpressions']:
+                            (target_assets, attack_step) = _process_step_expression(
+                                self.lang_graph,
+                                self.model,
+                                [asset],
+                                expression
+                            )
+                            # If the step expression resolution yielded the
+                            # target assets then the required assets exist in
+                            # the model.
+                            existence_status |= target_assets != []
+                            if existence_status:
+                                break
 
                 mitre_info = attack_step_attribs['meta']['mitre'] if 'mitre' in\
                     attack_step_attribs['meta'] else None
@@ -580,7 +592,7 @@ class AttackGraph():
                 ag_node.attributes['reaches']['stepExpressions'] if \
                     isinstance(ag_node.attributes, dict) and ag_node.attributes['reaches'] else []
 
-            for step_expression in step_expressions:
+            for i, step_expression in enumerate(step_expressions):
                 # Resolve each of the attack step expressions listed for this
                 # attack step to determine children.
                 (target_assets, attack_step) = _process_step_expression(
