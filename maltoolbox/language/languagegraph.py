@@ -71,11 +71,11 @@ class LanguageGraphAsset:
             node_dict['super_assets'].append(super_asset.name)
         for sub_asset in self.sub_assets:
             node_dict['sub_assets'].append(sub_asset.name)
-        for variable_name, (var_target_asset, var_dep_chain) in \
+        for variable_name, (var_target_asset, var_expr_chain) in \
                 self.variables.items():
             node_dict['variables'][variable_name] = (
                 var_target_asset.name,
-                var_dep_chain.to_dict()
+                var_expr_chain.to_dict()
             )
         return node_dict
 
@@ -164,7 +164,7 @@ class LanguageGraphAsset:
         super assets has its definition.
 
         Return:
-        A tuple containing the target asset and dependency chain to it if the
+        A tuple containing the target asset and expressions chain to it if the
         variable was defined.
         None otherwise.
         """
@@ -372,19 +372,19 @@ class LanguageGraphAttackStep:
 
         for child in self.children:
             node_dict['children'][child] = []
-            for (_, dep_chain) in self.children[child]:
-                if dep_chain:
+            for (_, expr_chain) in self.children[child]:
+                if expr_chain:
                     node_dict['children'][child].append(
-                        dep_chain.to_dict())
+                        expr_chain.to_dict())
                 else:
                     node_dict['children'][child].append(None)
 
         for parent in self.parents:
             node_dict['parents'][parent] = []
-            for (_, dep_chain) in self.parents[parent]:
-                if dep_chain:
+            for (_, expr_chain) in self.parents[parent]:
+                if expr_chain:
                     node_dict['parents'][parent].append(
-                        dep_chain.to_dict())
+                        expr_chain.to_dict())
                 else:
                     node_dict['parents'][parent].append(None)
 
@@ -411,40 +411,35 @@ class LanguageGraphAttackStep:
         return str(self.to_dict())
 
 
-class DependencyChain:
-    def __init__(self, type: str, next_link: Optional[DependencyChain]):
+class ExpressionsChain:
+    def __init__(self,
+            type: str,
+            left_link: ExpressionsChain = None,
+            right_link: ExpressionsChain = None,
+            sub_link: ExpressionsChain = None,
+            fieldname: str = None,
+            association = None,
+            subtype = None
+        ):
         self.type = type
-        self.next_link: Optional[DependencyChain] = next_link
-        self.fieldname: str = ""
-        self.association: Optional[LanguageGraphAssociation] = None
-        self.left_chain: Optional[DependencyChain] = None
-        self.right_chain: Optional[DependencyChain] = None
-        self.subtype: Optional[Any] = None
-        self.current_link: Optional[DependencyChain] = None
-
-    def __iter__(self):
-        self.current_link = self
-        return self
-
-
-    def __next__(self):
-        if self.current_link:
-            dep_chain = self.current_link
-            self.current_link = self.current_link.next_link
-            return dep_chain
-        raise StopIteration
+        self.left_link: Optional[ExpressionsChain] = left_link
+        self.right_link: Optional[ExpressionsChain] = right_link
+        self.sub_link: Optional[ExpressionsChain] = sub_link
+        self.fieldname: Optional[str] = fieldname
+        self.association: Optional[LanguageGraphAssociation] = association
+        self.subtype: Optional[Any] = subtype
 
 
     def to_dict(self) -> dict:
-        """Convert DependencyChain to dictionary"""
+        """Convert ExpressionsChain to dictionary"""
         match (self.type):
-            case 'union' | 'intersection' | 'difference':
+            case 'union' | 'intersection' | 'difference' | 'collect':
                 return {
                     self.type: {
-                        'left': self.left_chain.to_dict()
-                                if self.left_chain else {},
-                        'right': self.right_chain.to_dict()
-                                 if self.right_chain else {}
+                        'left': self.left_link.to_dict()
+                                if self.left_link else {},
+                        'right': self.right_link.to_dict()
+                                 if self.right_link else {}
                     },
                     'type': self.type
                 }
@@ -452,7 +447,7 @@ class DependencyChain:
             case 'field':
                 if not self.association:
                     raise LanguageGraphAssociationError(
-                        "Missing association for dep chain"
+                        "Missing association for expressions chain"
                     )
                 if self.fieldname == self.association.left_field.fieldname:
                     asset_type = self.association.left_field.asset.name
@@ -463,7 +458,8 @@ class DependencyChain:
                         'Failed to find fieldname "%s" in association:\n%s' %
                         (
                             self.fieldname,
-                            json.dumps(self.association.to_dict(), indent = 2)
+                            json.dumps(self.association.to_dict(),
+                                indent = 2)
                         )
                     )
 
@@ -471,47 +467,33 @@ class DependencyChain:
                     self.association.full_name:
                     {
                         'fieldname': self.fieldname,
-                         'asset type': asset_type,
-                         'next_association':
-                            self.next_link.to_dict()
-                            if self.next_link else {}
+                         'asset type': asset_type
                     },
                     'type': self.type
                 }
 
             case 'transitive':
-                if not self.next_link:
+                if not self.sub_link:
                     raise LanguageGraphException(
-                        "No next link for transitive dependency chain"
+                        "No sub link for transitive expressions chain"
                     )
                 return {
-                    'transitive': self.next_link.to_dict(),
+                    'transitive': self.sub_link.to_dict(),
                     'type': self.type
                 }
 
             case 'subType':
                 if not self.subtype:
                     raise LanguageGraphException(
-                        "No subtype for dependency chain"
+                        "No subtype for expressions chain"
                     )
-                if not self.next_link:
+                if not self.sub_link:
                     raise LanguageGraphException(
-                        "No next link for subtype dependency chain"
+                        "No sub link for subtype expressions chain"
                     )
                 return {
                     'subType': self.subtype.name,
-                    'expression': self.next_link.to_dict(),
-                    'type': self.type
-                }
-
-            case 'collect':
-                return {
-                    self.type: {
-                        'left': self.left_chain.to_dict()
-                                if self.left_chain else {},
-                        'right': self.right_chain.to_dict()
-                                 if self.right_chain else {}
-                    },
+                    'expression': self.sub_link.to_dict(),
                     'type': self.type
                 }
 
@@ -522,78 +504,73 @@ class DependencyChain:
 
     @classmethod
     def _from_dict(cls,
-            serialized_dep_chain: dict,
+            serialized_expr_chain: dict,
             lang_graph: LanguageGraph,
-        ) -> Optional[DependencyChain]:
+        ) -> Optional[ExpressionsChain]:
         """Create LanguageGraph from dict
         Args:
-        serialized_dep_chain    - dependency chain in dict format
+        serialized_expr_chain   - expressions chain in dict format
         lang_graph              - the LanguageGraph that contains the assets,
                                   associations, and attack steps relevant for
-                                  the dependency chain
+                                  the expressions chain
         """
 
-        if serialized_dep_chain is None or not serialized_dep_chain:
+        if serialized_expr_chain is None or not serialized_expr_chain:
             return None
 
-        if 'type' not in serialized_dep_chain:
-            logger.debug(json.dumps(serialized_dep_chain, indent = 2))
-            msg = 'Missing depenency chain type!'
+        if 'type' not in serialized_expr_chain:
+            logger.debug(json.dumps(serialized_expr_chain, indent = 2))
+            msg = 'Missing expressions chain type!'
             logger.error(msg)
             raise LanguageGraphAssociationError(msg)
             return None
 
-        dep_chain_type = serialized_dep_chain['type']
-        match (dep_chain_type ):
+        expr_chain_type = serialized_expr_chain['type']
+        match (expr_chain_type):
             case 'union' | 'intersection' | 'difference' | 'collect':
-                new_dep_chain = DependencyChain(
-                    type = dep_chain_type,
-                    next_link = None
-                )
-                new_dep_chain.left_chain = cls._from_dict(
-                    serialized_dep_chain[dep_chain_type]['left'],
+                left_link = cls._from_dict(
+                    serialized_expr_chain[expr_chain_type]['left'],
                     lang_graph
                 )
-                new_dep_chain.right_chain = cls._from_dict(
-                    serialized_dep_chain[dep_chain_type]['right'],
+                right_link = cls._from_dict(
+                    serialized_expr_chain[expr_chain_type]['right'],
                     lang_graph
                 )
-                return new_dep_chain
+                new_expr_chain = ExpressionsChain(
+                    type = expr_chain_type,
+                    left_link = left_link,
+                    right_link = right_link
+                )
+                return new_expr_chain
 
             case 'field':
-                assoc_name = list(serialized_dep_chain.keys())[0]
-                next_link = cls._from_dict(
-                    serialized_dep_chain[assoc_name]['next_association'],
-                    lang_graph
-                )
-                new_dep_chain = DependencyChain(
-                    type = 'field',
-                    next_link = next_link
-                )
-                new_dep_chain.fieldname = serialized_dep_chain[assoc_name]\
-                    ['fieldname']
+                assoc_name = list(serialized_expr_chain.keys())[0]
                 target_asset = lang_graph.assets[\
-                    serialized_dep_chain[assoc_name]['asset type']]
-                new_dep_chain.association = target_asset.associations[assoc_name]
-                return new_dep_chain
+                    serialized_expr_chain[assoc_name]['asset type']]
+                new_expr_chain = ExpressionsChain(
+                    type = 'field',
+                    association = target_asset.associations[assoc_name],
+                    fieldname = serialized_expr_chain[assoc_name]['fieldname']
+                )
+                return new_expr_chain
 
             case 'transitive':
-                next_link = cls._from_dict(
-                    serialized_dep_chain['transitive'],
+                sub_link = cls._from_dict(
+                    serialized_expr_chain['transitive'],
                     lang_graph
                 )
-                new_dep_chain = DependencyChain(
+                new_expr_chain = ExpressionsChain(
                     type = 'transitive',
-                    next_link = next_link
+                    sub_link = sub_link
                 )
-                return new_dep_chain
+                return new_expr_chain
 
             case 'subType':
-                next_link = cls._from_dict(
-                    serialized_dep_chain['expression'],
+                sub_link = cls._from_dict(
+                    serialized_expr_chain['expression'],
                     lang_graph
                 )
-                subtype_name = serialized_dep_chain['subType']
+                subtype_name = serialized_expr_chain['subType']
                 if subtype_name in lang_graph.assets:
                     subtype_asset = lang_graph.assets[subtype_name]
                 else:
@@ -601,18 +578,18 @@ class DependencyChain:
                     logger.error(msg % subtype_name)
                     raise LanguageGraphException(msg % subtype_name)
 
-                new_dep_chain = DependencyChain(
+                new_expr_chain = ExpressionsChain(
                     type = 'subType',
-                    next_link = next_link
+                    sub_link = sub_link,
+                    subtype = subtype_asset
                 )
-                new_dep_chain.subtype = subtype_asset
-                return new_dep_chain
+                return new_expr_chain
 
             case _:
-                msg = 'Unknown dependency chain type %s!'
-                logger.error(msg, serialized_dep_chain['type'])
+                msg = 'Unknown expressions chain type %s!'
+                logger.error(msg, serialized_expr_chain['type'])
                 raise LanguageGraphAssociationError(msg %
-                    serialized_dep_chain['type'])
+                    serialized_expr_chain['type'])
 
 
     def __repr__(self) -> str:
@@ -777,13 +754,13 @@ class LanguageGraph():
         for asset_name, asset_dict in serialized_graph.items():
             asset = lang_graph.assets[asset_name]
             for variable_name, var_target in asset_dict['variables'].items():
-                (target_asset_name, dep_chain_dict) = var_target
+                (target_asset_name, expr_chain_dict) = var_target
                 target_asset = lang_graph.assets[target_asset_name]
-                dep_chain = DependencyChain._from_dict(
-                    dep_chain_dict,
+                expr_chain = ExpressionsChain._from_dict(
+                    expr_chain_dict,
                     lang_graph
                 )
-                asset.variables[variable_name] = (target_asset, dep_chain)
+                asset.variables[variable_name] = (target_asset, expr_chain)
 
         # Recreate the attack steps
         for asset_name, asset_dict in serialized_graph.items():
@@ -826,7 +803,7 @@ class LanguageGraph():
                     attack_step.inherits = ancestor_attack_step
 
 
-        # Relink attack steps based on dependency chains
+        # Relink attack steps based on expressions chains
         for asset_name, asset_dict in serialized_graph.items():
             asset = lang_graph.assets[asset_name]
             for attack_step_name, attack_step_dict in \
@@ -834,7 +811,7 @@ class LanguageGraph():
                 attack_step = asset.attack_steps[attack_step_name]
                 for child_target in attack_step_dict['children'].items():
                     target_full_attack_step_name = child_target[0]
-                    dep_chains = child_target[1]
+                    expr_chains = child_target[1]
                     target_asset_name = get_asset_name_from_full_attack_step(
                         target_full_attack_step_name)
                     target_attack_step_name = \
@@ -843,21 +820,21 @@ class LanguageGraph():
                     target_asset = lang_graph.assets[target_asset_name]
                     target_attack_step = target_asset.attack_steps[
                         target_attack_step_name]
-                    for dep_chain_dict in dep_chains:
-                        dep_chain = DependencyChain._from_dict(
-                            dep_chain_dict,
+                    for expr_chain_dict in expr_chains:
+                        expr_chain = ExpressionsChain._from_dict(
+                            expr_chain_dict,
                             lang_graph
                         )
                         if target_attack_step.full_name in attack_step.children:
                             attack_step.children[target_attack_step.full_name].\
-                                append((target_attack_step, dep_chain))
+                                append((target_attack_step, expr_chain))
                         else:
                             attack_step.children[target_attack_step.full_name] = \
-                                [(target_attack_step, dep_chain)]
+                                [(target_attack_step, expr_chain)]
 
                 for parent_target in attack_step_dict['parents'].items():
                     target_full_attack_step_name = parent_target[0]
-                    dep_chains = parent_target[1]
+                    expr_chains = parent_target[1]
                     target_asset_name = get_asset_name_from_full_attack_step(
                         target_full_attack_step_name)
                     target_attack_step_name = \
@@ -866,30 +843,30 @@ class LanguageGraph():
                     target_asset = lang_graph.assets[target_asset_name]
                     target_attack_step = target_asset.attack_steps[
                         target_attack_step_name]
-                    for dep_chain_dict in dep_chains:
-                        dep_chain = DependencyChain._from_dict(
-                            dep_chain_dict,
+                    for expr_chain_dict in expr_chains:
+                        expr_chain = ExpressionsChain._from_dict(
+                            expr_chain_dict,
                             lang_graph
                         )
                         if target_attack_step.full_name in attack_step.parents:
                             attack_step.parents[target_attack_step.full_name].\
-                                append((target_attack_step, dep_chain))
+                                append((target_attack_step, expr_chain))
                         else:
                             attack_step.parents[target_attack_step.full_name] = \
-                                [(target_attack_step, dep_chain)]
+                                [(target_attack_step, expr_chain)]
 
                 # Recreate the requirements of exist and notExist attack steps
                 if attack_step.type == 'exist' or \
                         attack_step.type == 'notExist':
                     if 'requirements' in attack_step_dict:
-                        dep_chains = attack_step_dict['requirements']
+                        expr_chains = attack_step_dict['requirements']
                         attack_step.requirements = []
-                        for dep_chain_dict in dep_chains:
-                            dep_chain = DependencyChain._from_dict(
-                                dep_chain_dict,
+                        for expr_chain_dict in expr_chains:
+                            expr_chain = ExpressionsChain._from_dict(
+                                expr_chain_dict,
                                 lang_graph
                             )
-                            attack_step.requirements.append(dep_chain)
+                            attack_step.requirements.append(expr_chain)
 
         return lang_graph
 
@@ -935,7 +912,7 @@ class LanguageGraph():
 
     def process_step_expression(self,
             target_asset,
-            dep_chain,
+            expr_chain,
             step_expression: dict
         ) -> tuple:
         """
@@ -945,8 +922,8 @@ class LanguageGraph():
         target_asset        - The asset type that this step expression should
                               apply to. Initially it will contain the asset
                               type to which the attack step belongs.
-        dep_chain           - A dependency chain of linked of associations and
-                              set operations from the attack step to its
+        expr_chain          - A expressions chain of linked of associations
+                              and set operations from the attack step to its
                               parent attack step.
                               Note: This was done for the parent attack step
                               because it was easier to construct recursively
@@ -981,18 +958,20 @@ class LanguageGraph():
             case 'union' | 'intersection' | 'difference':
                 # The set operators are used to combine the left hand and right
                 # hand targets accordingly.
-                lh_target_asset, lh_dep_chain, _ = self.process_step_expression(
+                lh_target_asset, lh_expr_chain, _ = self.process_step_expression(
                     target_asset,
-                    dep_chain,
+                    expr_chain,
                     step_expression['lhs']
                 )
-                rh_target_asset, rh_dep_chain, _ = self.process_step_expression(
-                    target_asset,
-                    dep_chain,
-                    step_expression['rhs']
-                )
+                rh_target_asset, rh_expr_chain, _ = \
+                    self.process_step_expression(
+                        target_asset,
+                        expr_chain,
+                        step_expression['rhs']
+                    )
 
-                if not lh_target_asset.get_all_common_superassets(rh_target_asset):
+                if not lh_target_asset.get_all_common_superassets(
+                        rh_target_asset):
                     logger.error(
                         "Set operation attempted between targets that"
                         " do not share any common superassets: %s and %s!",
@@ -1000,25 +979,25 @@ class LanguageGraph():
                     )
                     return (None, None, None)
 
-                new_dep_chain = DependencyChain(
+                new_expr_chain = ExpressionsChain(
                     type = step_expression['type'],
-                    next_link = None)
-                new_dep_chain.left_chain = lh_dep_chain
-                new_dep_chain.right_chain = rh_dep_chain
+                    left_link = lh_expr_chain,
+                    right_link = rh_expr_chain
+                )
                 return (
                     lh_target_asset,
-                    new_dep_chain,
+                    new_expr_chain,
                     None
                 )
 
             case 'variable':
                 var_name = step_expression['name']
-                var_target_asset, var_dep_chain = \
+                var_target_asset, var_expr_chain = \
                     target_asset.get_variable(var_name)
-                if var_dep_chain is not None:
+                if var_expr_chain is not None:
                     return (
                         var_target_asset,
-                        var_dep_chain,
+                        var_expr_chain,
                         None
                     )
                 else:
@@ -1053,16 +1032,15 @@ class LanguageGraph():
                         new_target_asset = association.right_field.asset
 
                     if new_target_asset:
-                        new_dep_chain = DependencyChain(
+                        new_expr_chain = ExpressionsChain(
                             type = 'field',
-                            next_link = dep_chain
+                            fieldname = association.get_opposite_fieldname(
+                                fieldname),
+                            association = association
                         )
-                        new_dep_chain.fieldname = \
-                            association.get_opposite_fieldname(fieldname)
-                        new_dep_chain.association = association
                         return (
                             new_target_asset,
-                            new_dep_chain,
+                            new_expr_chain,
                             None
                         )
                 logger.error(
@@ -1075,20 +1053,20 @@ class LanguageGraph():
                 # Create a transitive tuple entry that applies to the next
                 # component of the step expression.
                 result_target_asset, \
-                result_dep_chain, \
+                result_expr_chain, \
                 attack_step = \
                     self.process_step_expression(
                         target_asset,
-                        dep_chain,
+                        expr_chain,
                         step_expression['stepExpression']
                     )
-                new_dep_chain = DependencyChain(
+                new_expr_chain = ExpressionsChain(
                     type = 'transitive',
-                    next_link = result_dep_chain
+                    sub_link = result_expr_chain
                 )
                 return (
                     result_target_asset,
-                    new_dep_chain,
+                    new_expr_chain,
                     attack_step
                 )
 
@@ -1098,11 +1076,11 @@ class LanguageGraph():
                 # asset to the subasset.
                 subtype_name = step_expression['subType']
                 result_target_asset, \
-                result_dep_chain, \
+                result_expr_chain, \
                 attack_step = \
                     self.process_step_expression(
                         target_asset,
-                        dep_chain,
+                        expr_chain,
                         step_expression['stepExpression']
                     )
 
@@ -1121,41 +1099,42 @@ class LanguageGraph():
                     )
                     return (None, None, None)
 
-                new_dep_chain = DependencyChain(
+                new_expr_chain = ExpressionsChain(
                     type = 'subType',
-                    next_link = result_dep_chain)
-                new_dep_chain.subtype = subtype_asset
+                    sub_link = result_expr_chain,
+                    subtype = subtype_asset
+                )
                 return (
                     subtype_asset,
-                    new_dep_chain,
+                    new_expr_chain,
                     attack_step
                 )
 
             case 'collect':
                 # Apply the right hand step expression to left hand step
                 # expression target asset and parent associations chain.
-                (lh_target_asset, lh_dep_chain, _) = \
+                (lh_target_asset, lh_expr_chain, _) = \
                     self.process_step_expression(
                         target_asset,
-                        dep_chain,
+                        expr_chain,
                         step_expression['lhs']
                     )
                 (rh_target_asset,
-                    rh_dep_chain,
+                    rh_expr_chain,
                     rh_attack_step_name) = \
                     self.process_step_expression(
                         lh_target_asset,
                         None,
                         step_expression['rhs']
                     )
-                new_dep_chain = DependencyChain(
+                new_expr_chain = ExpressionsChain(
                     type = 'collect',
-                    next_link = None)
-                new_dep_chain.left_chain = lh_dep_chain
-                new_dep_chain.right_chain = rh_dep_chain
+                    left_link = lh_expr_chain,
+                    right_link = rh_expr_chain
+                )
                 return (
                     rh_target_asset,
-                    new_dep_chain,
+                    new_expr_chain,
                     rh_attack_step_name
                 )
 
@@ -1166,17 +1145,17 @@ class LanguageGraph():
                 return (None, None, None)
 
 
-    def reverse_dep_chain(
+    def reverse_expr_chain(
             self,
-            dep_chain: Optional[DependencyChain],
-            reverse_chain: Optional[DependencyChain]
-        ) -> Optional[DependencyChain]:
+            expr_chain: Optional[ExpressionsChain],
+            reverse_chain: Optional[ExpressionsChain]
+        ) -> Optional[ExpressionsChain]:
         """
         Recursively reverse the associations chain. From parent to child or
         vice versa.
 
         Arguments:
-        dep_chain  - A chain of nested tuples that specify the
+        expr_chain          - A chain of nested tuples that specify the
                               associations and set operations chain from an
                               attack step to its connected attack step.
         reverse_chain       - A chain of nested tuples that represents the
@@ -1185,83 +1164,66 @@ class LanguageGraph():
         Return:
         The resulting reversed associations chain.
         """
-        if not dep_chain:
+        if not expr_chain:
             return reverse_chain
         else:
-            match (dep_chain.type):
-                case 'union' | 'intersection' | 'difference':
+            match (expr_chain.type):
+                case 'union' | 'intersection' | 'difference' | 'collect':
                     left_reverse_chain = \
-                        self.reverse_dep_chain(dep_chain.left_chain,
+                        self.reverse_expr_chain(expr_chain.left_link,
                         reverse_chain)
                     right_reverse_chain = \
-                        self.reverse_dep_chain(dep_chain.right_chain,
+                        self.reverse_expr_chain(expr_chain.right_link,
                         reverse_chain)
-                    new_dep_chain = DependencyChain(
-                        type = dep_chain.type,
-                        next_link = None)
-                    new_dep_chain.left_chain = left_reverse_chain
-                    new_dep_chain.right_chain = right_reverse_chain
-                    return new_dep_chain
+                    new_expr_chain = ExpressionsChain(
+                        type = expr_chain.type,
+                        left_link = left_reverse_chain,
+                        right_link = right_reverse_chain
+                    )
+                    return new_expr_chain
 
                 case 'transitive':
-                    result_reverse_chain = self.reverse_dep_chain(
-                        dep_chain.next_link, reverse_chain)
-                    new_dep_chain = DependencyChain(
+                    result_reverse_chain = self.reverse_expr_chain(
+                        expr_chain.sub_link, reverse_chain)
+                    new_expr_chain = ExpressionsChain(
                         type = 'transitive',
-                        next_link = result_reverse_chain)
-                    return new_dep_chain
+                        sub_link = result_reverse_chain
+                    )
+                    return new_expr_chain
 
                 case 'field':
-                    association = dep_chain.association
+                    association = expr_chain.association
 
                     if not association:
                         raise LanguageGraphException(
-                            "Missing association for dep chain"
+                            "Missing association for expressions chain"
                         )
 
                     opposite_fieldname = association.get_opposite_fieldname(
-                        dep_chain.fieldname)
-                    new_dep_chain = DependencyChain(
+                        expr_chain.fieldname)
+                    new_expr_chain = ExpressionsChain(
                         type = 'field',
-                        next_link = reverse_chain
+                        association = association,
+                        fieldname = opposite_fieldname
                     )
-                    new_dep_chain.fieldname = opposite_fieldname
-                    new_dep_chain.association = association
-                    return self.reverse_dep_chain(
-                                dep_chain.next_link,
-                                new_dep_chain
-                            )
+                    return new_expr_chain
 
                 case 'subType':
-                    result_reverse_chain = self.reverse_dep_chain(
-                        dep_chain.next_link,
+                    result_reverse_chain = self.reverse_expr_chain(
+                        expr_chain.sub_link,
                         reverse_chain
                     )
-                    new_dep_chain = DependencyChain(
+                    new_expr_chain = ExpressionsChain(
                         type = 'subType',
-                        next_link = result_reverse_chain
+                        sub_link = result_reverse_chain,
+                        subtype = expr_chain.subtype
                     )
-                    new_dep_chain.subtype = dep_chain.subtype
-                    return new_dep_chain
-
-                case 'collect':
-                    left_reverse_chain = \
-                        self.reverse_dep_chain(dep_chain.left_chain,
-                        reverse_chain)
-                    right_reverse_chain = \
-                        self.reverse_dep_chain(dep_chain.right_chain,
-                        reverse_chain)
-                    new_dep_chain = DependencyChain(
-                        type = 'collect',
-                        next_link = None)
-                    new_dep_chain.left_chain = left_reverse_chain
-                    new_dep_chain.right_chain = right_reverse_chain
-                    return new_dep_chain
+                    return new_expr_chain
 
                 case _:
                     msg = 'Unknown assoc chain element "%s"'
-                    logger.error(msg, dep_chain.type)
-                    raise LanguageGraphAssociationError(msg % dep_chain.type)
+                    logger.error(msg, expr_chain.type)
+                    raise LanguageGraphAssociationError(msg % expr_chain.type)
 
 
     def _generate_graph(self) -> None:
@@ -1359,12 +1321,12 @@ class LanguageGraph():
                         'Processing Variable Expression:\n%s',
                         json.dumps(variable, indent = 2)
                     )
-                target_asset, dep_chain, _ = self.process_step_expression(
+                target_asset, expr_chain, _ = self.process_step_expression(
                     asset,
                     None,
                     variable['stepExpression']
                 )
-                asset.variables[variable['name']] = (target_asset, dep_chain)
+                asset.variables[variable['name']] = (target_asset, expr_chain)
 
 
         # Generate all of the attack step nodes of the language graph.
@@ -1450,9 +1412,9 @@ class LanguageGraph():
                         attack_step._attributes['reaches'] else []
 
                 for step_expression in step_expressions:
-                    # Resolve each of the attack step expressions listed for this
-                    # attack step to determine children.
-                    (target_asset, dep_chain, target_attack_step_name) = \
+                    # Resolve each of the attack step expressions listed for
+                    # this attack step to determine children.
+                    (target_asset, expr_chain, target_attack_step_name) = \
                         self.process_step_expression(
                             attack_step.asset,
                             None,
@@ -1485,21 +1447,21 @@ class LanguageGraph():
                     # the left-hand first progression.
                     if attack_step.full_name in target_attack_step.parents:
                         target_attack_step.parents[attack_step.full_name].\
-                            append((attack_step, dep_chain))
+                            append((attack_step, expr_chain))
                     else:
                         target_attack_step.parents[attack_step.full_name] = \
-                            [(attack_step, dep_chain)]
+                            [(attack_step, expr_chain)]
                     # Reverse the parent associations chain to get the child
                     # associations chain.
                     if target_attack_step.full_name in attack_step.children:
                         attack_step.children[target_attack_step.full_name].\
                             append((target_attack_step,
-                            self.reverse_dep_chain(dep_chain,
+                            self.reverse_expr_chain(expr_chain,
                                 None)))
                     else:
                         attack_step.children[target_attack_step.full_name] = \
                             [(target_attack_step,
-                            self.reverse_dep_chain(dep_chain,
+                            self.reverse_expr_chain(expr_chain,
                                 None))]
 
                 # Evaluate the requirements of exist and notExist attack steps
@@ -1522,7 +1484,7 @@ class LanguageGraph():
                     attack_step.requirements = []
                     for step_expression in step_expressions:
                         _, \
-                        result_dep_chain, \
+                        result_expr_chain, \
                         _ = \
                             self.process_step_expression(
                                 attack_step.asset,
@@ -1530,21 +1492,22 @@ class LanguageGraph():
                                 step_expression
                             )
                         attack_step.requirements.append(
-                            self.reverse_dep_chain(result_dep_chain, None))
+                            self.reverse_expr_chain(result_expr_chain, None))
 
     def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
         """
         Get all Attack Steps for a specific Class
 
         Arguments:
-        asset_type      - a string representing the class for which we want to list
-                          the possible attack steps
+        asset_type      - a string representing the class for which we want to
+                          list the possible attack steps
 
         Return:
-        A dictionary representing the set of possible attacks for the specified
-        class. Each key in the dictionary is an attack name and is associated
-        with a dictionary containing other characteristics of the attack such as
-        type of attack, TTC distribution, child attack steps and other information
+        A dictionary representing the set of possible attacks for the
+        specified class. Each key in the dictionary is an attack name and is
+        associated with a dictionary containing other characteristics of the
+        attack such as type of attack, TTC distribution, child attack steps
+        and other information
         """
         attack_steps: dict = {}
         try:
@@ -1573,14 +1536,15 @@ class LanguageGraph():
         Get all Associations for a specific Class
 
         Arguments:
-        asset_type      - a string representing the class for which we want to list
-                          the associations
+        asset_type      - a string representing the class for which we want to
+                          list the associations
 
         Return:
         A dictionary representing the set of associations for the specified
         class. Each key in the dictionary is an attack name and is associated
-        with a dictionary containing other characteristics of the attack such as
-        type of attack, TTC distribution, child attack steps and other information
+        with a dictionary containing other characteristics of the attack such
+        as type of attack, TTC distribution, child attack steps and other
+        information
         """
         logger.debug(
             'Get associations for %s asset from '
@@ -1588,8 +1552,8 @@ class LanguageGraph():
         )
         associations: list = []
 
-        asset = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
-            asset_type), None)
+        asset = next((asset for asset in self._lang_spec['assets'] \
+            if asset['name'] == asset_type), None)
         if not asset:
             logger.error(
                 'Failed to find asset type %s when '
@@ -1611,7 +1575,7 @@ class LanguageGraph():
             self, asset_type: str) -> dict:
         """
         Get a variables for a specific asset type by name.
-        NOTE: Variables are the ones specified in MAL through `let` statements
+        Note: Variables are the ones specified in MAL through `let` statements
 
         Arguments:
         asset_type      - a string representing the type of asset which
@@ -1622,8 +1586,8 @@ class LanguageGraph():
             belonging to the asset.
         """
 
-        asset_dict = next((asset for asset in self._lang_spec['assets'] if asset['name'] == \
-            asset_type), None)
+        asset_dict = next((asset for asset in self._lang_spec['assets'] \
+            if asset['name'] == asset_type), None)
         if not asset_dict:
             msg = 'Failed to find asset type %s in language specification '\
                 'when looking for variables.'
@@ -1678,14 +1642,16 @@ class LanguageGraph():
 
         for assoc_name, assoc in first_asset.get_all_associations().items():
             logger.debug(
-                'Compare ("%s", "%s", "%s", "%s") to ("%s", "%s", "%s", "%s").',
+                'Compare ("%s", "%s", "%s", "%s") to '
+                '("%s", "%s", "%s", "%s").',
                 first_asset_name, first_field,
                 second_asset_name, second_field,
                 assoc.left_field.asset.name, assoc.left_field.fieldname,
                 assoc.right_field.asset.name, assoc.right_field.fieldname
             )
 
-            # If the asset and fields match either way we accept it as a match.
+            # If the asset and fields match either way we accept it as a
+            # match.
             if assoc.left_field.fieldname == first_field and \
                 assoc.right_field.fieldname == second_field and \
                 first_asset.is_subasset_of(assoc.left_field.asset) and \
