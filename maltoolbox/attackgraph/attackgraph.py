@@ -556,6 +556,7 @@ class AttackGraph():
                     ttc = attack_step_attribs['ttc'],
                     children = [],
                     parents = [],
+                    detectors = attack_step_attribs.get("detectors", {}),
                     defense_status = defense_status,
                     existence_status = existence_status,
                     is_viable = True,

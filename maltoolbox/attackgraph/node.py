@@ -19,6 +19,7 @@ class AttackGraphNode:
     asset: Optional[Any] = None
     children: list[AttackGraphNode] = field(default_factory=list)
     parents: list[AttackGraphNode] = field(default_factory=list)
+    detectors: dict[Detector] = field(default_factory=dict)
     defense_status: Optional[float] = None
     existence_status: Optional[bool] = None
     is_viable: bool = True
@@ -31,6 +32,7 @@ class AttackGraphNode:
     # Optional extra metadata for AttackGraphNode
     extras: dict = field(default_factory=dict)
 
+    # TODO: add support for detectors
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict: dict = {
@@ -85,22 +87,23 @@ class AttackGraphNode:
             return memo[id(self)]
 
         copied_node = AttackGraphNode(
-            self.type,
-            self.name,
-            self.ttc,
-            self.id,
-            self.asset,
-            [],
-            [],
-            self.defense_status,
-            self.existence_status,
-            self.is_viable,
-            self.is_necessary,
-            [],
-            self.mitre_info,
-            [],
-            {},
-            {}
+            type = self.type,
+            name = self.name,
+            ttc = self.ttc,
+            id = self.id,
+            asset = self.asset,
+            children = [],
+            parents = [],
+            detectors = self.detectors,
+            defense_status = self.defense_status,
+            existence_status = self.existence_status,
+            is_viable = self.is_viable,
+            is_necessary = self.is_necessary,
+            compromised_by =[],
+            mitre_info = self.mitre_info,
+            tags = [],
+            attributes = {},
+            extras = {}
         )
 
         copied_node.tags = copy.deepcopy(self.tags, memo)
