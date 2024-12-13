@@ -437,7 +437,7 @@ class Model():
             attacker.id = self.next_id
         self.next_id = max(attacker.id + 1, self.next_id)
 
-        if not hasattr(attacker, 'name') or not attacker.name:
+        if not getattr(attacker, 'name', None):
             attacker.name = 'Attacker:' + str(attacker.id)
         self.attackers.append(attacker)
 
