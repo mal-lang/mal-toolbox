@@ -992,6 +992,8 @@ class LanguageGraph():
 
             case 'variable':
                 var_name = step_expression['name']
+                var_target_asset, var_expr_chain = self._resolve_variable(
+                    target_asset, var_name)
                 var_target_asset, var_expr_chain = \
                     target_asset.get_variable(var_name)
                 if var_expr_chain is not None:
@@ -1228,6 +1230,28 @@ class LanguageGraph():
                     logger.error(msg, expr_chain.type)
                     raise LanguageGraphAssociationError(msg % expr_chain.type)
 
+    def _resolve_variable(self, asset, var_name) -> tuple:
+        """
+        Resolve a variable for a specific asset by variable name.
+
+        Arguments:
+        asset       - a language graph asset to which the variable belongs
+        var_name    - a string representing the variable name
+
+        Return:
+        A tuple containing the target asset and expressions chain required to
+        reach it.
+        """
+        if var_name not in asset.variables:
+            var_expr = self._get_var_expr_for_asset(asset.name, var_name)
+            target_asset, expr_chain, _ = self.process_step_expression(
+                asset,
+                None,
+                var_expr
+            )
+            asset.variables[var_name] = (target_asset, expr_chain)
+        return asset.variables[var_name]
+
 
     def _generate_graph(self) -> None:
         """
@@ -1324,12 +1348,7 @@ class LanguageGraph():
                         'Processing Variable Expression:\n%s',
                         json.dumps(variable, indent = 2)
                     )
-                target_asset, expr_chain, _ = self.process_step_expression(
-                    asset,
-                    None,
-                    variable['stepExpression']
-                )
-                asset.variables[variable['name']] = (target_asset, expr_chain)
+                self._resolve_variable(asset, variable['name'])
 
 
         # Generate all of the attack step nodes of the language graph.
@@ -1581,7 +1600,7 @@ class LanguageGraph():
 
         Arguments:
         asset_type      - a string representing the type of asset which
-                          contains the variable
+                          contains the variables
 
         Return:
         A dictionary representing the step expressions for the variables
@@ -1597,6 +1616,32 @@ class LanguageGraph():
             raise LanguageGraphException(msg % asset_type)
 
         return asset_dict['variables']
+
+    def _get_var_expr_for_asset(
+            self, asset_type: str, var_name) -> dict:
+        """
+        Get a variable for a specific asset type by variable name.
+
+        Arguments:
+        asset_type      - a string representing the type of asset which
+                          contains the variable
+        var_name        - a string representing the variable name
+
+        Return:
+        A dictionary representing the step expression for the variable.
+        """
+
+        vars_dict = self._get_variables_for_asset_type(asset_type)
+
+        var_expr = next((var_entry['stepExpression'] for var_entry \
+            in vars_dict if var_entry['name'] == var_name), None)
+
+        if not var_expr:
+            msg = 'Failed to find variable name "%s" in language '\
+                'specification when looking for variables for "%s" asset.'
+            logger.error(msg, var_name, asset_type)
+            raise LanguageGraphException(msg % (var_name, asset_type))
+        return var_expr
 
     def regenerate_graph(self) -> None:
         """
