@@ -380,28 +380,25 @@ class AttackGraph():
                     expr_chain.right_link
                 )
 
-                new_target_assets = []
                 match (expr_chain.type):
                     # Once the assets become hashable set operations should be
                     # used instead.
                     case 'union':
                         new_target_assets = lh_targets
                         for ag_node in rh_targets:
-                            if next((lnode for lnode in new_target_assets \
-                                if lnode.id != ag_node.id), None):
+                            if ag_node not in new_target_assets:
                                 new_target_assets.append(ag_node)
 
                     case 'intersection':
-                        for ag_node in rh_targets:
-                            if next((lnode for lnode in lh_targets \
-                                if lnode.id == ag_node.id), None):
+                        new_target_assets = []
+                        for ag_node in lh_targets:
+                            if ag_node in rh_targets:
                                 new_target_assets.append(ag_node)
 
                     case 'difference':
                         new_target_assets = lh_targets
-                        for ag_node in lh_targets:
-                            if next((rnode for rnode in rh_targets \
-                                if rnode.id != ag_node.id), None):
+                        for ag_node in rh_targets:
+                            if ag_node in new_target_assets:
                                 new_target_assets.remove(ag_node)
 
                 return new_target_assets
