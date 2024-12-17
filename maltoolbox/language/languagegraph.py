@@ -1034,8 +1034,7 @@ class LanguageGraph():
                     if new_target_asset:
                         new_expr_chain = ExpressionsChain(
                             type = 'field',
-                            fieldname = association.get_opposite_fieldname(
-                                fieldname),
+                            fieldname = fieldname,
                             association = association
                         )
                         return (
@@ -1127,11 +1126,15 @@ class LanguageGraph():
                         None,
                         step_expression['rhs']
                     )
-                new_expr_chain = ExpressionsChain(
-                    type = 'collect',
-                    left_link = lh_expr_chain,
-                    right_link = rh_expr_chain
-                )
+                if rh_expr_chain:
+                    new_expr_chain = ExpressionsChain(
+                        type = 'collect',
+                        left_link = lh_expr_chain,
+                        right_link = rh_expr_chain
+                    )
+                else:
+                    new_expr_chain = lh_expr_chain
+
                 return (
                     rh_target_asset,
                     new_expr_chain,
@@ -1443,24 +1446,23 @@ class LanguageGraph():
                     target_attack_step = target_asset_attack_steps[
                         target_attack_step_name]
 
-                    # It is easier to create the parent associations chain due to
-                    # the left-hand first progression.
-                    if attack_step.full_name in target_attack_step.parents:
-                        target_attack_step.parents[attack_step.full_name].\
-                            append((attack_step, expr_chain))
-                    else:
-                        target_attack_step.parents[attack_step.full_name] = \
-                            [(attack_step, expr_chain)]
-                    # Reverse the parent associations chain to get the child
-                    # associations chain.
+                    # Link to the children target attack steps
                     if target_attack_step.full_name in attack_step.children:
                         attack_step.children[target_attack_step.full_name].\
-                            append((target_attack_step,
+                            append((target_attack_step, expr_chain))
+                    else:
+                        attack_step.children[target_attack_step.full_name] = \
+                            [(target_attack_step, expr_chain)]
+                    # Reverse the children associations chains to get the
+                    # parents associations chain.
+                    if attack_step.full_name in target_attack_step.parents:
+                        target_attack_step.parents[attack_step.full_name].\
+                            append((attack_step,
                             self.reverse_expr_chain(expr_chain,
                                 None)))
                     else:
-                        attack_step.children[target_attack_step.full_name] = \
-                            [(target_attack_step,
+                        target_attack_step.parents[attack_step.full_name] = \
+                            [(attack_step,
                             self.reverse_expr_chain(expr_chain,
                                 None))]
 
