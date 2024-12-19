@@ -3,6 +3,7 @@
 import pytest
 from conftest import path_testdata
 
+from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language import LanguageGraph
 
 def test_languagegraph_save_load(testlang_lang_graph: LanguageGraph):
@@ -40,3 +41,6 @@ def test_testlang_interleaved_vars(
     assert varA2[1].right_link.fieldname == 'fieldA'
     assert varB2[0] == assetB
     assert varB2[1].right_link.fieldname == 'fieldB'
+
+def test_testLang_inherited_vars():
+    LanguageGraph(MalCompiler().compile('tests/testdata/inherited_vars.mal'))
