@@ -47,3 +47,22 @@ def model(corelang_lang_graph):
     lang_classes_factory = LanguageClassesFactory(corelang_lang_graph)
 
     return empty_model('Test Model', lang_classes_factory)
+
+@pytest.fixture
+def testlang_lang_graph():
+    """Fixture that returns the testLang language specification as dict"""
+    mar_file_path = path_testdata("org.mal-lang.testLang-0.0.1.mar")
+    return LanguageGraph.from_mar_archive(mar_file_path)
+
+
+@pytest.fixture
+def testlang_model(testlang_lang_graph):
+    """Fixture that generates a model for tests
+
+    Uses testLang specification (fixture) to create and return a
+    Model object with no assets or associations
+    """
+    # Init LanguageClassesFactory
+    lang_classes_factory = LanguageClassesFactory(testlang_lang_graph)
+
+    return empty_model('Test Model', lang_classes_factory)
