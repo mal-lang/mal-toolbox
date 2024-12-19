@@ -154,6 +154,21 @@ class LanguageGraphAsset:
             associations |= super_asset.get_all_associations()
         return associations
 
+    def get_all_variables(self) -> dict[str, ExpressionsChain]:
+        """
+        Return a list of all of the variables that belong to this asset
+        directly or indirectly via inheritance.
+
+        Return:
+        A list of all of the variables that apply to this asset, either
+        directly or via inheritance.
+        """
+
+        all_vars = dict(self.variables)
+        for super_asset in self.super_assets:
+            all_vars |= super_asset.get_all_variables()
+        return all_vars
+
 
     def get_variable(
         self,
@@ -1242,7 +1257,8 @@ class LanguageGraph():
         A tuple containing the target asset and expressions chain required to
         reach it.
         """
-        if var_name not in asset.variables:
+        all_vars = asset.get_all_variables()
+        if var_name not in all_vars:
             var_expr = self._get_var_expr_for_asset(asset.name, var_name)
             target_asset, expr_chain, _ = self.process_step_expression(
                 asset,
@@ -1250,7 +1266,8 @@ class LanguageGraph():
                 var_expr
             )
             asset.variables[var_name] = (target_asset, expr_chain)
-        return asset.variables[var_name]
+            return (target_asset, expr_chain)
+        return all_vars[var_name]
 
 
     def _generate_graph(self) -> None:
