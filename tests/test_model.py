@@ -9,8 +9,8 @@ from maltoolbox.exceptions import ModelAssociationException, DuplicateModelAssoc
 
 ### Helper functions
 
-APP_EXEC_ASSOC_NAME = "AppExecution_hostApp_Application_appExecutedApps_Application"
-DATA_CONTAIN_ASSOC_NAME = "DataContainment_containingData_Data_containedData_Data"
+APP_EXEC_ASSOC_NAME = "AppExecution"
+DATA_CONTAIN_ASSOC_NAME = "DataContainment"
 
 def create_application_asset(model, name):
     """Helper function to create an asset of coreLang type Application"""
@@ -46,7 +46,8 @@ def create_association(
 
     # Create the association using the lang_classes_factory
     association = model.lang_classes_factory.\
-        get_association_class(assoc_type)()
+        get_association_class_by_fieldnames(
+            assoc_type, left_fieldname, right_fieldname)()
 
     # Add the assets
     for field, assets in association_dict[assoc_type].items():

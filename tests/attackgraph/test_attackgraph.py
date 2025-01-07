@@ -584,7 +584,7 @@ def test_attackgraph_subtype():
     assoc = create_association(test_model,
         left_assets = [subasset1, baseasset1],
         right_assets = [otherasset1],
-        assoc_type = 'SubtypeTestAssoc_field1_BaseAsset_field2_OtherAsset',
+        assoc_type = 'SubtypeTestAssoc',
         left_fieldname = 'field1',
         right_fieldname = 'field2')
     test_model.add_association(assoc)
@@ -645,7 +645,7 @@ def test_attackgraph_setops():
     assoc = create_association(test_model,
         left_assets = [set_ops_a1],
         right_assets = [set_ops_b1, set_ops_b2],
-        assoc_type = 'SetOps1_fieldA1_SetOpsAssetA_fieldB1_SetOpsAssetB',
+        assoc_type = 'SetOps1',
         left_fieldname = 'fieldA1',
         right_fieldname = 'fieldB1')
     test_model.add_association(assoc)
@@ -653,7 +653,7 @@ def test_attackgraph_setops():
     assoc = create_association(test_model,
         left_assets = [set_ops_a1],
         right_assets = [set_ops_b2, set_ops_b3],
-        assoc_type = 'SetOps2_fieldA2_SetOpsAssetA_fieldB2_SetOpsAssetB',
+        assoc_type = 'SetOps2',
         left_fieldname = 'fieldA2',
         right_fieldname = 'fieldB2')
     test_model.add_association(assoc)

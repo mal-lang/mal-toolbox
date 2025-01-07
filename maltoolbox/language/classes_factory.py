@@ -81,7 +81,7 @@ class LanguageClassesFactory:
             assoc_json_entry['properties']['type'] = \
                 {
                     'type' : 'string',
-                    'default': assoc.full_name
+                    'default': assoc.name
                 }
 
             create_association_field(assoc, assoc_json_entry, 'left')
@@ -235,4 +235,23 @@ class LanguageClassesFactory:
         else:
             logger.warning('Could not find Association "%s" in classes factory.' %
                 assoc_name)
+            return None
+
+    def get_association_class_by_fieldnames(self,
+            assoc_name: str,
+            fieldname1: str,
+            fieldname2: str
+        ) -> Optional[SchemaGeneratedClass]:
+        class_name = 'Association_%s_%s_%s' % (assoc_name,
+            fieldname1, fieldname2)
+        class_name_alt = 'Association_%s_%s_%s' % (assoc_name,
+            fieldname2, fieldname1)
+
+        if hasattr(self.ns, class_name):
+            return getattr(self.ns, class_name)
+        elif hasattr(self.ns, class_name_alt):
+            return getattr(self.ns, class_name_alt)
+        else:
+            logger.warning('Could not find Association "%s" or "%s" in '
+                'classes factory.' % (class_name, class_name_alt))
             return None
