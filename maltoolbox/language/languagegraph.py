@@ -253,12 +253,10 @@ class LanguageGraphAssociation:
         association name, left field name, left asset type, right field name,
         and right asset type.
         """
-        full_name = '%s_%s_%s_%s_%s' % (
+        full_name = '%s_%s_%s' % (
             self.name,\
             self.left_field.fieldname,\
-            self.left_field.asset.name,\
-            self.right_field.fieldname,\
-            self.right_field.asset.name
+            self.right_field.fieldname
             )
         return full_name
 

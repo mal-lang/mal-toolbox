@@ -812,8 +812,11 @@ class Model():
         # Reconstruct the associations
         for assoc_entry in serialized_object.get('associations', []):
             [(assoc, assoc_fields)] = assoc_entry.items()
+            assoc_keys_iter = iter(assoc_fields)
+            field1 = next(assoc_keys_iter)
+            field2 = next(assoc_keys_iter)
             association = model.lang_classes_factory.\
-                get_association_class(assoc)()
+                get_association_class_by_fieldnames(assoc, field1, field2)()
 
             for field, targets in assoc_fields.items():
                 targets = targets if isinstance(targets, list) else [targets]
