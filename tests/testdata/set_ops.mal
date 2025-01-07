@@ -1,0 +1,25 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset SetOpsAssetA {
+    | testStepSetOpsA
+      -> (fieldB1 \/ fieldB2).testStepSetOpsB1,
+         (fieldB1 /\ fieldB2).testStepSetOpsB2,
+         (fieldB1 - fieldB2).testStepSetOpsB3
+  }
+
+  asset SetOpsAssetB {
+    | testStepSetOpsB1
+
+    | testStepSetOpsB2
+
+    | testStepSetOpsB3
+  }
+}
+
+associations {
+  SetOpsAssetA [fieldA1] * <-- SetOps1 --> * [fieldB1] SetOpsAssetB
+  SetOpsAssetA [fieldA2] * <-- SetOps2 --> * [fieldB2] SetOpsAssetB
+}

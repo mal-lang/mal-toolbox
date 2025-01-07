@@ -4,7 +4,8 @@ import copy
 import pytest
 from unittest.mock import patch
 
-from maltoolbox.language import LanguageGraph
+from maltoolbox.language import LanguageGraph, LanguageClassesFactory
+from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.model import Model, AttackerAttachment
 
@@ -558,3 +559,137 @@ def test_deepcopy_memo_test(example_attackgraph: AttackGraph):
     # Make sure memo didn't store any new nodes
     memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
     assert len(memo_nodes) == len(example_attackgraph.nodes)
+
+def test_attackgraph_subtype():
+
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/subtype_attack_step.mal'))
+    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
+    test_model = Model('Test Model', lang_classes_factory)
+    # Create assets
+    baseasset1 = lang_classes_factory.get_asset_class('BaseAsset')(
+        name = 'BaseAsset 1'
+    )
+    subasset1 = lang_classes_factory.get_asset_class('SubAsset')(
+        name = 'SubAsset 1'
+    )
+    otherasset1 = lang_classes_factory.get_asset_class('OtherAsset')(
+        name = 'OtherAsset 1'
+    )
+    test_model.add_asset(baseasset1)
+    test_model.add_asset(subasset1)
+    test_model.add_asset(otherasset1)
+
+    # Create association between subasset1 and otherasset1
+    assoc = create_association(test_model,
+        left_assets = [subasset1, baseasset1],
+        right_assets = [otherasset1],
+        assoc_type = 'SubtypeTestAssoc_field1_BaseAsset_field2_OtherAsset',
+        left_fieldname = 'field1',
+        right_fieldname = 'field2')
+    test_model.add_association(assoc)
+
+    example_testlang_attackgraph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+    ba_1_base_step1 = example_testlang_attackgraph.get_node_by_full_name(
+        'BaseAsset 1:base_step1')
+    ba_1_base_step2 = example_testlang_attackgraph.get_node_by_full_name(
+        'BaseAsset 1:base_step2')
+    sa_1_base_step1 = example_testlang_attackgraph.get_node_by_full_name(
+        'SubAsset 1:base_step1')
+    sa_1_base_step2 = example_testlang_attackgraph.get_node_by_full_name(
+        'SubAsset 1:base_step2')
+    sa_1_subasset_step1 = example_testlang_attackgraph.get_node_by_full_name(
+        'SubAsset 1:subasset_step1')
+    oa_1_other_step1 = example_testlang_attackgraph.get_node_by_full_name(
+        'OtherAsset 1:other_step1')
+
+    assert ba_1_base_step1 in oa_1_other_step1.children
+    assert ba_1_base_step2 not in oa_1_other_step1.children
+    assert sa_1_base_step1 in oa_1_other_step1.children
+    assert sa_1_base_step2 in oa_1_other_step1.children
+    assert sa_1_subasset_step1 in oa_1_other_step1.children
+
+def test_attackgraph_setops():
+
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/set_ops.mal'))
+    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
+    test_model = Model('Test Model', lang_classes_factory)
+
+    # Create assets
+    set_ops_a1 = lang_classes_factory.get_asset_class(
+        'SetOpsAssetA')(
+            name = 'SetOpsAssetA 1'
+        )
+    set_ops_b1 = lang_classes_factory.get_asset_class(
+        'SetOpsAssetB')(
+            name = 'SetOpsAssetB 1'
+        )
+    set_ops_b2 = lang_classes_factory.get_asset_class(
+        'SetOpsAssetB')(
+            name = 'SetOpsAssetB 2'
+        )
+    set_ops_b3 = lang_classes_factory.get_asset_class(
+        'SetOpsAssetB')(
+            name = 'SetOpsAssetB 3'
+        )
+    test_model.add_asset(set_ops_a1)
+    test_model.add_asset(set_ops_b1)
+    test_model.add_asset(set_ops_b2)
+    test_model.add_asset(set_ops_b3)
+
+    # Create association
+    assoc = create_association(test_model,
+        left_assets = [set_ops_a1],
+        right_assets = [set_ops_b1, set_ops_b2],
+        assoc_type = 'SetOps1_fieldA1_SetOpsAssetA_fieldB1_SetOpsAssetB',
+        left_fieldname = 'fieldA1',
+        right_fieldname = 'fieldB1')
+    test_model.add_association(assoc)
+
+    assoc = create_association(test_model,
+        left_assets = [set_ops_a1],
+        right_assets = [set_ops_b2, set_ops_b3],
+        assoc_type = 'SetOps2_fieldA2_SetOpsAssetA_fieldB2_SetOpsAssetB',
+        left_fieldname = 'fieldA2',
+        right_fieldname = 'fieldB2')
+    test_model.add_association(assoc)
+
+    example_testlang_attackgraph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+
+    assetA1_opsA = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetA 1:testStepSetOpsA')
+    assetB1_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 1:testStepSetOpsB1')
+    assetB1_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 1:testStepSetOpsB2')
+    assetB1_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 1:testStepSetOpsB3')
+    assetB2_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 2:testStepSetOpsB1')
+    assetB2_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 2:testStepSetOpsB2')
+    assetB2_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 2:testStepSetOpsB3')
+    assetB3_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 3:testStepSetOpsB1')
+    assetB3_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 3:testStepSetOpsB2')
+    assetB3_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+        'SetOpsAssetB 3:testStepSetOpsB3')
+
+    assert assetB1_opsB1 in assetA1_opsA.children
+    assert assetB1_opsB2 not in assetA1_opsA.children
+    assert assetB1_opsB3 in assetA1_opsA.children
+    assert assetB2_opsB1 in assetA1_opsA.children
+    assert assetB2_opsB2 in assetA1_opsA.children
+    assert assetB2_opsB3 not in assetA1_opsA.children
+    assert assetB3_opsB1 in assetA1_opsA.children
+    assert assetB3_opsB2 not in assetA1_opsA.children
+    assert assetB3_opsB3 not in assetA1_opsA.children
