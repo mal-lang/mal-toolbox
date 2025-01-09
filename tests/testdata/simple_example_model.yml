@@ -107,23 +107,28 @@ associations:
 attackers:
   14:
     entry_points:
-      0:
+      OS App:
+        asset_id: 0
         attack_steps:
         - softwareProductAbuse
-      6:
+      Credentials:6:
+        asset_id: 6
         attack_steps:
         - attemptCredentialsReuse
-      7:
+      Credentials:7:
+        asset_id: 7
         attack_steps:
         - attemptCredentialsReuse
         - guessCredentials
-      9:
+      Credentials:9:
+        asset_id: 9
         attack_steps:
         - attemptCredentialsReuse
     name: Attacker:14
   15:
     entry_points:
-      0:
+      OS App:
+        asset_id: 0
         attack_steps:
         - fullAccess
     name: Attacker:15

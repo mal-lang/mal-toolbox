@@ -714,7 +714,8 @@ class Model():
             'entry_points': {},
         }
         for (asset, attack_steps) in attacker.entry_points:
-            attacker_dict['entry_points'][int(asset.id)] = {
+            attacker_dict['entry_points'][str(asset.name)] = {
+                'asset_id': int(asset.id),
                 'attack_steps' : attack_steps
             }
         return (attacker.id, attacker_dict)
@@ -835,11 +836,15 @@ class Model():
             for attacker_id in attackers_info:
                 attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
                 attacker.entry_points = []
-                for asset_id in attackers_info[attacker_id]['entry_points']:
+                for asset_name, entry_points_dict in \
+                        attackers_info[attacker_id]['entry_points'].items():
                     attacker.entry_points.append(
-                        (model.get_asset_by_id(int(asset_id)),
-                        attackers_info[attacker_id]['entry_points']\
-                            [asset_id]['attack_steps']))
+                            (
+                                model.get_asset_by_id(
+                                    entry_points_dict['asset_id']),
+                                entry_points_dict['attack_steps']
+                            )
+                        )
                 model.add_attacker(attacker, attacker_id = int(attacker_id))
         return model
 

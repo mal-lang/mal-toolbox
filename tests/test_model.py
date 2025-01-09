@@ -776,12 +776,12 @@ def test_model_attacker_to_dict(model: Model):
 
     # attacker should be attached to p1, therefore p1s
     # id should be a key in the entry_points_dict
-    assert p1.id is not None and entry_points_dict
-    assert p1.id in entry_points_dict
+    assert p1.name is not None and entry_points_dict
+    assert p1.name in entry_points_dict
 
     # The given steps should be inside the entry_point of
     # the attacker for asset p1
-    assert entry_points_dict[p1.id]['attack_steps'] == attack_steps
+    assert entry_points_dict[p1.name]['attack_steps'] == attack_steps
 
 
 def test_serialize(model: Model):
