@@ -62,3 +62,8 @@ def test_interleaved_vars():
 
 def test_inherited_vars():
     LanguageGraph(MalCompiler().compile('tests/testdata/inherited_vars.mal'))
+
+# TODO: Re-enable this test once the compiler and language are compatible with
+# one another.
+# def test_mallib_mal():
+#     LanguageGraph(MalCompiler().compile('tests/testdata/mallib_test.mal'))
