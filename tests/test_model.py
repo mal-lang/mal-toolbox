@@ -744,8 +744,8 @@ def test_model_association_to_dict(model: Model):
     association_type = list(association_dict.keys())[0]
     assert association_type == APP_EXEC_ASSOC_NAME
     assert association_dict[association_type ] == {
-        'hostApp': [p1.id],
-        'appExecutedApps': [p2.id]
+        'hostApp': {p1.id: str(p1.name)},
+        'appExecutedApps': {p2.id: str(p2.name)}
     }
 
 

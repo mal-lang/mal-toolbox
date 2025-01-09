@@ -687,9 +687,9 @@ class Model():
             str(association.type) :
             {
                 str(left_field_name):
-                    [int(asset.id) for asset in left_field],
+                    {int(asset.id): str(asset.name) for asset in left_field},
                 str(right_field_name):
-                    [int(asset.id) for asset in right_field]
+                    {int(asset.id): str(asset.name) for asset in right_field}
             }
         }
 
@@ -819,7 +819,6 @@ class Model():
                 get_association_class_by_fieldnames(assoc, field1, field2)()
 
             for field, targets in assoc_fields.items():
-                targets = targets if isinstance(targets, list) else [targets]
                 setattr(
                     association,
                     field,
