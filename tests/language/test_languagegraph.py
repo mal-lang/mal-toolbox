@@ -63,6 +63,87 @@ def test_interleaved_vars():
 def test_inherited_vars():
     LanguageGraph(MalCompiler().compile('tests/testdata/inherited_vars.mal'))
 
+def test_attackstep_override():
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/attackstep_override.mal'))
+
+    assert 'EmptyParent' in test_lang_graph.assets
+    assert 'Child1' in test_lang_graph.assets
+    assert 'Child2' in test_lang_graph.assets
+    assert 'Child3' in test_lang_graph.assets
+    assert 'Child4' in test_lang_graph.assets
+    assert 'FinalChild' in test_lang_graph.assets
+
+    assetEP = test_lang_graph.assets['EmptyParent']
+    assetC1 = test_lang_graph.assets['Child1']
+    assetC2 = test_lang_graph.assets['Child2']
+    assetC3 = test_lang_graph.assets['Child3']
+    assetC4 = test_lang_graph.assets['Child4']
+    assetFC = test_lang_graph.assets['FinalChild']
+
+    assert 'target1' in assetEP.attack_steps
+    assert 'target2' in assetEP.attack_steps
+    assert 'target3' in assetEP.attack_steps
+    assert 'target4' in assetEP.attack_steps
+
+    assert 'attackstep' in assetC1.attack_steps
+    assert 'target1' in assetC1.attack_steps
+    assert 'target2' in assetC1.attack_steps
+    assert 'target3' in assetC1.attack_steps
+    assert 'target4' in assetC1.attack_steps
+    c1_attackstep = assetC1.attack_steps['attackstep']
+    assert c1_attackstep.children == {}
+
+    assert 'attackstep' in assetC2.attack_steps
+    assert 'target1' in assetC2.attack_steps
+    assert 'target2' in assetC2.attack_steps
+    assert 'target3' in assetC2.attack_steps
+    assert 'target4' in assetC2.attack_steps
+    c2_attackstep = assetC2.attack_steps['attackstep']
+    assert c2_attackstep.inherits == c1_attackstep
+    assert c2_attackstep.children == {}
+
+    assert 'attackstep' in assetC3.attack_steps
+    assert 'target1' in assetC3.attack_steps
+    assert 'target2' in assetC3.attack_steps
+    assert 'target3' in assetC3.attack_steps
+    assert 'target4' in assetC3.attack_steps
+    c3_attackstep = assetC3.attack_steps['attackstep']
+    assert c3_attackstep.inherits == c2_attackstep
+    c3_target1 = assetC3.attack_steps['target1']
+    c3_target2 = assetC3.attack_steps['target2']
+    c3_target3 = assetC3.attack_steps['target3']
+    c3_target4 = assetC3.attack_steps['target4']
+    assert c3_target1.full_name in c3_attackstep.children
+    assert c3_target2.full_name not in c3_attackstep.children
+    assert c3_target3.full_name not in c3_attackstep.children
+    assert c3_target4.full_name not in c3_attackstep.children
+
+    assert 'attackstep' in assetC4.attack_steps
+    assert 'target1' in assetC4.attack_steps
+    assert 'target2' in assetC4.attack_steps
+    assert 'target3' in assetC4.attack_steps
+    assert 'target4' in assetC4.attack_steps
+    c4_attackstep = assetC4.attack_steps['attackstep']
+    assert c4_attackstep.inherits == c3_attackstep
+    assert c4_attackstep.children == {}
+
+    assert 'attackstep' in assetC4.attack_steps
+    assert 'target1' in assetC4.attack_steps
+    assert 'target2' in assetC4.attack_steps
+    assert 'target3' in assetC4.attack_steps
+    assert 'target4' in assetC4.attack_steps
+    fc_attackstep = assetFC.attack_steps['attackstep']
+    assert fc_attackstep.inherits == c4_attackstep
+    fc_target1 = assetFC.attack_steps['target1']
+    fc_target2 = assetFC.attack_steps['target2']
+    fc_target3 = assetFC.attack_steps['target3']
+    fc_target4 = assetFC.attack_steps['target4']
+    assert fc_target1.full_name in fc_attackstep.children
+    assert fc_target2.full_name in fc_attackstep.children
+    assert fc_target3.full_name in fc_attackstep.children
+    assert fc_target4.full_name in fc_attackstep.children
+
 # TODO: Re-enable this test once the compiler and language are compatible with
 # one another.
 # def test_mallib_mal():
