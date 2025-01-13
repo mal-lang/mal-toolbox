@@ -534,7 +534,7 @@ class AttackGraph():
                         # Resolve step expression associated with
                         # (non-)existence attack steps.
                         existence_status = False
-                        for requirement in attack_step.get_requirements():
+                        for requirement in attack_step.get_all_requirements():
                             target_assets = self._follow_expr_chain(
                                     self.model,
                                     [asset],

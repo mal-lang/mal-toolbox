@@ -401,23 +401,23 @@ class LanguageGraphAttackStep:
                 else:
                     node_dict['parents'][parent].append(None)
 
-        if hasattr(self, 'requirements'):
-            node_dict['requirements'] = []
-            for requirement in self.requirements:
-                node_dict['requirements'].append(requirement.to_dict())
+        if hasattr(self, 'requires'):
+            node_dict['requires'] = []
+            for requirement in self.requires:
+                node_dict['requires'].append(requirement.to_dict())
 
         return node_dict
 
 
-    def get_requirements(self):
-        if not hasattr(self, 'requirements'):
-            requirements = []
+    def get_all_requirements(self):
+        if not hasattr(self, 'requires'):
+            requires = []
         else:
-            requirements = self.requirements
+            requires = self.requires
 
         if self.inherits:
-            requirements.extend(self.inherits.get_requirements())
-        return requirements
+            requires.extend(self.inherits.get_all_requirements())
+        return requires
 
 
     def __repr__(self) -> str:
@@ -871,15 +871,15 @@ class LanguageGraph():
                 # Recreate the requirements of exist and notExist attack steps
                 if attack_step.type == 'exist' or \
                         attack_step.type == 'notExist':
-                    if 'requirements' in attack_step_dict:
-                        expr_chains = attack_step_dict['requirements']
-                        attack_step.requirements = []
+                    if 'requires' in attack_step_dict:
+                        expr_chains = attack_step_dict['requires']
+                        attack_step.requires = []
                         for expr_chain_dict in expr_chains:
                             expr_chain = ExpressionsChain._from_dict(
                                 expr_chain_dict,
                                 lang_graph
                             )
-                            attack_step.requirements.append(expr_chain)
+                            attack_step.requires.append(expr_chain)
 
         return lang_graph
 
@@ -1517,7 +1517,7 @@ class LanguageGraph():
                             )
                         )
 
-                    attack_step.requirements = []
+                    attack_step.requires = []
                     for step_expression in step_expressions:
                         _, \
                         result_expr_chain, \
@@ -1527,7 +1527,7 @@ class LanguageGraph():
                                 None,
                                 step_expression
                             )
-                        attack_step.requirements.append(
+                        attack_step.requires.append(
                             self.reverse_expr_chain(result_expr_chain, None))
 
     def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
