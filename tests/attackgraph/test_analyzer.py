@@ -72,6 +72,13 @@ def test_analyzers_apriori_propagate_viability_from_unviable_node():
         name = "node6"
     )
 
+    node1.id = 1
+    node2.id = 2
+    node3.id = 3
+    node4.id = 4
+    node5.id = 5
+    node6.id = 6
+
     node1.children = [node2, node3]
     node2.children = [node4, node5]
     node3.children = [node5, node6]
