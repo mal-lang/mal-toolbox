@@ -799,8 +799,12 @@ class Model():
                 }
             )
 
-            asset = model.lang_classes_factory.get_asset_class(
-                asset_object['type'])(name = asset_object['name'])
+            asset_type_class = model.lang_classes_factory.get_asset_class(
+                asset_object['type'])
+            if asset_type_class is None:
+                raise LookupError('Failed to find asset "%s" in language'
+                ' classes factory' % asset_object['type'])
+            asset = asset_type_class(name = asset_object['name'])
 
             if 'extras' in asset_object:
                 asset.extras = asset_object['extras']
@@ -816,8 +820,14 @@ class Model():
             assoc_keys_iter = iter(assoc_fields)
             field1 = next(assoc_keys_iter)
             field2 = next(assoc_keys_iter)
-            association = model.lang_classes_factory.\
-                get_association_class_by_fieldnames(assoc, field1, field2)()
+            assoc_type_class = model.lang_classes_factory.\
+                get_association_class_by_fieldnames(assoc, field1, field2)
+            if assoc_type_class is None:
+                raise LookupError('Failed to find association "%s" with '
+                    'fields "%s" and "%s" in language classes factory' %
+                        (assoc, field1, field2)
+                )
+            association = assoc_type_class()
 
             for field, targets in assoc_fields.items():
                 setattr(

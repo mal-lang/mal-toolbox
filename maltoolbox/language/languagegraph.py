@@ -38,15 +38,15 @@ def get_attack_step_name_from_full_attack_step(
 class LanguageGraphAsset:
     name: str
     associations: dict[str, LanguageGraphAssociation] = \
-        field(default_factory=lambda: {})
+        field(default_factory = dict)
     attack_steps: dict[str, LanguageGraphAttackStep] = \
-        field(default_factory = lambda: {})
-    info: dict = field(default_factory=lambda: {})
+        field(default_factory = dict)
+    info: dict = field(default_factory = dict)
     # MAL languages currently do not support multiple inheritance, but this is
     # futureproofing at its most hopeful.
-    super_assets: list[LanguageGraphAsset] = field(default_factory=lambda: [])
-    sub_assets: list[LanguageGraphAsset] = field(default_factory=lambda: [])
-    variables: dict = field(default_factory=lambda: {})
+    super_assets: list[LanguageGraphAsset] = field(default_factory = list)
+    sub_assets: list[LanguageGraphAsset] = field(default_factory = list)
+    variables: dict = field(default_factory = dict)
     is_abstract: Optional[bool] = None
 
     def to_dict(self) -> dict:
@@ -219,7 +219,7 @@ class LanguageGraphAssociation:
     name: str
     left_field: LanguageGraphAssociationField
     right_field: LanguageGraphAssociationField
-    info: dict = field(default_factory=lambda: {})
+    info: dict = field(default_factory = dict)
 
     def to_dict(self) -> dict:
         """Convert LanguageGraphAssociation to dictionary"""
@@ -350,13 +350,13 @@ class LanguageGraphAttackStep:
     name: str
     type: str
     asset: LanguageGraphAsset
-    ttc: dict = field(default_factory = lambda: {})
+    ttc: dict = field(default_factory = dict)
     overrides: bool = False
-    children: dict = field(default_factory = lambda: {})
-    parents: dict = field(default_factory = lambda: {})
-    info: dict = field(default_factory = lambda: {})
+    children: dict = field(default_factory = dict)
+    parents: dict = field(default_factory = dict)
+    info: dict = field(default_factory = dict)
     inherits: Optional[LanguageGraphAttackStep] = None
-    tags: set = field(default_factory = lambda: {})
+    tags: set = field(default_factory = set)
     _attributes: Optional[dict] = None
 
     @property
@@ -427,10 +427,10 @@ class LanguageGraphAttackStep:
 class ExpressionsChain:
     def __init__(self,
             type: str,
-            left_link: ExpressionsChain = None,
-            right_link: ExpressionsChain = None,
-            sub_link: ExpressionsChain = None,
-            fieldname: str = None,
+            left_link: Optional[ExpressionsChain] = None,
+            right_link: Optional[ExpressionsChain] = None,
+            sub_link: Optional[ExpressionsChain] = None,
+            fieldname: Optional[str] = None,
             association = None,
             subtype = None
         ):
@@ -1215,6 +1215,11 @@ class LanguageGraph():
                     if not association:
                         raise LanguageGraphException(
                             "Missing association for expressions chain"
+                        )
+
+                    if not expr_chain.fieldname:
+                        raise LanguageGraphException(
+                            "Missing field name for expressions chain"
                         )
 
                     opposite_fieldname = association.get_opposite_fieldname(

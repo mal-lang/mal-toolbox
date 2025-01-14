@@ -11,7 +11,9 @@ from typing import TYPE_CHECKING
 from .node import AttackGraphNode
 from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError, AttackGraphException
+from ..exceptions import LanguageGraphException
 from ..model import Model
+from ..language import LanguageGraph, ExpressionsChain
 from ..file_utils import (
     load_dict_from_json_file,
     load_dict_from_yaml_file,
@@ -21,7 +23,6 @@ from ..file_utils import (
 
 if TYPE_CHECKING:
     from typing import Any, Optional
-    from ..language import LanguageGraph
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +173,7 @@ class AttackGraph():
             ag_node.mitre_info = str(node_dict['mitre_info']) if \
                 'mitre_info' in node_dict else None
             ag_node.tags = set(node_dict['tags']) if \
-                'tags' in node_dict else {}
+                'tags' in node_dict else set()
             ag_node.extras = node_dict.get('extras', {})
 
             # Add AttackGraphNode to AttackGraph
@@ -369,6 +370,12 @@ class AttackGraph():
             case 'union' | 'intersection' | 'difference':
                 # The set operators are used to combine the left hand and
                 # right hand targets accordingly.
+                if not expr_chain.left_link:
+                    raise LanguageGraphException('"%s" step expression chain'
+                        ' is missing the left link.' % expr_chain.type)
+                if not expr_chain.right_link:
+                    raise LanguageGraphException('"%s" step expression chain'
+                        ' is missing the right link.' % expr_chain.type)
                 lh_targets = self._follow_expr_chain(
                     model,
                     target_assets,
@@ -406,6 +413,9 @@ class AttackGraph():
             case 'field':
                 # Change the target assets from the current ones to the
                 # associated assets given the specified field name.
+                if not expr_chain.fieldname:
+                    raise LanguageGraphException('"field" step expression '
+                        'chain is missing fieldname.')
                 new_target_assets = []
                 for target_asset in target_assets:
                     new_target_assets.extend(model.\
@@ -414,6 +424,9 @@ class AttackGraph():
                 return new_target_assets
 
             case 'transitive':
+                if not expr_chain.sub_link:
+                    raise LanguageGraphException('"transitive" step '
+                        'expression chain is missing sub link.')
                 accumulated_target_assets = list(target_assets)
                 new_target_assets = list(target_assets)
                 while new_target_assets:
@@ -429,6 +442,9 @@ class AttackGraph():
                 return accumulated_target_assets
 
             case 'subType':
+                if not expr_chain.sub_link:
+                    raise LanguageGraphException('"subType" step '
+                        'expression chain is missing sub link.')
                 new_target_assets = []
                 for target_asset in target_assets:
                     assets = self._follow_expr_chain(
@@ -447,9 +463,8 @@ class AttackGraph():
                     lang_graph_subtype_asset = expr_chain.subtype
                     if not lang_graph_subtype_asset:
                         raise LookupError(
-                            'Failed to find asset '
-                            f'\"{step_expression["subType"]}\" in the '
-                            'language graph.'
+                            'Failed to find asset "%s" in the '
+                            'language graph.' % expr_chain.subtype
                         )
                     if lang_graph_asset.is_subasset_of(
                             lang_graph_subtype_asset):
@@ -458,6 +473,12 @@ class AttackGraph():
                 return selected_new_target_assets
 
             case 'collect':
+                if not expr_chain.left_link:
+                    raise LanguageGraphException('"collect" step expression chain'
+                        ' is missing the left link.')
+                if not expr_chain.right_link:
+                    raise LanguageGraphException('"collect" step expression chain'
+                        ' is missing the right link.')
                 lh_targets = self._follow_expr_chain(
                     model,
                     target_assets,
@@ -579,6 +600,9 @@ class AttackGraph():
                 ag_node.id
             )
 
+            if not ag_node.asset:
+                raise AttackGraphException('Attack graph node is missing '
+                    'asset link')
             lang_graph_asset = self.lang_graph.assets[ag_node.asset.type]
 
             lang_graph_attack_step = lang_graph_asset.attack_steps[\
@@ -617,6 +641,10 @@ class AttackGraph():
                                             ag_node.id
                                         )
                                     )
+
+                                assert ag_node.id is not None
+                                assert target_node.id is not None
+
                                 logger.debug('Linking attack step "%s"(%d) '
                                     'to attack step "%s"(%d)' %
                                     (

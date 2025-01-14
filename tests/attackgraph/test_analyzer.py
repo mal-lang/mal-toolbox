@@ -36,7 +36,7 @@ def test_analyzers_apriori_prune_unviable_and_unnecessary_nodes():
     pass
 
 def test_analyzers_apriori_propagate_viability_from_unviable_node():
-    """Create a graph from nodes
+    r"""Create a graph from nodes
 
             node1
             /    \
