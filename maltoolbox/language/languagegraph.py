@@ -10,6 +10,7 @@ import json
 import zipfile
 
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Any, Optional
 
 from maltoolbox.file_utils import (
@@ -37,15 +38,16 @@ def get_attack_step_name_from_full_attack_step(
 @dataclass
 class LanguageGraphAsset:
     name: str
-    associations: dict[str, LanguageGraphAssociation] = \
+    own_associations: dict[str, LanguageGraphAssociation] = \
         field(default_factory = dict)
     attack_steps: dict[str, LanguageGraphAttackStep] = \
         field(default_factory = dict)
     info: dict = field(default_factory = dict)
-    super_asset: Optional[LanguageGraphAsset] = None
-    sub_asset: Optional[LanguageGraphAsset] = None
-    variables: dict = field(default_factory = dict)
+    own_super_asset: Optional[LanguageGraphAsset] = None
+    own_sub_asset: Optional[LanguageGraphAsset] = None
+    own_variables: dict = field(default_factory = dict)
     is_abstract: Optional[bool] = None
+
 
     def to_dict(self) -> dict:
         """Convert LanguageGraphAsset to dictionary"""
@@ -54,19 +56,21 @@ class LanguageGraphAsset:
             'associations': {},
             'attack_steps': {},
             'info': self.info,
-            'super_asset': self.super_asset.name if self.super_asset else "",
-            'sub_asset': self.sub_asset.name if self.sub_asset else "",
+            'super_asset': self.own_super_asset.name \
+                if self.own_super_asset else "",
+            'sub_asset': self.own_sub_asset.name \
+                if self.own_sub_asset else "",
             'variables': {},
             'is_abstract': self.is_abstract
         }
 
-        for assoc_name, assoc in self.associations.items():
+        for assoc_name, assoc in self.own_associations.items():
             node_dict['associations'][assoc_name] = assoc.to_dict()
         for attack_step_name, attack_step in self.attack_steps.items():
             node_dict['attack_steps'][attack_step_name] = \
                 attack_step.to_dict()
         for variable_name, (var_target_asset, var_expr_chain) in \
-                self.variables.items():
+                self.own_variables.items():
             node_dict['variables'][variable_name] = (
                 var_target_asset.name,
                 var_expr_chain.to_dict()
@@ -76,6 +80,10 @@ class LanguageGraphAsset:
 
     def __repr__(self) -> str:
         return str(self.to_dict())
+
+
+    def __hash__(self):
+        return hash(self.name)
 
 
     def is_subasset_of(self, target_asset: LanguageGraphAsset) -> bool:
@@ -94,11 +102,11 @@ class LanguageGraphAsset:
         while (current_asset):
             if current_asset == target_asset:
                 return True
-            current_asset = current_asset.super_asset
+            current_asset = current_asset.own_super_asset
         return False
 
-
-    def get_all_subassets(self) -> list[LanguageGraphAsset]:
+    @cached_property
+    def sub_assets(self) -> list[LanguageGraphAsset]:
         """
         Return a list of all of the assets that directly or indirectly extend
         this asset.
@@ -110,11 +118,12 @@ class LanguageGraphAsset:
         subassets = []
         while (current_asset):
             subassets.append(current_asset)
-            current_asset = current_asset.sub_asset
+            current_asset = current_asset.own_sub_asset
         return subassets
 
 
-    def get_all_superassets(self) -> list[LanguageGraphAsset]:
+    @cached_property
+    def super_assets(self) -> list[LanguageGraphAsset]:
         """
         Return a list of all of the assets that this asset directly or
         indirectly extends.
@@ -126,11 +135,12 @@ class LanguageGraphAsset:
         superassets = []
         while (current_asset):
             superassets.append(current_asset)
-            current_asset = current_asset.super_asset
+            current_asset = current_asset.own_super_asset
         return superassets
 
 
-    def get_all_associations(self) -> dict[str, LanguageGraphAssociation]:
+    @cached_property
+    def associations(self) -> dict[str, LanguageGraphAssociation]:
         """
         Return a list of all of the associations that belong to this asset
         directly or indirectly via inheritance.
@@ -140,12 +150,14 @@ class LanguageGraphAsset:
         directly or via inheritance.
         """
 
-        associations = dict(self.associations)
-        if self.super_asset:
-            associations |= self.super_asset.get_all_associations()
+        associations = dict(self.own_associations)
+        if self.own_super_asset:
+            associations |= self.own_super_asset.associations
         return associations
 
-    def get_all_variables(self) -> dict[str, ExpressionsChain]:
+
+    @property
+    def variables(self) -> dict[str, ExpressionsChain]:
         """
         Return a list of all of the variables that belong to this asset
         directly or indirectly via inheritance.
@@ -155,9 +167,9 @@ class LanguageGraphAsset:
         directly or via inheritance.
         """
 
-        all_vars = dict(self.variables)
-        if self.super_asset:
-            all_vars |= self.super_asset.get_all_variables()
+        all_vars = dict(self.own_variables)
+        if self.own_super_asset:
+            all_vars |= self.own_super_asset.variables
         return all_vars
 
 
@@ -176,9 +188,9 @@ class LanguageGraphAsset:
         """
         current_asset: Optional[LanguageGraphAsset] = self
         while (current_asset):
-            if var_name in current_asset.variables:
-                return current_asset.variables[var_name]
-            current_asset = current_asset.super_asset
+            if var_name in current_asset.own_variables:
+                return current_asset.own_variables[var_name]
+            current_asset = current_asset.own_super_asset
         return None
 
 
@@ -188,10 +200,10 @@ class LanguageGraphAsset:
         """Return a set of all common ancestors between this asset
         and the other asset given as parameter"""
         self_superassets = set(
-            asset.name for asset in self.get_all_superassets()
+            asset.name for asset in self.super_assets
         )
         other_superassets = set(
-            asset.name for asset in other.get_all_superassets()
+            asset.name for asset in other.super_assets
         )
         return self_superassets.intersection(other_superassets)
 
@@ -235,6 +247,7 @@ class LanguageGraphAssociation:
 
     def __repr__(self) -> str:
         return str(self.to_dict())
+
 
     @property
     def full_name(self) -> str:
@@ -349,6 +362,11 @@ class LanguageGraphAttackStep:
     tags: set = field(default_factory = set)
     _attributes: Optional[dict] = None
 
+
+    def __hash__(self):
+        return hash(self.full_name)
+
+
     @property
     def full_name(self) -> str:
         """
@@ -391,23 +409,24 @@ class LanguageGraphAttackStep:
                 else:
                     node_dict['parents'][parent].append(None)
 
-        if hasattr(self, 'requires'):
+        if hasattr(self, 'own_requires'):
             node_dict['requires'] = []
-            for requirement in self.requires:
+            for requirement in self.own_requires:
                 node_dict['requires'].append(requirement.to_dict())
 
         return node_dict
 
 
-    def get_all_requirements(self):
-        if not hasattr(self, 'requires'):
-            requires = []
+    @cached_property
+    def requires(self):
+        if not hasattr(self, 'own_requires'):
+            requirements = []
         else:
-            requires = self.requires
+            requirements = self.own_requires
 
         if self.inherits:
-            requires.extend(self.inherits.get_all_requirements())
-        return requires
+            requirements.extend(self.inherits.requires)
+        return requirements
 
 
     def __repr__(self) -> str:
@@ -675,12 +694,12 @@ class LanguageGraph():
             )
             asset_node = LanguageGraphAsset(
                 name = asset_dict['name'],
-                associations = {},
+                own_associations = {},
                 attack_steps = {},
                 info = asset_dict['info'],
-                super_asset = None,
-                sub_asset = None,
-                variables = {},
+                own_super_asset = None,
+                own_sub_asset = None,
+                own_variables = {},
                 is_abstract = asset_dict['is_abstract']
             )
             lang_graph.assets[asset_dict['name']] = asset_node
@@ -700,8 +719,8 @@ class LanguageGraph():
                 raise LanguageGraphSuperAssetNotFoundError(
                     msg % (asset_dict["super_asset"], asset_dict["name"]))
 
-            super_asset.sub_asset = asset
-            asset.super_asset = super_asset
+            super_asset.own_sub_asset = asset
+            asset.own_super_asset = super_asset
 
         # Generate all of the association nodes of the language graph.
         for asset_name, asset_dict in serialized_graph.items():
@@ -753,8 +772,8 @@ class LanguageGraph():
                 associated_assets = [left_asset, right_asset]
                 while associated_assets != []:
                     asset = associated_assets.pop()
-                    if assoc_node.full_name not in asset.associations:
-                        asset.associations[assoc_node.full_name] = assoc_node
+                    if assoc_node.full_name not in asset.own_associations:
+                        asset.own_associations[assoc_node.full_name] = assoc_node
 
         # Recreate the variables
         for asset_name, asset_dict in serialized_graph.items():
@@ -766,7 +785,7 @@ class LanguageGraph():
                     expr_chain_dict,
                     lang_graph
                 )
-                asset.variables[variable_name] = (target_asset, expr_chain)
+                asset.own_variables[variable_name] = (target_asset, expr_chain)
 
         # Recreate the attack steps
         for asset_name, asset_dict in serialized_graph.items():
@@ -866,13 +885,13 @@ class LanguageGraph():
                         attack_step.type == 'notExist':
                     if 'requires' in attack_step_dict:
                         expr_chains = attack_step_dict['requires']
-                        attack_step.requires = []
+                        attack_step.own_requires = []
                         for expr_chain_dict in expr_chains:
                             expr_chain = ExpressionsChain._from_dict(
                                 expr_chain_dict,
                                 lang_graph
                             )
-                            attack_step.requires.append(expr_chain)
+                            attack_step.own_requires.append(expr_chain)
 
         return lang_graph
 
@@ -1028,7 +1047,7 @@ class LanguageGraph():
 
                 new_target_asset = None
                 for association_name, association in \
-                        target_asset.get_all_associations().items():
+                        target_asset.associations.items():
                     if (association.left_field.fieldname == fieldname and \
                         target_asset.is_subasset_of(
                             association.right_field.asset)):
@@ -1253,17 +1272,16 @@ class LanguageGraph():
         A tuple containing the target asset and expressions chain required to
         reach it.
         """
-        all_vars = asset.get_all_variables()
-        if var_name not in all_vars:
+        if var_name not in asset.variables:
             var_expr = self._get_var_expr_for_asset(asset.name, var_name)
             target_asset, expr_chain, _ = self.process_step_expression(
                 asset,
                 None,
                 var_expr
             )
-            asset.variables[var_name] = (target_asset, expr_chain)
+            asset.own_variables[var_name] = (target_asset, expr_chain)
             return (target_asset, expr_chain)
-        return all_vars[var_name]
+        return asset.variables[var_name]
 
 
     def _generate_graph(self) -> None:
@@ -1279,12 +1297,12 @@ class LanguageGraph():
             )
             asset_node = LanguageGraphAsset(
                 name = asset_dict['name'],
-                associations = {},
+                own_associations = {},
                 attack_steps = {},
                 info = asset_dict['meta'],
-                super_asset = None,
-                sub_asset = None,
-                variables = {},
+                own_super_asset = None,
+                own_sub_asset = None,
+                own_variables = {},
                 is_abstract = asset_dict['isAbstract']
             )
             self.assets[asset_dict['name']] = asset_node
@@ -1301,8 +1319,8 @@ class LanguageGraph():
                     raise LanguageGraphSuperAssetNotFoundError(
                         msg % (asset_dict["superAsset"], asset_dict["name"]))
 
-                super_asset.sub_asset = asset
-                asset.super_asset = super_asset
+                super_asset.own_sub_asset = asset
+                asset.own_super_asset = super_asset
 
         # Generate all of the association nodes of the language graph.
         for asset_name, asset in self.assets.items():
@@ -1349,8 +1367,8 @@ class LanguageGraph():
                 associated_assets = [left_asset, right_asset]
                 while associated_assets != []:
                     asset = associated_assets.pop()
-                    if assoc_node.full_name not in asset.associations:
-                        asset.associations[assoc_node.full_name] = assoc_node
+                    if assoc_node.full_name not in asset.own_associations:
+                        asset.own_associations[assoc_node.full_name] = assoc_node
 
         # Set the variables
         for asset_name, asset in self.assets.items():
@@ -1396,14 +1414,14 @@ class LanguageGraph():
         assets = list(self.assets.values())
         while len(assets) > 0:
             asset = assets.pop(0)
-            if asset.super_asset in assets:
+            if asset.own_super_asset in assets:
                 # The asset still has super assets that should be resolved
                 # first, moved it to the back.
                 assets.append(asset)
             else:
-                if asset.super_asset:
+                if asset.own_super_asset:
                     for attack_step_name, attack_step in \
-                            asset.super_asset.attack_steps.items():
+                            asset.own_super_asset.attack_steps.items():
                         if attack_step_name not in asset.attack_steps:
                             attack_step_node = LanguageGraphAttackStep(
                                 name = attack_step_name,
@@ -1515,7 +1533,7 @@ class LanguageGraph():
                             )
                         )
 
-                    attack_step.requires = []
+                    attack_step.own_requires = []
                     for step_expression in step_expressions:
                         _, \
                         result_expr_chain, \
@@ -1525,7 +1543,7 @@ class LanguageGraph():
                                 None,
                                 step_expression
                             )
-                        attack_step.requires.append(
+                        attack_step.own_requires.append(
                             self.reverse_expr_chain(result_expr_chain, None))
 
     def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
@@ -1700,7 +1718,7 @@ class LanguageGraph():
                 'the language graph.'
             )
 
-        for assoc_name, assoc in first_asset.get_all_associations().items():
+        for assoc_name, assoc in first_asset.associations.items():
             logger.debug(
                 'Compare ("%s", "%s", "%s", "%s") to '
                 '("%s", "%s", "%s", "%s").',

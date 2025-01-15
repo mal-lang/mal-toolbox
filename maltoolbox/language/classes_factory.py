@@ -43,9 +43,10 @@ class LanguageClassesFactory:
                     'type' : 'string',
                     'default': asset_name
                 }
-            if asset.super_asset:
+            if asset.own_super_asset:
                 asset_json_entry['allOf'] = [
-                    {'$ref': '#/definitions/LanguageAsset/definitions/Asset_' + asset.super_asset.name}
+                    {'$ref': '#/definitions/LanguageAsset/definitions/Asset_'\
+                        + asset.own_super_asset.name}
                 ]
             for step_name, step in asset.attack_steps.items():
                 if step.type == 'defense':
