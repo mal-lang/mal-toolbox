@@ -168,7 +168,7 @@ class AttackGraph():
 
         # Re-establish links between nodes.
         for node_full_name, node_dict in serialized_attack_steps.items():
-            _ag_node = attack_graph.get_node_by_id(node_dict['id'])
+            _ag_node = attack_graph.nodes[node_dict['id']]
             if not isinstance(_ag_node, AttackGraphNode):
                 msg = ('Failed to find node with id %s when loading'
                        ' attack graph from dict')
@@ -176,7 +176,7 @@ class AttackGraph():
                 raise LookupError(msg % node_dict["id"])
             else:
                 for child_id in node_dict['children']:
-                    child = attack_graph.get_node_by_id(int(child_id))
+                    child = attack_graph.nodes[int(child_id)]
                     if child is None:
                         msg = ('Failed to find child node with id %s'
                                ' when loading from attack graph from dict')
@@ -185,7 +185,7 @@ class AttackGraph():
                     _ag_node.children.append(child)
 
                 for parent_id in node_dict['parents']:
-                    parent = attack_graph.get_node_by_id(int(parent_id))
+                    parent = attack_graph.nodes[int(parent_id)]
                     if parent is None:
                         msg = ('Failed to find parent node with id %s '
                                'when loading from attack graph from dict')
@@ -232,20 +232,6 @@ class AttackGraph():
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
         return cls._from_dict(serialized_attack_graph, model=model)
-
-    def get_node_by_id(self, node_id: int) -> Optional[AttackGraphNode]:
-        """
-        Return the attack node that matches the id provided.
-
-        Arguments:
-        node_id     - the id of the attack graph node we are looking for
-
-        Return:
-        The attack step node that matches the given id.
-        """
-
-        logger.debug('Looking up node with id %s', node_id)
-        return self._id_to_node.get(node_id)
 
     def get_node_by_full_name(self, full_name: str) -> Optional[AttackGraphNode]:
         """
@@ -741,7 +727,7 @@ class AttackGraph():
 
         self.next_attacker_id = max(attacker.id + 1, self.next_attacker_id)
         for node_id in reached_attack_steps:
-            node = self.get_node_by_id(node_id)
+            node = self.nodes[node_id]
             if node:
                 attacker.compromise(node)
             else:
@@ -750,7 +736,7 @@ class AttackGraph():
                 logger.error(msg, node_id)
                 raise AttackGraphException(msg % node_id)
         for node_id in entry_points:
-            node = self.get_node_by_id(int(node_id))
+            node = self.nodes[int(node_id)]
             if node:
                 attacker.entry_points.append(node)
             else:
