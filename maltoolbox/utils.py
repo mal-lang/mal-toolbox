@@ -22,7 +22,7 @@ class LookupDict(Dict[K, V]):
         if key not in self._indices:
             self._indices[key] = {getattr(v, key): set() for v in self.values()}
             for v in self.values():
-                if not (vkey:=getattr(v, key)) in self._indices.keys():
+                if not (vkey:=getattr(v, key)) in self._indices[key].keys():
                     self._indices[key][vkey] = set()
 
                 self._indices[key][vkey].add(v)
@@ -47,6 +47,16 @@ class LookupDict(Dict[K, V]):
 
         return ret
 
+    def fetch(self, key: str, value: Any, op: str="eq") -> Any:
+        ret = self.lookup(key, value, op)
+
+        if len(ret) > 1:
+            raise ValueError(f"Multiple items match {key} ~ {op} ~ {value}")
+
+        try:
+            return next(iter(ret))
+        except KeyError:
+            return None
 
 @dataclass
 class Asset:

@@ -233,21 +233,6 @@ class AttackGraph():
             raise ValueError('Unknown file extension, expected json/yml/yaml')
         return cls._from_dict(serialized_attack_graph, model=model)
 
-    def get_node_by_full_name(self, full_name: str) -> Optional[AttackGraphNode]:
-        """
-        Return the attack node that matches the full name provided.
-
-        Arguments:
-        full_name   - the full name of the attack graph node we are looking
-                      for
-
-        Return:
-        The attack step node that matches the given full name.
-        """
-
-        logger.debug(f'Looking up node with full name "%s"', full_name)
-        return self._full_name_to_node.get(full_name)
-
     def get_attacker_by_id(self, attacker_id: int) -> Optional[Attacker]:
         """
         Return the attacker that matches the id provided.
@@ -294,7 +279,7 @@ class AttackGraph():
             for (asset, attack_steps) in attacker_info.entry_points:
                 for attack_step in attack_steps:
                     full_name = asset.name + ':' + attack_step
-                    ag_node = self.get_node_by_full_name(full_name)
+                    ag_node = self.nodes.fetch("full_name", full_name)
                     if not ag_node:
                         logger.warning(
                             'Failed to find attacker entry point '
@@ -595,8 +580,8 @@ class AttackGraph():
                             if target_asset is not None:
                                 target_node_full_name = target_asset.name + \
                                     ':' + target_attack_step.name
-                                target_node = self.get_node_by_full_name(
-                                    target_node_full_name)
+                                target_node = self.nodes.fetch("full_name",
+                                     target_node_full_name)
                                 if target_node is None:
                                     msg = ('Failed to find target node '
                                            '"%s" to link with for attack '

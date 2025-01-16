@@ -210,7 +210,7 @@ def attackgraph_save_and_load_json_yml_model_given(
             # Make sure node was added to lookup dict with correct id / name
             assert node.id is not None
             assert loaded_attackgraph.nodes[node.id] == node
-            assert loaded_attackgraph.get_node_by_full_name(node.full_name) == node
+            assert loaded_attackgraph.nodes.fetch("full_name", node.full_name) == node
 
         for loaded_attacker in loaded_attackgraph.attackers:
             if not isinstance(loaded_attacker.id, int):
@@ -243,10 +243,10 @@ def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
 def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     """Make sure attackers are properly attached to graph"""
 
-    app1_ncu = example_attackgraph.get_node_by_full_name(
+    app1_ncu = example_attackgraph.nodes.fetch("full_name",
         'Application 1:networkConnectUninspected'
     )
-    app1_auv = example_attackgraph.get_node_by_full_name(
+    app1_auv = example_attackgraph.nodes.fetch("full_name",
         'Application 1:attemptUseVulnerability'
     )
 
@@ -584,17 +584,17 @@ def test_attackgraph_subtype():
         lang_graph=test_lang_graph,
         model=test_model
     )
-    ba_1_base_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    ba_1_base_step1 = example_testlang_attackgraph.nodes.fetch("full_name",
         'BaseAsset 1:base_step1')
-    ba_1_base_step2 = example_testlang_attackgraph.get_node_by_full_name(
+    ba_1_base_step2 = example_testlang_attackgraph.nodes.fetch("full_name",
         'BaseAsset 1:base_step2')
-    sa_1_base_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    sa_1_base_step1 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SubAsset 1:base_step1')
-    sa_1_base_step2 = example_testlang_attackgraph.get_node_by_full_name(
+    sa_1_base_step2 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SubAsset 1:base_step2')
-    sa_1_subasset_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    sa_1_subasset_step1 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SubAsset 1:subasset_step1')
-    oa_1_other_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    oa_1_other_step1 = example_testlang_attackgraph.nodes.fetch("full_name",
         'OtherAsset 1:other_step1')
 
     assert ba_1_base_step1 in oa_1_other_step1.children
@@ -654,25 +654,25 @@ def test_attackgraph_setops():
         model=test_model
     )
 
-    assetA1_opsA = example_testlang_attackgraph.get_node_by_full_name(
+    assetA1_opsA = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetA 1:testStepSetOpsA')
-    assetB1_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB1_opsB1 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 1:testStepSetOpsB1')
-    assetB1_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB1_opsB2 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 1:testStepSetOpsB2')
-    assetB1_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB1_opsB3 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 1:testStepSetOpsB3')
-    assetB2_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB2_opsB1 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 2:testStepSetOpsB1')
-    assetB2_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB2_opsB2 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 2:testStepSetOpsB2')
-    assetB2_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB2_opsB3 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 2:testStepSetOpsB3')
-    assetB3_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB3_opsB1 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 3:testStepSetOpsB1')
-    assetB3_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB3_opsB2 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 3:testStepSetOpsB2')
-    assetB3_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB3_opsB3 = example_testlang_attackgraph.nodes.fetch("full_name",
         'SetOpsAssetB 3:testStepSetOpsB3')
 
     assert assetB1_opsB1 in assetA1_opsA.children
