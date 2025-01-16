@@ -162,7 +162,7 @@ def calculate_viability_and_necessity(graph: AttackGraph) -> None:
     graph       - the attack graph for which we wish to determine the
                   viability and necessity statuses for the nodes.
     """
-    for node in graph.nodes:
+    for node in graph.nodes.values():
         if node.type in ['exist', 'notExist', 'defense']:
             evaluate_viability_and_necessity(node)
             if not node.is_viable:
@@ -178,7 +178,7 @@ def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
                   the nodes which are not viable or necessary.
     """
     logger.debug('Prune unviable and unnecessary nodes from the attack graph.')
-    for node in graph.nodes:
+    for node in graph.nodes.values():
         if (node.type == 'or' or node.type == 'and') and \
             (not node.is_viable or not node.is_necessary):
             graph.remove_node(node)

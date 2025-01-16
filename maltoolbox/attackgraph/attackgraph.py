@@ -2,10 +2,10 @@
 MAL-Toolbox Attack Graph Module
 """
 from __future__ import annotations
-import copy
 import logging
 import json
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from .node import AttackGraphNode
@@ -19,6 +19,7 @@ from ..file_utils import (
     load_dict_from_yaml_file,
     save_dict_to_file
 )
+from ..utils import LookupDict
 
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
-        self.nodes: list[AttackGraphNode] = []
+        self.nodes: LookupDict[str, AttackGraphNode] = LookupDict()
         self.attackers: list[Attacker] = []
         # Dictionaries used in optimization to get nodes and attackers by id
         # or full name faster
@@ -52,7 +53,7 @@ class AttackGraph():
         """Convert AttackGraph to dict"""
         serialized_attack_steps = {}
         serialized_attackers = {}
-        for ag_node in self.nodes:
+        for ag_node in self.nodes.values():
             serialized_attack_steps[ag_node.full_name] =\
                 ag_node.to_dict()
         for attacker in self.attackers:
@@ -72,40 +73,26 @@ class AttackGraph():
             return memo[id(self)]
 
         copied_attackgraph = AttackGraph(self.lang_graph)
+
+        memo[id(self)] = copied_attackgraph
+
         copied_attackgraph.model = self.model
+        copied_attackgraph.nodes = deepcopy(self.nodes, memo)
+        copied_attackgraph.attackers = deepcopy(self.attackers, memo)
 
-        copied_attackgraph.nodes = []
-
-        # Deep copy nodes
-        for node in self.nodes:
-            copied_node = copy.deepcopy(node, memo)
-            copied_attackgraph.nodes.append(copied_node)
-
-        # Re-link node references
-        for node in self.nodes:
+        for node in self.nodes.values():
+            nid = id(node)
             if node.parents:
-                memo[id(node)].parents = copy.deepcopy(node.parents, memo)
+                memo[nid].parents = deepcopy(node.parents, memo)
             if node.children:
-                memo[id(node)].children = copy.deepcopy(node.children, memo)
-
-        # Deep copy attackers and references to them
-        copied_attackgraph.attackers = copy.deepcopy(self.attackers, memo)
-
-        # Re-link attacker references
-        for node in self.nodes:
+                memo[nid].children = deepcopy(node.children, memo)
             if node.compromised_by:
-                memo[id(node)].compromised_by = copy.deepcopy(
-                    node.compromised_by, memo)
+                memo[nid].compromised_by = deepcopy(node.compromised_by, memo)
 
-        # Copy lookup dicts
-        copied_attackgraph._id_to_attacker = \
-            copy.deepcopy(self._id_to_attacker, memo)
-        copied_attackgraph._id_to_node = \
-            copy.deepcopy(self._id_to_node, memo)
-        copied_attackgraph._full_name_to_node = \
-            copy.deepcopy(self._full_name_to_node, memo)
+        copied_attackgraph._id_to_attacker = deepcopy(self._id_to_attacker, memo)
+        copied_attackgraph._id_to_node = deepcopy(self._id_to_node, memo)
+        copied_attackgraph._full_name_to_node = deepcopy(self._full_name_to_node, memo)
 
-        # Copy counters
         copied_attackgraph.next_node_id = self.next_node_id
         copied_attackgraph.next_attacker_id = self.next_attacker_id
 
@@ -593,7 +580,7 @@ class AttackGraph():
             asset.attack_step_nodes = attack_step_nodes
 
         # Then, link all of the nodes according to their associations.
-        for ag_node in self.nodes:
+        for ag_node in self.nodes.values():
             logger.debug(
                 'Determining children for attack step "%s"(%d)',
                 ag_node.full_name,
@@ -667,7 +654,7 @@ class AttackGraph():
         the MAL language specification provided at initialization.
         """
 
-        self.nodes = []
+        self.nodes = LookupDict()
         self.attackers = []
         self._generate_graph()
 
@@ -694,7 +681,7 @@ class AttackGraph():
         node.id = node_id if node_id is not None else self.next_node_id
         self.next_node_id = max(node.id + 1, self.next_node_id)
 
-        self.nodes.append(node)
+        self.nodes[node.id] = node
         self._id_to_node[node.id] = node
         self._full_name_to_node[node.full_name] = node
 
@@ -710,7 +697,7 @@ class AttackGraph():
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
-        self.nodes.remove(node)
+        self.nodes.pop(node.id)  # type: ignore[call-overload]
 
         if not isinstance(node.id, int):
             raise ValueError(f'Invalid node id.')

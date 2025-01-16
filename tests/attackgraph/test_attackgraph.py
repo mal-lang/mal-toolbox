@@ -8,6 +8,7 @@ from maltoolbox.language import LanguageGraph, LanguageClassesFactory
 from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.model import Model, AttackerAttachment
+from maltoolbox.utils import LookupDict
 
 from test_model import create_application_asset, create_association
 
@@ -111,7 +112,7 @@ def attackgraph_save_load_no_model_given(
     assert len(example_attackgraph.nodes) == len(loaded_attack_graph.nodes)
 
     # Loaded graph nodes will not have 'asset' since it does not have a model.
-    for loaded_node in loaded_attack_graph.nodes:
+    for loaded_node in loaded_attack_graph.nodes.values():
         if not isinstance(loaded_node.id, int):
             raise ValueError(f'Invalid node id for loaded node.')
         original_node = example_attackgraph.get_node_by_id(loaded_node.id)
@@ -201,7 +202,7 @@ def attackgraph_save_and_load_json_yml_model_given(
             # Make sure nodes are the same (except for the excluded keys)
             assert loaded_node_dict == original_node_dict
 
-        for node in loaded_attackgraph.nodes:
+        for node in loaded_attackgraph.nodes.values():
             # Make sure node gets an asset when loaded with model
             assert node.asset
             assert node.full_name == node.asset.name + ":" + node.name
@@ -242,7 +243,7 @@ def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
 def test_attackgraph_get_node_by_id(example_attackgraph: AttackGraph):
     """Make sure get_node_by_id works as intended"""
     assert len(example_attackgraph.nodes)  # make sure loop is run
-    for node in example_attackgraph.nodes:
+    for node in example_attackgraph.nodes.values():
         if not isinstance(node.id, int):
             raise ValueError(f'Invalid node id.')
         get_node = example_attackgraph.get_node_by_id(node.id)
@@ -288,7 +289,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     # TODO: Add test cases with defense steps
 
     # Empty the attack graph
-    example_attackgraph.nodes = []
+    example_attackgraph.nodes = LookupDict()
     example_attackgraph.attackers = []
 
     # Generate the attack graph again
@@ -412,7 +413,7 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
     example_attackgraph.remove_node(node_to_remove)
 
     # Make sure it was correctly removed from list of nodes
-    assert node_to_remove not in example_attackgraph.nodes
+    assert node_to_remove not in example_attackgraph.nodes.values()
 
     # Make sure it was correctly removed from parent and children references
     for parent in parents:
@@ -452,7 +453,7 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
     assert len(copied_attackgraph.nodes) \
         == len(example_attackgraph.nodes)
 
-    for node in copied_attackgraph.nodes:
+    for node in copied_attackgraph.nodes.values():
         assert node.id is not None
         original_node = example_attackgraph.get_node_by_id(node.id)
 
@@ -470,7 +471,7 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
             original_node.compromised_by
 
     # Make sure parents and children are same as those in the copied attack graph
-    for node in copied_attackgraph.nodes:
+    for node in copied_attackgraph.nodes.values():
         for parent in node.parents:
             assert parent.id is not None
             attack_graph_parent = copied_attackgraph.get_node_by_id(parent.id)

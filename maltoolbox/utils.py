@@ -1,8 +1,11 @@
 import operator
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Dict, TypeVar
 
-class LookupDict(dict):
+K = TypeVar("K")
+V = TypeVar("V")
+
+class LookupDict(Dict[K, V]):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._indices = {}
