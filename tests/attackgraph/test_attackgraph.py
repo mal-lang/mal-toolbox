@@ -13,6 +13,7 @@ from maltoolbox.attackgraph import (
     create_attack_graph
 )
 from maltoolbox.model import Model
+from maltoolbox.utils import LookupDict
 
 
 def test_attackgraph_init(corelang_lang_graph, model):
@@ -177,7 +178,7 @@ def attackgraph_save_and_load_json_yml_model_given(
             # Make sure node was added to lookup dict with correct id / name
             assert node.id is not None
             assert loaded_attackgraph.nodes[node.id] == node
-            assert loaded_attackgraph.get_node_by_full_name(node.full_name) == node
+            assert loaded_attackgraph.nodes.fetch("full_name", node.full_name) == node
 
         for loaded_attacker in loaded_attackgraph.attackers.values():
             if not isinstance(loaded_attacker.id, int):
@@ -214,10 +215,10 @@ def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
 def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     """Make sure attackers are properly attached to graph"""
 
-    app1_ncu = example_attackgraph.get_node_by_full_name(
+    app1_ncu = example_attackgraph.nodes.fetch("full_name",
         'Application 1:networkConnectUninspected'
     )
-    app1_auv = example_attackgraph.get_node_by_full_name(
+    app1_auv = example_attackgraph.nodes.fetch("full_name",
         'Application 1:attemptUseVulnerability'
     )
 
@@ -250,7 +251,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     # TODO: Add test cases with defense steps
 
     # Empty the attack graph
-    example_attackgraph.nodes = {}
+    example_attackgraph.nodes = LookupDict()
     example_attackgraph.attackers = {}
 
     # Generate the attack graph again
@@ -400,9 +401,6 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
     assert list(copied_attackgraph.attackers.keys()) \
         == list(example_attackgraph.attackers.keys())
 
-    assert list(copied_attackgraph._full_name_to_node.keys()) \
-        == list(example_attackgraph._full_name_to_node.keys())
-
     assert id(copied_attackgraph.model) == id(example_attackgraph.model)
 
     assert len(copied_attackgraph.nodes) \
@@ -542,17 +540,17 @@ def test_attackgraph_subtype():
         lang_graph=test_lang_graph,
         model=test_model
     )
-    ba_1_base_step1 = test_attack_graph.get_node_by_full_name(
+    ba_1_base_step1 = test_attack_graph.nodes.fetch("full_name",
         'BaseAsset 1:base_step1')
-    ba_1_base_step2 = test_attack_graph.get_node_by_full_name(
+    ba_1_base_step2 = test_attack_graph.nodes.fetch("full_name",
         'BaseAsset 1:base_step2')
-    sa_1_base_step1 = test_attack_graph.get_node_by_full_name(
+    sa_1_base_step1 = test_attack_graph.nodes.fetch("full_name",
         'SubAsset 1:base_step1')
-    sa_1_base_step2 = test_attack_graph.get_node_by_full_name(
+    sa_1_base_step2 = test_attack_graph.nodes.fetch("full_name",
         'SubAsset 1:base_step2')
-    sa_1_subasset_step1 = test_attack_graph.get_node_by_full_name(
+    sa_1_subasset_step1 = test_attack_graph.nodes.fetch("full_name",
         'SubAsset 1:subasset_step1')
-    oa_1_other_step1 = test_attack_graph.get_node_by_full_name(
+    oa_1_other_step1 = test_attack_graph.nodes.fetch("full_name",
         'OtherAsset 1:other_step1')
 
     assert ba_1_base_step1 in oa_1_other_step1.children
@@ -593,25 +591,25 @@ def test_attackgraph_setops():
         model=test_model
     )
 
-    assetA1_opsA = test_attack_graph.get_node_by_full_name(
+    assetA1_opsA = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetA 1:testStepSetOpsA')
-    assetB1_opsB1 = test_attack_graph.get_node_by_full_name(
+    assetB1_opsB1 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 1:testStepSetOpsB1')
-    assetB1_opsB2 = test_attack_graph.get_node_by_full_name(
+    assetB1_opsB2 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 1:testStepSetOpsB2')
-    assetB1_opsB3 = test_attack_graph.get_node_by_full_name(
+    assetB1_opsB3 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 1:testStepSetOpsB3')
-    assetB2_opsB1 = test_attack_graph.get_node_by_full_name(
+    assetB2_opsB1 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 2:testStepSetOpsB1')
-    assetB2_opsB2 = test_attack_graph.get_node_by_full_name(
+    assetB2_opsB2 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 2:testStepSetOpsB2')
-    assetB2_opsB3 = test_attack_graph.get_node_by_full_name(
+    assetB2_opsB3 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 2:testStepSetOpsB3')
-    assetB3_opsB1 = test_attack_graph.get_node_by_full_name(
+    assetB3_opsB1 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 3:testStepSetOpsB1')
-    assetB3_opsB2 = test_attack_graph.get_node_by_full_name(
+    assetB3_opsB2 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 3:testStepSetOpsB2')
-    assetB3_opsB3 = test_attack_graph.get_node_by_full_name(
+    assetB3_opsB3 = test_attack_graph.nodes.fetch("full_name",
         'SetOpsAssetB 3:testStepSetOpsB3')
 
     assert assetB1_opsB1 in assetA1_opsA.children
@@ -659,17 +657,17 @@ def test_attackgraph_transitive():
         model=test_model
     )
 
-    asset1_test_step = test_attack_graph.get_node_by_full_name(
+    asset1_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 1:test_step')
-    asset2_test_step = test_attack_graph.get_node_by_full_name(
+    asset2_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 2:test_step')
-    asset3_test_step = test_attack_graph.get_node_by_full_name(
+    asset3_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 3:test_step')
-    asset4_test_step = test_attack_graph.get_node_by_full_name(
+    asset4_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 4:test_step')
-    asset5_test_step = test_attack_graph.get_node_by_full_name(
+    asset5_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 5:test_step')
-    asset6_test_step = test_attack_graph.get_node_by_full_name(
+    asset6_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 6:test_step')
 
     assert asset1_test_step in asset1_test_step.children
@@ -745,13 +743,13 @@ def test_attackgraph_transitive_advanced():
         model=test_model
     )
 
-    asset1_test_step = test_attack_graph.get_node_by_full_name(
+    asset1_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 1:test_step')
-    asset2_test_step = test_attack_graph.get_node_by_full_name(
+    asset2_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 2:test_step')
-    asset3_test_step = test_attack_graph.get_node_by_full_name(
+    asset3_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 3:test_step')
-    asset4_test_step = test_attack_graph.get_node_by_full_name(
+    asset4_test_step = test_attack_graph.nodes.fetch("full_name",
         'TestAsset 4:test_step')
 
     assert asset1_test_step in asset1_test_step.children
@@ -781,7 +779,7 @@ def tests_create_ag_from_model():
             ag: AttackGraph, parent_fn: str, children_fns: list[str]
         ):
 
-        parent = ag.get_node_by_full_name(parent_fn)
+        parent = ag.nodes.fetch("full_name", parent_fn)
         assert parent, f"Could not find node {parent_fn}"
 
         # Verify that parent has given children
@@ -789,7 +787,7 @@ def tests_create_ag_from_model():
 
         # Verify that child has given parent
         for child_fn in children_fns:
-            child = ag.get_node_by_full_name(child_fn)
+            child = ag.nodes.fetch("full_name", child_fn)
             assert child, f"Could not find child by full name {child_fn}"
             assert parent_fn in [p.full_name for p in child.parents]
 

@@ -473,34 +473,6 @@ def test_model_add_attacker(model: Model):
     assert attacker2.name == f'Attacker:{attacker2_id}'
 
 
-def test_model_get_asset_by_id(model: Model):
-    """Make sure correct asset is returned or None
-    if no asset with that ID exists"""
-
-    # Create and add 2 applications
-    asset1 = model.add_asset(asset_type = 'Application')
-    asset2 = model.add_asset(asset_type = 'Application')
-
-    # Correct assets removed and None if asset with that not exists
-    assert model.get_asset_by_id(asset1.id) == asset1
-    assert model.get_asset_by_id(asset2.id) == asset2
-    assert model.get_asset_by_id(1337) is None
-
-
-def test_model_get_asset_by_name(model: Model):
-    """Make sure correct asset is returned or None
-    if no asset with that name exists"""
-
-    # Create and add 2 applications
-    asset1 = model.add_asset(asset_type = 'Application')
-    asset2 = model.add_asset(asset_type = 'Application')
-
-    # Correct assets removed and None if asset with that name not exists
-    assert model.get_asset_by_name(asset1.name) == asset1
-    assert model.get_asset_by_name(asset2.name) == asset2
-    assert model.get_asset_by_name("Program 3") is None
-
-
 def test_model_get_attacker_by_id(model: Model):
     """Make sure correct attacker is returned of None
     if no attacker with that ID exists"""
