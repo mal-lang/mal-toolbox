@@ -1,46 +1,26 @@
-"""Unit tests for AttackGraphNode functionality"""
+"""Unit tests for AttackGraphNode functionality."""
 
-from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
+from maltoolbox.attackgraph.node import AttackGraphNode
 
-def test_attackgraphnode():
-    r"""Create a graph from nodes
 
-            node1
-            /    \
+def test_attackgraphnode() -> None:
+    r"""Create a graph from nodes.
+
+        node1
+        /    \
         node2    node3
-        /   \   /    \
+    /   \   /    \
     node4  node5    node6
     """
-
     # Create a graph of nodes according to above diagram
-    node1 = AttackGraphNode(
-        type = "or",
-        name = "node1"
-    )
-    node2 = AttackGraphNode(
-        type = "defense",
-        name = "node2",
-        defense_status=1.0
-    )
-    node3 = AttackGraphNode(
-        type = "defense",
-        name = "node3",
-        defense_status=0.0
-    )
-    node4 = AttackGraphNode(
-        type = "or",
-        name = "node4"
-    )
-    node5 = AttackGraphNode(
-        type = "and",
-        name = "node5"
-    )
-    node6 = AttackGraphNode(
-        type = "or",
-        name = "node6"
-    )
+    node1 = AttackGraphNode(type='or', name='node1')
+    node2 = AttackGraphNode(type='defense', name='node2', defense_status=1.0)
+    node3 = AttackGraphNode(type='defense', name='node3', defense_status=0.0)
+    node4 = AttackGraphNode(type='or', name='node4')
+    node5 = AttackGraphNode(type='and', name='node5')
+    node6 = AttackGraphNode(type='or', name='node6')
 
     node1.children = [node2, node3]
     node2.children = [node4, node5]
@@ -53,9 +33,7 @@ def test_attackgraphnode():
 
     # Make sure compromised node has attacker added to it
     attacker = Attacker(
-        name = "Test Attacker",
-        entry_points = [node1],
-        reached_attack_steps = []
+        name='Test Attacker', entry_points=[node1], reached_attack_steps=[]
     )
     attack_graph = AttackGraph()
     attack_graph.add_node(node1)

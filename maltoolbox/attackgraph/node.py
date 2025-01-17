@@ -1,38 +1,40 @@
-"""
-MAL-Toolbox Attack Graph Node Dataclass
-"""
+"""MAL-Toolbox Attack Graph Node Dataclass."""
 
 from __future__ import annotations
-import copy
-from dataclasses import field, dataclass
-from typing import Any, Optional
 
-from . import Attacker
+import copy
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from . import Attacker
+
 
 @dataclass
 class AttackGraphNode:
-    """Node part of AttackGraph"""
+    """Node part of AttackGraph."""
+
     type: str
     name: str
-    ttc: Optional[dict] = None
-    id: Optional[int] = None
-    asset: Optional[Any] = None
+    ttc: dict | None = None
+    id: int | None = None
+    asset: Any | None = None
     children: list[AttackGraphNode] = field(default_factory=list)
     parents: list[AttackGraphNode] = field(default_factory=list)
-    defense_status: Optional[float] = None
-    existence_status: Optional[bool] = None
+    defense_status: float | None = None
+    existence_status: bool | None = None
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list[Attacker] = field(default_factory=list)
-    mitre_info: Optional[str] = None
-    tags: list[str] = field(default_factory=lambda: [])
-    attributes: Optional[dict] = None
+    mitre_info: str | None = None
+    tags: list[str] = field(default_factory=list)
+    attributes: dict | None = None
 
     # Optional extra metadata for AttackGraphNode
     extras: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
-        """Convert node to dictionary"""
+        """Convert node to dictionary."""
         node_dict: dict = {
             'id': self.id,
             'type': self.type,
@@ -40,8 +42,7 @@ class AttackGraphNode:
             'ttc': self.ttc,
             'children': {},
             'parents': {},
-            'compromised_by': [attacker.name for attacker in \
-                self.compromised_by]
+            'compromised_by': [attacker.name for attacker in self.compromised_by],
         }
 
         for child in self.children:
@@ -71,7 +72,7 @@ class AttackGraphNode:
         return str(self.to_dict())
 
     def __deepcopy__(self, memo) -> AttackGraphNode:
-        """Deep copy an attackgraph node
+        """Deep copy an attackgraph node.
 
         The deepcopy will copy over node specific information, such as type,
         name, etc., but it will not copy attack graph relations such as
@@ -79,7 +80,6 @@ class AttackGraphNode:
         should be recreated when deepcopying the attack graph itself.
 
         """
-
         # Check if the object is already in the memo dictionary
         if id(self) in memo:
             return memo[id(self)]
@@ -100,7 +100,7 @@ class AttackGraphNode:
             self.mitre_info,
             [],
             {},
-            {}
+            {},
         )
 
         copied_node.tags = copy.deepcopy(self.tags, memo)
@@ -113,66 +113,66 @@ class AttackGraphNode:
         return copied_node
 
     def is_compromised(self) -> bool:
-        """
-        Return True if any attackers have compromised this node.
+        """Return True if any attackers have compromised this node.
         False, otherwise.
         """
         return len(self.compromised_by) > 0
 
     def is_compromised_by(self, attacker: Attacker) -> bool:
-        """
-        Return True if the attacker given as an argument has compromised this
+        """Return True if the attacker given as an argument has compromised this
         node.
         False, otherwise.
 
         Arguments:
         attacker    - the attacker we are interested in
+
         """
         return attacker in self.compromised_by
 
     def compromise(self, attacker: Attacker) -> None:
-        """
-        Have the attacker given as a parameter compromise this node.
+        """Have the attacker given as a parameter compromise this node.
 
         Arguments:
         attacker    - the attacker that will compromise the node
+
         """
         attacker.compromise(self)
 
     def undo_compromise(self, attacker: Attacker) -> None:
-        """
-        Remove the attacker given as a parameter from the list of attackers
+        """Remove the attacker given as a parameter from the list of attackers
         that have compromised this node.
 
         Arguments:
         attacker    - the attacker that we wish to remove from the compromised
                       list.
+
         """
         attacker.undo_compromise(self)
 
     def is_enabled_defense(self) -> bool:
-        """
-        Return True if this node is a defense node and it is enabled and not
+        """Return True if this node is a defense node and it is enabled and not
         suppressed via tags.
         False, otherwise.
         """
-        return self.type == 'defense' and \
-            'suppress' not in self.tags and \
-            self.defense_status == 1.0
+        return (
+            self.type == 'defense'
+            and 'suppress' not in self.tags
+            and self.defense_status == 1.0
+        )
 
     def is_available_defense(self) -> bool:
-        """
-        Return True if this node is a defense node and it is not fully enabled
+        """Return True if this node is a defense node and it is not fully enabled
         and not suppressed via tags. False otherwise.
         """
-        return self.type == 'defense' and \
-            'suppress' not in self.tags and \
-            self.defense_status != 1.0
+        return (
+            self.type == 'defense'
+            and 'suppress' not in self.tags
+            and self.defense_status != 1.0
+        )
 
     @property
     def full_name(self) -> str:
-        """
-        Return the full name of the attack step. This is a combination of the
+        """Return the full name of the attack step. This is a combination of the
         asset name to which the attack step belongs and attack step name
         itself.
         """
