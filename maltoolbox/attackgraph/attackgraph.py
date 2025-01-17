@@ -35,8 +35,6 @@ class AttackGraph():
         self.attackers: list[Attacker] = []
         # Dictionaries used in optimization to get nodes and attackers by id
         # or full name faster
-        self._id_to_node: dict[int, AttackGraphNode] = {}
-        self._full_name_to_node: dict[str, AttackGraphNode] = {}
         self._id_to_attacker: dict[int, Attacker] = {}
 
         self.model = model
@@ -90,8 +88,6 @@ class AttackGraph():
                 memo[nid].compromised_by = deepcopy(node.compromised_by, memo)
 
         copied_attackgraph._id_to_attacker = deepcopy(self._id_to_attacker, memo)
-        copied_attackgraph._id_to_node = deepcopy(self._id_to_node, memo)
-        copied_attackgraph._full_name_to_node = deepcopy(self._full_name_to_node, memo)
 
         copied_attackgraph.next_node_id = self.next_node_id
         copied_attackgraph.next_attacker_id = self.next_attacker_id
@@ -646,15 +642,13 @@ class AttackGraph():
                 f'with id:{node_id}:\n' \
                 + json.dumps(node.to_dict(), indent = 2))
 
-        if node.id in self._id_to_node:
+        if node.id in self.nodes:
             raise ValueError(f'Node index {node_id} already in use.')
 
         node.id = node_id if node_id is not None else self.next_node_id
         self.next_node_id = max(node.id + 1, self.next_node_id)
 
         self.nodes[node.id] = node
-        self._id_to_node[node.id] = node
-        self._full_name_to_node[node.full_name] = node
 
     def remove_node(self, node: AttackGraphNode) -> None:
         """Remove node from attack graph
@@ -672,8 +666,6 @@ class AttackGraph():
 
         if not isinstance(node.id, int):
             raise ValueError(f'Invalid node id.')
-        del self._id_to_node[node.id]
-        del self._full_name_to_node[node.full_name]
 
     def add_attacker(
             self,

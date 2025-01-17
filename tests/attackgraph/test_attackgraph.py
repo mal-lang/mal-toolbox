@@ -429,14 +429,8 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
 
     assert len(copied_attackgraph.nodes) == len(example_attackgraph.nodes)
 
-    assert list(copied_attackgraph._id_to_node.keys()) \
-        == list(example_attackgraph._id_to_node.keys())
-
     assert list(copied_attackgraph._id_to_attacker.keys()) \
         == list(example_attackgraph._id_to_attacker.keys())
-
-    assert list(copied_attackgraph._full_name_to_node.keys()) \
-        == list(example_attackgraph._full_name_to_node.keys())
 
     assert id(copied_attackgraph.model) == id(example_attackgraph.model)
 
