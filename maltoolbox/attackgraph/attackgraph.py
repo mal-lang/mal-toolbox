@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph = None, model: Optional[Model] = None):
-        self.nodes: LookupDict[str, AttackGraphNode] = LookupDict()
+        self.nodes: LookupDict[int, AttackGraphNode] = LookupDict()
         self.attackers: list[Attacker] = []
         # Dictionaries used in optimization to get nodes and attackers by id
         # or full name faster
@@ -662,7 +662,7 @@ class AttackGraph():
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
-        self.nodes.pop(node.id)  # type: ignore[call-overload]
+        self.nodes.pop(node.id)  # type: ignore[call-overload,arg-type]
 
         if not isinstance(node.id, int):
             raise ValueError(f'Invalid node id.')
