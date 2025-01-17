@@ -3,12 +3,14 @@
 from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
+from maltoolbox.language import LanguageGraph
 
 def test_attacker_to_dict():
     """Test Attacker to dict conversion"""
     node1 = AttackGraphNode(
         type = "or",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = None,
     )
     attacker = Attacker("Test Attacker", [], [node1])
     assert attacker.to_dict() == {
@@ -24,11 +26,13 @@ def test_attacker_compromise():
     """Attack a node and see expected behavior"""
     node1 = AttackGraphNode(
         type = "or",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = None,
     )
     attacker = Attacker("Test Attacker", [], [])
     assert not attacker.entry_points
-    attack_graph = AttackGraph()
+    dummy_lang_graph = LanguageGraph()
+    attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_node(node1)
     attack_graph.add_attacker(attacker)
 
@@ -46,10 +50,12 @@ def test_attacker_undo_compromise():
     """Make sure undo compromise removes attacker/node"""
     node1 = AttackGraphNode(
         type = "or",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = None,
     )
     attacker = Attacker("attacker1", [], [])
-    attack_graph = AttackGraph()
+    dummy_lang_graph = LanguageGraph()
+    attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_node(node1)
     attack_graph.add_attacker(attacker)
 

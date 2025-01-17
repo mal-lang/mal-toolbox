@@ -27,13 +27,11 @@ from ..exceptions import (
 
 logger = logging.getLogger(__name__)
 
-def get_asset_name_from_full_attack_step(
-        attack_step_full_name: str) -> str:
-    return attack_step_full_name.split(':')[0]
 
-def get_attack_step_name_from_full_attack_step(
-        attack_step_full_name: str) -> str:
-    return attack_step_full_name.split(':')[1]
+def disaggregate_attack_step_full_name(
+        attack_step_full_name: str) -> list[str]:
+    return attack_step_full_name.split(':')
+
 
 @dataclass
 class LanguageGraphAsset:
@@ -817,10 +815,8 @@ class LanguageGraph():
                 if 'inherits' in attack_step_dict and \
                         attack_step_dict['inherits'] is not None:
                     attack_step = asset.attack_steps[attack_step_name]
-                    ancestor_asset_name = get_asset_name_from_full_attack_step(
-                        attack_step_dict['inherits'])
-                    ancestor_attack_step_name = \
-                        get_attack_step_name_from_full_attack_step(
+                    ancestor_asset_name, ancestor_attack_step_name = \
+                        disaggregate_attack_step_full_name(
                             attack_step_dict['inherits'])
                     ancestor_asset = lang_graph.assets[ancestor_asset_name]
                     ancestor_attack_step = ancestor_asset.attack_steps[\
@@ -837,10 +833,8 @@ class LanguageGraph():
                 for child_target in attack_step_dict['children'].items():
                     target_full_attack_step_name = child_target[0]
                     expr_chains = child_target[1]
-                    target_asset_name = get_asset_name_from_full_attack_step(
-                        target_full_attack_step_name)
-                    target_attack_step_name = \
-                        get_attack_step_name_from_full_attack_step(
+                    target_asset_name, target_attack_step_name = \
+                        disaggregate_attack_step_full_name(
                             target_full_attack_step_name)
                     target_asset = lang_graph.assets[target_asset_name]
                     target_attack_step = target_asset.attack_steps[
@@ -860,10 +854,8 @@ class LanguageGraph():
                 for parent_target in attack_step_dict['parents'].items():
                     target_full_attack_step_name = parent_target[0]
                     expr_chains = parent_target[1]
-                    target_asset_name = get_asset_name_from_full_attack_step(
-                        target_full_attack_step_name)
-                    target_attack_step_name = \
-                        get_attack_step_name_from_full_attack_step(
+                    target_asset_name, target_attack_step_name = \
+                        disaggregate_attack_step_full_name(
                             target_full_attack_step_name)
                     target_asset = lang_graph.assets[target_asset_name]
                     target_attack_step = target_asset.attack_steps[

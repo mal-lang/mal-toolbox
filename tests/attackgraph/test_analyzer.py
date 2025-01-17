@@ -48,28 +48,34 @@ def test_analyzers_apriori_propagate_viability_from_unviable_node():
     # Create a graph of nodes according to above diagram
     node1 = AttackGraphNode(
         type = "defense",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = None,
     )
     node2 = AttackGraphNode(
         type = "or",
         name = "node2",
+        lang_graph_attack_step = None,
     )
     node3 = AttackGraphNode(
         type = "or",
         name = "node3",
+        lang_graph_attack_step = None,
         defense_status=0.0
     )
     node4 = AttackGraphNode(
         type = "or",
-        name = "node4"
+        name = "node4",
+        lang_graph_attack_step = None,
     )
     node5 = AttackGraphNode(
         type = "or",
-        name = "node5"
+        name = "node5",
+        lang_graph_attack_step = None,
     )
     node6 = AttackGraphNode(
         type = "or",
-        name = "node6"
+        name = "node6",
+        lang_graph_attack_step = None,
     )
 
     node1.id = 1

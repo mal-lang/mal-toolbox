@@ -56,29 +56,18 @@ def test_attackgraph_init(corelang_lang_graph, model):
         )
         assert _generate_graph.call_count == 1
 
-    # _generate_graph is not called when no langspec or model is given
+    # _generate_graph is not called when no model is given
     with patch("maltoolbox.attackgraph.AttackGraph._generate_graph")\
         as _generate_graph:
-        AttackGraph(
-            lang_graph=None,
-            model=None
-        )
-        assert _generate_graph.call_count == 0
-
         AttackGraph(
             lang_graph=corelang_lang_graph,
             model=None
         )
         assert _generate_graph.call_count == 0
 
-        AttackGraph(
-            lang_graph=None,
-            model=model
-        )
-        assert _generate_graph.call_count == 0
-
 def attackgraph_save_load_no_model_given(
         example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph,
         attach_attackers: bool
     ):
     """Save AttackGraph to a file and load it
@@ -96,7 +85,8 @@ def attackgraph_save_load_no_model_given(
     example_attackgraph.save_to_file(example_graph_path)
 
     # Load the attack graph
-    loaded_attack_graph = AttackGraph.load_from_file(example_graph_path)
+    loaded_attack_graph = AttackGraph.load_from_file(example_graph_path,
+        corelang_lang_graph)
     assert node_with_reward_before.id is not None
     node_with_reward_after = loaded_attack_graph.get_node_by_id(
         node_with_reward_before.id
@@ -165,17 +155,22 @@ def attackgraph_save_load_no_model_given(
         assert loaded_attacker_dict == original_attacker_dict
 
 def test_attackgraph_save_load_no_model_given_without_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
-    attackgraph_save_load_no_model_given(example_attackgraph, False)
+    attackgraph_save_load_no_model_given(example_attackgraph,
+        corelang_lang_graph, False)
 
 def test_attackgraph_save_load_no_model_given_with_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
-    attackgraph_save_load_no_model_given(example_attackgraph, True)
+    attackgraph_save_load_no_model_given(example_attackgraph,
+        corelang_lang_graph, True)
 
 def attackgraph_save_and_load_json_yml_model_given(
         example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph,
         attach_attackers: bool
     ):
     """Try to save and load attack graph from json and yml with model given,
@@ -188,7 +183,10 @@ def attackgraph_save_and_load_json_yml_model_given(
     for attackgraph_path in ("/tmp/attackgraph.yml", "/tmp/attackgraph.json"):
         example_attackgraph.save_to_file(attackgraph_path)
         loaded_attackgraph = AttackGraph.load_from_file(
-            attackgraph_path, model=example_attackgraph.model)
+            attackgraph_path,
+            corelang_lang_graph,
+            model=example_attackgraph.model
+        )
 
         # Make sure model was 'attached' correctly
         assert loaded_attackgraph.model == example_attackgraph.model
@@ -224,18 +222,22 @@ def attackgraph_save_and_load_json_yml_model_given(
             assert loaded_attacker_dict == original_attacker_dict
 
 def test_attackgraph_save_and_load_json_yml_model_given_without_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
         attackgraph_save_and_load_json_yml_model_given(
             example_attackgraph,
+            corelang_lang_graph,
             False
         )
 
 def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
         attackgraph_save_and_load_json_yml_model_given(
             example_attackgraph,
+            corelang_lang_graph,
             True
         )
 

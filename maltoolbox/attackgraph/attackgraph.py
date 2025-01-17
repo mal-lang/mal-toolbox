@@ -13,7 +13,8 @@ from .attacker import Attacker
 from ..exceptions import AttackGraphStepExpressionError, AttackGraphException
 from ..exceptions import LanguageGraphException
 from ..model import Model
-from ..language import LanguageGraph, ExpressionsChain
+from ..language import (LanguageGraph, ExpressionsChain,
+    disaggregate_attack_step_full_name)
 from ..file_utils import (
     load_dict_from_json_file,
     load_dict_from_yaml_file,
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class AttackGraph():
     """Graph representation of attack steps"""
-    def __init__(self, lang_graph = None, model: Optional[Model] = None):
+    def __init__(self, lang_graph, model: Optional[Model] = None):
         self.nodes: list[AttackGraphNode] = []
         self.attackers: list[Attacker] = []
         # Dictionaries used in optimization to get nodes and attackers by id
@@ -42,7 +43,7 @@ class AttackGraph():
         self.lang_graph = lang_graph
         self.next_node_id = 0
         self.next_attacker_id = 0
-        if self.model is not None and self.lang_graph is not None:
+        if self.model is not None:
             self._generate_graph()
 
     def __repr__(self) -> str:
@@ -120,6 +121,7 @@ class AttackGraph():
     def _from_dict(
             cls,
             serialized_object: dict,
+            lang_graph: LanguageGraph,
             model: Optional[Model]=None
         ) -> AttackGraph:
         """Create AttackGraph from dict
@@ -128,7 +130,7 @@ class AttackGraph():
         model               - Optional Model to add connections to
         """
 
-        attack_graph = AttackGraph()
+        attack_graph = AttackGraph(lang_graph)
         attack_graph.model = model
         serialized_attack_steps = serialized_object['attack_steps']
         serialized_attackers = serialized_object['attackers']
@@ -146,8 +148,14 @@ class AttackGraph():
                     logger.error(msg, node_dict["asset"])
                     raise LookupError(msg % node_dict["asset"])
 
+            lg_asset_name, lg_attack_step_name = \
+                disaggregate_attack_step_full_name(
+                    node_dict['lang_graph_attack_step'])
+            lg_attack_step = lang_graph.assets[lg_asset_name].\
+                attack_steps[lg_attack_step_name]
             ag_node = AttackGraphNode(
                 type=node_dict['type'],
+                lang_graph_attack_step = lg_attack_step,
                 name=node_dict['name'],
                 ttc=node_dict['ttc'],
                 asset=node_asset
@@ -228,7 +236,8 @@ class AttackGraph():
     def load_from_file(
             cls,
             filename: str,
-            model: Optional[Model]=None
+            lang_graph: LanguageGraph,
+            model: Optional[Model] = None
         ) -> AttackGraph:
         """Create from json or yaml file depending on file extension"""
         if model is not None:
@@ -244,7 +253,8 @@ class AttackGraph():
             serialized_attack_graph = load_dict_from_json_file(filename)
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
-        return cls._from_dict(serialized_attack_graph, model=model)
+        return cls._from_dict(serialized_attack_graph,
+            lang_graph, model = model)
 
     def get_node_by_id(self, node_id: int) -> Optional[AttackGraphNode]:
         """
@@ -575,6 +585,7 @@ class AttackGraph():
                     'mitre' in attack_step.info else None
                 ag_node = AttackGraphNode(
                     type = attack_step.type,
+                    lang_graph_attack_step = attack_step,
                     asset = asset,
                     name = attack_step_name,
                     ttc = attack_step.ttc,
