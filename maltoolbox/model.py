@@ -801,6 +801,10 @@ class Model():
 
             asset_type_class = model.lang_classes_factory.get_asset_class(
                 asset_object['type'])
+
+            # TODO: remove this when factory goes away
+            asset_type_class.__hash__ = lambda self: hash(self.name)  # type: ignore[method-assign,misc]
+
             if asset_type_class is None:
                 raise LookupError('Failed to find asset "%s" in language'
                 ' classes factory' % asset_object['type'])
