@@ -57,24 +57,3 @@ class LookupDict(Dict[K, V]):
             return next(iter(ret))
         except KeyError:
             return None
-
-@dataclass
-class Asset:
-    id: int
-    name: str
-    props: list
-    def __hash__(self):
-        return self.name
-
-
-class Test:
-    def __init__(self):
-        self.assets = LookupDict({
-                "one": Asset("one", 1, [0,1,2]), "two": Asset("two", 2,
-                                                              [1,2,3]), "three":
-                Asset("thre", 3, [2,3,4])})
-
-t=Test()
-t.assets.lookup('name', 'one')
-t.assets["four"] = Asset("four",4, [3,4,5])
-t.assets.lookup('name', 'four')
