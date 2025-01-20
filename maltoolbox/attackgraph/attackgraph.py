@@ -350,7 +350,7 @@ class AttackGraph():
             self,
             model: Model,
             target_assets: frozenset[Any],
-            expr_chain: ExpressionsChain
+            expr_chain: Optional[ExpressionsChain]
         ) -> set[Any]:
         """
         Recursively follow a language graph expressions chain on an instance
@@ -369,8 +369,9 @@ class AttackGraph():
         """
 
         if expr_chain is None:
-            # This is an attack step targeting the same assets
-            return target_assets
+            # There is no expressions chain link left to follow return the
+            # current target assets
+            return set(target_assets)
 
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
