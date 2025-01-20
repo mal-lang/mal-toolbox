@@ -1696,18 +1696,7 @@ class LanguageGraph():
         None if there is no match.
         """
         first_asset = self.assets[first_asset_name]
-        if first_asset is None:
-            raise LookupError(
-                f'Failed to find asset with name \"{first_asset_name}\" in '
-                'the language graph.'
-            )
-
         second_asset = self.assets[second_asset_name]
-        if second_asset is None:
-            raise LookupError(
-                f'Failed to find asset with name \"{second_asset_name}\" in '
-                'the language graph.'
-            )
 
         for assoc_name, assoc in first_asset.associations.items():
             logger.debug(
