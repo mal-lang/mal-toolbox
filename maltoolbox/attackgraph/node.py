@@ -184,7 +184,7 @@ class AttackGraphNode:
             self.defense_status != 1.0
 
 
-    @cached_property
+    @property
     def full_name(self) -> str:
         """
         Return the full name of the attack step. This is a combination of the
