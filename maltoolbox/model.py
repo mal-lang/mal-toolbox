@@ -618,20 +618,8 @@ class Model():
         )
         associated_assets = []
         for association in asset.associations:
-            # Determine which two of the fields matches the asset given.
-            # The other field will provide the associated assets.
-            left_field_name, right_field_name = \
-                self.get_association_field_names(association)
-
-            if asset in getattr(association, left_field_name):
-                opposite_field_name = right_field_name
-            else:
-                opposite_field_name = left_field_name
-
-            if opposite_field_name == field_name:
-                associated_assets.extend(
-                    getattr(association, opposite_field_name)
-                )
+            if hasattr(association, field_name):
+                associated_assets.extend(getattr(association, field_name))
 
         return associated_assets
 

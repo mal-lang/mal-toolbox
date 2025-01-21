@@ -487,7 +487,7 @@ class ExpressionsChain:
                     self.association.full_name:
                     {
                         'fieldname': self.fieldname,
-                         'asset type': asset_type
+                        'asset type': asset_type
                     },
                     'type': self.type
                 }
