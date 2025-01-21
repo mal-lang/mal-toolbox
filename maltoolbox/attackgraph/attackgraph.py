@@ -137,7 +137,7 @@ class AttackGraph():
         serialized_attackers = serialized_object['attackers']
 
         # Create all of the nodes in the imported attack graph.
-        for node_full_name, node_dict in serialized_attack_steps.items():
+        for node_dict in serialized_attack_steps.values():
 
             # Recreate asset links if model is available.
             node_asset = None
@@ -189,7 +189,7 @@ class AttackGraph():
             attack_graph.add_node(ag_node, node_id=node_dict['id'])
 
         # Re-establish links between nodes.
-        for node_full_name, node_dict in serialized_attack_steps.items():
+        for node_dict in serialized_attack_steps.values():
             _ag_node = attack_graph.get_node_by_id(node_dict['id'])
             if not isinstance(_ag_node, AttackGraphNode):
                 msg = ('Failed to find node with id %s when loading'
@@ -215,7 +215,7 @@ class AttackGraph():
                         raise LookupError(msg % parent_id)
                     _ag_node.parents.append(parent)
 
-        for attacker_name, attacker in serialized_attackers.items():
+        for attacker in serialized_attackers.values():
             ag_attacker = Attacker(
                 name = attacker['name'],
                 entry_points = [],
@@ -537,10 +537,9 @@ class AttackGraph():
                     'the language graph.'
                 )
 
-            for attack_step_name, attack_step in \
-                    lang_graph_asset.attack_steps.items():
+            for attack_step in lang_graph_asset.attack_steps.values():
                 logger.debug(
-                    'Generating attack step node for %s.', attack_step_name
+                    'Generating attack step node for %s.', attack_step.name
                 )
 
                 defense_status = None
@@ -583,7 +582,7 @@ class AttackGraph():
                     type = attack_step.type,
                     lang_graph_attack_step = attack_step,
                     asset = asset,
-                    name = attack_step_name,
+                    name = attack_step.name,
                     ttc = attack_step.ttc,
                     children = [],
                     parents = [],
