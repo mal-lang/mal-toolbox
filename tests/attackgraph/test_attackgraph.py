@@ -591,21 +591,21 @@ def test_attackgraph_subtype():
         right_fieldname = 'field2')
     test_model.add_association(assoc)
 
-    example_testlang_attackgraph = AttackGraph(
+    test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
         model=test_model
     )
-    ba_1_base_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    ba_1_base_step1 = test_attack_graph.get_node_by_full_name(
         'BaseAsset 1:base_step1')
-    ba_1_base_step2 = example_testlang_attackgraph.get_node_by_full_name(
+    ba_1_base_step2 = test_attack_graph.get_node_by_full_name(
         'BaseAsset 1:base_step2')
-    sa_1_base_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    sa_1_base_step1 = test_attack_graph.get_node_by_full_name(
         'SubAsset 1:base_step1')
-    sa_1_base_step2 = example_testlang_attackgraph.get_node_by_full_name(
+    sa_1_base_step2 = test_attack_graph.get_node_by_full_name(
         'SubAsset 1:base_step2')
-    sa_1_subasset_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    sa_1_subasset_step1 = test_attack_graph.get_node_by_full_name(
         'SubAsset 1:subasset_step1')
-    oa_1_other_step1 = example_testlang_attackgraph.get_node_by_full_name(
+    oa_1_other_step1 = test_attack_graph.get_node_by_full_name(
         'OtherAsset 1:other_step1')
 
     assert ba_1_base_step1 in oa_1_other_step1.children
@@ -654,30 +654,30 @@ def test_attackgraph_setops():
         right_fieldname = 'fieldB2')
     test_model.add_association(assoc)
 
-    example_testlang_attackgraph = AttackGraph(
+    test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
         model=test_model
     )
 
-    assetA1_opsA = example_testlang_attackgraph.get_node_by_full_name(
+    assetA1_opsA = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetA 1:testStepSetOpsA')
-    assetB1_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB1_opsB1 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 1:testStepSetOpsB1')
-    assetB1_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB1_opsB2 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 1:testStepSetOpsB2')
-    assetB1_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB1_opsB3 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 1:testStepSetOpsB3')
-    assetB2_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB2_opsB1 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 2:testStepSetOpsB1')
-    assetB2_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB2_opsB2 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 2:testStepSetOpsB2')
-    assetB2_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB2_opsB3 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 2:testStepSetOpsB3')
-    assetB3_opsB1 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB3_opsB1 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 3:testStepSetOpsB1')
-    assetB3_opsB2 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB3_opsB2 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 3:testStepSetOpsB2')
-    assetB3_opsB3 = example_testlang_attackgraph.get_node_by_full_name(
+    assetB3_opsB3 = test_attack_graph.get_node_by_full_name(
         'SetOpsAssetB 3:testStepSetOpsB3')
 
     assert assetB1_opsB1 in assetA1_opsA.children
@@ -689,3 +689,129 @@ def test_attackgraph_setops():
     assert assetB3_opsB1 in assetA1_opsA.children
     assert assetB3_opsB2 not in assetA1_opsA.children
     assert assetB3_opsB3 not in assetA1_opsA.children
+
+def test_attackgraph_transitive():
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/transitive.mal'))
+    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
+    test_model = Model('Test Model', lang_classes_factory)
+
+    asset1 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 1')
+    asset2 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 2')
+    asset3 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 3')
+    asset4 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 4')
+    asset5 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 5')
+    asset6 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 6')
+
+    test_model.add_asset(asset1)
+    test_model.add_asset(asset2)
+    test_model.add_asset(asset3)
+    test_model.add_asset(asset4)
+    test_model.add_asset(asset5)
+    test_model.add_asset(asset6)
+
+    assoc12 = create_association(test_model,
+        left_assets = [asset1],
+        right_assets = [asset2],
+        assoc_type = 'TransitiveTestAssoc',
+        left_fieldname = 'field1',
+        right_fieldname = 'field2')
+    test_model.add_association(assoc12)
+
+    assoc23 = create_association(test_model,
+        left_assets = [asset2],
+        right_assets = [asset3],
+        assoc_type = 'TransitiveTestAssoc',
+        left_fieldname = 'field1',
+        right_fieldname = 'field2')
+    test_model.add_association(assoc23)
+
+    assoc34 = create_association(test_model,
+        left_assets = [asset3],
+        right_assets = [asset4],
+        assoc_type = 'TransitiveTestAssoc',
+        left_fieldname = 'field1',
+        right_fieldname = 'field2')
+    test_model.add_association(assoc34)
+
+    assoc35 = create_association(test_model,
+        left_assets = [asset3],
+        right_assets = [asset5],
+        assoc_type = 'TransitiveTestAssoc',
+        left_fieldname = 'field1',
+        right_fieldname = 'field2')
+    test_model.add_association(assoc35)
+
+    assoc61 = create_association(test_model,
+        left_assets = [asset6],
+        right_assets = [asset1],
+        assoc_type = 'TransitiveTestAssoc',
+        left_fieldname = 'field1',
+        right_fieldname = 'field2')
+    test_model.add_association(assoc61)
+
+    test_attack_graph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+
+    asset1_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 1:test_step')
+    asset2_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 2:test_step')
+    asset3_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 3:test_step')
+    asset4_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 4:test_step')
+    asset5_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 5:test_step')
+    asset6_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 6:test_step')
+
+    assert asset1_test_step in asset1_test_step.children
+    assert asset2_test_step in asset1_test_step.children
+    assert asset3_test_step in asset1_test_step.children
+    assert asset4_test_step in asset1_test_step.children
+    assert asset5_test_step in asset1_test_step.children
+    assert asset6_test_step not in asset1_test_step.children
+
+    assert asset1_test_step not in asset2_test_step.children
+    assert asset2_test_step in asset2_test_step.children
+    assert asset3_test_step in asset2_test_step.children
+    assert asset4_test_step in asset2_test_step.children
+    assert asset5_test_step in asset2_test_step.children
+    assert asset6_test_step not in asset2_test_step.children
+
+    assert asset1_test_step not in asset3_test_step.children
+    assert asset2_test_step not in asset3_test_step.children
+    assert asset3_test_step in asset3_test_step.children
+    assert asset4_test_step in asset3_test_step.children
+    assert asset5_test_step in asset3_test_step.children
+    assert asset6_test_step not in asset3_test_step.children
+
+    assert asset1_test_step not in asset4_test_step.children
+    assert asset2_test_step not in asset4_test_step.children
+    assert asset3_test_step not in asset4_test_step.children
+    assert asset4_test_step in asset4_test_step.children
+    assert asset5_test_step not in asset4_test_step.children
+    assert asset6_test_step not in asset4_test_step.children
+
+    assert asset1_test_step not in asset5_test_step.children
+    assert asset2_test_step not in asset5_test_step.children
+    assert asset3_test_step not in asset5_test_step.children
+    assert asset4_test_step not in asset5_test_step.children
+    assert asset5_test_step in asset5_test_step.children
+    assert asset6_test_step not in asset5_test_step.children
+
+    assert asset1_test_step in asset6_test_step.children
+    assert asset2_test_step in asset6_test_step.children
+    assert asset3_test_step in asset6_test_step.children
+    assert asset4_test_step in asset6_test_step.children
+    assert asset5_test_step in asset6_test_step.children
+    assert asset6_test_step in asset6_test_step.children
