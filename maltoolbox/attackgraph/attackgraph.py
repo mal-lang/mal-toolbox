@@ -6,7 +6,6 @@ import copy
 import logging
 import json
 
-from functools import cache
 from itertools import chain
 from typing import TYPE_CHECKING
 
@@ -345,11 +344,10 @@ class AttackGraph():
 
             attacker.entry_points = list(attacker.reached_attack_steps)
 
-    @cache
     def _follow_expr_chain(
             self,
             model: Model,
-            target_assets: frozenset[Any],
+            target_assets: set[Any],
             expr_chain: Optional[ExpressionsChain]
         ) -> set[Any]:
         """
@@ -437,35 +435,28 @@ class AttackGraph():
                     raise LanguageGraphException('"transitive" step '
                         'expression chain is missing sub link.')
 
-                accumulated_target_assets = {frozenset(target_assets)}
-                assets_to_check = set(accumulated_target_assets)
+                new_assets = target_assets
 
-                while assets_to_check:
-                    additional_assets = self._follow_expr_chain(
-                        model, assets_to_check.pop(), expr_chain.sub_link
-                    )
+                while new_assets := self._follow_expr_chain(
+                    model, new_assets, expr_chain.sub_link
+                ):
+                    if not (new_assets := new_assets.difference(target_assets)):
+                        break
 
-                    accumulated_target_assets.add(
-                        fset := frozenset(
-                            additional_assets.difference(accumulated_target_assets)
-                        )
-                    )
+                    target_assets.update(new_assets)
 
-                    if fset:
-                        assets_to_check.add(fset)
-
-                return set(chain.from_iterable(accumulated_target_assets))
+                return target_assets
 
             case 'subType':
                 if not expr_chain.sub_link:
                     raise LanguageGraphException('"subType" step '
                         'expression chain is missing sub link.')
                 new_target_assets = set()
-                for target_asset in target_assets:
-                    assets = self._follow_expr_chain(
-                        model, target_assets,
-                        expr_chain.sub_link)
-                    new_target_assets.update(assets)
+                new_target_assets.update(
+                    self._follow_expr_chain(
+                        model, target_assets, expr_chain.sub_link
+                    )
+                )
 
                 selected_new_target_assets = set()
                 for asset in new_target_assets:
@@ -501,7 +492,7 @@ class AttackGraph():
                 )
                 rh_targets = self._follow_expr_chain(
                     model,
-                    frozenset(lh_targets),
+                    lh_targets,
                     expr_chain.right_link
                 )
                 return rh_targets
@@ -573,7 +564,7 @@ class AttackGraph():
                         for requirement in attack_step.requires:
                             target_assets = self._follow_expr_chain(
                                     self.model,
-                                    frozenset([asset]),
+                                    set([asset]),
                                     requirement
                                 )
                             # If the step expression resolution yielded
@@ -630,7 +621,7 @@ class AttackGraph():
                             lang_graph_attack_step.children[child]:
                         target_assets = self._follow_expr_chain(
                             self.model,
-                            frozenset([ag_node.asset]),
+                            set([ag_node.asset]),
                             expr_chain
                         )
 

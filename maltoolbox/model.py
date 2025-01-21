@@ -612,7 +612,6 @@ class Model():
         A list of assets associated with the asset given that match the
         field_name.
         """
-
         logger.debug(
             'Get associated assets for asset "%s"(%d) by field name %s.',
             asset.name, asset.id, field_name
