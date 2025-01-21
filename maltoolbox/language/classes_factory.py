@@ -220,7 +220,9 @@ class LanguageClassesFactory:
         ) -> Optional[SchemaGeneratedClass]:
         class_name = 'Asset_' + asset_name
         if hasattr(self.ns, class_name):
-            return getattr(self.ns, class_name)
+            class_obj = getattr(self.ns, class_name)
+            class_obj.__hash__ = lambda self: hash(self.name)
+            return class_obj
         else:
             logger.warning('Could not find Asset "%s" in classes factory.' %
                 asset_name)

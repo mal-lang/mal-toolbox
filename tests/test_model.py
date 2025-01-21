@@ -15,22 +15,14 @@ DATA_CONTAIN_ASSOC_NAME = "DataContainment"
 def create_application_asset(model, name):
     """Helper function to create an asset of coreLang type Application"""
 
-    klass = model.lang_classes_factory.get_asset_class('Application')
-
-    # TODO: remove this once the factory is gone
-    setattr(klass, "__hash__", lambda self: hash(self.name))
-
-    return klass(name = name)
+    return model.lang_classes_factory.get_asset_class('Application')(
+        name = name)
 
 
 def create_data_asset(model, name):
     """Helper function to create an asset of coreLang type Data"""
-    klass = model.lang_classes_factory.get_asset_class('Data')
 
-    # TODO: remove this once the factory is gone
-    setattr(klass, "__hash__", lambda self: hash(self.name))
-
-    return klass(name = name)
+    return model.lang_classes_factory.get_asset_class('Data')(name = name)
 
 
 def create_association(

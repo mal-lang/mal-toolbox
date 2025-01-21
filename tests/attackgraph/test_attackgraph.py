@@ -569,17 +569,14 @@ def test_attackgraph_subtype():
     lang_classes_factory = LanguageClassesFactory(test_lang_graph)
     test_model = Model('Test Model', lang_classes_factory)
     # Create assets
-    klass = lang_classes_factory.get_asset_class('BaseAsset')
-    klass.__hash__ = lambda self: hash(self.name)
-    baseasset1 = klass(name = 'BaseAsset 1')
+    baseasset1 = lang_classes_factory.get_asset_class('BaseAsset')(
+        name = 'BaseAsset 1')
 
-    klass = lang_classes_factory.get_asset_class('SubAsset')
-    klass.__hash__ = lambda self: hash(self.name)
-    subasset1 = klass(name = 'SubAsset 1')
+    subasset1 = lang_classes_factory.get_asset_class('SubAsset')(
+        name = 'SubAsset 1')
 
-    klass = lang_classes_factory.get_asset_class('OtherAsset')
-    klass.__hash__ = lambda self: hash(self.name)
-    otherasset1 = klass(name = 'OtherAsset 1')
+    otherasset1 = lang_classes_factory.get_asset_class('OtherAsset')(
+        name = 'OtherAsset 1')
 
     test_model.add_asset(baseasset1)
     test_model.add_asset(subasset1)
@@ -625,15 +622,15 @@ def test_attackgraph_setops():
     test_model = Model('Test Model', lang_classes_factory)
 
     # Create assets
-    klass = lang_classes_factory.get_asset_class( 'SetOpsAssetA')
-    klass.__hash__ = lambda self: hash(self.name)
-    set_ops_a1 = klass(name = 'SetOpsAssetA 1')
+    set_ops_a1 = lang_classes_factory.get_asset_class('SetOpsAssetA')(
+        name = 'SetOpsAssetA 1')
 
-    klass = lang_classes_factory.get_asset_class( 'SetOpsAssetB')
-    klass.__hash__ = lambda self: hash(self.name)
-    set_ops_b1 = klass(name = 'SetOpsAssetB 1')
-    set_ops_b2 = klass(name = 'SetOpsAssetB 2')
-    set_ops_b3 = klass(name = 'SetOpsAssetB 3')
+    set_ops_b1 = lang_classes_factory.get_asset_class('SetOpsAssetB')(
+        name = 'SetOpsAssetB 1')
+    set_ops_b2 = lang_classes_factory.get_asset_class('SetOpsAssetB')(
+        name = 'SetOpsAssetB 2')
+    set_ops_b3 = lang_classes_factory.get_asset_class('SetOpsAssetB')(
+        name = 'SetOpsAssetB 3')
 
     test_model.add_asset(set_ops_a1)
     test_model.add_asset(set_ops_b1)
