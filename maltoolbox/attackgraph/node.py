@@ -27,7 +27,6 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list[Attacker] = field(default_factory=list)
-    mitre_info: Optional[str] = None
     tags: set[str] = field(default_factory=set)
     attributes: Optional[dict] = None
 
@@ -63,8 +62,6 @@ class AttackGraphNode:
             node_dict['is_viable'] = str(self.is_viable)
         if self.is_necessary is not None:
             node_dict['is_necessary'] = str(self.is_necessary)
-        if self.mitre_info is not None:
-            node_dict['mitre_info'] = str(self.mitre_info)
         if self.tags:
             node_dict['tags'] = list(self.tags)
         if self.extras:
@@ -105,7 +102,6 @@ class AttackGraphNode:
             self.is_viable,
             self.is_necessary,
             [],
-            self.mitre_info,
             set(),
             {},
             {}

@@ -179,8 +179,6 @@ class AttackGraph():
                 'is_viable' in node_dict else True
             ag_node.is_necessary = node_dict['is_necessary'] == 'True' if \
                 'is_necessary' in node_dict else True
-            ag_node.mitre_info = str(node_dict['mitre_info']) if \
-                'mitre_info' in node_dict else None
             ag_node.tags = set(node_dict['tags']) if \
                 'tags' in node_dict else set()
             ag_node.extras = node_dict.get('extras', {})
@@ -576,8 +574,6 @@ class AttackGraph():
                     case _:
                         pass
 
-                mitre_info = attack_step.info['mitre'] if\
-                    'mitre' in attack_step.info else None
                 ag_node = AttackGraphNode(
                     type = attack_step.type,
                     lang_graph_attack_step = attack_step,
@@ -590,7 +586,6 @@ class AttackGraph():
                     existence_status = existence_status,
                     is_viable = True,
                     is_necessary = True,
-                    mitre_info = mitre_info,
                     tags = set(attack_step.tags),
                     compromised_by = []
                 )
