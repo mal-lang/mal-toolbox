@@ -610,9 +610,8 @@ class AttackGraph():
                 ag_node.name]
 
             while lang_graph_attack_step:
-                for child in lang_graph_attack_step.children:
-                    for target_attack_step, expr_chain in \
-                            lang_graph_attack_step.children[child]:
+                for child in lang_graph_attack_step.children.values():
+                    for target_attack_step, expr_chain in child:
                         target_assets = self._follow_expr_chain(
                             self.model,
                             set([ag_node.asset]),
@@ -657,7 +656,7 @@ class AttackGraph():
                                 )
                                 ag_node.children.append(target_node)
                                 target_node.parents.append(ag_node)
-                if bool(lang_graph_attack_step.overrides):
+                if lang_graph_attack_step.overrides:
                     break
                 lang_graph_attack_step = lang_graph_attack_step.inherits
 
