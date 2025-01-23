@@ -296,7 +296,7 @@ class Model():
         """
 
         # Optimization: only look for duplicates in associations of same type
-        association_type = association.__class__.__name__
+        association_type = association.type
         associations_same_type = self._type_to_association.get(
             association_type, []
         )
@@ -371,7 +371,7 @@ class Model():
         self.associations.append(association)
 
         # Add association to type->association mapping
-        association_type = association.__class__.__name__
+        association_type = association.type
         self._type_to_association.setdefault(
                 association_type, []
             ).append(association)
@@ -411,7 +411,7 @@ class Model():
         self.associations.remove(association)
 
         # Remove association from type->association mapping
-        association_type = association.__class__.__name__
+        association_type = association.type
         self._type_to_association[association_type].remove(
             association
         )
@@ -556,8 +556,9 @@ class Model():
         defenses = {}
         for key, value in asset._properties.items():
             property_schema = (
-                self.lang_classes_factory.json_schema['definitions']['LanguageAsset']
-                ['definitions'][asset.type]['properties'][key]
+                self.lang_classes_factory.json_schema['definitions']
+                ['LanguageAsset'] ['definitions']
+                ['Asset_' + asset.type]['properties'][key]
             )
 
             if "maximum" not in property_schema:
@@ -592,7 +593,7 @@ class Model():
         A two item list containing the field names of the association.
         """
 
-        return association._properties.keys()
+        return list(association._properties.keys())[1:]
 
 
     def get_associated_assets_by_field_name(
@@ -611,27 +612,14 @@ class Model():
         A list of assets associated with the asset given that match the
         field_name.
         """
-
         logger.debug(
             'Get associated assets for asset "%s"(%d) by field name %s.',
             asset.name, asset.id, field_name
         )
         associated_assets = []
         for association in asset.associations:
-            # Determine which two of the fields matches the asset given.
-            # The other field will provide the associated assets.
-            left_field_name, right_field_name = \
-                self.get_association_field_names(association)
-
-            if asset in getattr(association, left_field_name):
-                opposite_field_name = right_field_name
-            else:
-                opposite_field_name = left_field_name
-
-            if opposite_field_name == field_name:
-                associated_assets.extend(
-                    getattr(association, opposite_field_name)
-                )
+            if hasattr(association, field_name):
+                associated_assets.extend(getattr(association, field_name))
 
         return associated_assets
 
@@ -683,12 +671,12 @@ class Model():
         right_field = getattr(association, right_field_name)
 
         association_dict = {
-            association.__class__.__name__ :
+            str(association.type) :
             {
                 str(left_field_name):
-                    [int(asset.id) for asset in left_field],
+                    {int(asset.id): str(asset.name) for asset in left_field},
                 str(right_field_name):
-                    [int(asset.id) for asset in right_field]
+                    {int(asset.id): str(asset.name) for asset in right_field}
             }
         }
 
@@ -713,7 +701,8 @@ class Model():
             'entry_points': {},
         }
         for (asset, attack_steps) in attacker.entry_points:
-            attacker_dict['entry_points'][int(asset.id)] = {
+            attacker_dict['entry_points'][str(asset.name)] = {
+                'asset_id': int(asset.id),
                 'attack_steps' : attack_steps
             }
         return (attacker.id, attacker_dict)
@@ -797,8 +786,16 @@ class Model():
                 }
             )
 
-            asset = getattr(model.lang_classes_factory.ns,
-                asset_object['type'])(name = asset_object['name'])
+            asset_type_class = model.lang_classes_factory.get_asset_class(
+                asset_object['type'])
+
+            # TODO: remove this when factory goes away
+            asset_type_class.__hash__ = lambda self: hash(self.name)  # type: ignore[method-assign,misc]
+
+            if asset_type_class is None:
+                raise LookupError('Failed to find asset "%s" in language'
+                ' classes factory' % asset_object['type'])
+            asset = asset_type_class(name = asset_object['name'])
 
             if 'extras' in asset_object:
                 asset.extras = asset_object['extras']
@@ -810,12 +807,20 @@ class Model():
 
         # Reconstruct the associations
         for assoc_entry in serialized_object.get('associations', []):
-            assoc = list(assoc_entry.keys())[0]
-            assoc_fields = assoc_entry[assoc]
-            association = getattr(model.lang_classes_factory.ns, assoc)()
+            [(assoc, assoc_fields)] = assoc_entry.items()
+            assoc_keys_iter = iter(assoc_fields)
+            field1 = next(assoc_keys_iter)
+            field2 = next(assoc_keys_iter)
+            assoc_type_class = model.lang_classes_factory.\
+                get_association_class_by_fieldnames(assoc, field1, field2)
+            if assoc_type_class is None:
+                raise LookupError('Failed to find association "%s" with '
+                    'fields "%s" and "%s" in language classes factory' %
+                        (assoc, field1, field2)
+                )
+            association = assoc_type_class()
 
             for field, targets in assoc_fields.items():
-                targets = targets if isinstance(targets, list) else [targets]
                 setattr(
                     association,
                     field,
@@ -832,11 +837,15 @@ class Model():
             for attacker_id in attackers_info:
                 attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
                 attacker.entry_points = []
-                for asset_id in attackers_info[attacker_id]['entry_points']:
+                for asset_name, entry_points_dict in \
+                        attackers_info[attacker_id]['entry_points'].items():
                     attacker.entry_points.append(
-                        (model.get_asset_by_id(int(asset_id)),
-                        attackers_info[attacker_id]['entry_points']\
-                            [asset_id]['attack_steps']))
+                            (
+                                model.get_asset_by_id(
+                                    entry_points_dict['asset_id']),
+                                entry_points_dict['attack_steps']
+                            )
+                        )
                 model.add_attacker(attacker, attacker_id = int(attacker_id))
         return model
 

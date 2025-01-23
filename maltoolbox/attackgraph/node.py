@@ -5,14 +5,17 @@ MAL-Toolbox Attack Graph Node Dataclass
 from __future__ import annotations
 import copy
 from dataclasses import field, dataclass
+from functools import cached_property
 from typing import Any, Optional
 
 from . import Attacker
+from ..language import LanguageGraphAttackStep
 
 @dataclass
 class AttackGraphNode:
     """Node part of AttackGraph"""
     type: str
+    lang_graph_attack_step: LanguageGraphAttackStep
     name: str
     ttc: Optional[dict] = None
     id: Optional[int] = None
@@ -24,18 +27,19 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list[Attacker] = field(default_factory=list)
-    mitre_info: Optional[str] = None
-    tags: list[str] = field(default_factory=lambda: [])
+    tags: set[str] = field(default_factory=set)
     attributes: Optional[dict] = None
 
     # Optional extra metadata for AttackGraphNode
     extras: dict = field(default_factory=dict)
+
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict: dict = {
             'id': self.id,
             'type': self.type,
+            'lang_graph_attack_step': self.lang_graph_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,
             'children': {},
@@ -58,17 +62,17 @@ class AttackGraphNode:
             node_dict['is_viable'] = str(self.is_viable)
         if self.is_necessary is not None:
             node_dict['is_necessary'] = str(self.is_necessary)
-        if self.mitre_info is not None:
-            node_dict['mitre_info'] = str(self.mitre_info)
         if self.tags:
-            node_dict['tags'] = str(self.tags)
+            node_dict['tags'] = list(self.tags)
         if self.extras:
             node_dict['extras'] = self.extras
 
         return node_dict
 
+
     def __repr__(self) -> str:
         return str(self.to_dict())
+
 
     def __deepcopy__(self, memo) -> AttackGraphNode:
         """Deep copy an attackgraph node
@@ -86,6 +90,7 @@ class AttackGraphNode:
 
         copied_node = AttackGraphNode(
             self.type,
+            self.lang_graph_attack_step,
             self.name,
             self.ttc,
             self.id,
@@ -97,8 +102,7 @@ class AttackGraphNode:
             self.is_viable,
             self.is_necessary,
             [],
-            self.mitre_info,
-            [],
+            set(),
             {},
             {}
         )
@@ -112,12 +116,14 @@ class AttackGraphNode:
 
         return copied_node
 
+
     def is_compromised(self) -> bool:
         """
         Return True if any attackers have compromised this node.
         False, otherwise.
         """
         return len(self.compromised_by) > 0
+
 
     def is_compromised_by(self, attacker: Attacker) -> bool:
         """
@@ -130,6 +136,7 @@ class AttackGraphNode:
         """
         return attacker in self.compromised_by
 
+
     def compromise(self, attacker: Attacker) -> None:
         """
         Have the attacker given as a parameter compromise this node.
@@ -138,6 +145,7 @@ class AttackGraphNode:
         attacker    - the attacker that will compromise the node
         """
         attacker.compromise(self)
+
 
     def undo_compromise(self, attacker: Attacker) -> None:
         """
@@ -150,6 +158,7 @@ class AttackGraphNode:
         """
         attacker.undo_compromise(self)
 
+
     def is_enabled_defense(self) -> bool:
         """
         Return True if this node is a defense node and it is enabled and not
@@ -160,6 +169,7 @@ class AttackGraphNode:
             'suppress' not in self.tags and \
             self.defense_status == 1.0
 
+
     def is_available_defense(self) -> bool:
         """
         Return True if this node is a defense node and it is not fully enabled
@@ -168,6 +178,7 @@ class AttackGraphNode:
         return self.type == 'defense' and \
             'suppress' not in self.tags and \
             self.defense_status != 1.0
+
 
     @property
     def full_name(self) -> str:
@@ -181,3 +192,8 @@ class AttackGraphNode:
         else:
             full_name = str(self.id) + ':' + self.name
         return full_name
+
+
+    @cached_property
+    def info(self) -> dict[str, str]:
+        return self.lang_graph_attack_step.info

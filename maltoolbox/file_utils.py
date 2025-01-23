@@ -24,15 +24,19 @@ def save_dict_to_yaml_file(filename: str, serialized_object: dict) -> None:
     data            - dict to output as yaml
     """
 
+    class NoAliasSafeDumper(yaml.SafeDumper):
+        def ignore_aliases(self, data):
+            return True
+
     # Handle Literal values from jsonschema_objects
     yaml.add_multi_representer(
         LiteralValue,
         lambda dumper, data: dumper.represent_data(data._value),
-        yaml.SafeDumper
+        NoAliasSafeDumper
     )
 
     with open(filename, 'w', encoding='utf-8') as f:
-        yaml.dump(serialized_object, f, Dumper=yaml.SafeDumper)
+        yaml.dump(serialized_object, f, Dumper=NoAliasSafeDumper)
 
 
 def load_dict_from_yaml_file(filename: str) -> dict:

@@ -2,7 +2,8 @@
 import os
 import pytest
 
-from maltoolbox.language import LanguageGraph, LanguageClassesFactory
+from maltoolbox.language import (LanguageGraph, LanguageGraphAsset,
+    LanguageGraphAttackStep, LanguageClassesFactory)
 from maltoolbox.model import Model
 
 
@@ -47,3 +48,24 @@ def model(corelang_lang_graph):
     lang_classes_factory = LanguageClassesFactory(corelang_lang_graph)
 
     return empty_model('Test Model', lang_classes_factory)
+
+
+@pytest.fixture
+def dummy_lang_graph(corelang_lang_graph):
+    """Fixture that generates a dummy LanguageGraph with a dummy
+    LanguageGraphAsset and LanguageGraphAttackStep
+    """
+    lang_graph = LanguageGraph()
+    dummy_asset = LanguageGraphAsset(
+        name = 'DummyAsset'
+    )
+    lang_graph.assets['DummyAsset'] = dummy_asset
+    dummy_attack_step_node = LanguageGraphAttackStep(
+        name = 'DummyAttackStep',
+        type = 'or',
+        asset = dummy_asset
+    )
+    dummy_asset.attack_steps['DummyAttackStep'] = dummy_attack_step_node
+
+
+    return lang_graph

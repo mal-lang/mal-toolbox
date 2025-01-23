@@ -1,12 +1,17 @@
 """Unit tests for AttackGraph functionality"""
 
 from maltoolbox.attackgraph import AttackGraphNode, Attacker, AttackGraph
+from maltoolbox.language import LanguageGraph
 from maltoolbox.attackgraph.query import (
     is_node_traversable_by_attacker,
 )
 
-def test_query_is_node_traversable_by_attacker():
+def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     """Make sure it returns True or False when expected"""
+
+    dummy_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyAttackStep']
+
     # An attacker with no meaningful data
     attacker = Attacker(
         name = "Test Attacker",
@@ -17,9 +22,11 @@ def test_query_is_node_traversable_by_attacker():
     # Node1 should be traversable since node type is OR
     node1 = AttackGraphNode(
         type = "or",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = dummy_attack_step,
     )
-    attack_graph = AttackGraph()
+
+    attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_node(node1)
     attack_graph.add_attacker(attacker)
     traversable = is_node_traversable_by_attacker(node1, attacker)
@@ -28,7 +35,8 @@ def test_query_is_node_traversable_by_attacker():
     # Node2 should be traversable since node has no parents
     node2 = AttackGraphNode(
         type = "and",
-        name = "node2"
+        name = "node2",
+        lang_graph_attack_step = dummy_attack_step,
     )
     attack_graph.add_node(node2)
     traversable = is_node_traversable_by_attacker(node2, attacker)
@@ -38,11 +46,13 @@ def test_query_is_node_traversable_by_attacker():
     # and it has two parents that are not compromised by attacker
     node3 = AttackGraphNode(
         type = "and",
-        name = "node3"
+        name = "node3",
+        lang_graph_attack_step = dummy_attack_step,
     )
     node4 = AttackGraphNode(
         type = "and",
-        name = "node4"
+        name = "node4",
+        lang_graph_attack_step = dummy_attack_step,
     )
     node4.parents = [node2, node3]
     node2.children = [node4]
