@@ -815,3 +815,64 @@ def test_attackgraph_transitive():
     assert asset4_test_step in asset6_test_step.children
     assert asset5_test_step in asset6_test_step.children
     assert asset6_test_step in asset6_test_step.children
+
+
+def test_attackgraph_transitive_advanced():
+    # TODO: Improve this test to actually use more complex transitive
+    # relationships. Right now it is just the asset and any direct
+    # associations it may have.
+
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/transitive_advanced.mal'))
+    test_lang_graph.save_to_file('tmp/trans_adv_lang_graph.yml')
+    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
+    test_model = Model('Test Model', lang_classes_factory)
+
+    asset1 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 1')
+    asset2 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 2')
+    asset3 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 3')
+    asset4 = lang_classes_factory.get_asset_class('TestAsset')(
+        name = 'TestAsset 4')
+
+    test_model.add_asset(asset1)
+    test_model.add_asset(asset2)
+    test_model.add_asset(asset3)
+    test_model.add_asset(asset4)
+
+    assocA = create_association(test_model,
+        left_assets = [asset1],
+        right_assets = [asset2, asset3],
+        assoc_type = 'TransitiveTestAssocA',
+        left_fieldname = 'fieldA1',
+        right_fieldname = 'fieldA2')
+    test_model.add_association(assocA)
+
+    assocB = create_association(test_model,
+        left_assets = [asset1],
+        right_assets = [asset3, asset4],
+        assoc_type = 'TransitiveTestAssocB',
+        left_fieldname = 'fieldB1',
+        right_fieldname = 'fieldB2')
+    test_model.add_association(assocB)
+
+    test_attack_graph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+
+    asset1_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 1:test_step')
+    asset2_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 2:test_step')
+    asset3_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 3:test_step')
+    asset4_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 4:test_step')
+
+    assert asset1_test_step in asset1_test_step.children
+    assert asset2_test_step not in asset1_test_step.children
+    assert asset3_test_step in asset1_test_step.children
+    assert asset4_test_step not in asset1_test_step.children
