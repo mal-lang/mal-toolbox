@@ -1193,11 +1193,19 @@ class LanguageGraph():
                     right_reverse_chain = \
                         self.reverse_expr_chain(expr_chain.right_link,
                         reverse_chain)
-                    new_expr_chain = ExpressionsChain(
-                        type = expr_chain.type,
-                        left_link = left_reverse_chain,
-                        right_link = right_reverse_chain
-                    )
+                    if expr_chain.type == 'collect':
+                        new_expr_chain = ExpressionsChain(
+                            type = expr_chain.type,
+                            left_link = right_reverse_chain,
+                            right_link = left_reverse_chain
+                        )
+                    else:
+                        new_expr_chain = ExpressionsChain(
+                            type = expr_chain.type,
+                            left_link = left_reverse_chain,
+                            right_link = right_reverse_chain
+                        )
+
                     return new_expr_chain
 
                 case 'transitive':

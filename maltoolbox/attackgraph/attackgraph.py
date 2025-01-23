@@ -495,7 +495,6 @@ class AttackGraph():
                 )
                 return rh_targets
 
-
             case _:
                 msg = 'Unknown attack expressions chain type: %s'
                 logger.error(
