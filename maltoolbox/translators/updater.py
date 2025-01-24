@@ -1,10 +1,11 @@
+import argparse
 import json
 import logging
 
 import yaml
 
 from ..model import Model, AttackerAttachment
-from ..language import LanguageClassesFactory
+from ..language import LanguageClassesFactory, LanguageGraph
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,9 @@ def load_model_from_older_version(
         version: str
     ) -> Model:
     match (version):
+        case '0.0.38':
+            return load_model_from_version_0_0_39(filename,
+                lang_classes_factory)
         case '0.0.39':
             return load_model_from_version_0_0_39(filename,
                 lang_classes_factory)
@@ -130,3 +134,19 @@ def load_model_from_version_0_0_39(
         logger.error(msg)
         raise ValueError(msg)
     return None
+
+
+if __name__ == '__main__':
+    """CLI to load old version model and save to new format"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('model_file', type=str)
+    parser.add_argument('language', type=str, help=".mar file")
+    parser.add_argument('mal_toolbox_version', type=str, help="X.X.X")
+    parser.add_argument('outfile', type=str, help="outfile for new converted model")
+    args = parser.parse_args()
+
+    lang_graph = LanguageGraph.from_mar_archive(args.language)
+    lang_classes_factory = LanguageClassesFactory(lang_graph)
+    model = load_model_from_older_version(
+        args.model_file, lang_classes_factory, args.mal_toolbox_version)
+    model.save_to_file(args.outfile)
