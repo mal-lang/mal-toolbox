@@ -117,6 +117,10 @@ class AttackGraphNode:
         return copied_node
 
 
+    def __hash__(self):
+        return hash(self.full_name)
+
+
     def is_compromised(self) -> bool:
         """
         Return True if any attackers have compromised this node.
