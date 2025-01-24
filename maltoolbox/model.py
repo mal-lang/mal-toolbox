@@ -15,7 +15,11 @@ from .file_utils import (
 )
 
 from . import __version__
-from .exceptions import DuplicateModelAssociationError, ModelAssociationException
+from .exceptions import (
+    DuplicateModelAssociationError,
+    ModelAssociationException,
+    ModelException
+)
 
 if TYPE_CHECKING:
     from typing import Any, Optional, TypeAlias
@@ -864,4 +868,11 @@ class Model():
             serialized_model = load_dict_from_json_file(filename)
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
-        return cls._from_dict(serialized_model, lang_classes_factory)
+
+        try:
+            return cls._from_dict(serialized_model, lang_classes_factory)
+        except Exception as e:
+            raise ModelException(
+                "Could not load model. It might be of an older version. "
+                "Try to upgrade it with 'maltoolbox upgrade-model'"
+            ) from e

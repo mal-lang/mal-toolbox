@@ -1,0 +1,251 @@
+{
+  "metadata": {
+    "name": "Simple Example Model",
+    "langVersion": "1.0.0",
+    "langID": "org.mal-lang.coreLang",
+    "malVersion": "0.1.0-SNAPSHOT",
+    "info": "Created by the mal-toolbox model python module."
+  },
+  "assets": {
+    "0": {
+      "name": "OS App",
+      "metaconcept": "Application",
+      "eid": "0",
+      "defenses": {}
+    },
+    "1": {
+      "name": "Program 1",
+      "metaconcept": "Application",
+      "eid": "1",
+      "defenses": {
+        "notPresent": "1.0"
+      }
+    },
+    "2": {
+      "name": "Program 2",
+      "metaconcept": "Application",
+      "eid": "2",
+      "defenses": {}
+    },
+    "3": {
+      "name": "IDPS 1",
+      "metaconcept": "IDPS",
+      "eid": "3",
+      "defenses": {}
+    },
+    "4": {
+      "name": "SoftwareVulnerability:4",
+      "metaconcept": "SoftwareVulnerability",
+      "eid": "4",
+      "defenses": {
+        "lowPrivilegesRequired": "1.0",
+        "availabilityImpactLimitations": "1.0"
+      }
+    },
+    "5": {
+      "name": "Data:5",
+      "metaconcept": "Data",
+      "eid": "5",
+      "defenses": {}
+    },
+    "6": {
+      "name": "Credentials:6",
+      "metaconcept": "Credentials",
+      "eid": "6",
+      "defenses": {
+        "unique": "0.0"
+      }
+    },
+    "7": {
+      "name": "Credentials:7",
+      "metaconcept": "Credentials",
+      "eid": "7",
+      "defenses": {
+        "unique": "0.0"
+      }
+    },
+    "8": {
+      "name": "Identity:8",
+      "metaconcept": "Identity",
+      "eid": "8",
+      "defenses": {}
+    },
+    "9": {
+      "name": "Credentials:9",
+      "metaconcept": "Credentials",
+      "eid": "9",
+      "defenses": {
+        "unique": "0.0"
+      }
+    },
+    "10": {
+      "name": "Credentials:10",
+      "metaconcept": "Credentials",
+      "eid": "10",
+      "defenses": {}
+    },
+    "11": {
+      "name": "Identity:11",
+      "metaconcept": "Identity",
+      "eid": "11",
+      "defenses": {}
+    },
+    "12": {
+      "name": "User:12",
+      "metaconcept": "User",
+      "eid": "12",
+      "defenses": {
+        "noPasswordReuse": "0.0"
+      }
+    },
+    "13": {
+      "name": "Group:13",
+      "metaconcept": "Group",
+      "eid": "13",
+      "defenses": {}
+    }
+  },
+  "associations": [
+    {
+      "metaconcept": "AppExecution",
+      "association": {
+        "hostApp": [
+          "0"
+        ],
+        "appExecutedApps": [
+          "1",
+          "2",
+          "3"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ApplicationVulnerability_SoftwareVulnerability_Application",
+      "association": {
+        "vulnerabilities": [
+          "4"
+        ],
+        "application": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "AppContainment",
+      "association": {
+        "containedData": [
+          "5"
+        ],
+        "containingApp": [
+          "2"
+        ]
+      }
+    },
+    {
+      "metaconcept": "EncryptionCredentials",
+      "association": {
+        "encryptCreds": [
+          "6"
+        ],
+        "encryptedData": [
+          "5"
+        ]
+      }
+    },
+    {
+      "metaconcept": "ConditionalAuthentication",
+      "association": {
+        "credentials": [
+          "6"
+        ],
+        "requiredFactors": [
+          "7"
+        ]
+      }
+    },
+    {
+      "metaconcept": "IdentityCredentials",
+      "association": {
+        "identities": [
+          "8"
+        ],
+        "credentials": [
+          "6"
+        ]
+      }
+    },
+    {
+      "metaconcept": "IdentityCredentials",
+      "association": {
+        "identities": [
+          "11"
+        ],
+        "credentials": [
+          "9",
+          "10"
+        ]
+      }
+    },
+    {
+      "metaconcept": "UserAssignedIdentities",
+      "association": {
+        "users": [
+          "12"
+        ],
+        "userIds": [
+          "8",
+          "11"
+        ]
+      }
+    },
+    {
+      "metaconcept": "Dependence_Information_Application",
+      "association": {
+        "infoDependedUpon": [
+          "13"
+        ],
+        "dependentApps": [
+          "3"
+        ]
+      }
+    }
+  ],
+  "attackers": {
+    "14": {
+      "name": "Attacker:14",
+      "entry_points": {
+        "6": {
+          "attack_steps": [
+            "attemptCredentialsReuse"
+          ]
+        },
+        "7": {
+          "attack_steps": [
+            "attemptCredentialsReuse",
+            "guessCredentials"
+          ]
+        },
+        "0": {
+          "attack_steps": [
+            "softwareProductAbuse"
+          ]
+        },
+        "9": {
+          "attack_steps": [
+            "attemptCredentialsReuse"
+          ]
+        }
+      }
+    },
+    "15": {
+      "name": "Attacker:15",
+      "entry_points": {
+        "0": {
+          "attack_steps": [
+            "fullAccess"
+          ]
+        }
+      }
+    }
+  }
+}

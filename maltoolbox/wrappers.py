@@ -13,8 +13,8 @@ from maltoolbox.attackgraph.analyzers.apriori import (
 from maltoolbox.exceptions import AttackGraphStepExpressionError
 from maltoolbox import log_configs
 
-
 logger = logging.getLogger(__name__)
+
 
 def create_attack_graph(
         lang_file: str,
@@ -39,7 +39,10 @@ def create_attack_graph(
         lang_graph.save_to_file(log_configs['langspec_file'])
 
     lang_classes_factory = LanguageClassesFactory(lang_graph)
-    instance_model = Model.load_from_file(model_file, lang_classes_factory)
+
+    instance_model = (
+        Model.load_from_file(model_file, lang_classes_factory)
+    )
 
     if log_configs['model_file']:
         instance_model.save_to_file(log_configs['model_file'])

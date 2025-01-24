@@ -2,13 +2,14 @@
 Command-line interface for MAL toolbox operations
 
 Usage:
-    maltoolbox attack-graph generate [options] <model> <lang_file>
+    maltoolbox attack-graph generate [options] <model_file> <lang_file>
     maltoolbox compile <lang_file> <output_file>
+    maltoolbox upgrade-model <model_file> <lang_file> <output_file>
 
 Arguments:
-    <model>         Path to JSON instance model file.
+    <model_file>    Path to JSON instance model file.
     <lang_file>     Path to .mar or .mal file containing MAL spec.
-    <output_file>   Path to write the JSON result of the compilation.
+    <output_file>   Path to write the result of the compilation (yml/json).
 
 Options:
     --neo4j         Ingest attack graph and instance model into a Neo4j instance
@@ -24,12 +25,16 @@ Notes:
 
 import logging
 import json
+import zipfile
 import docopt
 
-from maltoolbox.wrappers import create_attack_graph
+from .wrappers import create_attack_graph
 from . import log_configs, neo4j_configs
 from .language.compiler import MalCompiler
+from .language.languagegraph import LanguageGraph
+from .language.classes_factory import LanguageClassesFactory
 from .ingestors import neo4j
+from .translators.updater import load_model_from_older_version
 
 logger = logging.getLogger(__name__)
 
@@ -75,9 +80,38 @@ def compile(lang_file: str, output_file: str) -> None:
         json.dump(compiler.compile(lang_file), f, indent=2)
 
 
-args = docopt.docopt(__doc__)
+def upgrade_model(model_file: str, lang_file: str, output_file: str):
+    try:
+        lang_graph = LanguageGraph.from_mar_archive(lang_file)
+    except zipfile.BadZipFile:
+        lang_graph = LanguageGraph.from_mal_spec(lang_file)
 
-if args['attack-graph'] and args['generate']:
-    generate_attack_graph(args['<model>'], args['<lang_file>'], args['--neo4j'])
-elif args['compile']:
-    compile(args['<lang_file>'], args['<output_file>'])
+    if log_configs['langspec_file']:
+        lang_graph.save_to_file(log_configs['langspec_file'])
+
+    lang_classes_factory = LanguageClassesFactory(lang_graph)
+
+    model = load_model_from_older_version(
+        model_file, lang_classes_factory
+    )
+    model.save_to_file(output_file)
+
+
+def main():
+    args = docopt.docopt(__doc__)
+
+    if args['attack-graph'] and args['generate']:
+        generate_attack_graph(
+            args['<model_file>'], args['<lang_file>'], args['--neo4j']
+        )
+    elif args['compile']:
+        compile(
+            args['<lang_file>'], args['<output_file>']
+        )
+    elif args['upgrade-model']:
+        upgrade_model(
+            args['<model_file>'], args['<lang_file>'], args['<output_file>']
+        )
+
+if __name__ == "__main__":
+    main()

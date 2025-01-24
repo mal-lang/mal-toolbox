@@ -35,6 +35,9 @@ classifiers = [
 "Bug Tracker" = "https://github.com/mal-lang/mal-toolbox/issues"
 "Repository" = "https://github.com/mal-lang/mal-toolbox"
 
+[project.scripts]
+"maltoolbox" = "maltoolbox.__main__:main"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
