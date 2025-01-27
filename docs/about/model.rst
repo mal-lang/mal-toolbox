@@ -23,6 +23,16 @@ Example:
 Load/create a model
 """""""""""""""""""
 
+With the MAL GUI
+''''''''''''''''
+
+You can use the `MAL GUI <https://github.com/mal-lang/mal-gui/>`_ to create models.
+This is a program that lets you drag and drop assets and associations given that you have a MAL language define already.
+It will output model files.
+
+In Python code
+''''''''''''''
+
 First, you have to load the MAL language:
 
 .. code-block:: python
@@ -57,13 +67,17 @@ Without existing model instance file:
     instance_model = Model("Example Model", lang_classes_factory)
 
     # Create and add asset of type supported by the MAL language
-    asset1 = model.lang_classes_factory.ns.Application(name="Application 1")
-    asset2 = model.lang_classes_factory.ns.Application(name="Application 2")
+    application_class = lang_classes_factory.get_asset_class('Application')
+    asset1 = application_class(name="Application 1")
+    asset2 = application_class(name="Application 2")
     instance_model.add_asset(asset1)
     instance_model.add_asset(asset2)
 
     # Create and add association
-    association = model.lang_classes_factory.ns.AppExecution(hostApp=[asset1], appExecutedApps=[asset2])
+    app_execution_class = lang_classes_factory.get_association_class(
+        'AppExecution_hostApp_appExecutedApps'
+    )
+    association = app_execution_class(hostApp=[asset1], appExecutedApps=[asset2])
     instance_model.add_association(association)
 
 For more info on how to use MAL Toolbox,
