@@ -6,8 +6,8 @@ The :class:`maltoolbox.language.languagegraph.LanguageGraph` contains a graph re
 
 It will also contain a language specification which is a dict containing the language (asset types, association types and attack steps).
 
-Load an AttackGraph
-"""""""""""""""""""
+Load a LanguageGraph
+""""""""""""""""""""
 
 .. code-block:: python
 
