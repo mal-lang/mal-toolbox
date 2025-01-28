@@ -141,11 +141,14 @@ def load_model_from_scad_archive(
         # matches the target field and vice versa.
         left_field = child.attrib['sourceProperty']
         right_field = child.attrib['targetProperty']
-        lang_graph_assoc = lang_graph.get_association_by_fields_and_assets(
-            left_field,
-            right_field,
-            left_asset.type,
-            right_asset.type)
+        lang_graph_assoc = None
+        for assoc in left_asset.lg_asset.associations:
+            if (assoc.left_field.fieldname == left_field and
+                    assoc.right_field.fieldname == right_field) or \
+                    (assoc.left_field.fieldname == right_field and
+                    assoc.right_field.fieldname == left_field):
+                lang_graph_assoc = assoc
+                break
 
         if not lang_graph_assoc:
             raise LookupError(
