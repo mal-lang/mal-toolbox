@@ -498,7 +498,7 @@ class ExpressionsChain:
             serialized_expr_chain: dict,
             lang_graph: LanguageGraph,
         ) -> Optional[ExpressionsChain]:
-        """Create LanguageGraph from dict
+        """Create ExpressionsChain from dict
         Args:
         serialized_expr_chain   - expressions chain in dict format
         lang_graph              - the LanguageGraph that contains the assets,
