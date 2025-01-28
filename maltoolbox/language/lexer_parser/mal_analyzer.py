@@ -169,6 +169,7 @@ class malAnalyzer(malAnalyzerInterface):
         
     def _check_to_step(self, asset, expr) -> None:
         match (expr['type']):
+            # Returns an attackStep if it exists for this asset
             case 'attackStep':
                 if (asset in self._assets.keys()):
                     for attackStep in self._assets[asset]['obj']['attackSteps']:
@@ -178,13 +179,10 @@ class malAnalyzer(malAnalyzerInterface):
                 logging.error(f'Attack step \'{expr["name"]}\' not defined for asset \'{asset}\'')
                 self._error = True
                 return None
-            case 'collect' | 'union' | 'intersection' | 'difference': #'AST.StepExpr':
+            # Returns an attackStep if it exists for the asset returned by the lhs expression 
+            case 'collect':
                 if (left_target := self._check_to_asset(asset, expr['lhs'])):
                     return self._check_to_step(left_target, expr['rhs'])
-                return None
-            case 'subType':
-                if (sub_type := self._get_asset_name(expr['subType'])):
-                    return self._check_association_expr(sub_type, expr['stepExpression'])
                 return None
             case _:
                 logging.error('Last step is not attack step')
