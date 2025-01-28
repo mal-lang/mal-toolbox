@@ -60,8 +60,8 @@ class LanguageGraphAsset:
             'is_abstract': self.is_abstract
         }
 
-        for assoc in self.own_associations.values():
-            node_dict['associations'][assoc.full_name] = assoc.to_dict()
+        for fieldname, assoc in self.own_associations.items():
+            node_dict['associations'][fieldname] = assoc.to_dict()
         for attack_step in self.attack_steps.values():
             node_dict['attack_steps'][attack_step.name] = \
                 attack_step.to_dict()
@@ -317,35 +317,6 @@ class LanguageGraphAssociation:
         raise LanguageGraphAssociationError(msg % (fieldname, self.name))
 
 
-    def get_opposite_asset(
-            self, asset: LanguageGraphAsset
-        ) -> Optional[LanguageGraphAsset]:
-        """
-        Return the opposite asset if the association matches the asset given
-        as a parameter. A match can either be an explicit one or if the asset
-        given subassets either of the two assets that are part of the
-        association.
-
-        Arguments:
-        asset       - the asset to look for
-        Return the other asset if the parameter matched either of the
-        two. None, otherwise.
-        """
-        #TODO Should check to see which one is the tightest fit for
-        #     associations between assets on different levels of the same
-        #     inheritance chain.
-        if asset.is_subasset_of(self.left_field.asset):
-            return self.right_field.asset
-        if asset.is_subasset_of(self.right_field.asset):
-            return self.left_field.asset
-
-        logger.warning(
-            'Requested asset "%s" from association %s'
-            'which did not contain it!', asset.name, self.name
-        )
-        return None
-
-
 @dataclass
 class LanguageGraphAttackStep:
     name: str
@@ -484,7 +455,7 @@ class ExpressionsChain:
                     )
 
                 return {
-                    self.association.full_name:
+                    self.association.name:
                     {
                         'fieldname': self.fieldname,
                         'asset type': asset_type
@@ -567,10 +538,26 @@ class ExpressionsChain:
                 assoc_name = list(serialized_expr_chain.keys())[0]
                 target_asset = lang_graph.assets[\
                     serialized_expr_chain[assoc_name]['asset type']]
+                fieldname = serialized_expr_chain[assoc_name]['fieldname']
+
+                association = None
+                for assoc in target_asset.associations.values():
+                    if assoc.contains_fieldname(fieldname) and \
+                            assoc.name == assoc_name:
+                        association = assoc
+                        break
+
+                if association is None:
+                    msg = 'Failed to find association "%s" with '\
+                        'fieldname "%s"'
+                    logger.error(msg % (assoc_name, fieldname))
+                    raise LanguageGraphException(msg % (assoc_name,
+                        fieldname))
+
                 new_expr_chain = ExpressionsChain(
                     type = 'field',
-                    association = target_asset.associations[assoc_name],
-                    fieldname = serialized_expr_chain[assoc_name]['fieldname']
+                    association = association,
+                    fieldname = fieldname
                 )
                 return new_expr_chain
 
@@ -669,6 +656,12 @@ class LanguageGraph():
 
         return serialized_graph
 
+    def _link_association_to_assets(cls,
+            assoc: LanguageGraphAssociation,
+            left_asset: LanguageGraphAsset,
+            right_asset: LanguageGraphAsset):
+        left_asset.own_associations[assoc.right_field.fieldname] = assoc
+        right_asset.own_associations[assoc.left_field.fieldname] = assoc
 
     def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
@@ -766,11 +759,8 @@ class LanguageGraph():
                 )
 
                 # Add the association to the left and right asset
-                associated_assets = [left_asset, right_asset]
-                while associated_assets != []:
-                    asset = associated_assets.pop()
-                    if assoc_node.full_name not in asset.own_associations:
-                        asset.own_associations[assoc_node.full_name] = assoc_node
+                lang_graph._link_association_to_assets(assoc_node,
+                    left_asset, right_asset)
 
         # Recreate the variables
         for asset_dict in serialized_graph.values():
@@ -1360,11 +1350,8 @@ class LanguageGraph():
                 )
 
                 # Add the association to the left and right asset
-                associated_assets = [left_asset, right_asset]
-                while associated_assets != []:
-                    asset = associated_assets.pop()
-                    if assoc_node.full_name not in asset.own_associations:
-                        asset.own_associations[assoc_node.full_name] = assoc_node
+                self._link_association_to_assets(assoc_node,
+                    left_asset, right_asset)
 
         # Set the variables
         for asset in self.assets.values():
@@ -1681,51 +1668,3 @@ class LanguageGraph():
         self._generate_graph()
 
 
-    def get_association_by_fields_and_assets(
-            self,
-            first_field: str,
-            second_field: str,
-            first_asset_name: str,
-            second_asset_name: str
-        ) -> Optional[LanguageGraphAssociation]:
-        """
-        Get an association based on its field names and asset types
-
-        Arguments:
-        first_field         - a string containing the first field
-        second_field        - a string containing the second field
-        first_asset_name    - a string representing the first asset type
-        second_asset_name   - a string representing the second asset type
-
-        Return:
-        The association matching the fieldnames and asset types.
-        None if there is no match.
-        """
-        first_asset = self.assets[first_asset_name]
-        second_asset = self.assets[second_asset_name]
-
-        for assoc in first_asset.associations.values():
-            logger.debug(
-                'Compare ("%s", "%s", "%s", "%s") to '
-                '("%s", "%s", "%s", "%s").',
-                first_asset_name, first_field,
-                second_asset_name, second_field,
-                assoc.left_field.asset.name, assoc.left_field.fieldname,
-                assoc.right_field.asset.name, assoc.right_field.fieldname
-            )
-
-            # If the asset and fields match either way we accept it as a
-            # match.
-            if assoc.left_field.fieldname == first_field and \
-                assoc.right_field.fieldname == second_field and \
-                first_asset.is_subasset_of(assoc.left_field.asset) and \
-                second_asset.is_subasset_of(assoc.right_field.asset):
-                return assoc
-
-            if assoc.left_field.fieldname == second_field and \
-                assoc.right_field.fieldname == first_field and \
-                second_asset.is_subasset_of(assoc.left_field.asset) and \
-                first_asset.is_subasset_of(assoc.right_field.asset):
-                return assoc
-
-        return None
