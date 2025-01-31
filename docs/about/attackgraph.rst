@@ -34,12 +34,12 @@ Generating an AttackGraph
 """""""""""""""""""""""""
 
 If you already have an instance model file and .mal/.mar, the easiest way to create an AttackGraph
-is to use the wrapper :func:`maltoolbox.wrappers.create_attack_graph`
+is to use the wrapper :func:`maltoolbox.attackgraph.create_attack_graph`
 which combines all steps from model file to the AttackGraph:
 
 .. code-block:: python
     
-    from maltoolbox.wrappers import create_attack_graph
+    from maltoolbox.attackgraph import create_attack_graph
 
     lang_file = "org.mal-lang.coreLang-1.0.0.mar"
     model_file = "example-model.yml"

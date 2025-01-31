@@ -28,8 +28,8 @@ import json
 import zipfile
 import docopt
 
-from .wrappers import create_attack_graph
 from . import log_configs, neo4j_configs
+from .attackgraph import create_attack_graph
 from .language.compiler import MalCompiler
 # TODO: Re-enable this import when the neo4j module has been updated
 # from .ingestors import neo4j
@@ -44,7 +44,7 @@ def generate_attack_graph(
         send_to_neo4j: bool
     ) -> None:
     """Create an attack graph and optionally send to neo4j
-    
+
     Args:
     model_file      - path to the model file
     lang_file       - path to the language file

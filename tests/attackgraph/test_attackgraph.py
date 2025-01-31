@@ -4,10 +4,17 @@ import copy
 import pytest
 from unittest.mock import patch
 
+from conftest import path_testdata
 from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
-from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
+from maltoolbox.attackgraph import (
+    AttackGraph,
+    AttackGraphNode,
+    Attacker,
+    create_attack_graph
+)
 from maltoolbox.model import Model, AttackerAttachment
+
 
 @pytest.fixture
 def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
@@ -796,3 +803,12 @@ def test_attackgraph_transitive_advanced():
     assert asset2_test_step not in asset1_test_step.children
     assert asset3_test_step in asset1_test_step.children
     assert asset4_test_step not in asset1_test_step.children
+
+
+def test_create_attack_graph():
+    """See that the create attack graph wrapper works"""
+    mar = path_testdata('org.mal-lang.coreLang-1.0.0.mar')
+    model = path_testdata('simple_example_model.yml')
+
+    # Make sure that it runs without errors
+    create_attack_graph(mar, model)

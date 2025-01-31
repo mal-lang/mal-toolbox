@@ -12,11 +12,12 @@ Currently these are:
 """
 
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import logging
 
-from ..attackgraph import AttackGraph
-from ..node import AttackGraphNode
+if TYPE_CHECKING:
+    from ..attackgraph import AttackGraph
+    from ..node import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
