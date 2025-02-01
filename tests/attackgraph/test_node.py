@@ -1,55 +1,56 @@
-"""Unit tests for AttackGraphNode functionality"""
+"""Unit tests for AttackGraphNode functionality."""
 
-from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
+from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.language import LanguageGraph
 
-def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
-    r"""Create a graph from nodes
 
-            node1
-            /    \
+def test_attackgraphnode(dummy_lang_graph: LanguageGraph) -> None:
+    r"""Create a graph from nodes.
+
+        node1
+        /    \
         node2    node3
-        /   \   /    \
+    /   \   /    \
     node4  node5    node6
     """
-
-    dummy_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyAttackStep']
+    dummy_attack_step = dummy_lang_graph.assets['DummyAsset'].attack_steps[
+        'DummyAttackStep'
+    ]
 
     # Create a graph of nodes according to above diagram
     node1 = AttackGraphNode(
-        type = "or",
-        name = "node1",
-        lang_graph_attack_step = dummy_attack_step,
+        type='or',
+        name='node1',
+        lang_graph_attack_step=dummy_attack_step,
     )
     node2 = AttackGraphNode(
-        type = "defense",
-        name = "node2",
-        lang_graph_attack_step = dummy_attack_step,
-        defense_status=1.0
+        type='defense',
+        name='node2',
+        lang_graph_attack_step=dummy_attack_step,
+        defense_status=1.0,
     )
     node3 = AttackGraphNode(
-        type = "defense",
-        name = "node3",
-        lang_graph_attack_step = dummy_attack_step,
-        defense_status=0.0
+        type='defense',
+        name='node3',
+        lang_graph_attack_step=dummy_attack_step,
+        defense_status=0.0,
     )
     node4 = AttackGraphNode(
-        type = "or",
-        name = "node4",
-        lang_graph_attack_step = dummy_attack_step,
+        type='or',
+        name='node4',
+        lang_graph_attack_step=dummy_attack_step,
     )
     node5 = AttackGraphNode(
-        type = "and",
-        name = "node5",
-        lang_graph_attack_step = dummy_attack_step,
+        type='and',
+        name='node5',
+        lang_graph_attack_step=dummy_attack_step,
     )
     node6 = AttackGraphNode(
-        type = "or",
-        name = "node6",
-        lang_graph_attack_step = dummy_attack_step,
+        type='or',
+        name='node6',
+        lang_graph_attack_step=dummy_attack_step,
     )
 
     node1.children = [node2, node3]
@@ -63,9 +64,7 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
 
     # Make sure compromised node has attacker added to it
     attacker = Attacker(
-        name = "Test Attacker",
-        entry_points = [node1],
-        reached_attack_steps = []
+        name='Test Attacker', entry_points=[node1], reached_attack_steps=[]
     )
 
     attack_graph = AttackGraph(dummy_lang_graph)
