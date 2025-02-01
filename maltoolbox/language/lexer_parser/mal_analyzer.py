@@ -204,8 +204,9 @@ class malAnalyzer(malAnalyzerInterface):
             # variable - verify if there is a variable with this name
             case 'variable':
                 return self._check_variable_expr(asset, expr)
-            case 'collect': #'StepExpr':
-                return self._check_step_expr(asset, expr)
+            # collect - return asset pointed by all the parts in the expression
+            case 'collect':
+                return self._check_collect_expr(asset, expr)
             case 'union' | 'intersection' | 'difference':
                 return self._check_set_expr(asset, expr)
             case 'transitive':
@@ -249,7 +250,11 @@ class malAnalyzer(malAnalyzerInterface):
         self._error = True
         return None
     
-    def _check_step_expr(self, asset, expr):
+    def _check_collect_expr(self, asset, expr):
+        '''
+        Iteratively, retrieve the asset pointed by the leftmost expression and, recursively, check the rhs associated
+        with each lhs.
+        '''
         if (left_target := self._check_to_asset(asset, expr['lhs'])):
             return self._check_to_asset(left_target, expr['rhs'])
         return None
