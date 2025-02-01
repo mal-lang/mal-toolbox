@@ -1,34 +1,33 @@
-"""Contains wrappers combining more than one of the maltoolbox submodules"""
+"""Contains wrappers combining more than one of the maltoolbox submodules."""
 
 import logging
 import sys
 import zipfile
 
-from maltoolbox.model import Model
-from maltoolbox.language import LanguageGraph, LanguageClassesFactory
-from maltoolbox.attackgraph import AttackGraph
-from maltoolbox.attackgraph.analyzers.apriori import (
-    calculate_viability_and_necessity
-)
-from maltoolbox.exceptions import AttackGraphStepExpressionError
 from maltoolbox import log_configs
-
+from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.attackgraph.analyzers.apriori import calculate_viability_and_necessity
+from maltoolbox.exceptions import AttackGraphStepExpressionError
+from maltoolbox.language import LanguageClassesFactory, LanguageGraph
+from maltoolbox.model import Model
 
 logger = logging.getLogger(__name__)
 
+
 def create_attack_graph(
-        lang_file: str,
-        model_file: str,
-        attach_attackers=True,
-        calc_viability_and_necessity=True
-    ) -> AttackGraph:
-    """Create and return an attack graph
+    lang_file: str,
+    model_file: str,
+    attach_attackers=True,
+    calc_viability_and_necessity=True,
+) -> AttackGraph:
+    """Create and return an attack graph.
 
     Args:
     lang_file                       - path to language file (.mar or .mal)
     model_file                      - path to model file (yaml or json)
     attach_attackers                - whether to run attach_attackers or not
     calc_viability_and_necessity    - whether run apriori calculations or not
+
     """
     try:
         lang_graph = LanguageGraph.from_mar_archive(lang_file)
@@ -47,7 +46,7 @@ def create_attack_graph(
     try:
         attack_graph = AttackGraph(lang_graph, instance_model)
     except AttackGraphStepExpressionError:
-        logger.error(
+        logger.exception(
             'Attack graph generation failed when attempting '
             'to resolve attack step expression!'
         )

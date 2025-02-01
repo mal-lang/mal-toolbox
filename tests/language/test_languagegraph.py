@@ -1,47 +1,46 @@
-"""Tests for the LanguageGraph"""
+"""Tests for the LanguageGraph."""
 
-import pytest
 from conftest import path_testdata
 
 from maltoolbox.language import LanguageGraph
-
 from maltoolbox.language.compiler import MalCompiler
-from maltoolbox.language import LanguageGraph
 
 
-def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
+def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph) -> None:
     """Test to see if saving and loading a language graph to a file produces
     the same language graph. We have to use the json format to save and load
-    because YAML reorders the keys in alphabetical order."""
-    graph_path = "/tmp/langgraph.json"
+    because YAML reorders the keys in alphabetical order.
+    """
+    graph_path = '/tmp/langgraph.json'
     corelang_lang_graph.save_to_file(graph_path)
 
     new_lang_graph = LanguageGraph.load_from_file(graph_path)
 
     assert new_lang_graph._to_dict() == corelang_lang_graph._to_dict()
 
+
 # TODO: Replace this with a dedicated test that just checks for union for
 # assets with the same super asset
-def test_corelang_with_union_different_assets_same_super_asset():
+def test_corelang_with_union_different_assets_same_super_asset() -> None:
     """Uses modified coreLang language specification.
     An attackstep in IAMObject will contain a union between
     Identity and Group, which should be allowed, since they
     share the same super asset.
     """
-
-    mar_file_path = path_testdata("corelang-union-common-ancestor.mar")
+    mar_file_path = path_testdata('corelang-union-common-ancestor.mar')
 
     # Make sure that it can generate
     LanguageGraph.from_mar_archive(mar_file_path)
 
-def test_interleaved_vars():
+
+def test_interleaved_vars() -> None:
     """Check to see if two interleaved variables(variables that contain
     variables from each other, A2 contains B1 and B2 contains A1) were
     resolved correct.
     """
-
-    test_lang_graph = LanguageGraph(MalCompiler().compile(
-        'tests/testdata/interleaved_vars.mal'))
+    test_lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/interleaved_vars.mal')
+    )
     assert 'AssetA' in test_lang_graph.assets
     assert 'AssetB' in test_lang_graph.assets
 
@@ -60,12 +59,15 @@ def test_interleaved_vars():
     assert varB2[0] == assetB
     assert varB2[1].right_link.fieldname == 'fieldB'
 
-def test_inherited_vars():
+
+def test_inherited_vars() -> None:
     LanguageGraph(MalCompiler().compile('tests/testdata/inherited_vars.mal'))
 
-def test_attackstep_override():
-    test_lang_graph = LanguageGraph(MalCompiler().compile(
-        'tests/testdata/attackstep_override.mal'))
+
+def test_attackstep_override() -> None:
+    test_lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/attackstep_override.mal')
+    )
 
     assert 'EmptyParent' in test_lang_graph.assets
     assert 'Child1' in test_lang_graph.assets
@@ -143,6 +145,7 @@ def test_attackstep_override():
     assert fc_target2.full_name in fc_attackstep.children
     assert fc_target3.full_name in fc_attackstep.children
     assert fc_target4.full_name in fc_attackstep.children
+
 
 # TODO: Re-enable this test once the compiler and language are compatible with
 # one another.

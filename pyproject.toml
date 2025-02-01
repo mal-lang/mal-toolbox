@@ -1,6 +1,6 @@
 [project]
 name = "mal-toolbox"
-version = "0.2.0"
+version = "0.1.12"
 authors = [
   { name="Andrei Buhaiu", email="buhaiu@kth.se" },
   { name="Giuseppe Nebbione", email="nebbione@kth.se" },
@@ -56,3 +56,164 @@ exclude = [
   'maltoolbox/language/compiler'
 ]
 allow_redefinition = true
+
+[tool.ruff]
+# Same as TWMN version
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+# Enable all available lints...
+select = ["ALL"]
+preview = true
+
+# ...except for these:
+# NOTE: Some rules are disabled due to either conflicting with, or being made redundant by,
+# formatter checks (see https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
+# The following lines can be read as `<rule> # <description of rule> (<reason for disabling>)`
+ignore = [
+    "ANN1",   # Require type annotations for `self` (these are unnecessary)
+    "FIX",    # Forbid TODO, FIXME etc. in the code (these should be reviewed individually)
+    "D203",   # Require one blank line before class docstring (doctrings should be directly after class definition)
+    "D213",   # Start multi-line docstring on the line after """ (our convention is to start on the same line)
+    "TD002",  # Require author for TODOs (TODOs don't have to be explicitly assigned)
+    "TD003",  # Require issue link following TODO (TODOs don't have to be related to an issue)
+    "Q",      # Ensure proper quoting style (checked by formatter)
+    "W191",   # Use tabs for indentation (formatter config disallows this)
+    "E111",   # Ensure proper indentation style (checked by formatter)
+    "E114",   # Ensure proper indentation style (checked by formatter)
+    "E117",   # Ensure proper indentation style (checked by formatter)
+    "D206",   # Use spaces for indentation (checked by formatter)
+    "D300",   # Forbid the use of single quotes for docstrings (checked by formatter)
+    "COM812", # Require trailing commas where applicable (checked by formatter)
+    "COM819", # Forbid trailing comma on single line constructs (checked by formatter)
+    "ISC001", # Forbid implicitly concatenated string literals on one line (checked by formatter)
+    "ISC002", # Forbid implicitly concatenated string literals over multiple lines (checked by formatter)
+    "E501",   # Forbid lines that are too long (checked by formatter)
+    # Additionally, the formatter may fail to wrap certain lines, thus using the linter for
+    # this rule instead of the formatter risks failing even when the formatter has been run
+    "INP001",  # implicit-namespace-package, we do want to support namespace packages
+    "PLR0912", # C901 is a more general check of complexity
+    "S603",    # unreliable check, also we don't need it (we don't handle user input)
+    "CPY001",  # TWMN files don't contain license headers
+    "S404",    # Warn about usage of subprocess for security concerns
+    # (1. we don't handle user input, 2. must sometimes use either way)
+    "DOC", # Ruff will soon replace pydoclint in our setup. However, it does not currently
+    # support the Sphinx-style doctrings we use, so until they do, these rules will
+    # yield incorrect results. See https://github.com/astral-sh/ruff/issues/12434.
+
+
+    # TODO: remove these one by one and fix the issues
+    "D102",
+    "ANN201",
+    "F405",
+    "N802",
+    "ANN001",
+    "D205",
+    "D417",
+    "PLR6301",
+    "D107",
+    "SLF001",
+    "N803",
+    "D106",
+    "PLC0205",
+    "PLR2004",
+    "N806",
+    "ERA001",
+    "D103",
+    "C901",
+    "N815",
+    "G004",
+    "D101",
+    "D105",
+    "PLR0915",
+    "RUF012",
+    "S101",
+    "S108",
+    "PLC0414",
+    "PTH123",
+    "PLR0914",
+    "FBT001",
+    "D100",
+    "TRY004",
+    "FBT002",
+    "G002",
+    "D401",
+    "PLW2901",
+    "PLR0913",
+    "PLR0917",
+    "FBT003",
+    "A001",
+    "PTH120",
+    "D104",
+    "D419",
+    "ANN204",
+    "A002",
+    "TD004",
+    "PTH118",
+    "N801",
+    "W505",
+    "PLR0904",
+    "PLR0911",
+    "YTT203",
+    "ANN202",
+    "PT011",
+    "PT018",
+    "SIM102",
+    "ARG001",
+    "PTH100",
+    "E402",
+    "E741",
+    "F402",
+    "F403",
+    "UP031",
+    "FURB101",
+    "ANN002",
+    "ANN003",
+    "ANN401",
+    "S314",
+    "S405",
+    "B018",
+    "EXE001",
+    "ISC003",
+    "G003",
+    "ARG002",
+    "PTH103",
+    "PTH119",
+    "N818",
+    "E743",
+    "PLC1901",
+    "PLR1702",
+]
+
+# Allow unused variables only if they're named `_`.
+dummy-variable-rgx = "^_$"
+
+# Try to fix all that it can
+fixable = ["ALL"]
+
+# Override certain rules based on file path
+[tool.ruff.lint.per-file-ignores]
+# Test files
+"**/tests/*" = [
+    "PLR2004", # Allow magic value comparisons
+    "S101",    # Allow `assert` statements
+    "S311",    # Allow use of the `random` module (no need for cryptographic security)
+]
+
+# Don't require superfluous parentheses in pytest fixures.
+# See https://github.com/astral-sh/ruff/pull/12106 for discussion.
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = true
+known-first-party = ["maltoolbox"]
+
+# Unless this is explicitly set, Ruff won't check for long lines in docstrings.
+# Thus, set this to the same ass Ruff's default length (88).
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 88

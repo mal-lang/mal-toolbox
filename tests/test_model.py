@@ -1,53 +1,51 @@
-"""Unit tests for maltoolbox.model"""
+"""Unit tests for maltoolbox.model."""
 
 import pytest
+from conftest import path_testdata
 from python_jsonschema_objects.validators import ValidationError
-from conftest import empty_model, path_testdata
 
-from maltoolbox.model import Model, AttackerAttachment
-from maltoolbox.exceptions import ModelAssociationException, DuplicateModelAssociationError
+from maltoolbox.exceptions import (
+    DuplicateModelAssociationError,
+    ModelAssociationException,
+)
+from maltoolbox.model import AttackerAttachment, Model
 
-### Helper functions
+# Helper functions
 
-APP_EXEC_ASSOC_NAME = "AppExecution"
-DATA_CONTAIN_ASSOC_NAME = "DataContainment"
+APP_EXEC_ASSOC_NAME = 'AppExecution'
+DATA_CONTAIN_ASSOC_NAME = 'DataContainment'
+
 
 def create_application_asset(model, name):
-    """Helper function to create an asset of coreLang type Application"""
-
-    return model.lang_classes_factory.get_asset_class('Application')(
-        name = name)
+    """Helper function to create an asset of coreLang type Application."""
+    return model.lang_classes_factory.get_asset_class('Application')(name=name)
 
 
 def create_data_asset(model, name):
-    """Helper function to create an asset of coreLang type Data"""
-
-    return model.lang_classes_factory.get_asset_class('Data')(name = name)
+    """Helper function to create an asset of coreLang type Data."""
+    return model.lang_classes_factory.get_asset_class('Data')(name=name)
 
 
 def create_association(
-        model,
-        left_assets,
-        right_assets,
-        assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp",
-        right_fieldname="appExecutedApps",
-    ):
+    model,
+    left_assets,
+    right_assets,
+    assoc_type=APP_EXEC_ASSOC_NAME,
+    left_fieldname='hostApp',
+    right_fieldname='appExecutedApps',
+):
     """Helper function to create an association dict with
-    given parameters, useful in tests"""
-
+    given parameters, useful in tests.
+    """
     # Simulate receiving the association from a json file
     association_dict = {
-      assoc_type: {
-        left_fieldname: left_assets,
-        right_fieldname: right_assets
-      }
+        assoc_type: {left_fieldname: left_assets, right_fieldname: right_assets}
     }
 
     # Create the association using the lang_classes_factory
-    association = model.lang_classes_factory.\
-        get_association_class_by_fieldnames(
-            assoc_type, left_fieldname, right_fieldname)()
+    association = model.lang_classes_factory.get_association_class_by_fieldnames(
+        assoc_type, left_fieldname, right_fieldname
+    )()
 
     # Add the assets
     for field, assets in association_dict[assoc_type].items():
@@ -55,13 +53,15 @@ def create_association(
 
     return association
 
-### Tests
 
-def test_attacker_attachment_add_entry_point(model: Model):
+# Tests
+
+
+def test_attacker_attachment_add_entry_point(model: Model) -> None:
     """"""
 
-    asset1 = create_application_asset(model, "Asset1")
-    asset2 = create_application_asset(model, "Asset2")
+    asset1 = create_application_asset(model, 'Asset1')
+    asset2 = create_application_asset(model, 'Asset2')
     model.add_asset(asset1)
     model.add_asset(asset2)
 
@@ -91,11 +91,11 @@ def test_attacker_attachment_add_entry_point(model: Model):
     assert attacker1.entry_points[1][1] == ['access']
 
 
-def test_attacker_attachment_remove_entry_point(model: Model):
+def test_attacker_attachment_remove_entry_point(model: Model) -> None:
     """"""
 
-    asset1 = create_application_asset(model, "Asset1")
-    asset2 = create_application_asset(model, "Asset2")
+    asset1 = create_application_asset(model, 'Asset1')
+    asset2 = create_application_asset(model, 'Asset2')
     model.add_asset(asset1)
     model.add_asset(asset2)
 
@@ -145,11 +145,11 @@ def test_attacker_attachment_remove_entry_point(model: Model):
     assert len(attacker1.entry_points) == 0
 
 
-def test_attacker_attachment_remove_asset(model: Model):
+def test_attacker_attachment_remove_asset(model: Model) -> None:
     """"""
 
-    asset1 = create_application_asset(model, "Asset1")
-    asset2 = create_application_asset(model, "Asset2")
+    asset1 = create_application_asset(model, 'Asset1')
+    asset2 = create_application_asset(model, 'Asset2')
     model.add_asset(asset1)
     model.add_asset(asset2)
 
@@ -201,10 +201,10 @@ def test_attacker_attachment_remove_asset(model: Model):
     assert attacker2.entry_points[0][1] == ['read']
 
 
-def test_add_remove_attacker(model: Model):
+def test_add_remove_attacker(model: Model) -> None:
     """"""
 
-    asset1 = create_application_asset(model, "Asset1")
+    asset1 = create_application_asset(model, 'Asset1')
     model.add_asset(asset1)
 
     attacker1 = AttackerAttachment()
@@ -222,9 +222,9 @@ def test_add_remove_attacker(model: Model):
     model.remove_attacker(attacker2)
     assert len(model.attackers) == 0
 
-def test_model_add_asset(model: Model):
-    """Make sure assets are added correctly"""
 
+def test_model_add_asset(model: Model) -> None:
+    """Make sure assets are added correctly."""
     assets_before = list(model.assets)
 
     # Create an application asset
@@ -237,10 +237,10 @@ def test_model_add_asset(model: Model):
     assert p1 in model.assets
 
 
-def test_model_add_asset_with_id_set(model):
+def test_model_add_asset_with_id_set(model) -> None:
     """Make sure assets are added and next_id correctly updated
-    when id is set explicitly in method call"""
-
+    when id is set explicitly in method call.
+    """
     p1 = create_application_asset(model, 'Program 1')
     p1_id = model.next_id + 10
     model.add_asset(p1, asset_id=p1_id)
@@ -259,10 +259,9 @@ def test_model_add_asset_with_id_set(model):
     assert p2 not in model.assets
 
 
-def test_model_add_asset_duplicate_name(model: Model):
-    """Add several assets with the same name to the model"""
-
-    asset_name = "MyProgram"
+def test_model_add_asset_duplicate_name(model: Model) -> None:
+    """Add several assets with the same name to the model."""
+    asset_name = 'MyProgram'
 
     # Add a new asset
     p1 = create_application_asset(model, asset_name)
@@ -275,7 +274,7 @@ def test_model_add_asset_duplicate_name(model: Model):
     model.add_asset(p2)
     assert len(model.assets) == 2
     # Is this expected - shouldn't p2 have same name as p1?
-    assert model.assets[1].name == f"{asset_name}:{p2.id}"
+    assert model.assets[1].name == f'{asset_name}:{p2.id}'
 
     # Add asset again while not allowing duplicates, expect ValueError
     with pytest.raises(ValueError):
@@ -284,9 +283,8 @@ def test_model_add_asset_duplicate_name(model: Model):
     assert len(model.assets) == 2
 
 
-def test_model_remove_asset(model: Model):
-    """Remove assets from a model"""
-
+def test_model_remove_asset(model: Model) -> None:
+    """Remove assets from a model."""
     # Add two program assets to the model
     p1 = create_application_asset(model, 'Program 1')
     p2 = create_application_asset(model, 'Program 2')
@@ -302,9 +300,8 @@ def test_model_remove_asset(model: Model):
     assert len(model.assets) == num_assets_before - 1
 
 
-def test_model_remove_nonexisting_asset(model: Model):
-    """Removing a non existing asset leads to lookup error"""
-
+def test_model_remove_nonexisting_asset(model: Model) -> None:
+    """Removing a non existing asset leads to lookup error."""
     # Create an asset but don't add it to the model before removing it
     p1 = create_application_asset(model, 'Program 1')
     p1.id = 1  # Needs id to avoid crash in log statement
@@ -312,9 +309,8 @@ def test_model_remove_nonexisting_asset(model: Model):
         model.remove_asset(p1)
 
 
-def test_model_add_association(model: Model):
-    """Make sure associations work as intended"""
-
+def test_model_add_association(model: Model) -> None:
+    """Make sure associations work as intended."""
     # Create two assets
     p1 = create_application_asset(model, 'Program 1')
     p1_id = model.next_id
@@ -327,9 +323,12 @@ def test_model_add_association(model: Model):
 
     # Create an association between p1 and p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
 
     associations_before = list(model.associations)
@@ -345,9 +344,8 @@ def test_model_add_association(model: Model):
     assert association in p2.associations
 
 
-def test_model_add_appexecution_association_two_assets(model: Model):
-    """coreLang specifies that AppExecution only can have one 'left' asset"""
-
+def test_model_add_appexecution_association_two_assets(model: Model) -> None:
+    """CoreLang specifies that AppExecution only can have one 'left' asset."""
     # Add program assets
     p1 = create_application_asset(model, 'Program 1')
     p1_id = model.next_id
@@ -361,15 +359,17 @@ def test_model_add_appexecution_association_two_assets(model: Model):
         # will raise error because two assets (p1,p2)
         # are not allowed in the left field for AppExecution
         create_association(
-            model, assoc_type=APP_EXEC_ASSOC_NAME,
-            left_fieldname="hostApp", right_fieldname="appExecutedApps",
-            left_assets=[p1, p2], right_assets=[p1]
+            model,
+            assoc_type=APP_EXEC_ASSOC_NAME,
+            left_fieldname='hostApp',
+            right_fieldname='appExecutedApps',
+            left_assets=[p1, p2],
+            right_assets=[p1],
         )
 
 
-def test_model_add_association_duplicate(model: Model):
-    """Make sure same association is not added twice"""
-
+def test_model_add_association_duplicate(model: Model) -> None:
+    """Make sure same association is not added twice."""
     # Create three data assets
     d1 = create_data_asset(model, 'Data 1')
     d1_id = model.next_id
@@ -385,21 +385,30 @@ def test_model_add_association_duplicate(model: Model):
 
     # Create an association between (d1, d2) and d3
     association1 = create_association(
-        model, assoc_type=DATA_CONTAIN_ASSOC_NAME,
-        left_fieldname="containingData", right_fieldname="containedData",
-        left_assets=[d1, d2], right_assets=[d3]
+        model,
+        assoc_type=DATA_CONTAIN_ASSOC_NAME,
+        left_fieldname='containingData',
+        right_fieldname='containedData',
+        left_assets=[d1, d2],
+        right_assets=[d3],
     )
     # Create an identical association, but from just d2
     association2 = create_association(
-        model, assoc_type=DATA_CONTAIN_ASSOC_NAME,
-        left_fieldname="containingData", right_fieldname="containedData",
-        left_assets=[d2], right_assets=[d3]
+        model,
+        assoc_type=DATA_CONTAIN_ASSOC_NAME,
+        left_fieldname='containingData',
+        right_fieldname='containedData',
+        left_assets=[d2],
+        right_assets=[d3],
     )
     # Create association with duplicate assets in both fields
     association3 = create_association(
-        model, assoc_type=DATA_CONTAIN_ASSOC_NAME,
-        left_fieldname="containingData", right_fieldname="containedData",
-        left_assets=[d2, d2], right_assets=[d3, d3]
+        model,
+        assoc_type=DATA_CONTAIN_ASSOC_NAME,
+        left_fieldname='containingData',
+        right_fieldname='containedData',
+        left_assets=[d2, d2],
+        right_assets=[d3, d3],
     )
 
     # Add the first association to the model - no problem
@@ -412,7 +421,7 @@ def test_model_add_association_duplicate(model: Model):
         model.add_association(association1)
 
     assert str(e.value) == (
-        'Identical association %s already exists' % DATA_CONTAIN_ASSOC_NAME
+        f'Identical association {DATA_CONTAIN_ASSOC_NAME} already exists'
     )
 
     # Add the second (almost identical) association.
@@ -422,8 +431,8 @@ def test_model_add_association_duplicate(model: Model):
         model.add_association(association2)
 
     assert str(e.value) == (
-        'Association type %s already exists'
-        ' between Data 2 and Data 3' % DATA_CONTAIN_ASSOC_NAME
+        f'Association type {DATA_CONTAIN_ASSOC_NAME} already exists'
+        ' between Data 2 and Data 3'
     )
 
     # Add the third association, should fail because of duplicate
@@ -433,19 +442,22 @@ def test_model_add_association_duplicate(model: Model):
 
     assert len(model.associations) == 1
 
-def test_model_remove_association(model: Model):
-    """Make sure association can be removed"""
 
+def test_model_remove_association(model: Model) -> None:
+    """Make sure association can be removed."""
     # Create and add 2 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
     model.add_asset(p1)
     model.add_asset(p2)
 
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
 
     model.add_association(association)
@@ -465,13 +477,16 @@ def test_model_remove_association(model: Model):
     assert association not in p2.associations
 
 
-def test_model_remove_association_nonexisting(model: Model):
-    """Make sure non existing association can not be removed"""
+def test_model_remove_association_nonexisting(model: Model) -> None:
+    """Make sure non existing association can not be removed."""
     # Create the association but don't add it
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[], right_assets=[]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[],
+        right_assets=[],
     )
 
     # No associations exists
@@ -482,21 +497,24 @@ def test_model_remove_association_nonexisting(model: Model):
         model.remove_association(association)
 
 
-def test_model_remove_asset_from_association(model: Model):
+def test_model_remove_asset_from_association(model: Model) -> None:
     """Make sure we can remove asset from association and that
-    associations with no assets on any 'side' is removed"""
-
+    associations with no assets on any 'side' is removed.
+    """
     # Create and add 2 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
     model.add_asset(p1)
     model.add_asset(p2)
 
     # Create and add association from p1 to p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
     model.add_association(association)
 
@@ -508,27 +526,28 @@ def test_model_remove_asset_from_association(model: Model):
     assert association not in model.associations
 
 
-def test_model_remove_asset_from_association_nonexisting_asset(
-        model: Model
-    ):
+def test_model_remove_asset_from_association_nonexisting_asset(model: Model) -> None:
     """Make sure error is thrown if deleting non existing asset
-    from association"""
-
+    from association.
+    """
     # Create 4 applications and add 3 of them to model
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
-    p3 = create_application_asset(model, "Program 3")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
+    p3 = create_application_asset(model, 'Program 3')
     p4 = create_application_asset(model, 'Program 4')
     model.add_asset(p1)
     model.add_asset(p2)
     model.add_asset(p3)
-    p4.id = 1 # ID is required, otherwise crash in log statement
+    p4.id = 1  # ID is required, otherwise crash in log statement
 
     # Create an association between p1 and p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
     model.add_association(association)
 
@@ -543,31 +562,33 @@ def test_model_remove_asset_from_association_nonexisting_asset(
 
 
 def test_model_remove_asset_from_association_nonexisting_association(
-        model: Model
-    ):
+    model: Model,
+) -> None:
     """Make sure error is thrown if deleting non existing asset
-    from association"""
-
+    from association.
+    """
     # Create and add 2 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
     model.add_asset(p1)
     model.add_asset(p2)
 
     # Create (but don't add!) an association between p1 and p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
     # We are removing an association that was never created -> LookupError
     with pytest.raises(LookupError):
         model.remove_asset_from_association(p1, association)
 
 
-def test_model_add_attacker(model: Model):
-    """Test functionality to add an attacker to the model"""
-
+def test_model_add_attacker(model: Model) -> None:
+    """Test functionality to add an attacker to the model."""
     # Add attacker 1
     attacker1 = AttackerAttachment()
     attacker1.entry_points = []
@@ -586,22 +607,19 @@ def test_model_add_attacker(model: Model):
 
     asset_id = 1
     attack_steps = ['attemptCredentialsReuse']
-    attacker2.entry_points = [
-        (asset_id, attack_steps)
-    ]
+    attacker2.entry_points = [(asset_id, attack_steps)]
     model.add_attacker(attacker2, attacker_id=attacker2_id)
-
 
     assert attacker2.name == f'Attacker:{attacker2_id}'
 
 
-def test_model_get_asset_by_id(model: Model):
+def test_model_get_asset_by_id(model: Model) -> None:
     """Make sure correct asset is returned or None
-    if no asset with that ID exists"""
-
+    if no asset with that ID exists.
+    """
     # Create and add 2 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
     model.add_asset(p1)
     model.add_asset(p2)
 
@@ -611,26 +629,26 @@ def test_model_get_asset_by_id(model: Model):
     assert model.get_asset_by_id(1337) is None
 
 
-def test_model_get_asset_by_name(model: Model):
+def test_model_get_asset_by_name(model: Model) -> None:
     """Make sure correct asset is returned or None
-    if no asset with that name exists"""
-
+    if no asset with that name exists.
+    """
     # Create and add 2 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
     model.add_asset(p1)
     model.add_asset(p2)
 
     # Correct assets removed and None if asset with that name not exists
     assert model.get_asset_by_name(p1.name) == p1
     assert model.get_asset_by_name(p2.name) == p2
-    assert model.get_asset_by_name("Program 3") is None
+    assert model.get_asset_by_name('Program 3') is None
 
 
-def test_model_get_attacker_by_id(model: Model):
+def test_model_get_attacker_by_id(model: Model) -> None:
     """Make sure correct attacker is returned of None
-    if no attacker with that ID exists"""
-
+    if no attacker with that ID exists.
+    """
     # Add attacker 1
     attacker1 = AttackerAttachment()
     attacker1.entry_points = []
@@ -641,45 +659,45 @@ def test_model_get_attacker_by_id(model: Model):
     assert model.get_attacker_by_id(1337) is None
 
 
-def test_model_get_associated_assets_by_fieldname(model: Model):
+def test_model_get_associated_assets_by_fieldname(model: Model) -> None:
     """Make sure assets associated to the asset through the given
-    field_name are returned"""
-
+    field_name are returned.
+    """
     # Create and add 2 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
     model.add_asset(p1)
     model.add_asset(p2)
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
     model.add_association(association)
 
     # Since p2 is in an association with p1 through 'appExecutedApps'
     # p2 should be returned as an associated asset
-    ret = model.get_associated_assets_by_field_name(
-        p1, "appExecutedApps")
+    ret = model.get_associated_assets_by_field_name(p1, 'appExecutedApps')
     assert p2 in ret
 
     # Other fieldname from p2 to p1
-    ret = model.get_associated_assets_by_field_name(
-        p2, "hostApp")
+    ret = model.get_associated_assets_by_field_name(p2, 'hostApp')
     assert p1 in ret
 
     # Non existing field name should give no assets
-    ret = model.get_associated_assets_by_field_name(
-        p1, "bogusFieldName")
+    ret = model.get_associated_assets_by_field_name(p1, 'bogusFieldName')
     assert ret == []
 
 
-def test_model_asset_to_dict(model: Model):
-    """Make sure assets are converted to dictionaries correctly"""
+def test_model_asset_to_dict(model: Model) -> None:
+    """Make sure assets are converted to dictionaries correctly."""
     # Create and add asset
-    p1 = create_application_asset(model, "Program 1")
+    p1 = create_application_asset(model, 'Program 1')
     model.add_asset(p1)
 
     # Tuple is returned
@@ -696,12 +714,13 @@ def test_model_asset_to_dict(model: Model):
     assert p1_dict.get('type') == 'Application'
 
     # Default values should not be saved
-    assert p1_dict.get('defenses') == None
+    assert p1_dict.get('defenses') is None
 
-def test_model_asset_with_nondefault_defense_to_dict(model: Model):
-    """Make sure assets are converted to dictionaries correctly"""
+
+def test_model_asset_with_nondefault_defense_to_dict(model: Model) -> None:
+    """Make sure assets are converted to dictionaries correctly."""
     # Create and add asset
-    p1 = create_application_asset(model, "Program 1")
+    p1 = create_application_asset(model, 'Program 1')
     p1.notPresent = 1.0
     model.add_asset(p1)
 
@@ -719,49 +738,47 @@ def test_model_asset_with_nondefault_defense_to_dict(model: Model):
     assert p1_dict.get('type') == 'Application'
 
     # Default values for 'Application' defenses in coreLang
-    assert p1_dict.get('defenses') == {
-        'notPresent': 1.0
-    }
+    assert p1_dict.get('defenses') == {'notPresent': 1.0}
 
 
-def test_model_association_to_dict(model: Model):
-    """Make sure associations are converted to dictionaries correctly"""
+def test_model_association_to_dict(model: Model) -> None:
+    """Make sure associations are converted to dictionaries correctly."""
     # Create and add 2 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
     model.add_asset(p1)
     model.add_asset(p2)
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
     model.add_association(association)
 
     association_dict = model.association_to_dict(association)
-    association_type = list(association_dict.keys())[0]
+    association_type = next(iter(association_dict.keys()))
     assert association_type == APP_EXEC_ASSOC_NAME
-    assert association_dict[association_type ] == {
+    assert association_dict[association_type] == {
         'hostApp': {p1.id: str(p1.name)},
-        'appExecutedApps': {p2.id: str(p2.name)}
+        'appExecutedApps': {p2.id: str(p2.name)},
     }
 
 
-def test_model_attacker_to_dict(model: Model):
-    """Make sure attackers get correct format and values"""
-
+def test_model_attacker_to_dict(model: Model) -> None:
+    """Make sure attackers get correct format and values."""
     # Create and add an asset
-    p1 = create_application_asset(model, "Program 1")
+    p1 = create_application_asset(model, 'Program 1')
     model.add_asset(p1)
 
     # Add attacker 1
     attacker = AttackerAttachment()
-    attack_steps = ["attemptCredentialsReuse"]
-    attacker.entry_points = [
-        (p1, attack_steps)
-    ]
+    attack_steps = ['attemptCredentialsReuse']
+    attacker.entry_points = [(p1, attack_steps)]
     model.add_attacker(attacker)
 
     # Convert the attacker to a dictionary and make sure
@@ -776,7 +793,8 @@ def test_model_attacker_to_dict(model: Model):
 
     # attacker should be attached to p1, therefore p1s
     # id should be a key in the entry_points_dict
-    assert p1.name is not None and entry_points_dict
+    assert p1.name is not None
+    assert entry_points_dict
     assert p1.name in entry_points_dict
 
     # The given steps should be inside the entry_point of
@@ -784,31 +802,31 @@ def test_model_attacker_to_dict(model: Model):
     assert entry_points_dict[p1.name]['attack_steps'] == attack_steps
 
 
-def test_serialize(model: Model):
-    """Put all to_dict methods together and see that they work"""
-
+def test_serialize(model: Model) -> None:
+    """Put all to_dict methods together and see that they work."""
     # Create and add 3 applications
-    p1 = create_application_asset(model, "Program 1")
-    p2 = create_application_asset(model, "Program 2")
-    p3 = create_application_asset(model, "Program 3")
+    p1 = create_application_asset(model, 'Program 1')
+    p2 = create_application_asset(model, 'Program 2')
+    p3 = create_application_asset(model, 'Program 3')
     model.add_asset(p1)
     model.add_asset(p2)
     model.add_asset(p3)
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
     model.add_association(association)
 
     # Add attacker
     attacker = AttackerAttachment()
-    attack_steps = ["attemptCredentialsReuse"]
-    attacker.entry_points = [
-        (p1, attack_steps)
-    ]
+    attack_steps = ['attemptCredentialsReuse']
+    attacker.entry_points = [(p1, attack_steps)]
     model.add_attacker(attacker)
 
     model_dict = model._to_dict()
@@ -816,88 +834,83 @@ def test_serialize(model: Model):
     # to_dict will create map from asset id to asset dict
     # (dict is second value of tuple returned from asset_to_dict)
     for asset in [p1, p2, p3]:
-        assert model_dict['assets'][asset.id] == \
-        model.asset_to_dict(asset)[1]
+        assert model_dict['assets'][asset.id] == model.asset_to_dict(asset)[1]
 
     # associations are added as they are created by association_to_dict
-    assert model_dict['associations'] == \
-        [model.association_to_dict(association)]
+    assert model_dict['associations'] == [model.association_to_dict(association)]
 
     # attackers are added similar to assets (id maps to attacker dict)
-    assert model_dict['attackers'][attacker.id] == \
-        model.attacker_to_dict(attacker)[1]
+    assert model_dict['attackers'][attacker.id] == model.attacker_to_dict(attacker)[1]
 
     # Meta data should also be added
     assert model_dict['metadata']['name'] == model.name
-    assert model_dict['metadata']['langVersion'] == \
-        model.lang_classes_factory.lang_graph.metadata['version']
-    assert model_dict['metadata']['langID'] == \
-        model.lang_classes_factory.lang_graph.metadata['id']
+    assert (
+        model_dict['metadata']['langVersion']
+        == model.lang_classes_factory.lang_graph.metadata['version']
+    )
+    assert (
+        model_dict['metadata']['langID']
+        == model.lang_classes_factory.lang_graph.metadata['id']
+    )
 
 
-def test_model_save_and_load_model_from_scratch(model: Model):
+def test_model_save_and_load_model_from_scratch(model: Model) -> None:
     """Create a model, save it to file, load it from file and compare them
-    Note: will create file in /tmp
+    Note: will create file in /tmp.
     """
-
     # Create and add 3 applications
-    p1 = create_application_asset(model, "Program 1")
-    p1.extras = {"testing": "testing"}
-    p2 = create_application_asset(model, "Program 2")
-    p3 = create_application_asset(model, "Program 3")
+    p1 = create_application_asset(model, 'Program 1')
+    p1.extras = {'testing': 'testing'}
+    p2 = create_application_asset(model, 'Program 2')
+    p3 = create_application_asset(model, 'Program 3')
     model.add_asset(p1)
     model.add_asset(p2)
     model.add_asset(p3)
 
     # Create and add an association between p1 and p2
     association = create_association(
-        model, assoc_type=APP_EXEC_ASSOC_NAME,
-        left_fieldname="hostApp", right_fieldname="appExecutedApps",
-        left_assets=[p1], right_assets=[p2]
+        model,
+        assoc_type=APP_EXEC_ASSOC_NAME,
+        left_fieldname='hostApp',
+        right_fieldname='appExecutedApps',
+        left_assets=[p1],
+        right_assets=[p2],
     )
     model.add_association(association)
 
     # Add attacker
     attacker = AttackerAttachment()
-    attack_steps = ["attemptCredentialsReuse"]
-    attacker.entry_points = [
-        (p1, attack_steps)
-    ]
+    attack_steps = ['attemptCredentialsReuse']
+    attacker.entry_points = [(p1, attack_steps)]
     model.add_attacker(attacker)
 
-    for model_path in ("/tmp/test.json", "/tmp/test.yaml", "/tmp/test.yml"):
+    for model_path in ('/tmp/test.json', '/tmp/test.yaml', '/tmp/test.yml'):
         # Mock open() function so no real files are written to filesystem
         model.save_to_file(model_path)
 
         # Create a new model by loading old model from file
-        new_model = Model.load_from_file(
-            model_path,
-            model.lang_classes_factory
-        )
+        new_model = Model.load_from_file(model_path, model.lang_classes_factory)
 
         assert new_model._to_dict() == model._to_dict()
 
 
-def test_model_save_and_load_model_example_model(model):
+def test_model_save_and_load_model_example_model(model) -> None:
     """Load the simple_example_model.json from testdata, store it, compare
-    Note: will create file in /tmp"""
-
+    Note: will create file in /tmp.
+    """
     # Load from example file
     model = Model.load_from_file(
-        path_testdata("simple_example_model.yml"),
-        model.lang_classes_factory
+        path_testdata('simple_example_model.yml'), model.lang_classes_factory
     )
 
     # Save to file
     model.save_to_file('/tmp/test.json')
 
     # Create new model and load from previously saved file
-    new_model = Model.load_from_file(
-        '/tmp/test.json',
-        model.lang_classes_factory
-    )
+    new_model = Model.load_from_file('/tmp/test.json', model.lang_classes_factory)
 
     assert new_model._to_dict() == model._to_dict()
+
 
 # TODO: Re-enable this test when the updater translator has been updated(oh,
 # the irony).

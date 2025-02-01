@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # MAL Toolbox v0.2.0
 # Copyright 2024, Andrei Buhaiu.
 #
@@ -16,41 +15,40 @@
 #
 
 
-"""
-MAL-Toolbox Framework
-"""
+"""MAL-Toolbox Framework."""
 
 __title__ = 'maltoolbox'
 __version__ = '0.2.0'
-__authors__ = ['Andrei Buhaiu',
+__authors__ = [
+    'Andrei Buhaiu',
     'Giuseppe Nebbione',
     'Nikolaos Kakouros',
     'Jakob Nyberg',
-    'Joakim Loxdal']
+    'Joakim Loxdal',
+]
 __license__ = 'Apache 2.0'
 __docformat__ = 'restructuredtext en'
 
 __all__ = ()
 
-import os
 import configparser
 import logging
+import os
 
 ERROR_INCORRECT_CONFIG = 1
 
-CONFIGFILE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "default.conf"
-)
+CONFIGFILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'default.conf')
 
 config = configparser.ConfigParser()
 config.read(CONFIGFILE)
 
 if 'logging' not in config:
-    raise ValueError('Config file is missing essential information, cannot proceed.')
+    msg = 'Config file is missing essential information, cannot proceed.'
+    raise ValueError(msg)
 
 if 'log_file' not in config['logging']:
-    raise ValueError('Config file is missing a log_file location, cannot proceed.')
+    msg = 'Config file is missing a log_file location, cannot proceed.'
+    raise ValueError(msg)
 
 log_configs = {
     'log_file': config['logging']['log_file'],
@@ -60,9 +58,11 @@ log_configs = {
     'langspec_file': config['logging']['langspec_file'],
 }
 
-os.makedirs(os.path.dirname(log_configs['log_file']), exist_ok = True)
+os.makedirs(os.path.dirname(log_configs['log_file']), exist_ok=True)
 
-formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M')
+formatter = logging.Formatter(
+    '%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M'
+)
 file_handler = logging.FileHandler(log_configs['log_file'], mode='w')
 file_handler.setFormatter(formatter)
 
@@ -78,7 +78,6 @@ if log_level != '':
 if 'neo4j' in config:
     for term in ['uri', 'username', 'password', 'dbname']:
         if term not in config['neo4j']:
-
             msg = (
                 'Config file is missing essential Neo4J '
                 f'information: {term}, cannot proceed.'
