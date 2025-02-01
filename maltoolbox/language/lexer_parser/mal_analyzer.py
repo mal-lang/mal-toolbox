@@ -210,6 +210,7 @@ class malAnalyzer(malAnalyzerInterface):
             # set - verify if the assets in the operation have an common ancestor
             case 'union' | 'intersection' | 'difference':
                 return self._check_set_expr(asset, expr)
+            # transitive - verify if the asset before * (STAR) exists
             case 'transitive':
                 return self._check_transitive_expr(asset, expr)
             case 'subType':
@@ -307,6 +308,9 @@ class malAnalyzer(malAnalyzerInterface):
         return None
 
     def _check_transitive_expr(self, asset, expr) -> None:
+        '''
+        Given expr*, obtain the asset given by expr and verify if it is a child of the current asset
+        '''
         if (res := self._check_to_asset(asset, expr['stepExpression'])):
             if (self._is_child(res, asset)):
                 return res
