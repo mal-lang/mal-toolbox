@@ -140,6 +140,10 @@ class malAnalyzer(malAnalyzerInterface):
             raise
 
     def _analyse_reaches(self) -> None:
+        '''
+        For every attackStep in every asset, verify if the prerequisites point to assets and that the reaches point to 
+        attack steps
+        '''
         for asset in self._assets.keys():
             attack_steps = self._assets[asset]['obj']['attackSteps']
             for attack_step in attack_steps:
@@ -149,6 +153,7 @@ class malAnalyzer(malAnalyzerInterface):
                         self._error = True
                         continue
                     if (attack_step['requires']):
+                        # Verify if every requires expression returns an asset
                         for expr in attack_step['requires']['stepExpressions']:
                             self._check_to_asset(asset, expr)
                     else:
@@ -161,11 +166,9 @@ class malAnalyzer(malAnalyzerInterface):
                         continue 
                 
                 if (attack_step['reaches']):
+                    # Verify if every reaches expresion returns an attack step
                     for expr in attack_step['reaches']['stepExpressions']:
                         self._check_to_step(asset, expr)
-                
-        if (False):
-            raise ''
         
     def _check_to_step(self, asset, expr) -> None:
         '''
