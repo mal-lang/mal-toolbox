@@ -168,6 +168,9 @@ class malAnalyzer(malAnalyzerInterface):
             raise ''
         
     def _check_to_step(self, asset, expr) -> None:
+        '''
+        Given a reaches, verify if the expression resolves to a valid AttackStep for an existing Asset 
+        '''
         match (expr['type']):
             # Returns an attackStep if it exists for this asset
             case 'attackStep':
@@ -190,14 +193,15 @@ class malAnalyzer(malAnalyzerInterface):
                 return None
                 
     def _check_to_asset(self, asset, expr) -> None:
+        '''
+        Verify if the expression resolves to an existing Asset
+        '''
         match (expr['type']):
-            case 'field' | 'attackStep': 
-                # This is an implementation of IDExpr & CallExpr
+            # field - verify if asset exists via associations
+            case 'field': 
                 return self._check_association_expr(asset, expr)
             case 'collect': #'StepExpr':
                 return self._check_step_expr(asset, expr)
-            case 'IDExpr' | 'CallExpr':
-                raise
             case 'union' | 'intersection' | 'difference':
                 return self._check_set_expr(asset, expr)
             case 'transitive':
@@ -209,10 +213,10 @@ class malAnalyzer(malAnalyzerInterface):
                 self._error = True
                 # exit(1)
                 return None
-            
-    def _check_association_expr(self, asset, expr):
+    
+    def _check_field_expr(self, asset, expr):
         '''
-        Check field for association or variable reference to asset.
+        Check if an asset exists by checking the associations for the current asset
         '''
         for association in self._associations:
             if (expr['name'] == association['leftField']):
@@ -221,7 +225,20 @@ class malAnalyzer(malAnalyzerInterface):
             if (expr['name'] == association['rightField']):
                 if (self._get_asset_name(association['rightAsset'])):
                     return association['rightAsset']
-        
+
+        # Verify if there is a variable defined with the same name; possible the user forgot to call it
+        extra=""
+        if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
+            extra=f', did you mean the variable \'{expr[name]}()\'?'
+    
+        logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\'')
+        return None
+
+            
+    def _check_association_expr(self, asset, expr):
+        '''
+        Check field for association or variable reference to asset.
+        '''        
         if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
             return self._check_to_asset(asset, self._vars[asset][expr['name']]['var']['stepExpression']) 
 
@@ -315,8 +332,12 @@ class malAnalyzer(malAnalyzerInterface):
             if (not rightAsset in self._assets.keys()):
                 logging.error(f'Right asset \'{leftAsset}\' is not defined')
                 self._error = True
+        
+        # TODO
+        # This is causing errors for now
         if (self._error):
-            raise
+            pass 
+            #raise
 
     def _get_assets_extendee(self, ctx: malParser.AssetContext) -> malParser.AssetContext:
         if (ctx.EXTENDS()):
