@@ -186,6 +186,7 @@ class malAnalyzer(malAnalyzerInterface):
             case 'collect':
                 if (left_target := self._check_to_asset(asset, expr['lhs'])):
                     return self._check_to_step(left_target, expr['rhs'])
+                self._error = True
                 return None
             case _:
                 logging.error('Last step is not attack step')
@@ -199,7 +200,10 @@ class malAnalyzer(malAnalyzerInterface):
         match (expr['type']):
             # field - verify if asset exists via associations
             case 'field': 
-                return self._check_association_expr(asset, expr)
+                return self._check_field_expr(asset, expr)
+            # variable - verify if there is a variable with this name
+            case 'variable':
+                return self._check_variable_expr(asset, expr)
             case 'collect': #'StepExpr':
                 return self._check_step_expr(asset, expr)
             case 'union' | 'intersection' | 'difference':
@@ -233,17 +237,15 @@ class malAnalyzer(malAnalyzerInterface):
     
         logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\'')
         return None
-
-            
-    def _check_association_expr(self, asset, expr):
+   
+    def _check_variable_expr(self, asset, expr):
         '''
-        Check field for association or variable reference to asset.
+        Check if there is a variable reference in this asset with the used identifier.
         '''        
         if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
             return self._check_to_asset(asset, self._vars[asset][expr['name']]['var']['stepExpression']) 
 
-        # logging.error(f'Variable \'{expr["name"]}\' is not defined')
-        logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\'')
+        logging.error(f'Variable \'{expr["name"]}\' is not defined')
         self._error = True
         return None
     
@@ -551,7 +553,7 @@ class malAnalyzer(malAnalyzerInterface):
                 cias.append(letter)
             index += 1
 
-    def checkVariable(self, ctx: malParser.VariableContext, var: dict) -> None:
+    def check       (self, ctx: malParser.VariableContext, var: dict) -> None:
         '''
         self._vars = {
             <asset-name>: {
