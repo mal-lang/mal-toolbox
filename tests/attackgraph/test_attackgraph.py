@@ -766,7 +766,6 @@ def test_attackgraph_transitive_advanced():
 
     test_lang_graph = LanguageGraph(MalCompiler().compile(
         'tests/testdata/transitive_advanced.mal'))
-    test_lang_graph.save_to_file('tmp/trans_adv_lang_graph.yml')
     test_model = Model('Test Model', test_lang_graph)
 
     asset1 = test_model.add_asset(

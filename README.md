@@ -71,9 +71,18 @@ pip install mal-toolbox
 ```
 
 ## Configuration
-A default configuration file `default.conf` can be found in the package
-directory. This contains the default values to use for logging and can also be
-used to store the information needed to access the local Neo4J instance.
+You can use a `maltoolbox.yml` file in the current working directory to
+configure the toolbox. Alternatively, you can use the `MALTOOLBOX_CONFIG`
+environment variable to set a custom config file location:
+
+"""bash
+# in your shell, e.g. bash do:
+export MALTOOLBOX_CONFIG=path/to/yml/config/file
+"""
+
+The default configuration can be found here:
+
+https://github.com/mal-lang/mal-toolbox/blob/main/maltoolbox/__init__.py#L39-L53
 
 ## Command Line Client
 
