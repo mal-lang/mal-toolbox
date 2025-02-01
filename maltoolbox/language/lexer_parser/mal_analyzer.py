@@ -207,6 +207,7 @@ class malAnalyzer(malAnalyzerInterface):
             # collect - return asset pointed by all the parts in the expression
             case 'collect':
                 return self._check_collect_expr(asset, expr)
+            # set - verify if the assets in the operation have an common ancestor
             case 'union' | 'intersection' | 'difference':
                 return self._check_set_expr(asset, expr)
             case 'transitive':
@@ -260,6 +261,9 @@ class malAnalyzer(malAnalyzerInterface):
         return None
     
     def _check_set_expr(self, asset, expr) -> None:
+        '''
+        Obtains the assets pointed by boths hs's and verifies if they have a common ancestor
+        '''
         lhs_target = self._check_to_asset(asset, expr['lhs'])
         rhs_target = self._check_to_asset(asset, expr['rhs'])
         if (not lhs_target or not rhs_target):
@@ -273,6 +277,9 @@ class malAnalyzer(malAnalyzerInterface):
         return None
 
     def _get_LCA(self, lhs_target, rhs_target):
+        '''
+        Receives two assets and verifies if they have an ancestor in common
+        '''
         if (self._is_child(lhs_target, rhs_target)):
             return lhs_target
         elif (self._is_child(rhs_target, lhs_target)):
@@ -309,6 +316,9 @@ class malAnalyzer(malAnalyzerInterface):
         return None
     
     def _is_child(self, parent_name, child_name):
+        '''
+        Receives two assets and verifies if one extends the other
+        '''
         if (parent_name == child_name):
             return True
         
@@ -347,6 +357,9 @@ class malAnalyzer(malAnalyzerInterface):
             #raise
 
     def _get_assets_extendee(self, ctx: malParser.AssetContext) -> malParser.AssetContext:
+        '''
+        Verifies if the current asset extends another and, if so, return the parent's context
+        '''
         if (ctx.EXTENDS()):
             return self._assets[ctx.ID()[1].getText()]['ctx']
         return None
