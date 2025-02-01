@@ -65,9 +65,16 @@ class malAnalyzer(malAnalyzerInterface):
     def _analyse_defines(self) -> None:
         '''
         Check for mandatory defines: ID & Version
+        Verify no repeated defines
         '''
+        seen = []
+        for define in self._defines.keys():
+            if define in seen:
+                logging.error("Define '%s' previously defined", define)
+                self._error = True
+            seen.append(define)
 
-        if 'id' in  self._defines.keys():
+        if 'id' in self._defines.keys():
             define_value: str = self._defines['id']['value']
             if (len(define_value) == 0):
                 logging.error('Define \'id\' cannot be empty')
@@ -76,7 +83,7 @@ class malAnalyzer(malAnalyzerInterface):
             logging.error('Missing required define \'#id: ""\'')
             self._error = True
 
-        if 'version' in self._defines:
+        if 'version' in self._defines.keys():
             version: str = self._defines['version']['value']
             if not re.match(r"\d+\.\d+\.\d+", version):
                 logging.error(f'Define \'version\' must be valid semantic versioning without pre-release identifier and build metadata')
@@ -582,7 +589,7 @@ class malAnalyzer(malAnalyzerInterface):
                 cias.append(letter)
             index += 1
 
-    def check       (self, ctx: malParser.VariableContext, var: dict) -> None:
+    def check(self, ctx: malParser.VariableContext, var: dict) -> None:
         '''
         self._vars = {
             <asset-name>: {
