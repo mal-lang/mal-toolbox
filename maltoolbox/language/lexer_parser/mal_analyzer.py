@@ -213,12 +213,12 @@ class malAnalyzer(malAnalyzerInterface):
             # transitive - verify if the asset before * (STAR) exists
             case 'transitive':
                 return self._check_transitive_expr(asset, expr)
+            # subtype - verifies if the asset inside [] is a child from the asset preceding it
             case 'subType':
                 return self._check_sub_type_expr(asset, expr)
             case _:
                 logging.error(f'Unexpected expression \'{expr["type"]}\'')
                 self._error = True
-                # exit(1)
                 return None
     
     def _check_field_expr(self, asset, expr):
@@ -295,6 +295,10 @@ class malAnalyzer(malAnalyzerInterface):
             return self._get_LCA(lhs_parent_ctx.ID()[0].getText(), rhs_parent_ctx.ID()[0].getText())
 
     def _check_sub_type_expr(self, asset, expr) -> None:
+        '''
+        Given expr[ID], obtains the assets given by expr and ID and verifies if ID is 
+        a child of expr
+        '''
         target = self._check_to_asset(asset, expr['stepExpression'])
         if (not target):
             return None
