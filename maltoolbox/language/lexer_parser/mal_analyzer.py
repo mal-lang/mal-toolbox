@@ -433,13 +433,18 @@ class malAnalyzer(malAnalyzerInterface):
         self._category[category['name']] = {'ctx': ctx, 'obj': {'category': category, 'assets': assets}}
 
     def checkAsset(self, ctx: malParser.AssetContext, asset: dict) -> None:
+        '''
+        Given an asset, verify if it has been previously defined in the same category
+        '''
         asset_name = asset['name']
         category_name = ctx.parentCtx.ID().getText()
-        
+
+        # TODO: is this really needed? doesn't the grammar prevent this?
         if (not asset_name or asset_name == '<missing <INVALID>>'):
             logging.error(f"Asset was defined without a name at line {ctx.start.line}")
             self._error = True
             return
+
         # Check if asset was previously defined in same category.
         if asset_name in self._assets.keys() and str(self._assets[asset_name]['parent']['name']) == str(category_name):
             prev_asset_line = self._assets[asset_name]['ctx'].start.line
