@@ -455,6 +455,9 @@ class malAnalyzer(malAnalyzerInterface):
             self._assets[asset_name] = {'ctx': ctx, 'obj': asset, 'parent': {'name': ctx.parentCtx.ID().getText() ,'ctx': ctx.parentCtx}}
 
     def checkMeta(self, ctx: malParser.MetaContext, data: Tuple[Tuple[str, str],]) -> None:
+        '''
+        Given a meta, verify if it was previously defined for the same type (category, asset, step or association)
+        '''
         ((meta_name, _),) = data
         parent_name: str = ''
         location_name: str = ''
