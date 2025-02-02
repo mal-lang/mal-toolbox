@@ -390,7 +390,7 @@ class malAnalyzer(malAnalyzerInterface):
             self._post_analysis()
         self._preform_post_analysis = True
 
-    def checkInclude(self, ctx: malParser.MalContext, data: Tuple[str, str]) -> None:
+    def checkInclude(self, ctx: malParser.MalContext, data: Tuple[str, str]) -> None:       
         '''
         When an include is found, it triggers the analysis of a new MAL file. To prevent
         checkMal from being performed before all files have been analysed, we set the 
@@ -415,8 +415,12 @@ class malAnalyzer(malAnalyzerInterface):
         self._defines[key] = {'ctx': ctx, 'value': value}
     
     def checkCategory(self, ctx: malParser.CategoryContext, data: Tuple[str, Tuple[List, Any]]) -> None:
+        '''
+        Given a category, verify if it has a name and if contains metadata or assets
+        '''
         _, [[category], assets] = data
 
+        # TODO: is this really needed? doesn't the grammar prevent this?
         if(str(category['name']) == '<missing <INVALID>>'):
             category_line = ctx.start.line
             logging.error(f'Category has no name at line {category_line}')
