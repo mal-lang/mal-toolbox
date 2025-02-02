@@ -131,6 +131,9 @@ class malAnalyzer(malAnalyzerInterface):
                     logging.warn(f'Asset \'{parent_ctx.ID()[0].getText()}\' is abstract but never extended to')
     
     def _analyse_parents(self) -> None:
+        '''
+        Verify if there are circular extend relations
+        '''
         error: bool = False
         for asset in self._assets:
             parents: list[str] = []
@@ -141,13 +144,10 @@ class malAnalyzer(malAnalyzerInterface):
                     err_msg: str = ' -> '.join(parents)
                     err_msg += f' -> {parent_name}' 
                     logging.error(f'Asset \'{parent_name}\' extends in loop \'{err_msg}\'')
-                    error = True
+                    self._error = True
                     break
                 parents.append(parent_name)
                 parent_ctx = self._get_assets_extendee(parent_ctx)
-        if error:
-            self._error = True
-            raise
 
     def _analyse_reaches(self) -> None:
         '''
