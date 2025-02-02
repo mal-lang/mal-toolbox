@@ -115,14 +115,14 @@ class malAnalyzer(malAnalyzerInterface):
             raise SyntaxError(f'Asset \'{extend_asset_name}\' not defined')
 
     def _analyse_abstract(self) -> None:
+        '''
+        For every abstract asset, verify if it is extended by another asset
+        '''
         for parent in self._assets:
             parent_ctx: malParser.AssetContext = self._assets[parent]['ctx']
             if(parent_ctx.ABSTRACT()):
                 found: bool = False
                 for extendee in self._assets:
-                    '''
-                    Add same parent check?
-                    '''
                     extendee_ctx: malParser.AssetContext = self._assets[extendee]['ctx']
                     if(extendee_ctx.EXTENDS() and extendee_ctx.ID()[1].getText() == parent_ctx.ID()[0].getText()):
                         found = True
