@@ -93,6 +93,9 @@ class malAnalyzer(malAnalyzerInterface):
             self._error = True
 
     def _analyse_extends(self) -> None:
+        '''
+        For all assets which extend another, verify if the extended asset exists
+        '''
         raise_error: bool = False
         extend_asset_name: str = ''
         for asset in self._assets:
