@@ -360,6 +360,9 @@ class malAnalyzer(malAnalyzerInterface):
         return None
 
     def _analyse_association(self) -> None:
+        '''
+        For every association, verify if the assets exist
+        '''
         for association in self._associations:
             leftAsset = association['leftAsset']
             rightAsset = association['rightAsset']
@@ -370,12 +373,6 @@ class malAnalyzer(malAnalyzerInterface):
             if (not rightAsset in self._assets.keys()):
                 logging.error(f'Right asset \'{leftAsset}\' is not defined')
                 self._error = True
-        
-        # TODO
-        # This is causing errors for now
-        if (self._error):
-            pass 
-            #raise
 
     def _get_assets_extendee(self, ctx: malParser.AssetContext) -> malParser.AssetContext:
         '''
