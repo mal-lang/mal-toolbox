@@ -391,6 +391,12 @@ class malAnalyzer(malAnalyzerInterface):
         self._preform_post_analysis = True
 
     def checkInclude(self, ctx: malParser.MalContext, data: Tuple[str, str]) -> None:
+        '''
+        When an include is found, it triggers the analysis of a new MAL file. To prevent
+        checkMal from being performed before all files have been analysed, we set the 
+        variable to false and, every time the file is finished being analysed, it is set
+        to True again (in checkMal()). This prevents out-of-order analysis.
+        '''
         self._preform_post_analysis = False
 
     def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
