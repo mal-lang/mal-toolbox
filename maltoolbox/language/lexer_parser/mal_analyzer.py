@@ -394,6 +394,9 @@ class malAnalyzer(malAnalyzerInterface):
         self._preform_post_analysis = False
 
     def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
+        '''
+        Given a new define, verify if it has been previously defined
+        '''
         _, obj = data
         key, value = list(obj.items())[0]
         
