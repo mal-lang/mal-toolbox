@@ -61,6 +61,7 @@ class malAnalyzer(malAnalyzerInterface):
         self._analyse_parents()
         self._analyse_reaches()
         self._analyse_association()
+        self._analyse_steps()
     
     def _analyse_defines(self) -> None:
         '''
@@ -488,47 +489,104 @@ class malAnalyzer(malAnalyzerInterface):
             logging.error(f'Metadata {meta_name} previously defined at {prev_ctx.start.line}')
             self._error = True
 
+    def _get_parents(self, ctx: malParser.AssetContext) -> List[dict[str, malParser.AssetContext]]:
+        '''
+        Given an asset, obtain its parents in inverse order.
+        I.e., A->B->C returns [C,B,A] for asset A
+        '''
+        parents = [ctx.ID()[0].getText()]
+        while ctx.EXTENDS():
+            parent_name = ctx.ID()[1].getText()
+            parents.insert(0, parent_name) 
+            ctx = self._assets[parent_name]['ctx']
+        return parents
+
+    def _analyse_steps(self) -> None:
+        '''
+        For each asset, obtain its parents and analyse each step
+        '''
+        for asset in self._steps.keys():
+            parents = self._get_parents(self._assets[asset]['ctx'])
+            self._read_steps(parents)
+    
+    def _attackStep_seen_in_parent(self, attackStep: str, seen_steps: List) -> str:
+        '''
+        Given a list of parent scopes, verify if the attackStep has been defined
+        '''
+        for parent, parent_scope in seen_steps:
+            if attackStep in parent_scope:
+                return parent
+        return None 
+
+    def _read_steps(self, parents: List) -> None:
+        '''
+        For an asset, check if every step is properly defined in accordance to its hierarchy, i.e. if any of the asset's parents 
+        also defines this step
+        '''
+        seen_steps = []
+        for parent in parents:
+            # If this parent has no steps, skip it
+            if parent not in self._steps:
+                continue
+
+            current_steps = []
+            for attackStep in self._steps[parent].keys():
+                # Verify if attackStep has not been defined in the current asset
+                if attackStep not in current_steps:
+                    # Verify if attackStep has not been defined in any parent asset
+                    prevDef_parent = self._attackStep_seen_in_parent(attackStep, seen_steps)
+                    if not prevDef_parent:
+                        # Since this attackStep has never been defined, it must either not reach or reach with '->'
+                        attackStep_ctx = self._steps[parent][attackStep]['ctx']
+                        if (not attackStep_ctx.reaches() or attackStep_ctx.reaches().getChild(0).getText()=='->'):
+                            # Valid step
+                            current_steps.append(attackStep)
+                        else:
+                            # Step was defined using '+>', but there is nothing to inherit from
+                            logging.error(f'Cannot inherit attack step \'{attackStep}\' without previous definition')
+                            self._error = True
+                    else:
+                        # Step was previously defined in a parent
+                        # So it must be of the same type (&, |, #, E, !E)
+                        attackStep_ctx = self._steps[parent][attackStep]['ctx']
+                        parent_attackStep_ctx = self._steps[prevDef_parent][attackStep]['ctx']
+                        if attackStep_ctx.steptype().getText()==parent_attackStep_ctx.steptype().getText():
+                            # Valid step
+                            current_steps.append(attackStep)
+                        else:
+                            # Invalid, type mismatches that of parent
+                            logging.error((f"Cannot override attack step \'{attackStep}\' previously defined "
+                                f"at {parent_attackStep_ctx.start.line} with different type \'{attackStep_ctx.steptype().getText()}\' "
+                                f"=/= \'{parent_attackStep_ctx.steptype().getText()}\'"))
+                            self._error = True
+                else:
+                    # Asset already defined in this asset
+                    logging.error(f'Attack step \'{attackStep}\' previously defined at {self._steps[parent][attackStep]['ctx'].start.line}')
+                    self._error = True
+            seen_steps.append((parent,current_steps))
+                
     def checkStep(self, ctx: malParser.StepContext, step: dict) -> None:
+        '''
+        Given a step, check if it is already defined in the current asset. Otherwise, add it to the list of 
+        steps related to this asset
+        '''
         step_name = step['name']
+        asset_name = ctx.parentCtx.ID()[0].getText()   
 
-        if isinstance(ctx.parentCtx, malParser.AssetContext):        
-            asset_name = ctx.parentCtx.ID()[0].getText()   
-            # Check if the step is defined in other assets.
-            for other_asset_name in self._steps.keys():
-                if (asset_name == other_asset_name):
-                    continue
-                if not (self._steps[other_asset_name] and step_name in self._steps[other_asset_name].keys()):
-                    continue
-                
-                other_step = self._steps[other_asset_name][step_name]
-                other_type = other_step['step']['type']
-                current_type = step['type']
-                if (other_type == current_type):
-                    self._steps[asset_name] = {step_name: {'ctx': ctx, 'step': step}}
-                    return
-                
-                prev_ctx = other_step['ctx']
-                logging.error(f'Cannot override attack step \'{step_name}\' previously defined at {prev_ctx.start.line} with different type \'{current_type}\' =/= \'{other_type}\'')
-                self._error = True
-                return
-            
-            if ((step['reaches'] and not step['reaches']['overrides'])):
-                logging.error(f'Cannot inherit attack step \'{step_name}\' without previous definition')
-                self._error = True
-                return
+        # Check if asset has no steps
+        if not asset_name in self._steps.keys():
+            self._steps[asset_name] = {step_name: {'ctx': ctx, 'step': step}}
+        # If so, check if the there is no step with this name in the current asset
+        elif not step_name in self._steps[asset_name].keys():
+            self._steps[asset_name][step_name] = {'ctx': ctx, 'step': step}
+        # Otherwise, log error
+        else:
+            prev_ctx = self._steps[asset_name][step_name]['ctx']
+            logging.error(f'Attack step \'{step_name}\' previously defined at {prev_ctx.start.line}')
+            self._error = True
 
-            # Check if the step is already defined in the parent asset.
-            if not asset_name in self._steps.keys():
-                self._steps[asset_name] = {step_name: {'ctx': ctx, 'step': step}}
-            elif not step_name in self._steps[asset_name].keys():
-                self._steps[asset_name][step_name] = {'ctx': ctx, 'step': step}
-            else:
-                prev_ctx = self._steps[asset_name][step_name]['ctx']
-                logging.error(f'Attack step \'{step_name}\' previously defined at {prev_ctx.start.line}')
-                self._error = True
-
-            self._validate_CIA(ctx, step)
-            self._validate_TTC(ctx, asset_name, step)
+        self._validate_CIA(ctx, step)
+        self._validate_TTC(ctx, asset_name, step)
 
     def checkReaches(self, ctx: malParser.ReachesContext, data: dict) -> None:
         pass
