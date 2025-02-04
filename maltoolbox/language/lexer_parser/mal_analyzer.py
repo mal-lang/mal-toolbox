@@ -641,6 +641,10 @@ class malAnalyzer(malAnalyzerInterface):
 
 
     def _validate_CIA(self, ctx: malParser.StepContext, step: dict) -> None:
+        '''
+        Given a step, check if it has CIAs. In that case, verify if the step is not of type
+        defense and that it does not have repeated CIAs.
+        '''
         if not ctx.cias():
             return
         
@@ -654,7 +658,7 @@ class malAnalyzer(malAnalyzerInterface):
 
         index = 0
         cias = []
-        while cia := ctx.cias().getChild(index):
+        while (cia := ctx.cias().getChild(index)):
             if(isinstance(cia, malParser.CiaContext)):
                 letter = ''
                 letter = 'C' if cia.C() else letter
