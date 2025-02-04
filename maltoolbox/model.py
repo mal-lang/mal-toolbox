@@ -4,7 +4,6 @@ MAL-Toolbox Model Module
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from functools import cached_property
 import json
 import logging
 from typing import TYPE_CHECKING
@@ -731,6 +730,7 @@ class ModelAsset:
         self.name:str = name
         self.id:Optional[int] = None
         self.lg_asset:LanguageGraphAsset = lg_asset
+        self.type = self.lg_asset.name
         self.defenses:dict = {}
         self.extras:dict = {}
         self.associations:list = []
@@ -739,11 +739,6 @@ class ModelAsset:
             if step.type == 'defense':
                 self.defenses[step.name] = 1.0 if step.ttc and \
                     step.ttc['name'] == 'Enabled' else 0.0
-
-
-    @cached_property
-    def type(self):
-        return self.lg_asset.name
 
 
     def _to_dict(self):
@@ -815,16 +810,13 @@ class ModelAssociation:
             left_assets: list = [],
             right_assets: list = []):
         self.lg_association:LanguageGraphAssociation = lg_assoc
+        self.type = self.lg_association.name
         self.extras:dict = {}
         self.__dict__.update({
             self.lg_association.left_field.fieldname: left_assets,
             self.lg_association.right_field.fieldname: right_assets
         })
 
-
-    @cached_property
-    def type(self):
-        return self.lg_association.name
 
 
     def get_association_field_names(
