@@ -4,12 +4,12 @@ import copy
 import pytest
 from unittest.mock import patch
 
-from maltoolbox.language import LanguageGraph, LanguageClassesFactory
+from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.model import Model, AttackerAttachment
 
-from test_model import create_application_asset, create_association
+from test_model import create_asset, create_association
 
 
 @pytest.fixture
@@ -23,8 +23,8 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """
 
     # Create 2 assets
-    app1 = create_application_asset(model, "Application 1")
-    app2 = create_application_asset(model, "Application 2")
+    app1 = create_asset(model, "Application 1", 'Application')
+    app2 = create_asset(model, "Application 2", 'Application')
     model.add_asset(app1)
     model.add_asset(app2)
 
@@ -299,7 +299,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     # Calculate how many nodes we should expect
     num_assets_attack_steps = 0
     assert example_attackgraph.model
-    for asset in example_attackgraph.model.assets:
+    for asset in example_attackgraph.model.assets.values():
         attack_steps = example_attackgraph.\
             lang_graph._get_attacks_for_asset_type(
                 asset.type
@@ -315,8 +315,8 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     AttackGraph contains expected nodes"""
 
     # Create 2 assets
-    app1 = create_application_asset(model, "Application 1")
-    app2 = create_application_asset(model, "Application 2")
+    app1 = create_asset(model, "Application 1", 'Application')
+    app2 = create_asset(model, "Application 2", 'Application')
     model.add_asset(app1)
     model.add_asset(app2)
 
@@ -566,17 +566,19 @@ def test_attackgraph_subtype():
 
     test_lang_graph = LanguageGraph(MalCompiler().compile(
         'tests/testdata/subtype_attack_step.mal'))
-    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
-    test_model = Model('Test Model', lang_classes_factory)
+    test_model = Model('Test Model', test_lang_graph)
     # Create assets
-    baseasset1 = lang_classes_factory.get_asset_class('BaseAsset')(
-        name = 'BaseAsset 1')
+    baseasset1 = create_asset(test_model,
+        name = 'BaseAsset 1',
+        asset_type = 'BaseAsset')
 
-    subasset1 = lang_classes_factory.get_asset_class('SubAsset')(
-        name = 'SubAsset 1')
+    subasset1 = create_asset(test_model,
+        name = 'SubAsset 1',
+        asset_type = 'SubAsset')
 
-    otherasset1 = lang_classes_factory.get_asset_class('OtherAsset')(
-        name = 'OtherAsset 1')
+    otherasset1 = create_asset(test_model,
+        name = 'OtherAsset 1',
+        asset_type = 'OtherAsset')
 
     test_model.add_asset(baseasset1)
     test_model.add_asset(subasset1)
@@ -586,7 +588,6 @@ def test_attackgraph_subtype():
     assoc = create_association(test_model,
         left_assets = [subasset1, baseasset1],
         right_assets = [otherasset1],
-        assoc_type = 'SubtypeTestAssoc',
         left_fieldname = 'field1',
         right_fieldname = 'field2')
     test_model.add_association(assoc)
@@ -618,18 +619,20 @@ def test_attackgraph_setops():
 
     test_lang_graph = LanguageGraph(MalCompiler().compile(
         'tests/testdata/set_ops.mal'))
-    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
-    test_model = Model('Test Model', lang_classes_factory)
+    test_model = Model('Test Model', test_lang_graph)
 
     # Create assets
-    set_ops_a1 = lang_classes_factory.get_asset_class('SetOpsAssetA')(
+    set_ops_a1 = create_asset(test_model,
+        asset_type = 'SetOpsAssetA',
         name = 'SetOpsAssetA 1')
-
-    set_ops_b1 = lang_classes_factory.get_asset_class('SetOpsAssetB')(
+    set_ops_b1 = create_asset(test_model,
+        asset_type = 'SetOpsAssetB',
         name = 'SetOpsAssetB 1')
-    set_ops_b2 = lang_classes_factory.get_asset_class('SetOpsAssetB')(
+    set_ops_b2 = create_asset(test_model,
+        asset_type = 'SetOpsAssetB',
         name = 'SetOpsAssetB 2')
-    set_ops_b3 = lang_classes_factory.get_asset_class('SetOpsAssetB')(
+    set_ops_b3 = create_asset(test_model,
+        asset_type = 'SetOpsAssetB',
         name = 'SetOpsAssetB 3')
 
     test_model.add_asset(set_ops_a1)
@@ -641,7 +644,6 @@ def test_attackgraph_setops():
     assoc = create_association(test_model,
         left_assets = [set_ops_a1],
         right_assets = [set_ops_b1, set_ops_b2],
-        assoc_type = 'SetOps1',
         left_fieldname = 'fieldA1',
         right_fieldname = 'fieldB1')
     test_model.add_association(assoc)
@@ -649,7 +651,6 @@ def test_attackgraph_setops():
     assoc = create_association(test_model,
         left_assets = [set_ops_a1],
         right_assets = [set_ops_b2, set_ops_b3],
-        assoc_type = 'SetOps2',
         left_fieldname = 'fieldA2',
         right_fieldname = 'fieldB2')
     test_model.add_association(assoc)
@@ -693,20 +694,25 @@ def test_attackgraph_setops():
 def test_attackgraph_transitive():
     test_lang_graph = LanguageGraph(MalCompiler().compile(
         'tests/testdata/transitive.mal'))
-    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
-    test_model = Model('Test Model', lang_classes_factory)
+    test_model = Model('Test Model', test_lang_graph)
 
-    asset1 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset1 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 1')
-    asset2 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset2 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 2')
-    asset3 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset3 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 3')
-    asset4 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset4 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 4')
-    asset5 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset5 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 5')
-    asset6 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset6 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 6')
 
     test_model.add_asset(asset1)
@@ -719,7 +725,6 @@ def test_attackgraph_transitive():
     assoc12 = create_association(test_model,
         left_assets = [asset1],
         right_assets = [asset2],
-        assoc_type = 'TransitiveTestAssoc',
         left_fieldname = 'field1',
         right_fieldname = 'field2')
     test_model.add_association(assoc12)
@@ -727,7 +732,6 @@ def test_attackgraph_transitive():
     assoc23 = create_association(test_model,
         left_assets = [asset2],
         right_assets = [asset3],
-        assoc_type = 'TransitiveTestAssoc',
         left_fieldname = 'field1',
         right_fieldname = 'field2')
     test_model.add_association(assoc23)
@@ -735,7 +739,6 @@ def test_attackgraph_transitive():
     assoc34 = create_association(test_model,
         left_assets = [asset3],
         right_assets = [asset4],
-        assoc_type = 'TransitiveTestAssoc',
         left_fieldname = 'field1',
         right_fieldname = 'field2')
     test_model.add_association(assoc34)
@@ -743,7 +746,6 @@ def test_attackgraph_transitive():
     assoc35 = create_association(test_model,
         left_assets = [asset3],
         right_assets = [asset5],
-        assoc_type = 'TransitiveTestAssoc',
         left_fieldname = 'field1',
         right_fieldname = 'field2')
     test_model.add_association(assoc35)
@@ -751,7 +753,6 @@ def test_attackgraph_transitive():
     assoc61 = create_association(test_model,
         left_assets = [asset6],
         right_assets = [asset1],
-        assoc_type = 'TransitiveTestAssoc',
         left_fieldname = 'field1',
         right_fieldname = 'field2')
     test_model.add_association(assoc61)
@@ -825,16 +826,19 @@ def test_attackgraph_transitive_advanced():
     test_lang_graph = LanguageGraph(MalCompiler().compile(
         'tests/testdata/transitive_advanced.mal'))
     test_lang_graph.save_to_file('tmp/trans_adv_lang_graph.yml')
-    lang_classes_factory = LanguageClassesFactory(test_lang_graph)
-    test_model = Model('Test Model', lang_classes_factory)
+    test_model = Model('Test Model', test_lang_graph)
 
-    asset1 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset1 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 1')
-    asset2 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset2 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 2')
-    asset3 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset3 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 3')
-    asset4 = lang_classes_factory.get_asset_class('TestAsset')(
+    asset4 = create_asset(test_model,
+        asset_type = 'TestAsset',
         name = 'TestAsset 4')
 
     test_model.add_asset(asset1)
@@ -845,7 +849,6 @@ def test_attackgraph_transitive_advanced():
     assocA = create_association(test_model,
         left_assets = [asset1],
         right_assets = [asset2, asset3],
-        assoc_type = 'TransitiveTestAssocA',
         left_fieldname = 'fieldA1',
         right_fieldname = 'fieldA2')
     test_model.add_association(assocA)
@@ -853,7 +856,6 @@ def test_attackgraph_transitive_advanced():
     assocB = create_association(test_model,
         left_assets = [asset1],
         right_assets = [asset3, asset4],
-        assoc_type = 'TransitiveTestAssocB',
         left_fieldname = 'fieldB1',
         right_fieldname = 'fieldB2')
     test_model.add_association(assocB)

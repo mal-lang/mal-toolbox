@@ -102,6 +102,7 @@ class LanguageGraphAsset:
             current_asset = current_asset.own_super_asset
         return False
 
+
     @cached_property
     def sub_assets(self) -> set[LanguageGraphAsset]:
         """

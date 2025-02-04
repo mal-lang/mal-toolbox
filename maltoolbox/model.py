@@ -4,6 +4,7 @@ MAL-Toolbox Model Module
 
 from __future__ import annotations
 from dataclasses import dataclass, field
+from functools import cached_property
 import json
 import logging
 from typing import TYPE_CHECKING
@@ -19,10 +20,8 @@ from .exceptions import DuplicateModelAssociationError, ModelAssociationExceptio
 
 if TYPE_CHECKING:
     from typing import Any, Optional, TypeAlias
-    from .language import LanguageGraph
-    from python_jsonschema_objects.classbuilder import ProtocolBase
-
-    SchemaGeneratedClass: TypeAlias = ProtocolBase
+    from .language import (LanguageGraph, LanguageGraphAsset,
+        LanguageGraphAssociation)
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +30,14 @@ class AttackerAttachment:
     """Used to attach attackers to attack step entry points of assets"""
     id: Optional[int] = None
     name: Optional[str] = None
-    entry_points: list[tuple[SchemaGeneratedClass, list[str]]] = \
+    entry_points: list[tuple[ModelAsset, list[str]]] = \
         field(default_factory=lambda: [])
 
 
     def get_entry_point_tuple(
             self,
-            asset: SchemaGeneratedClass
-        ) -> Optional[tuple[SchemaGeneratedClass, list[str]]]:
+            asset: ModelAsset
+        ) -> Optional[tuple[ModelAsset, list[str]]]:
         """Return an entry point tuple of an AttackerAttachment matching the
         asset provided.
 
@@ -57,7 +56,7 @@ class AttackerAttachment:
 
 
     def add_entry_point(
-            self, asset: SchemaGeneratedClass, attackstep_name: str):
+            self, asset: ModelAsset, attackstep_name: str):
         """Add an entry point to an AttackerAttachment
 
         self.entry_points contain tuples, first element of each tuple
@@ -92,8 +91,9 @@ class AttackerAttachment:
             # point
             self.entry_points.append((asset, [attackstep_name]))
 
+
     def remove_entry_point(
-            self, asset: SchemaGeneratedClass, attackstep_name: str):
+            self, asset: ModelAsset, attackstep_name: str):
         """Remove an entry point from an AttackerAttachment if it exists
 
         Arguments:
@@ -135,6 +135,7 @@ class Model():
     def __repr__(self) -> str:
         return f'Model {self.name}'
 
+
     def __init__(
             self,
             name: str,
@@ -143,8 +144,9 @@ class Model():
         ):
 
         self.name = name
-        self.assets: list[SchemaGeneratedClass] = []
-        self.associations: list[SchemaGeneratedClass] = []
+        self.assets: dict[int, ModelAsset] = {}
+        self._name_to_asset:dict[str, ModelAsset] = {} # optimization
+        self.associations: list[ModelAssociation] = []
         self._type_to_association:dict = {} # optimization
         self.attackers: list[AttackerAttachment] = []
         self.lang_graph = lang_graph
@@ -155,9 +157,10 @@ class Model():
         self.asset_ids: set[int] = set()
         self.asset_names: set[str] = set()
 
+
     def add_asset(
             self,
-            asset: SchemaGeneratedClass,
+            asset: ModelAsset,
             asset_id: Optional[int] = None,
             allow_duplicate_names: bool = True
         ) -> None:
@@ -199,20 +202,19 @@ class Model():
                     )
         self.asset_names.add(asset.name)
 
-        # Optional field for extra asset data
-        if not hasattr(asset, 'extras'):
-            asset.extras = {}
-
         logger.debug(
             'Add "%s"(%d) to model "%s".', asset.name, asset.id, self.name
         )
-        self.assets.append(asset)
+        self.assets[asset.id] = asset
+        self._name_to_asset[asset.name] = asset
+
 
     def remove_attacker(self, attacker: AttackerAttachment) -> None:
         """Remove attacker"""
         self.attackers.remove(attacker)
 
-    def remove_asset(self, asset: SchemaGeneratedClass) -> None:
+
+    def remove_asset(self, asset: ModelAsset) -> None:
         """Remove an asset from the model.
 
         Arguments:
@@ -223,7 +225,7 @@ class Model():
             'Remove "%s"(%d) from model "%s".',
             asset.name, asset.id, self.name
         )
-        if asset not in self.assets:
+        if asset.id not in self.assets:
             raise LookupError(
                 f'Asset "{asset.name}"({asset.id}) is not part'
                 f' of model"{self.name}".'
@@ -239,12 +241,14 @@ class Model():
             if entry_point_tuple:
                 attacker.entry_points.remove(entry_point_tuple)
 
-        self.assets.remove(asset)
+        del self.assets[asset.id]
+        del self._name_to_asset[asset.name]
+
 
     def remove_asset_from_association(
             self,
-            asset: SchemaGeneratedClass,
-            association: SchemaGeneratedClass
+            asset: ModelAsset,
+            association: ModelAssociation
         ) -> None:
         """Remove an asset from an association and remove the association
         if any of the two sides is now empty.
@@ -259,7 +263,7 @@ class Model():
             asset.name, asset.id, type(association)
         )
 
-        if asset not in self.assets:
+        if asset.id not in self.assets:
             raise LookupError(
                 f'Asset "{asset.name}"({asset.id}) is not part of model '
                 f'"{self.name}".'
@@ -270,7 +274,7 @@ class Model():
             )
 
         left_field_name, right_field_name = \
-            self.get_association_field_names(association)
+            association.get_association_field_names()
         left_field = getattr(association, left_field_name)
         right_field = getattr(association, right_field_name)
         found = False
@@ -288,7 +292,8 @@ class Model():
             raise LookupError(f'Asset "{asset.name}"({asset.id}) is not '
                 'part of the association provided.')
 
-    def _validate_association(self, association: SchemaGeneratedClass) -> None:
+
+    def _validate_association(self, association: ModelAssociation) -> None:
         """Raise error if association is invalid or already part of the Model.
 
         Raises:
@@ -297,7 +302,7 @@ class Model():
         """
 
         # Optimization: only look for duplicates in associations of same type
-        association_type = association.type
+        association_type = association.lg_association.name
         associations_same_type = self._type_to_association.get(
             association_type, []
         )
@@ -311,7 +316,7 @@ class Model():
 
         # Check for duplicate assets in each field
         left_field_name, right_field_name = \
-            self.get_association_field_names(association)
+            association.get_association_field_names()
 
         for field_name in (left_field_name, right_field_name):
             field_assets = getattr(association, field_name)
@@ -339,7 +344,8 @@ class Model():
                         f" between {left_asset.name} and {right_asset.name}"
                     )
 
-    def add_association(self, association: SchemaGeneratedClass) -> None:
+
+    def add_association(self, association: ModelAssociation) -> None:
         """Add an association to the model.
 
         An association will have 2 field names, each
@@ -357,10 +363,7 @@ class Model():
         # Check association is valid and not duplicate
         self._validate_association(association)
 
-        # Optional field for extra association data
-        association.extras = {}
-
-        field_names = self.get_association_field_names(association)
+        field_names = association.get_association_field_names()
 
         # Add the association to all of the included assets
         for field_name in field_names:
@@ -372,13 +375,13 @@ class Model():
         self.associations.append(association)
 
         # Add association to type->association mapping
-        association_type = association.type
+        association_type = association.lg_association.name
         self._type_to_association.setdefault(
                 association_type, []
             ).append(association)
 
 
-    def remove_association(self, association: SchemaGeneratedClass) -> None:
+    def remove_association(self, association: ModelAssociation) -> None:
         """Remove an association from the model.
 
         Arguments:
@@ -391,7 +394,7 @@ class Model():
             )
 
         left_field_name, right_field_name = \
-            self.get_association_field_names(association)
+            association.get_association_field_names()
         left_field = getattr(association, left_field_name)
         right_field = getattr(association, right_field_name)
 
@@ -420,6 +423,7 @@ class Model():
         if len(self._type_to_association[association_type]) == 0:
             del self._type_to_association[association_type]
 
+
     def add_attacker(
             self,
             attacker: AttackerAttachment,
@@ -442,9 +446,10 @@ class Model():
             attacker.name = 'Attacker:' + str(attacker.id)
         self.attackers.append(attacker)
 
+
     def get_asset_by_id(
             self, asset_id: int
-        ) -> Optional[SchemaGeneratedClass]:
+        ) -> Optional[ModelAsset]:
         """
         Find an asset in the model based on its id.
 
@@ -458,14 +463,12 @@ class Model():
             'Get asset with id %d from model "%s".',
             asset_id, self.name
         )
-        return next(
-                (asset for asset in self.assets
-                if asset.id == asset_id), None
-             )
+        return self.assets.get(asset_id, None)
+
 
     def get_asset_by_name(
             self, asset_name: str
-        ) -> Optional[SchemaGeneratedClass]:
+        ) -> Optional[ModelAsset]:
         """
         Find an asset in the model based on its name.
 
@@ -479,10 +482,8 @@ class Model():
             'Get asset with name "%s" from model "%s".',
             asset_name, self.name
         )
-        return next(
-                (asset for asset in self.assets
-                if asset.name == asset_name), None
-             )
+        return self._name_to_asset.get(asset_name, None)
+
 
     def get_attacker_by_id(
             self, attacker_id: int
@@ -505,11 +506,12 @@ class Model():
                 if attacker.id == attacker_id), None
             )
 
+
     def association_exists_between_assets(
             self,
             association_type: str,
-            left_asset: SchemaGeneratedClass,
-            right_asset: SchemaGeneratedClass
+            left_asset: ModelAsset,
+            right_asset: ModelAsset
         ):
         """Return True if the association already exists between the assets"""
         logger.debug(
@@ -520,7 +522,7 @@ class Model():
         associations = self._type_to_association.get(association_type, [])
         for association in associations:
             left_field_name, right_field_name = \
-                self.get_association_field_names(association)
+                association.get_association_field_names()
             if (left_asset.id in [asset.id for asset in \
                     getattr(association, left_field_name)] and \
                 right_asset.id in [asset.id for asset in \
@@ -539,27 +541,11 @@ class Model():
         return False
 
 
-    def get_association_field_names(
-            self,
-            association: SchemaGeneratedClass
-        ):
-        """
-        Get the two field names of the association as a list.
-        Arguments:
-        association     - the association to fetch the field names for
-
-        Return:
-        A two item list containing the field names of the association.
-        """
-
-        return list(association._properties.keys())[1:]
-
-
     def get_associated_assets_by_field_name(
             self,
-            asset: SchemaGeneratedClass,
+            asset: ModelAsset,
             field_name: str
-        ) -> list[SchemaGeneratedClass]:
+        ) -> list[ModelAsset]:
         """
         Get a list of associated assets for an asset given a field name.
 
@@ -582,66 +568,6 @@ class Model():
 
         return associated_assets
 
-    def asset_to_dict(self, asset: SchemaGeneratedClass) -> tuple[str, dict]:
-        """Get dictionary representation of the asset.
-
-        Arguments:
-        asset       - asset to get dictionary representation of
-
-        Return: tuple with name of asset and the asset as dict
-        """
-
-        logger.debug(
-            'Translating "%s"(%d) to dictionary.',
-            asset.name,
-            asset.id
-        )
-
-
-        asset_dict: dict[str, Any] = {
-            'name': str(asset.name),
-            'type': str(asset.type)
-        }
-
-        if asset.defenses:
-            asset_dict['defenses'] = asset.defenses
-
-        if asset.extras:
-            # Add optional metadata to dict
-            asset_dict['extras'] = asset.extras.as_dict()
-
-        return (asset.id, asset_dict)
-
-
-    def association_to_dict(self, association: SchemaGeneratedClass) -> dict:
-        """Get dictionary representation of the association.
-
-        Arguments:
-        association     - association to get dictionary representation of
-
-        Returns the association serialized to a dict
-        """
-
-        left_field_name, right_field_name = \
-            self.get_association_field_names(association)
-        left_field = getattr(association, left_field_name)
-        right_field = getattr(association, right_field_name)
-
-        association_dict = {
-            str(association.type) :
-            {
-                str(left_field_name):
-                    {int(asset.id): str(asset.name) for asset in left_field},
-                str(right_field_name):
-                    {int(asset.id): str(asset.name) for asset in right_field}
-            }
-        }
-
-        if association.extras:
-            # Add optional metadata to dict
-            association_dict['extras'] = association.extras
-
-        return association_dict
 
     def attacker_to_dict(
             self, attacker: AttackerAttachment
@@ -654,15 +580,16 @@ class Model():
 
         logger.debug('Translating %s to dictionary.', attacker.name)
         attacker_dict: dict[str, Any] = {
-            'name': str(attacker.name),
+            'name': attacker.name,
             'entry_points': {},
         }
         for (asset, attack_steps) in attacker.entry_points:
-            attacker_dict['entry_points'][str(asset.name)] = {
-                'asset_id': int(asset.id),
+            attacker_dict['entry_points'][asset.name] = {
+                'asset_id': asset.id,
                 'attack_steps' : attack_steps
             }
         return (attacker.id, attacker_dict)
+
 
     def _to_dict(self) -> dict:
         """Get dictionary representation of the model."""
@@ -683,14 +610,12 @@ class Model():
         }
 
         logger.debug('Translating assets to dictionary.')
-        for asset in self.assets:
-            (asset_id, asset_dict) = self.asset_to_dict(asset)
-            contents['assets'][int(asset_id)] = asset_dict
+        for asset in self.assets.values():
+            contents['assets'].update(asset._to_dict())
 
         logger.debug('Translating associations to dictionary.')
         for association in self.associations:
-            assoc_dict = self.association_to_dict(association)
-            contents['associations'].append(assoc_dict)
+            contents['associations'].append(association._to_dict())
 
         logger.debug('Translating attackers to dictionary.')
         for attacker in self.attackers:
@@ -698,10 +623,12 @@ class Model():
             contents['attackers'][attacker_id] = attacker_dict
         return contents
 
+
     def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
         logger.debug('Save instance model to file "%s".', filename)
         return save_dict_to_file(filename, self._to_dict())
+
 
     @classmethod
     def _from_dict(
@@ -743,46 +670,15 @@ class Model():
                 }
             )
 
-            asset = ModelAsset(
-                name=f"Asset_{asset_object['type']}",
-                lg_asset=lang_graph.assets[asset_object['type']],
-                metaconcept=asset_object['type']
-            )
-
-            if 'extras' in asset_object:
-                asset.extras = asset_object['extras']
-
-            for defense in (defenses:=asset_object.get('defenses', [])):
-                setattr(asset, defense, float(defenses[defense]))
+            asset = ModelAsset._from_dict(asset_object, lang_graph)
 
             model.add_asset(asset, asset_id = int(asset_id))
 
         # Reconstruct the associations
         for assoc_entry in serialized_object.get('associations', []):
-            [(assoc, assoc_fields)] = assoc_entry.items()
-            association = ModelAssociation(
-                name=f"Assoc_{assoc}",
-                metaconcept=assoc,
-                lg_assoc=lang_graph.associations[assoc],
-            )
-
-            for field, targets in assoc_fields.items():
-                if (
-                    association._properties[field].minimum and
-                    len(targets) < association._properties[field].minimum or
-                    association._properties[field].maximum and
-                    len(targets) > association._properties[field].maximum
-                ):
-                    raise Exception('BAD assoc')
-                targets = targets if isinstance(targets, list) else [targets]
-                setattr(
-                    association,
-                    field,
-                    [model.get_asset_by_id(int(id)) for id in targets]
-                )
-
-            #TODO Properly handle extras
-
+            association = ModelAssociation._from_dict(assoc_entry,
+                lang_graph,
+                model)
             model.add_association(association)
 
         # Reconstruct the attackers
@@ -793,15 +689,24 @@ class Model():
                 attacker.entry_points = []
                 for asset_name, entry_points_dict in \
                         attackers_info[attacker_id]['entry_points'].items():
+                    target_asset = model.get_asset_by_id(
+                        entry_points_dict['asset_id'])
+                    if target_asset is None:
+                        raise LookupError(
+                            'Asset "%s"(%d) is not part of model "%s".' % (
+                                asset_name,
+                                entry_points_dict['asset_id'],
+                                model.name)
+                        )
                     attacker.entry_points.append(
                             (
-                                model.get_asset_by_id(
-                                    entry_points_dict['asset_id']),
+                                target_asset,
                                 entry_points_dict['attack_steps']
                             )
                         )
                 model.add_attacker(attacker, attacker_id = int(attacker_id))
         return model
+
 
     @classmethod
     def load_from_file(
@@ -820,31 +725,191 @@ class Model():
             raise ValueError('Unknown file extension, expected json/yml/yaml')
         return cls._from_dict(serialized_model, lang_graph)
 
-class ModelAsset:
-    def __init__(self, *, name, metaconcept, lg_asset, **kwargs):
-        self.__dict__ |= kwargs
-        self.defenses = kwargs.pop('defenses', {})
-        self.name = name
-        self.type = metaconcept
-        self.lg_asset = lg_asset
-        for defense, status in self.defenses.items():
-            setattr(self, defense, status)
 
-    def __getattr__(self, name):
-        if name in ["info"]:
-            return self.lg_asset.info
-        if (astep := self.lg_asset.attack_steps.get(name, None)):
-            if astep.type == 'defense':
-                return 1. if astep.ttc and astep.ttc['name'] == 'Enabled' else 0.
-        raise AttributeError
+class ModelAsset:
+    def __init__(self, name:str, lg_asset: LanguageGraphAsset):
+        self.name:str = name
+        self.id:Optional[int] = None
+        self.lg_asset:LanguageGraphAsset = lg_asset
+        self.defenses:dict = {}
+        self.extras:dict = {}
+        self.associations:list = []
+        self.attack_step_nodes:list = []
+        for step in self.lg_asset.attack_steps.values():
+            if step.type == 'defense':
+                self.defenses[step.name] = 1.0 if step.ttc and \
+                    step.ttc['name'] == 'Enabled' else 0.0
+
+
+    @cached_property
+    def type(self):
+        return self.lg_asset.name
+
+
+    def _to_dict(self):
+        """Get dictionary representation of the asset."""
+
+        logger.debug(
+            'Translating "%s"(%d) to dictionary.',
+            self.name,
+            self.id
+        )
+
+
+        asset_dict: dict[str, Any] = {
+            'name': self.name,
+            'type': self.type
+        }
+
+        # Only add non-default values for defenses to improve legibility of
+        # the model format
+        asset_dict['defenses'] = {}
+        for defense, defense_value in self.defenses.items():
+            lg_step = self.lg_asset.attack_steps[defense]
+            default_defval = 1.0 if lg_step.ttc and \
+                    lg_step.ttc['name'] == 'Enabled' else 0.0
+            if defense_value != default_defval:
+                asset_dict['defenses'][defense] = defense_value
+        if asset_dict['defenses'] == {}:
+            # Do not include an empty defenses dictionary
+            del asset_dict['defenses']
+
+        if self.extras != {}:
+            # Add optional metadata to dict
+            asset_dict['extras'] = self.extras
+
+        return {self.id: asset_dict}
+
+
+    @classmethod
+    def _from_dict(
+        cls,
+        asset_object: dict,
+        lang_graph: LanguageGraph,
+        ) -> ModelAsset:
+
+        lg_asset = lang_graph.assets[asset_object['type']]
+
+        asset = ModelAsset(
+            name = f"{asset_object['name']}",
+            lg_asset = lg_asset
+        )
+
+        if 'extras' in asset_object:
+            asset.extras = asset_object['extras']
+
+        for defense, defense_value in asset_object.get(
+                'defenses', {}).items():
+            asset.defenses[defense] = float(defense_value)
+
+        return asset
+
+
+    def __repr__(self):
+        return self.name
+
 
 class ModelAssociation:
-    def __init__(self, *, name, metaconcept, **kwargs):
-        self.__dict__ |= kwargs
-        self.name = name
-        self.type = metaconcept
-        self._properties = {
-            "type": self.type,
-            self.lg_assoc.left_field.fieldname: self.lg_assoc.left_field,
-            self.lg_assoc.right_field.fieldname: self.lg_assoc.right_field,
+    def __init__(self,
+            lg_assoc: LanguageGraphAssociation,
+            left_assets: list = [],
+            right_assets: list = []):
+        self.lg_association:LanguageGraphAssociation = lg_assoc
+        self.extras:dict = {}
+        self.__dict__.update({
+            self.lg_association.left_field.fieldname: left_assets,
+            self.lg_association.right_field.fieldname: right_assets
+        })
+
+
+    @cached_property
+    def type(self):
+        return self.lg_association.name
+
+
+    def get_association_field_names(
+            self
+        ):
+        """
+        Get the two field names of the association as a list.
+
+        Return:
+        A two item list containing the field names of the association.
+        """
+
+        return [self.lg_association.left_field.fieldname,
+            self.lg_association.right_field.fieldname]
+
+
+    def _to_dict(self):
+        """Get dictionary representation of the association."""
+
+        left_field_name, right_field_name = \
+            self.get_association_field_names()
+        left_field = getattr(self, left_field_name)
+        right_field = getattr(self, right_field_name)
+
+        association_dict = {
+            self.type:
+            {
+                left_field_name:
+                    {asset.id: asset.name for asset in left_field},
+                right_field_name:
+                    {asset.id: asset.name for asset in right_field}
+            }
         }
+
+        if self.extras:
+            # Add optional metadata to dict
+            association_dict['extras'] = self.extras
+
+        return association_dict
+
+
+    @classmethod
+    def _from_dict(
+        cls,
+        assoc_object: dict,
+        lang_graph: LanguageGraph,
+        model: Model,
+        ) -> ModelAssociation:
+
+        (_, fields), = assoc_object.items()
+        fields_list = list(fields)
+        fieldname = fields_list[0]
+        other_fieldname = fields_list[1]
+        asset_id = int(next(iter(fields[fieldname].keys())))
+        asset = model.get_asset_by_id(asset_id)
+        if asset is None:
+            raise LookupError(
+                'Could not find asset with id %d in model "%s".' % (
+                    asset_id,
+                    model.name)
+            )
+        lg_asset = asset.lg_asset
+        lg_assoc = lg_asset.associations[other_fieldname]
+
+        first_assets = [model.assets[int(asset_id)] for asset_id in \
+            fields[fieldname]]
+        second_assets = [model.assets[int(asset_id)] for asset_id in \
+            fields[other_fieldname]]
+
+        if fieldname == lg_assoc.left_field.fieldname:
+            association = ModelAssociation(
+                lg_assoc = lg_assoc,
+                left_assets = first_assets,
+                right_assets = second_assets,
+            )
+        else:
+            association = ModelAssociation(
+                lg_assoc = lg_assoc,
+                left_assets = second_assets,
+                right_assets = first_assets,
+            )
+
+        #TODO Properly handle extras
+        return association
+
+
+    def __repr__(self):
+        return self.type

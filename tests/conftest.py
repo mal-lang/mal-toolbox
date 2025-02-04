@@ -3,8 +3,8 @@ import os
 import pytest
 
 from maltoolbox.language import (LanguageGraph, LanguageGraphAsset,
-    LanguageGraphAttackStep, LanguageClassesFactory)
-from maltoolbox.model import Model
+    LanguageGraphAttackStep)
+from maltoolbox.model import Model, ModelAsset, ModelAssociation
 
 
 ## Helpers
@@ -19,14 +19,12 @@ def path_testdata(filename):
     return os.path.join(current_dir, f"testdata/{filename}")
 
 
-def empty_model(name, lang_classes_factory):
+def empty_model(name, lang_graph):
     """Fixture that generates a model for tests
-
-    Uses coreLang specification (fixture) to create and return Model
     """
 
     # Create instance model from model json file
-    return Model(name, lang_classes_factory)
+    return Model(name, lang_graph)
 
 ## Fixtures (can be ingested into tests)
 
@@ -44,10 +42,8 @@ def model(corelang_lang_graph):
     Uses coreLang specification (fixture) to create and return a
     Model object with no assets or associations
     """
-    # Init LanguageClassesFactory
-    lang_classes_factory = LanguageClassesFactory(corelang_lang_graph)
 
-    return empty_model('Test Model', lang_classes_factory)
+    return empty_model('Test Model', corelang_lang_graph)
 
 
 @pytest.fixture

@@ -5,7 +5,6 @@ import pytest
 from conftest import path_testdata
 
 from maltoolbox.model import Model
-from maltoolbox.language import LanguageClassesFactory
 from maltoolbox.translators import securicad
 
 # TODO Re-enable this when the securicad translator has been updated.
