@@ -1,8 +1,12 @@
 """Contains tools to process MAL languages"""
 
-from .languagegraph import (LanguageGraph,
+from .languagegraph import (
+    Context,
+    Detector,
     ExpressionsChain,
+    LanguageGraph,
     LanguageGraphAsset,
     LanguageGraphAssociation,
     LanguageGraphAttackStep,
-    disaggregate_attack_step_full_name)
+    disaggregate_attack_step_full_name,
+)

@@ -33,6 +33,32 @@ def disaggregate_attack_step_full_name(
 
 
 @dataclass
+class Detector:
+    context: Context
+    name: Optional[str]
+    type: Optional[str]
+    tprate: Optional[dict]
+
+    def to_dict(self) -> dict:
+        return {
+            "context": self.context.to_dict(),
+            "name": self.name,
+            "type": self.type,
+            "tprate": self.tprate,
+        }
+
+
+class Context(dict):
+    def __init__(self, context) -> None:
+        super().__init__(context)
+        for label, asset in context.items():
+            setattr(self, label, asset)
+
+    def to_dict(self) -> dict:
+        return {label: asset.name for label, asset in self.items()}
+
+
+@dataclass
 class LanguageGraphAsset:
     name: str
     own_associations: dict[str, LanguageGraphAssociation] = \
@@ -340,6 +366,7 @@ class LanguageGraphAttackStep:
     inherits: Optional[LanguageGraphAttackStep] = None
     tags: set = field(default_factory = set)
     _attributes: Optional[dict] = None
+    detectors: dict = field(default_factory = lambda: {})
 
 
     def __hash__(self):
@@ -367,7 +394,9 @@ class LanguageGraphAttackStep:
             'info': self.info,
             'overrides': self.overrides,
             'inherits': self.inherits.full_name if self.inherits else None,
-            'tags': list(self.tags)
+            'tags': list(self.tags),
+            'detectors': {label: detector.to_dict() for label, detector in
+            self.detectors.items()},
         }
 
         for child in self.children:
@@ -1403,6 +1432,20 @@ class LanguageGraph():
                 attack_step_node._attributes = attack_step_attribs
                 asset.attack_steps[attack_step_attribs['name']] = \
                     attack_step_node
+
+                for detector in attack_step_attribs.get("detectors",
+                                                        {}).values():
+                    attack_step_node.detectors[detector["name"]] = Detector(
+                        context=Context(
+                            {
+                                label: self.assets[asset]
+                                for label, asset in detector["context"].items()
+                            }
+                        ),
+                        name=detector.get("name"),
+                        type=detector.get("type"),
+                        tprate=detector.get("tprate"),
+                    )
 
         # Create the inherited attack steps
         assets = list(self.assets.values())

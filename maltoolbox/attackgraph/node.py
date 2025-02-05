@@ -6,10 +6,12 @@ from __future__ import annotations
 import copy
 from dataclasses import field, dataclass
 from functools import cached_property
-from typing import Any, Optional
+from typing import TYPE_CHECKING
 
-from . import Attacker
-from ..language import LanguageGraphAttackStep
+if TYPE_CHECKING:
+    from typing import Any, Optional
+    from . import Attacker
+    from ..language import LanguageGraphAttackStep, Detector
 
 @dataclass
 class AttackGraphNode:
@@ -22,6 +24,7 @@ class AttackGraphNode:
     asset: Optional[Any] = None
     children: list[AttackGraphNode] = field(default_factory=list)
     parents: list[AttackGraphNode] = field(default_factory=list)
+    detectors: dict[str, Detector] = field(default_factory=dict)
     defense_status: Optional[float] = None
     existence_status: Optional[bool] = None
     is_viable: bool = True
@@ -33,7 +36,6 @@ class AttackGraphNode:
     # Optional extra metadata for AttackGraphNode
     extras: dict = field(default_factory=dict)
 
-
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict: dict = {
@@ -42,16 +44,14 @@ class AttackGraphNode:
             'lang_graph_attack_step': self.lang_graph_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,
-            'children': {},
-            'parents': {},
+            'children': {child.id: child.full_name for child in self.children},
+            'parents': {parent.id: parent.full_name for parent in self.parents},
             'compromised_by': [attacker.name for attacker in \
                 self.compromised_by]
         }
 
-        for child in self.children:
-            node_dict['children'][child.id] = child.full_name
-        for parent in self.parents:
-            node_dict['parents'][parent.id] = parent.full_name
+        for detector in self.detectors.values():
+            node_dict.setdefault('detectors', {})[detector] = detector.to_dict()
         if self.asset is not None:
             node_dict['asset'] = str(self.asset.name)
         if self.defense_status is not None:
@@ -97,6 +97,7 @@ class AttackGraphNode:
             asset=self.asset,
             children=[],
             parents=[],
+            detectors=self.detectors,
             defense_status=self.defense_status,
             existence_status=self.existence_status,
             is_viable=self.is_viable,

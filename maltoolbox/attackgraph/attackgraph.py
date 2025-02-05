@@ -623,6 +623,7 @@ class AttackGraph():
                     ttc = attack_step.ttc,
                     children = [],
                     parents = [],
+                    detectors = attack_step.detectors,
                     defense_status = defense_status,
                     existence_status = existence_status,
                     is_viable = True,

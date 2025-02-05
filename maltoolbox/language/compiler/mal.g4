@@ -16,7 +16,7 @@ meta: ID INFO COLON text;
 text: STRING | MULTILINE_STRING;
 asset: ABSTRACT? ASSET ID (EXTENDS ID)? meta* LCURLY (step|variable)* RCURLY;
 
-step: steptype ID tag* cias? pdist? meta* precondition? reaches?;
+step: steptype ID tag* cias? pdist? meta* detector* precondition? reaches?;
 steptype: AND | OR | HASH | EXISTS | NOTEXISTS;
 tag: AT ID;
 cias: LCURLY cia (COMMA cia)* RCURLY;
@@ -28,6 +28,15 @@ pdistterm: pdistfact ((STAR | DIVIDE) pdistfact)*;
 pdistfact: pdistatom (POWER pdistatom)?;
 pdistatom: pdistdist | LPAREN pdistexpr RPAREN | number;
 pdistdist: ID (LPAREN (number (COMMA number)*)? RPAREN)?;
+detector: bang detectorname? context detectortype? tprate?;
+bang: EXCLAMATION | EXCLM_COMM;
+detectorname: ID (DOT ID)*;
+context: LPAREN contextpart (COMMA contextpart)* RPAREN;
+contextpart: contextasset contextlabel;
+contextasset: ID;
+contextlabel: ID;
+detectortype: ID;
+tprate: pdist;
 precondition: REQUIRES expr (COMMA expr)*;
 reaches: (INHERITS | LEADSTO) expr (COMMA expr)*;
 number: INT | FLOAT;  // defined as rule, otherwise it would conflict with INT/FLOAT tokens
@@ -96,6 +105,7 @@ RANGE: '..';
 DOT: '.';
 AND: '&';
 OR: '|';
+EXCLAMATION: '!';
 NOTEXISTS: '!E';
 AT: '@';
 REQUIRES: '<-';
@@ -105,10 +115,10 @@ COMMA: ',';
 PLUS: '+';
 DIVIDE: '/';
 POWER: '^';
+EXCLM_COMM: '//!';
 
 
 // garbage
-INLINE_COMMENT: '//' ~[\r\n]* -> skip;
+INLINE_COMMENT: '//' ~[!]~[\r\n]* -> skip;
 MULTILINE_COMMENT: '/*' .*? '*/' -> skip;
 WS: [ \t\r\n] -> skip;
-
