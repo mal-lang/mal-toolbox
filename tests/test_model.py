@@ -304,95 +304,53 @@ def test_model_add_associated_asset(model: Model):
     assert p1 in p2.associated_assets['hostApp']
 
 
-# TODO: Re-enable this test once the validation is implemented in the
-# ModelAssociation
-# def test_model_add_appexecution_association_two_assets(model: Model):
-#     """coreLang specifies that AppExecution only can have one 'left' asset"""
-#
-#     # Add program assets
-#     p1 = create_asset(model, 'Program 1', 'Application')
-#     p1_id = model.next_id
-#     p2 = create_asset(model, 'Program 2', 'Application')
-#     p2_id = p1_id + 1
-#     model.add_asset(p1, asset_id=p1_id)
-#     model.add_asset(p2, asset_id=p2_id)
-#
-#     # Try create an association between (p1, p2) and p1
-#     with pytest.raises(ValidationError):
-#         # will raise error because two assets (p1,p2)
-#         # are not allowed in the left field for AppExecution
-#         create_association(
-#             model,
-#             left_fieldname="hostApp", right_fieldname="appExecutedApps",
-#             left_assets=[p1, p2], right_assets=[p1]
-#         )
+def test_model_add_appexecution_association_two_assets(model: Model):
+    """coreLang specifies that AppExecution only can have one 'left' asset"""
+
+    # Add program assets
+    p1 = create_asset(model, 'Program 1', 'Application')
+    p1_id = model.next_id
+    p2 = create_asset(model, 'Program 2', 'Application')
+    p2_id = p1_id + 1
+    model.add_asset(p1, asset_id=p1_id)
+    model.add_asset(p2, asset_id=p2_id)
+
+    # Try create an association between (p1, p2) and p1
+    with pytest.raises(Exception):
+        # will raise error because two assets (p1,p2)
+        # are not allowed in the left field for AppExecution
+        p1.add_associated_assets(fieldname = 'hostApp', assets = [p1, p2])
 
 
-# def test_model_add_association_duplicate(model: Model):
-#     """Make sure same association is not added twice"""
-# 
-#     # Create three data assets
-#     d1 = create_asset(model, 'Data 1', 'Data')
-#     d1_id = model.next_id
-#     d2 = create_asset(model, 'Data 2', 'Data')
-#     d2_id = d1_id + 1
-#     d3 = create_asset(model, 'Data 3', 'Data')
-#     d3_id = d2_id + 1
-# 
-#     # Add the assets with explicit IDs to keep track of them
-#     model.add_asset(d1, asset_id=d1_id)
-#     model.add_asset(d2, asset_id=d2_id)
-#     model.add_asset(d3, asset_id=d3_id)
-# 
-#     # Create an association between (d1, d2) and d3
-#     association1 = create_association(
-#         model,
-#         left_fieldname="containingData", right_fieldname="containedData",
-#         left_assets=[d1, d2], right_assets=[d3]
-#     )
-#     # Create an identical association, but from just d2
-#     association2 = create_association(
-#         model,
-#         left_fieldname="containingData", right_fieldname="containedData",
-#         left_assets=[d2], right_assets=[d3]
-#     )
-#     # Create association with duplicate assets in both fields
-#     association3 = create_association(
-#         model,
-#         left_fieldname="containingData", right_fieldname="containedData",
-#         left_assets=[d2, d2], right_assets=[d3, d3]
-#     )
-# 
-#     # Add the first association to the model - no problem
-#     model.add_association(association1)
-#     assert len(model.associations) == 1
-# 
-#     # Add the first association again - should fail because duplicate
-#     # associations are not allowed
-#     with pytest.raises(DuplicateModelAssociationError) as e:
-#         model.add_association(association1)
-# 
-#     assert str(e.value) == (
-#         'Identical association %s already exists' % DATA_CONTAIN_ASSOC_NAME
-#     )
-# 
-#     # Add the second (almost identical) association.
-#     # Should fail because it contains d2 to d3 association
-#     # which already was added by association1
-#     with pytest.raises(DuplicateModelAssociationError) as e:
-#         model.add_association(association2)
-# 
-#     assert str(e.value) == (
-#         'Association type %s already exists'
-#         ' between Data 2 and Data 3' % DATA_CONTAIN_ASSOC_NAME
-#     )
-# 
-#     # Add the third association, should fail because of duplicate
-#     # assets in fields
-#     with pytest.raises(ModelAssociationException):
-#         model.add_association(association3)
-# 
-#     assert len(model.associations) == 1
+def test_model_add_association_duplicate(model: Model):
+    """Make sure same association is not added twice"""
+
+    # Create three data assets
+    d1 = create_asset(model, 'Data 1', 'Data')
+    d1_id = model.next_id
+    d2 = create_asset(model, 'Data 2', 'Data')
+    d2_id = d1_id + 1
+    d3 = create_asset(model, 'Data 3', 'Data')
+    d3_id = d2_id + 1
+
+    # Add the assets with explicit IDs to keep track of them
+    model.add_asset(d1, asset_id=d1_id)
+    model.add_asset(d2, asset_id=d2_id)
+    model.add_asset(d3, asset_id=d3_id)
+
+    # Create an association between d3 and (d1, d2)
+    d3.add_associated_assets(fieldname = 'containingData', assets = [d1, d2])
+
+    # Identical to previous d3 to d2
+    d3.add_associated_assets(fieldname = 'containingData', assets = [d2])
+
+    # Indentical to previous d3 to d2
+    d2.add_associated_assets(fieldname = 'containedData', assets = [d3, d3])
+
+    assert d1.associated_assets['containedData'] == set([d3])
+    assert d2.associated_assets['containedData'] == set([d3])
+    assert d3.associated_assets['containingData'] == set([d1, d2])
+
 
 def test_model_remove_associated_asset(model: Model):
     """Make sure association can be removed"""
@@ -728,10 +686,8 @@ def test_model_load_and_save_example_model(model):
     """Load the simple_example_model.json from testdata, store it, compare
     Note: will create file in /tmp"""
 
-    from maltoolbox.translators.updater import load_model_from_version_0_2_0
-
     # Load from example file
-    model = load_model_from_version_0_2_0(
+    model = Model(
         path_testdata("simple_example_model.yml"),
         model.lang_graph
     )

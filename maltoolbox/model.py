@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import json
 import logging
 from typing import TYPE_CHECKING
+import math
 
 from .file_utils import (
     load_dict_from_json_file,
@@ -565,12 +566,57 @@ class ModelAsset:
     def __repr__(self):
         return self.name
 
+    def validate_new_association(
+            self, fieldname: str, assets_to_add: list[ModelAsset]
+        ):
+        """
+        Validate an association we want to add (through `fieldname`)
+        is valid with the assets given in param `assets_to_add`:
+        - fieldname is valid for the asset type of this ModelAsset
+        - Make sure no more assets than 'field.maximum' are added to the field
+
+        Raises:
+            LookupError - fieldname can not be found for this ModelAsset
+            ValueError - there will be too many assets in the field
+                         if we add this association
+
+        TODO: is there anything else we want to validate?
+        """
+
+        # Validate that the field name is allowed for the asset type
+        if fieldname not in self.lg_asset.associations:
+            accepted_fieldnames = list(self.lg_asset.associations.keys())
+            raise LookupError(
+                f"Fieldname '{fieldname}' is not an accepted association "
+                f"fieldname from asset type {self.lg_asset.name}. "
+                f"Did you mean one of {accepted_fieldnames}?"
+            )
+
+        # Get the field that the fieldname belongs to
+        # TODO: lg_assoc.get_field(fieldname) would be nice to have for this
+        lg_assoc = self.lg_asset.associations[fieldname]
+        assoc_field = lg_assoc.right_field
+        if lg_assoc.left_field.fieldname == fieldname:
+            assoc_field = lg_assoc.left_field
+
+        # Make sure the number of assets in the field abide to field.maximum
+        assets_in_field_before = self.associated_assets.get(fieldname, set())
+        assets_in_field_after = assets_in_field_before | set(assets_to_add)
+        max_assets_in_field = assoc_field.maximum or math.inf
+
+        if len(assets_in_field_after) > max_assets_in_field:
+            raise ValueError(
+                f"You can have maximum {assoc_field.maximum} "
+                f"assets for association field {fieldname}"
+            )
+
     def add_associated_assets(self, fieldname: str, assets: list[ModelAsset]):
         """ Add the assets provided as a parameter to the set of associated
         assets dictionary entry corresponding to the fieldname parameter.
         """
 
         # Add the associated assets to this assets dictionary
+        self.validate_new_association(fieldname, assets)
         self.associated_assets.setdefault(
             fieldname, set()
         ).update(set(assets))
@@ -578,7 +624,9 @@ class ModelAsset:
         # Also add this asset to the associated assets' dictionaries
         lg_assoc = self.lg_asset.associations[fieldname]
         other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
+
         for asset in assets:
+            asset.validate_new_association(other_fieldname, [self])
             asset.associated_assets.setdefault(
                 other_fieldname, set()
             ).add(self)
