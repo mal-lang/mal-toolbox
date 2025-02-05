@@ -25,6 +25,7 @@ from ..file_utils import (
 
 if TYPE_CHECKING:
     from typing import Any, Optional
+    from ..model import ModelAsset
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +346,7 @@ class AttackGraph():
     def _follow_expr_chain(
             self,
             model: Model,
-            target_assets: set[Any],
+            target_assets: set[ModelAsset],
             expr_chain: Optional[ExpressionsChain]
         ) -> set[Any]:
         """
@@ -420,10 +421,9 @@ class AttackGraph():
                 new_target_assets = set()
                 new_target_assets.update(
                     *(
-                        model.get_associated_assets_by_field_name(
-                            asset, expr_chain.fieldname
-                        )
-                        for asset in target_assets
+                        asset.associated_assets.get(
+                            expr_chain.fieldname, set()
+                        ) for asset in target_assets
                       )
                 )
                 return new_target_assets
