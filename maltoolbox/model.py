@@ -232,7 +232,7 @@ class Model():
 
         # First remove all of the associated assets
         for fieldname, assoc_assets in asset.associated_assets.items():
-            asset.remove_associated_assets(fieldname, assoc_assets)
+            asset.remove_associated_assets(fieldname, list(assoc_assets))
 
         # Also remove all of the entry points
         for attacker in self.attackers:
