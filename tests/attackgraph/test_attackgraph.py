@@ -9,7 +9,7 @@ from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.model import Model, AttackerAttachment
 
-from test_model import create_asset, create_association
+from test_model import create_asset
 
 
 @pytest.fixture
@@ -29,8 +29,8 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     model.add_asset(app2)
 
     # Create association between app1 and app2
-    assoc = create_association(model, left_assets=[app1], right_assets=[app2])
-    model.add_association(assoc)
+    # assoc = create_association(model, left_assets=[app1], right_assets=[app2])
+    app1.add_associated_assets(fieldname='appExecutedApps', assets=[app2])
 
     attacker = AttackerAttachment()
     attacker.entry_points = [
@@ -321,8 +321,7 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     model.add_asset(app2)
 
     # Create association between app1 and app2
-    assoc = create_association(model, left_assets=[app1], right_assets=[app2])
-    model.add_association(assoc)
+    app1.add_associated_assets(fieldname='appExecutedApps', assets=[app2])
     attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model=model)
 
     # These are all attack 71 steps and defenses for Application asset in MAL
@@ -585,12 +584,8 @@ def test_attackgraph_subtype():
     test_model.add_asset(otherasset1)
 
     # Create association between subasset1 and otherasset1
-    assoc = create_association(test_model,
-        left_assets = [subasset1, baseasset1],
-        right_assets = [otherasset1],
-        left_fieldname = 'field1',
-        right_fieldname = 'field2')
-    test_model.add_association(assoc)
+    subasset1.add_associated_assets('field2', [otherasset1])
+    baseasset1.add_associated_assets('field2', [otherasset1])
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
@@ -641,19 +636,11 @@ def test_attackgraph_setops():
     test_model.add_asset(set_ops_b3)
 
     # Create association
-    assoc = create_association(test_model,
-        left_assets = [set_ops_a1],
-        right_assets = [set_ops_b1, set_ops_b2],
-        left_fieldname = 'fieldA1',
-        right_fieldname = 'fieldB1')
-    test_model.add_association(assoc)
+    set_ops_a1.add_associated_assets('fieldB1', [set_ops_b1])
+    set_ops_a1.add_associated_assets('fieldB1', [set_ops_b2])
 
-    assoc = create_association(test_model,
-        left_assets = [set_ops_a1],
-        right_assets = [set_ops_b2, set_ops_b3],
-        left_fieldname = 'fieldA2',
-        right_fieldname = 'fieldB2')
-    test_model.add_association(assoc)
+    set_ops_a1.add_associated_assets('fieldB2', [set_ops_b2])
+    set_ops_a1.add_associated_assets('fieldB2', [set_ops_b3])
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
@@ -722,40 +709,11 @@ def test_attackgraph_transitive():
     test_model.add_asset(asset5)
     test_model.add_asset(asset6)
 
-    assoc12 = create_association(test_model,
-        left_assets = [asset1],
-        right_assets = [asset2],
-        left_fieldname = 'field1',
-        right_fieldname = 'field2')
-    test_model.add_association(assoc12)
-
-    assoc23 = create_association(test_model,
-        left_assets = [asset2],
-        right_assets = [asset3],
-        left_fieldname = 'field1',
-        right_fieldname = 'field2')
-    test_model.add_association(assoc23)
-
-    assoc34 = create_association(test_model,
-        left_assets = [asset3],
-        right_assets = [asset4],
-        left_fieldname = 'field1',
-        right_fieldname = 'field2')
-    test_model.add_association(assoc34)
-
-    assoc35 = create_association(test_model,
-        left_assets = [asset3],
-        right_assets = [asset5],
-        left_fieldname = 'field1',
-        right_fieldname = 'field2')
-    test_model.add_association(assoc35)
-
-    assoc61 = create_association(test_model,
-        left_assets = [asset6],
-        right_assets = [asset1],
-        left_fieldname = 'field1',
-        right_fieldname = 'field2')
-    test_model.add_association(assoc61)
+    asset1.add_associated_assets('field2', [asset2])
+    asset2.add_associated_assets('field2', [asset3])
+    asset3.add_associated_assets('field2', [asset4])
+    asset3.add_associated_assets('field2', [asset5])
+    asset6.add_associated_assets('field2', [asset1])
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
@@ -846,19 +804,8 @@ def test_attackgraph_transitive_advanced():
     test_model.add_asset(asset3)
     test_model.add_asset(asset4)
 
-    assocA = create_association(test_model,
-        left_assets = [asset1],
-        right_assets = [asset2, asset3],
-        left_fieldname = 'fieldA1',
-        right_fieldname = 'fieldA2')
-    test_model.add_association(assocA)
-
-    assocB = create_association(test_model,
-        left_assets = [asset1],
-        right_assets = [asset3, asset4],
-        left_fieldname = 'fieldB1',
-        right_fieldname = 'fieldB2')
-    test_model.add_association(assocB)
+    asset1.add_associated_assets('fieldA2', [asset2, asset3])
+    asset1.add_associated_assets('fieldB2', [asset3, asset4])
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,

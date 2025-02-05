@@ -4,7 +4,7 @@ import pytest
 
 from maltoolbox.language import (LanguageGraph, LanguageGraphAsset,
     LanguageGraphAttackStep)
-from maltoolbox.model import Model, ModelAsset, ModelAssociation
+from maltoolbox.model import Model, ModelAsset
 
 
 ## Helpers
