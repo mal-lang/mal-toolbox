@@ -728,11 +728,18 @@ class Model():
 
 
 class ModelAsset:
-    def __init__(self,
+    def __init__(
+        self,
         name: str,
         lg_asset: LanguageGraphAsset,
-        defenses: dict = {},
-        extras: dict = {}):
+        defenses: Optional[dict] = None,
+        extras: Optional[dict] = None
+    ):
+
+        if defenses is None:
+            defenses = {}
+        if extras is None:
+            extras = {}
 
         self.name: str = name
         self.id: Optional[int] = None
@@ -808,10 +815,12 @@ class ModelAsset:
 
 
 class ModelAssociation:
-    def __init__(self,
+    def __init__(
+            self,
             lg_assoc: LanguageGraphAssociation,
-            left_assets: list = [],
-            right_assets: list = []):
+            left_assets: list,
+            right_assets: list
+        ):
         self.lg_association: LanguageGraphAssociation = lg_assoc
         self.type: str = self.lg_association.name
         self.extras: dict = {}
