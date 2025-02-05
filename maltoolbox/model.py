@@ -18,8 +18,10 @@ from . import __version__
 from .exceptions import DuplicateModelAssociationError, ModelAssociationException
 
 if TYPE_CHECKING:
-    from typing import Any, Optional, TypeAlias
-    from .language import (LanguageGraph, LanguageGraphAsset,
+    from typing import Any, Optional
+    from .language import (
+        LanguageGraph,
+        LanguageGraphAsset,
         LanguageGraphAssociation)
 
 logger = logging.getLogger(__name__)
@@ -726,17 +728,22 @@ class Model():
 
 
 class ModelAsset:
-    def __init__(self, name:str, lg_asset: LanguageGraphAsset):
-        self.name:str = name
-        self.id:Optional[int] = None
-        self.lg_asset:LanguageGraphAsset = lg_asset
+    def __init__(self,
+        name: str,
+        lg_asset: LanguageGraphAsset,
+        defenses: dict = {},
+        extras: dict = {}):
+
+        self.name: str = name
+        self.id: Optional[int] = None
+        self.lg_asset: LanguageGraphAsset = lg_asset
         self.type = self.lg_asset.name
-        self.defenses:dict = {}
-        self.extras:dict = {}
-        self.associations:list = []
-        self.attack_step_nodes:list = []
+        self.defenses: dict = defenses
+        self.extras: dict = extras
+        self.associations: list = []
+        self.attack_step_nodes: list = []
         for step in self.lg_asset.attack_steps.values():
-            if step.type == 'defense':
+            if step.type == 'defense' and step.name not in self.defenses:
                 self.defenses[step.name] = 1.0 if step.ttc and \
                     step.ttc['name'] == 'Enabled' else 0.0
 
@@ -787,15 +794,11 @@ class ModelAsset:
 
         asset = ModelAsset(
             name = f"{asset_object['name']}",
-            lg_asset = lg_asset
+            lg_asset = lg_asset,
+            defenses = {defense: float(value) for defense, value in \
+                asset_object.get('defenses', {}).items()},
+            extras = asset_object.get('extras', {})
         )
-
-        if 'extras' in asset_object:
-            asset.extras = asset_object['extras']
-
-        for defense, defense_value in asset_object.get(
-                'defenses', {}).items():
-            asset.defenses[defense] = float(defense_value)
 
         return asset
 
@@ -809,9 +812,9 @@ class ModelAssociation:
             lg_assoc: LanguageGraphAssociation,
             left_assets: list = [],
             right_assets: list = []):
-        self.lg_association:LanguageGraphAssociation = lg_assoc
-        self.type = self.lg_association.name
-        self.extras:dict = {}
+        self.lg_association: LanguageGraphAssociation = lg_assoc
+        self.type: str = self.lg_association.name
+        self.extras: dict = {}
         self.__dict__.update({
             self.lg_association.left_field.fieldname: left_assets,
             self.lg_association.right_field.fieldname: right_assets

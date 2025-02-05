@@ -11,7 +11,6 @@ import zipfile
 from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Any, Optional
-from functools import cache
 
 from maltoolbox.file_utils import (
     load_dict_from_yaml_file, load_dict_from_json_file,
@@ -618,8 +617,7 @@ class LanguageGraph():
             self._generate_graph()
 
 
-    @property
-    @cache
+    @cached_property
     def associations(self):
         return {k: v for asset in self.assets.values() for k, v in asset.associations.items()}
 
