@@ -130,7 +130,7 @@ class AttackerAttachment:
 
 
 class Model():
-    """An implementation of a MAL language with assets and associations"""
+    """An implementation of a MAL language model with asset"""
     next_id: int = 0
 
     def __repr__(self) -> str:
@@ -147,7 +147,6 @@ class Model():
         self.name = name
         self.assets: dict[int, ModelAsset] = {}
         self._name_to_asset:dict[str, ModelAsset] = {} # optimization
-        self.associations: list[ModelAssociation] = []
         self._type_to_association:dict = {} # optimization
         self.attackers: list[AttackerAttachment] = []
         self.lang_graph = lang_graph
@@ -187,8 +186,6 @@ class Model():
         self.asset_ids.add(asset.id)
 
         self.next_id = max(asset.id + 1, self.next_id)
-
-        asset.associations = []
 
         if not hasattr(asset, 'name'):
             asset.name = asset.type + ':' + str(asset.id)
@@ -232,9 +229,9 @@ class Model():
                 f' of model"{self.name}".'
             )
 
-        # First remove all of the associations
-        for association in asset.associations:
-            self.remove_asset_from_association(asset, association)
+        # First remove all of the associated assets
+        for fieldname, assoc_assets in asset.associated_assets.items():
+            asset.remove_associated_assets(fieldname, assoc_assets)
 
         # Also remove all of the entry points
         for attacker in self.attackers:
@@ -244,185 +241,6 @@ class Model():
 
         del self.assets[asset.id]
         del self._name_to_asset[asset.name]
-
-
-    def remove_asset_from_association(
-            self,
-            asset: ModelAsset,
-            association: ModelAssociation
-        ) -> None:
-        """Remove an asset from an association and remove the association
-        if any of the two sides is now empty.
-
-        Arguments:
-        asset           - the asset to remove from the given association
-        association     - the association to remove the asset from
-        """
-
-        logger.debug(
-            'Remove "%s"(%d) from association of type "%s".',
-            asset.name, asset.id, type(association)
-        )
-
-        if asset.id not in self.assets:
-            raise LookupError(
-                f'Asset "{asset.name}"({asset.id}) is not part of model '
-                f'"{self.name}".'
-            )
-        if association not in self.associations:
-            raise LookupError(
-                f'Association is not part of model "{self.name}".'
-            )
-
-        left_field_name, right_field_name = \
-            association.get_association_field_names()
-        left_field = getattr(association, left_field_name)
-        right_field = getattr(association, right_field_name)
-        found = False
-        for field in [left_field, right_field]:
-            if asset in field:
-                found = True
-                if len(field) == 1:
-                    # There are no other assets on this side,
-                    # so we should remove the entire association.
-                    self.remove_association(association)
-                    return
-                field.remove(asset)
-
-        if not found:
-            raise LookupError(f'Asset "{asset.name}"({asset.id}) is not '
-                'part of the association provided.')
-
-
-    def _validate_association(self, association: ModelAssociation) -> None:
-        """Raise error if association is invalid or already part of the Model.
-
-        Raises:
-            DuplicateAssociationError - same association already exists
-            ModelAssociationException - association is not valid
-        """
-
-        # Optimization: only look for duplicates in associations of same type
-        association_type = association.lg_association.name
-        associations_same_type = self._type_to_association.get(
-            association_type, []
-        )
-
-        # Check if identical association already exists
-        if association in associations_same_type:
-            raise DuplicateModelAssociationError(
-                f"Identical association {association_type} already exists"
-            )
-
-
-        # Check for duplicate assets in each field
-        left_field_name, right_field_name = \
-            association.get_association_field_names()
-
-        for field_name in (left_field_name, right_field_name):
-            field_assets = getattr(association, field_name)
-
-            unique_field_asset_names = {a.name for a in field_assets}
-            if len(field_assets) > len(unique_field_asset_names):
-                raise ModelAssociationException(
-                    "More than one asset share same name in field"
-                    f"{association_type}.{field_name}"
-                )
-
-        # For each asset in left field, go through each assets in right field
-        # to find all unique connections. Raise error if a connection between
-        # two assets already exist in a previously added association.
-        for left_asset in getattr(association, left_field_name):
-            for right_asset in getattr(association, right_field_name):
-
-                if self.association_exists_between_assets(
-                    association_type, left_asset, right_asset
-                ):
-                    # Assets already have the connection in another
-                    # association with same type
-                    raise DuplicateModelAssociationError(
-                        f"Association type {association_type} already exists"
-                        f" between {left_asset.name} and {right_asset.name}"
-                    )
-
-
-    def add_association(self, association: ModelAssociation) -> None:
-        """Add an association to the model.
-
-        An association will have 2 field names, each
-        potentially containing several assets.
-
-        Arguments:
-        association     - the association to add to the model
-
-        Raises:
-        DuplicateAssociationError - same association already exists
-        ModelAssociationException - association is not valid
-
-        """
-
-        # Check association is valid and not duplicate
-        self._validate_association(association)
-
-        field_names = association.get_association_field_names()
-
-        # Add the association to all of the included assets
-        for field_name in field_names:
-            for asset in getattr(association, field_name):
-                asset_assocs = list(asset.associations)
-                asset_assocs.append(association)
-                asset.associations = asset_assocs
-
-        self.associations.append(association)
-
-        # Add association to type->association mapping
-        association_type = association.lg_association.name
-        self._type_to_association.setdefault(
-                association_type, []
-            ).append(association)
-
-
-    def remove_association(self, association: ModelAssociation) -> None:
-        """Remove an association from the model.
-
-        Arguments:
-        association     - the association to remove from the model
-        """
-
-        if association not in self.associations:
-            raise LookupError(
-                f'Association is not part of model "{self.name}".'
-            )
-
-        left_field_name, right_field_name = \
-            association.get_association_field_names()
-        left_field = getattr(association, left_field_name)
-        right_field = getattr(association, right_field_name)
-
-        for asset in left_field:
-            assocs = list(asset.associations)
-            assocs.remove(association)
-            asset.associations = assocs
-
-        for asset in right_field:
-            # In fringe cases we may have reflexive associations where the
-            # association was already removed when processing the left field
-            # assets therefore we have to check if it is still in the list.
-            if association in asset.associations:
-                assocs = list(asset.associations)
-                assocs.remove(association)
-                asset.associations = assocs
-
-        self.associations.remove(association)
-
-        # Remove association from type->association mapping
-        association_type = association.type
-        self._type_to_association[association_type].remove(
-            association
-        )
-        # Remove type from type->association mapping if mapping empty
-        if len(self._type_to_association[association_type]) == 0:
-            del self._type_to_association[association_type]
 
 
     def add_attacker(
@@ -508,68 +326,6 @@ class Model():
             )
 
 
-    def association_exists_between_assets(
-            self,
-            association_type: str,
-            left_asset: ModelAsset,
-            right_asset: ModelAsset
-        ):
-        """Return True if the association already exists between the assets"""
-        logger.debug(
-            'Check to see if an association of type "%s" '
-            'already exists between "%s" and "%s".',
-            association_type, left_asset.name, right_asset.name
-        )
-        associations = self._type_to_association.get(association_type, [])
-        for association in associations:
-            left_field_name, right_field_name = \
-                association.get_association_field_names()
-            if (left_asset.id in [asset.id for asset in \
-                    getattr(association, left_field_name)] and \
-                right_asset.id in [asset.id for asset in \
-                    getattr(association, right_field_name)]):
-                    logger.debug(
-                        'An association of type "%s" '
-                        'already exists between "%s" and "%s".',
-                        association_type, left_asset.name, right_asset.name
-                    )
-                    return True
-        logger.debug(
-            'No association of type "%s" '
-            'exists between "%s" and "%s".',
-            association_type, left_asset.name, right_asset.name
-        )
-        return False
-
-
-    def get_associated_assets_by_field_name(
-            self,
-            asset: ModelAsset,
-            field_name: str
-        ) -> list[ModelAsset]:
-        """
-        Get a list of associated assets for an asset given a field name.
-
-        Arguments:
-        asset           - the asset whose fields we are interested in
-        field_name      - the field name we are looking for
-
-        Return:
-        A list of assets associated with the asset given that match the
-        field_name.
-        """
-        logger.debug(
-            'Get associated assets for asset "%s"(%d) by field name %s.',
-            asset.name, asset.id, field_name
-        )
-        associated_assets = []
-        for association in asset.associations:
-            if hasattr(association, field_name):
-                associated_assets.extend(getattr(association, field_name))
-
-        return associated_assets
-
-
     def attacker_to_dict(
             self, attacker: AttackerAttachment
         ) -> tuple[Optional[int], dict]:
@@ -598,7 +354,6 @@ class Model():
         contents: dict[str, Any] = {
             'metadata': {},
             'assets': {},
-            'associations': [],
             'attackers' : {}
         }
         contents['metadata'] = {
@@ -613,10 +368,6 @@ class Model():
         logger.debug('Translating assets to dictionary.')
         for asset in self.assets.values():
             contents['assets'].update(asset._to_dict())
-
-        logger.debug('Translating associations to dictionary.')
-        for association in self.associations:
-            contents['associations'].append(association._to_dict())
 
         logger.debug('Translating attackers to dictionary.')
         for attacker in self.attackers:
@@ -672,15 +423,16 @@ class Model():
             )
 
             asset = ModelAsset._from_dict(asset_object, lang_graph)
-
             model.add_asset(asset, asset_id = int(asset_id))
 
-        # Reconstruct the associations
-        for assoc_entry in serialized_object.get('associations', []):
-            association = ModelAssociation._from_dict(assoc_entry,
-                lang_graph,
-                model)
-            model.add_association(association)
+        # Reconstruct the association links
+        for asset_id, asset_dict in serialized_object['assets'].items():
+            asset = model.assets[int(asset_id)]
+            assoc_assets_dict = asset_dict['associated_assets'].items()
+            for fieldname, assoc_assets in assoc_assets_dict:
+                asset.add_associated_assets(fieldname,
+                    [model.assets[int(assoc_asset_id)]
+                        for assoc_asset_id in assoc_assets])
 
         # Reconstruct the attackers
         if 'attackers' in serialized_object:
@@ -732,7 +484,7 @@ class ModelAsset:
         self,
         name: str,
         lg_asset: LanguageGraphAsset,
-        defenses: Optional[dict] = None,
+        defenses: Optional[dict[str, float]] = None,
         extras: Optional[dict] = None
     ):
 
@@ -745,9 +497,9 @@ class ModelAsset:
         self.id: Optional[int] = None
         self.lg_asset: LanguageGraphAsset = lg_asset
         self.type = self.lg_asset.name
-        self.defenses: dict = defenses
+        self.defenses: dict[str, float] = defenses
         self.extras: dict = extras
-        self.associations: list = []
+        self.associated_assets: dict[str, set[ModelAsset]] = {}
         self.attack_step_nodes: list = []
         for step in self.lg_asset.attack_steps.values():
             if step.type == 'defense' and step.name not in self.defenses:
@@ -759,27 +511,29 @@ class ModelAsset:
         """Get dictionary representation of the asset."""
 
         logger.debug(
-            'Translating "%s"(%d) to dictionary.',
-            self.name,
-            self.id
-        )
-
+            'Translating "%s"(%d) to dictionary.', self.name, self.id)
 
         asset_dict: dict[str, Any] = {
             'name': self.name,
-            'type': self.type
+            'type': self.type,
+            'defenses': {},
+            'associated_assets': {}
         }
 
         # Only add non-default values for defenses to improve legibility of
         # the model format
-        asset_dict['defenses'] = {}
         for defense, defense_value in self.defenses.items():
             lg_step = self.lg_asset.attack_steps[defense]
             default_defval = 1.0 if lg_step.ttc and \
                     lg_step.ttc['name'] == 'Enabled' else 0.0
             if defense_value != default_defval:
                 asset_dict['defenses'][defense] = defense_value
-        if asset_dict['defenses'] == {}:
+
+        for fieldname, assets in self.associated_assets.items():
+            asset_dict['associated_assets'][fieldname] = {asset.id: asset.name
+                for asset in assets}
+
+        if len(asset_dict['defenses']) == 0:
             # Do not include an empty defenses dictionary
             del asset_dict['defenses']
 
@@ -788,7 +542,6 @@ class ModelAsset:
             asset_dict['extras'] = self.extras
 
         return {self.id: asset_dict}
-
 
     @classmethod
     def _from_dict(
@@ -809,111 +562,41 @@ class ModelAsset:
 
         return asset
 
-
     def __repr__(self):
         return self.name
 
-
-class ModelAssociation:
-    def __init__(
-            self,
-            lg_assoc: LanguageGraphAssociation,
-            left_assets: list,
-            right_assets: list
-        ):
-        self.lg_association: LanguageGraphAssociation = lg_assoc
-        self.type: str = self.lg_association.name
-        self.extras: dict = {}
-        self.__dict__.update({
-            self.lg_association.left_field.fieldname: left_assets,
-            self.lg_association.right_field.fieldname: right_assets
-        })
-
-
-
-    def get_association_field_names(
-            self
-        ):
-        """
-        Get the two field names of the association as a list.
-
-        Return:
-        A two item list containing the field names of the association.
+    def add_associated_assets(self, fieldname: str, assets: list[ModelAsset]):
+        """ Add the assets provided as a parameter to the set of associated
+        assets dictionary entry corresponding to the fieldname parameter.
         """
 
-        return [self.lg_association.left_field.fieldname,
-            self.lg_association.right_field.fieldname]
+        # Add the associated assets to this assets dictionary
+        self.associated_assets.setdefault(
+            fieldname, set()
+        ).update(set(assets))
 
+        # Also add this asset to the associated assets' dictionaries
+        lg_assoc = self.lg_asset.associations[fieldname]
+        other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
+        for asset in assets:
+            asset.associated_assets.setdefault(
+                other_fieldname, set()
+            ).add(self)
 
-    def _to_dict(self):
-        """Get dictionary representation of the association."""
+    def remove_associated_assets(self, fieldname: str,
+        assets: list[ModelAsset]):
+        """ Remove the assets provided as a parameter from the set of
+        associated assets dictionary entry corresponding to the fieldname
+        parameter.
+        """
+        self.associated_assets[fieldname] -= set(assets)
+        if len(self.associated_assets[fieldname]) == 0:
+            del self.associated_assets[fieldname]
 
-        left_field_name, right_field_name = \
-            self.get_association_field_names()
-        left_field = getattr(self, left_field_name)
-        right_field = getattr(self, right_field_name)
-
-        association_dict = {
-            self.type:
-            {
-                left_field_name:
-                    {asset.id: asset.name for asset in left_field},
-                right_field_name:
-                    {asset.id: asset.name for asset in right_field}
-            }
-        }
-
-        if self.extras:
-            # Add optional metadata to dict
-            association_dict['extras'] = self.extras
-
-        return association_dict
-
-
-    @classmethod
-    def _from_dict(
-        cls,
-        assoc_object: dict,
-        lang_graph: LanguageGraph,
-        model: Model,
-        ) -> ModelAssociation:
-
-        (_, fields), = assoc_object.items()
-        fields_list = list(fields)
-        fieldname = fields_list[0]
-        other_fieldname = fields_list[1]
-        asset_id = int(next(iter(fields[fieldname].keys())))
-        asset = model.get_asset_by_id(asset_id)
-        if asset is None:
-            raise LookupError(
-                'Could not find asset with id %d in model "%s".' % (
-                    asset_id,
-                    model.name)
-            )
-        lg_asset = asset.lg_asset
-        lg_assoc = lg_asset.associations[other_fieldname]
-
-        first_assets = [model.assets[int(asset_id)] for asset_id in \
-            fields[fieldname]]
-        second_assets = [model.assets[int(asset_id)] for asset_id in \
-            fields[other_fieldname]]
-
-        if fieldname == lg_assoc.left_field.fieldname:
-            association = ModelAssociation(
-                lg_assoc = lg_assoc,
-                left_assets = first_assets,
-                right_assets = second_assets,
-            )
-        else:
-            association = ModelAssociation(
-                lg_assoc = lg_assoc,
-                left_assets = second_assets,
-                right_assets = first_assets,
-            )
-
-        #TODO Properly handle extras
-        return association
-
-
-    def __repr__(self):
-        return self.type
+        # Also remove this asset to the associated assets' dictionaries
+        lg_assoc = self.lg_asset.associations[fieldname]
+        other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
+        for asset in assets:
+            asset.associated_assets[other_fieldname].remove(self)
+            if len(asset.associated_assets[other_fieldname]) == 0:
+                del asset.associated_assets[other_fieldname]
