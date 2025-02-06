@@ -101,6 +101,7 @@ class LanguageGraphAsset:
             current_asset = current_asset.own_super_asset
         return False
 
+
     @cached_property
     def sub_assets(self) -> set[LanguageGraphAsset]:
         """
@@ -260,6 +261,15 @@ class LanguageGraphAssociation:
             self.right_field.fieldname
             )
         return full_name
+
+
+    def get_field(self, fieldname: str) -> LanguageGraphAssociationField:
+        """
+        Return the field that matches the `fieldname` given as parameter.
+        """
+        if self.right_field.fieldname == fieldname:
+            return self.right_field
+        return self.left_field
 
 
     def contains_fieldname(self, fieldname: str) -> bool:

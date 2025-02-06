@@ -25,6 +25,7 @@ from ..file_utils import (
 
 if TYPE_CHECKING:
     from typing import Any, Optional
+    from ..model import ModelAsset
 
 logger = logging.getLogger(__name__)
 
@@ -144,8 +145,8 @@ class AttackGraph():
             if model and 'asset' in node_dict:
                 node_asset = model.get_asset_by_name(node_dict['asset'])
                 if node_asset is None:
-                    msg = ('Failed to find asset with id %s'
-                            'when loading from attack graph dict')
+                    msg = ('Failed to find asset with name "%s"'
+                            ' when loading from attack graph dict')
                     logger.error(msg, node_dict["asset"])
                     raise LookupError(msg % node_dict["asset"])
 
@@ -345,7 +346,7 @@ class AttackGraph():
     def _follow_expr_chain(
             self,
             model: Model,
-            target_assets: set[Any],
+            target_assets: set[ModelAsset],
             expr_chain: Optional[ExpressionsChain]
         ) -> set[Any]:
         """
@@ -420,10 +421,9 @@ class AttackGraph():
                 new_target_assets = set()
                 new_target_assets.update(
                     *(
-                        model.get_associated_assets_by_field_name(
-                            asset, expr_chain.fieldname
-                        )
-                        for asset in target_assets
+                        asset.associated_assets.get(
+                            expr_chain.fieldname, set()
+                        ) for asset in target_assets
                       )
                 )
                 return new_target_assets
@@ -518,7 +518,7 @@ class AttackGraph():
             raise AttackGraphException(msg)
 
         # First, generate all of the nodes of the attack graph.
-        for asset in self.model.assets:
+        for asset in self.model.assets.values():
 
             logger.debug(
                 'Generating attack steps for asset %s which is of class %s.',
@@ -527,14 +527,7 @@ class AttackGraph():
 
             attack_step_nodes = []
 
-            lang_graph_asset = self.lang_graph.assets[asset.type]
-            if lang_graph_asset is None:
-                raise LookupError(
-                    f'Failed to find asset with name \"{asset.type}\" in '
-                    'the language graph.'
-                )
-
-            for attack_step in lang_graph_asset.attack_steps.values():
+            for attack_step in asset.lg_asset.attack_steps.values():
                 logger.debug(
                     'Generating attack step node for %s.', attack_step.name
                 )
@@ -546,7 +539,7 @@ class AttackGraph():
                 match (attack_step.type):
                     case 'defense':
                         # Set the defense status for defenses
-                        defense_status = getattr(asset, attack_step.name)
+                        defense_status = asset.defenses[attack_step.name]
                         logger.debug(
                             'Setting the defense status of \"%s\" to '
                             '\"%s\".',

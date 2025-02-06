@@ -1,121 +1,109 @@
 assets:
   0:
-    associated_assets:
-      appExecutedApps:
-        1: Program 1
-        2: Program 2
-        3: IDPS 1
     name: OS App
     type: Application
   1:
-    associated_assets:
-      hostApp:
-        0: OS App
     defenses:
       notPresent: 1.0
     name: Program 1
     type: Application
   2:
-    associated_assets:
-      containedData:
-        5: Data:5
-      hostApp:
-        0: OS App
-      vulnerabilities:
-        4: SoftwareVulnerability:4
     name: Program 2
     type: Application
   3:
-    associated_assets:
-      hostApp:
-        0: OS App
-      infoDependedUpon:
-        13: Group:13
     name: IDPS 1
     type: IDPS
   4:
-    associated_assets:
-      application:
-        2: Program 2
     defenses:
       availabilityImpactLimitations: 1.0
       lowPrivilegesRequired: 1.0
     name: SoftwareVulnerability:4
     type: SoftwareVulnerability
   5:
-    associated_assets:
-      containingApp:
-        2: Program 2
-      encryptCreds:
-        6: Credentials:6
     name: Data:5
     type: Data
   6:
-    associated_assets:
-      encryptedData:
-        5: Data:5
-      identities:
-        8: Identity:8
-      requiredFactors:
-        7: Credentials:7
     defenses:
       unique: 0.0
     name: Credentials:6
     type: Credentials
   7:
-    associated_assets:
-      credentials:
-        6: Credentials:6
     defenses:
       unique: 0.0
     name: Credentials:7
     type: Credentials
   8:
-    associated_assets:
-      credentials:
-        6: Credentials:6
-      users:
-        12: User:12
     name: Identity:8
     type: Identity
   9:
-    associated_assets:
-      identities:
-        11: Identity:11
     defenses:
       unique: 0.0
     name: Credentials:9
     type: Credentials
   10:
-    associated_assets:
-      identities:
-        11: Identity:11
     name: Credentials:10
     type: Credentials
   11:
-    associated_assets:
-      credentials:
-        9: Credentials:9
-        10: Credentials:10
-      users:
-        12: User:12
     name: Identity:11
     type: Identity
   12:
-    associated_assets:
-      userIds:
-        8: Identity:8
-        11: Identity:11
     defenses:
       noPasswordReuse: 0.0
     name: User:12
     type: User
   13:
-    associated_assets:
-      dependentApps:
-        3: IDPS 1
     name: Group:13
     type: Group
+associations:
+- AppExecution:
+    appExecutedApps:
+      1: Program 1
+      2: Program 2
+      3: IDPS 1
+    hostApp:
+      0: OS App
+- ApplicationVulnerability:
+    application:
+      2: Program 2
+    vulnerabilities:
+      4: SoftwareVulnerability:4
+- AppContainment:
+    containedData:
+      5: Data:5
+    containingApp:
+      2: Program 2
+- EncryptionCredentials:
+    encryptCreds:
+      6: Credentials:6
+    encryptedData:
+      5: Data:5
+- ConditionalAuthentication:
+    credentials:
+      6: Credentials:6
+    requiredFactors:
+      7: Credentials:7
+- IdentityCredentials:
+    credentials:
+      6: Credentials:6
+    identities:
+      8: Identity:8
+- IdentityCredentials:
+    credentials:
+      9: Credentials:9
+      10: Credentials:10
+    identities:
+      11: Identity:11
+- UserAssignedIdentities:
+    userIds:
+      8: Identity:8
+      11: Identity:11
+    users:
+      12: User:12
+- Dependence:
+    dependentApps:
+      3: IDPS 1
+    infoDependedUpon:
+      13: Group:13
 attackers:
   14:
     entry_points:
