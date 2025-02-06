@@ -567,7 +567,7 @@ class ModelAsset:
         return self.name
 
 
-    def validate_new_association(
+    def validate_associated_assets(
             self, fieldname: str, assets_to_add: set[ModelAsset]
         ):
         """
@@ -618,22 +618,26 @@ class ModelAsset:
             )
 
     def add_associated_assets(self, fieldname: str, assets: set[ModelAsset]):
-        """ Add the assets provided as a parameter to the set of associated
-        assets dictionary entry corresponding to the fieldname parameter.
+        """
+        Add the assets provided as a parameter to the set of associated
+        assets dictionary entry corresponding to the given fieldname.
         """
 
-        # Add the associated assets to this assets dictionary
-        self.validate_new_association(fieldname, assets)
+        lg_assoc = self.lg_asset.associations[fieldname]
+        other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
+
+        # Validation from both sides
+        self.validate_associated_assets(fieldname, assets)
+        for asset in assets:
+            asset.validate_associated_assets(other_fieldname, {self})
+
+        # Add the associated assets to this asset's dictionary
         self._associated_assets.setdefault(
             fieldname, set()
         ).update(assets)
 
-        # Also add this asset to the associated assets' dictionaries
-        lg_assoc = self.lg_asset.associations[fieldname]
-        other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
-
+        # Add this asset to the associated assets' corresponding dictionaries
         for asset in assets:
-            asset.validate_new_association(other_fieldname, {self})
             asset._associated_assets.setdefault(
                 other_fieldname, set()
             ).add(self)
