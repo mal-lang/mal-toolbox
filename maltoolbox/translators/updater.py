@@ -69,10 +69,13 @@ def load_model_dict_from_file(
 
 def convert_model_dict_from_version_0_0(model_dict: dict) -> dict:
     """
-    Convert model dict version 0.0 -> 0.1
+    Convert model dict version 0.0 to 0.1
 
     Arguments:
-    filename                - the name of the input file
+    model_dict  - the dictionary containing the serialized model
+
+    Returns:
+    A dictionary containing the version 0.1 equivalent serialized model
     """
 
     new_model_dict = {}
@@ -127,12 +130,13 @@ def convert_model_dict_from_version_0_0(model_dict: dict) -> dict:
 
 def convert_model_dict_from_version_0_1(model_dict: dict) -> dict:
     """
-    Load model from file.
+    Convert model dict version 0.1 to 0.2
 
     Arguments:
-    filename                - the name of the input file (json/yml)
-    lang_classes_factory    - the language classes factory that defines the
-                              classes needed to build the model
+    model_dict  - the dictionary containing the serialized model
+
+    Returns:
+    A dictionary containing the version 0.2 equivalent serialized model
     """
 
     new_model_dict = {}
@@ -195,13 +199,13 @@ def convert_model_dict_from_version_0_1(model_dict: dict) -> dict:
 
 def convert_model_dict_from_version_0_2(model_dict: dict) -> dict:
     """
-    0.2.0 -> current version
-    Load model from file.
+    Convert model dict version 0.2 to 0.3
 
     Arguments:
-    filename                - the name of the input file
-    lang_classes_factory    - the language classes factory that defines the
-                              classes needed to build the model
+    model_dict  - the dictionary containing the serialized model
+
+    Returns:
+    A dictionary containing the version 0.3 equivalent serialized model
     """
 
     new_model_dict = {}
