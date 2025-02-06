@@ -1,5 +1,7 @@
 from .mal_analyzer_test_wrapper import AnalyzerTestWrapper
 
+import os
+
 '''
 A file to test different cases of the `extends` instruction in MAL.
 '''
@@ -75,4 +77,33 @@ def test_extends_3() -> None:
     )
 
 
-    
+def test_extends_4() -> None:
+    '''
+    Tests valid extends across files
+    '''
+
+    path = "./generated_test_mal.mal"
+    with open(path, 'w') as file:
+        file.write('''
+        #version:"0.0.0"
+        #id: "org.mal-lang.testAnalyzer"
+
+        category System {
+            asset Test {}
+        }
+        ''')
+
+    AnalyzerTestWrapper('''
+    include "'''+path+'''"
+
+    category System {
+        asset SubTest extends Test {}
+    }
+    ''').test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Test','SubTest'],
+    )
+
+    if os.path.exists(path):
+        os.remove(path)
