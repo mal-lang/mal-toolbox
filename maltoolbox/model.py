@@ -497,7 +497,7 @@ class ModelAsset:
         self.type = self.lg_asset.name
         self.defenses: dict[str, float] = defenses or {}
         self.extras: dict = extras or {}
-        self.associated_assets: dict[str, set[ModelAsset]] = {}
+        self._associated_assets: dict[str, set[ModelAsset]] = {}
         self.attack_step_nodes: list = []
 
         for step in self.lg_asset.attack_steps.values():
@@ -621,7 +621,7 @@ class ModelAsset:
 
         # Add the associated assets to this assets dictionary
         self.validate_new_association(fieldname, assets)
-        self.associated_assets.setdefault(
+        self._associated_assets.setdefault(
             fieldname, set()
         ).update(assets)
 
@@ -631,7 +631,7 @@ class ModelAsset:
 
         for asset in assets:
             asset.validate_new_association(other_fieldname, {self})
-            asset.associated_assets.setdefault(
+            asset._associated_assets.setdefault(
                 other_fieldname, set()
             ).add(self)
 
@@ -641,14 +641,19 @@ class ModelAsset:
         associated assets dictionary entry corresponding to the fieldname
         parameter.
         """
-        self.associated_assets[fieldname] -= set(assets)
-        if len(self.associated_assets[fieldname]) == 0:
-            del self.associated_assets[fieldname]
+        self._associated_assets[fieldname] -= set(assets)
+        if len(self._associated_assets[fieldname]) == 0:
+            del self._associated_assets[fieldname]
 
         # Also remove this asset to the associated assets' dictionaries
         lg_assoc = self.lg_asset.associations[fieldname]
         other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
         for asset in assets:
-            asset.associated_assets[other_fieldname].remove(self)
-            if len(asset.associated_assets[other_fieldname]) == 0:
-                del asset.associated_assets[other_fieldname]
+            asset._associated_assets[other_fieldname].remove(self)
+            if len(asset._associated_assets[other_fieldname]) == 0:
+                del asset._associated_assets[other_fieldname]
+
+
+    @property
+    def associated_assets(self):
+        return self._associated_assets
