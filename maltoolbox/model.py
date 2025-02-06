@@ -232,7 +232,7 @@ class Model():
 
         # First remove all of the associated assets
         for fieldname, assoc_assets in asset.associated_assets.items():
-            asset.remove_associated_assets(fieldname, list(assoc_assets))
+            asset.remove_associated_assets(fieldname, assoc_assets)
 
         # Also remove all of the entry points
         for attacker in self.attackers:
@@ -431,9 +431,11 @@ class Model():
             asset = model.assets[int(asset_id)]
             assoc_assets_dict = asset_dict['associated_assets'].items()
             for fieldname, assoc_assets in assoc_assets_dict:
-                asset.add_associated_assets(fieldname,
-                    [model.assets[int(assoc_asset_id)]
-                        for assoc_asset_id in assoc_assets])
+                asset.add_associated_assets(
+                    fieldname,
+                    {model.assets[int(assoc_asset_id)]
+                        for assoc_asset_id in assoc_assets}
+                )
 
         # Reconstruct the attackers
         if 'attackers' in serialized_object:
@@ -563,7 +565,7 @@ class ModelAsset:
         return self.name
 
     def validate_new_association(
-            self, fieldname: str, assets_to_add: list[ModelAsset]
+            self, fieldname: str, assets_to_add: set[ModelAsset]
         ):
         """
         Validate an association we want to add (through `fieldname`)
@@ -612,7 +614,7 @@ class ModelAsset:
                 f"assets for association field {fieldname}"
             )
 
-    def add_associated_assets(self, fieldname: str, assets: list[ModelAsset]):
+    def add_associated_assets(self, fieldname: str, assets: set[ModelAsset]):
         """ Add the assets provided as a parameter to the set of associated
         assets dictionary entry corresponding to the fieldname parameter.
         """
@@ -628,13 +630,13 @@ class ModelAsset:
         other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
 
         for asset in assets:
-            asset.validate_new_association(other_fieldname, [self])
+            asset.validate_new_association(other_fieldname, {self})
             asset.associated_assets.setdefault(
                 other_fieldname, set()
             ).add(self)
 
     def remove_associated_assets(self, fieldname: str,
-        assets: list[ModelAsset]):
+        assets: set[ModelAsset]):
         """ Remove the assets provided as a parameter from the set of
         associated assets dictionary entry corresponding to the fieldname
         parameter.
