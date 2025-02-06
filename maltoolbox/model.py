@@ -131,7 +131,7 @@ class AttackerAttachment:
 
 
 class Model():
-    """An implementation of a MAL language model with asset"""
+    """An implementation of a MAL language model containing assets"""
     next_id: int = 0
 
     def __repr__(self) -> str:
@@ -148,7 +148,6 @@ class Model():
         self.name = name
         self.assets: dict[int, ModelAsset] = {}
         self._name_to_asset:dict[str, ModelAsset] = {} # optimization
-        self._type_to_association:dict = {} # optimization
         self.attackers: list[AttackerAttachment] = []
         self.lang_graph = lang_graph
         self.maltoolbox_version: str = mt_version
@@ -168,12 +167,21 @@ class Model():
             extras: Optional[dict] = None,
             allow_duplicate_names: bool = True
         ) -> ModelAsset:
-        """Add an asset to the model.
+        """
+        Create an asset based on the provided parameters and add it to the
+        model.
 
         Arguments:
-        asset                   - the asset to add to the model
-        asset_id                - the id to assign to this asset, usually
-                                  from an instance model file
+        asset_type              - string containing the asset type name
+        name                    - string containing the asset name. If not
+                                  provided the concatenated asset type and id
+                                  will be used as a name.
+        asset_id                - id to assign to this asset, usually from an
+                                  instance model file. If not provided the id
+                                  will be set to the next highest id
+                                  available.
+        defeses                 - dictionary of defense values
+        extras                  - dictionary of extras
         allow_duplicate_name    - allow duplicate names to be used. If allowed
                                   and a duplicate is encountered the name will
                                   be appended with the id.
@@ -182,7 +190,6 @@ class Model():
         The newly created asset.
         """
 
-        # TODO: simplify these lines
         # Set asset ID and check for duplicates
         asset_id = asset_id or self.next_id
         if asset_id in self.asset_ids:
