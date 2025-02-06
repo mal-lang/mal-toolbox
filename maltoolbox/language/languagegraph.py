@@ -263,6 +263,14 @@ class LanguageGraphAssociation:
         return full_name
 
 
+    def get_field(self, fieldname: str) -> LanguageGraphAssociationField:
+        """
+        Return the field that matches the `fieldname` given as parameter.
+        """
+        if self.right_field.fieldname == fieldname:
+            return self.right_field
+        return self.left_field
+
     def contains_fieldname(self, fieldname: str) -> bool:
         """
         Check if the association contains the field name given as a parameter.

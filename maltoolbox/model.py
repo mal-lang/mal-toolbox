@@ -489,19 +489,15 @@ class ModelAsset:
         extras: Optional[dict] = None
     ):
 
-        if defenses is None:
-            defenses = {}
-        if extras is None:
-            extras = {}
-
         self.name: str = name
         self.id: Optional[int] = None
         self.lg_asset: LanguageGraphAsset = lg_asset
         self.type = self.lg_asset.name
-        self.defenses: dict[str, float] = defenses
-        self.extras: dict = extras
+        self.defenses: dict[str, float] = defenses or {}
+        self.extras: dict = extras or {}
         self.associated_assets: dict[str, set[ModelAsset]] = {}
         self.attack_step_nodes: list = []
+
         for step in self.lg_asset.attack_steps.values():
             if step.type == 'defense' and step.name not in self.defenses:
                 self.defenses[step.name] = 1.0 if step.ttc and \
@@ -573,17 +569,17 @@ class ModelAsset:
         Validate an association we want to add (through `fieldname`)
         is valid with the assets given in param `assets_to_add`:
         - fieldname is valid for the asset type of this ModelAsset
-        - Make sure no more assets than 'field.maximum' are added to the field
+        - type of `assets_to_add` is valid for the association
+        - no more assets than 'field.maximum' are added to the field
 
         Raises:
             LookupError - fieldname can not be found for this ModelAsset
             ValueError - there will be too many assets in the field
                          if we add this association
-
-        TODO: is there anything else we want to validate?
+            TypeError - if the asset type of `assets_to_add` is not valid
         """
 
-        # Validate that the field name is allowed for the asset type
+        # Validate that the field name is allowed for this asset type
         if fieldname not in self.lg_asset.associations:
             accepted_fieldnames = list(self.lg_asset.associations.keys())
             raise LookupError(
@@ -592,14 +588,20 @@ class ModelAsset:
                 f"Did you mean one of {accepted_fieldnames}?"
             )
 
-        # Get the field that the fieldname belongs to
-        # TODO: lg_assoc.get_field(fieldname) would be nice to have for this
         lg_assoc = self.lg_asset.associations[fieldname]
-        assoc_field = lg_assoc.right_field
-        if lg_assoc.left_field.fieldname == fieldname:
-            assoc_field = lg_assoc.left_field
+        assoc_field = lg_assoc.get_field(fieldname)
 
-        # Make sure the number of assets in the field abide to field.maximum
+        # Validate that the asset to add association to is of correct type
+        for asset_to_add in assets_to_add:
+            if not asset_to_add.lg_asset.is_subasset_of(assoc_field.asset):
+                raise TypeError(
+                    f"Asset '{asset_to_add.name}' of type "
+                    f"'{asset_to_add.type}' can not be added to association "
+                    f"'{self.name}.{fieldname}'. Expected type of "
+                    f"'{fieldname}' is {assoc_field.asset.name}."
+            )
+
+        # Validate that there will not be too many assets in field
         assets_in_field_before = self.associated_assets.get(fieldname, set())
         assets_in_field_after = assets_in_field_before | set(assets_to_add)
         max_assets_in_field = assoc_field.maximum or math.inf
@@ -619,7 +621,7 @@ class ModelAsset:
         self.validate_new_association(fieldname, assets)
         self.associated_assets.setdefault(
             fieldname, set()
-        ).update(set(assets))
+        ).update(assets)
 
         # Also add this asset to the associated assets' dictionaries
         lg_assoc = self.lg_asset.associations[fieldname]

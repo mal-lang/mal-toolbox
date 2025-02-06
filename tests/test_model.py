@@ -316,10 +316,42 @@ def test_model_add_appexecution_association_two_assets(model: Model):
     model.add_asset(p2, asset_id=p2_id)
 
     # Try create an association between (p1, p2) and p1
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         # will raise error because two assets (p1,p2)
         # are not allowed in the left field for AppExecution
         p1.add_associated_assets(fieldname = 'hostApp', assets = [p1, p2])
+
+
+def test_model_add_association_wrong_type(model: Model):
+    """coreLang specifies that hostApp must be an Application"""
+
+    # Add program assets
+    p1 = create_asset(model, 'Program 1', 'Application')
+    data = create_asset(model, 'Data 1', 'Data')
+    model.add_asset(p1)
+    model.add_asset(data)
+
+    # Try create an association between p1 and data
+    with pytest.raises(TypeError):
+        # will raise error because data has wrong type
+        p1.add_associated_assets(fieldname = 'hostApp', assets = [data])
+
+
+def test_model_add_association_nonexisting_fieldname(model: Model):
+    """coreLang does not specify a fieldname called `unknownFieldName`"""
+
+    # Add program assets
+    p1 = create_asset(model, 'Program 1', 'Application')
+    data = create_asset(model, 'Data 1', 'Data')
+    model.add_asset(p1)
+    model.add_asset(data)
+
+    # Try create an association between p1 and data
+    with pytest.raises(LookupError):
+        # will raise error because fieldname does not exist
+        p1.add_associated_assets(
+            fieldname = 'unknownFieldName', assets = [data]
+        )
 
 
 def test_model_add_association_duplicate(model: Model):
