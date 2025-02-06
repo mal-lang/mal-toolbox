@@ -25,7 +25,7 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
 
     # Create association between app1 and app2
     # assoc = create_association(model, left_assets=[app1], right_assets=[app2])
-    app1.add_associated_assets(fieldname='appExecutedApps', assets=[app2])
+    app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
 
     attacker = AttackerAttachment()
     attacker.entry_points = [

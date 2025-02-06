@@ -268,7 +268,7 @@ def test_model_add_associated_asset(model: Model):
     assert 'appExecutedApps' not in asset1.associated_assets
     assert 'hostApp' not in asset2.associated_assets
     # Create an association between asset1 and asset2
-    asset1.add_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+    asset1.add_associated_assets(fieldname = 'appExecutedApps', assets = {asset2})
     # Add the association to the model
 
     # Make sure association was added to the model and assets
@@ -289,7 +289,7 @@ def test_model_add_appexecution_association_two_assets(model: Model):
     with pytest.raises(ValueError):
         # will raise error because two assets (asset1,asset2)
         # are not allowed in the left field for AppExecution
-        asset1.add_associated_assets(fieldname = 'hostApp', assets = [asset1, asset2])
+        asset1.add_associated_assets(fieldname = 'hostApp', assets = {asset1, asset2})
 
 
 def test_model_add_association_wrong_type(model: Model):
@@ -302,7 +302,7 @@ def test_model_add_association_wrong_type(model: Model):
     # Try create an association between asset1 and data
     with pytest.raises(TypeError):
         # will raise error because data has wrong type
-        asset1.add_associated_assets(fieldname = 'hostApp', assets = [data])
+        asset1.add_associated_assets(fieldname = 'hostApp', assets = {data})
 
 
 def test_model_add_association_nonexisting_fieldname(model: Model):
@@ -316,7 +316,7 @@ def test_model_add_association_nonexisting_fieldname(model: Model):
     with pytest.raises(LookupError):
         # will raise error because fieldname does not exist
         asset1.add_associated_assets(
-            fieldname = 'unknownFieldName', assets = [data]
+            fieldname = 'unknownFieldName', assets = {data}
         )
 
 
@@ -330,17 +330,17 @@ def test_model_add_association_duplicate(model: Model):
 
 
     # Create an association between d3 and (d1, d2)
-    d3.add_associated_assets(fieldname = 'containingData', assets = [d1, d2])
+    d3.add_associated_assets(fieldname = 'containingData', assets = {d1, d2})
 
     # Identical to previous d3 to d2
-    d3.add_associated_assets(fieldname = 'containingData', assets = [d2])
+    d3.add_associated_assets(fieldname = 'containingData', assets = {d2})
 
     # Indentical to previous d3 to d2
-    d2.add_associated_assets(fieldname = 'containedData', assets = [d3, d3])
+    d2.add_associated_assets(fieldname = 'containedData', assets = {d3, d3})
 
-    assert d1.associated_assets['containedData'] == set([d3])
-    assert d2.associated_assets['containedData'] == set([d3])
-    assert d3.associated_assets['containingData'] == set([d1, d2])
+    assert d1.associated_assets['containedData'] == {d3}
+    assert d2.associated_assets['containedData'] == {d3}
+    assert d3.associated_assets['containingData'] == {d1, d2}
 
 
 def test_model_remove_associated_asset(model: Model):
@@ -350,7 +350,8 @@ def test_model_remove_associated_asset(model: Model):
     asset1 = model.add_asset(asset_type = 'Application')
     asset2 = model.add_asset(asset_type = 'Application')
 
-    asset1.add_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+    asset1.add_associated_assets(
+        fieldname = 'appExecutedApps', assets = {asset2})
 
     assert 'appExecutedApps' in asset1.associated_assets
     assert asset2 in asset1.associated_assets['appExecutedApps']
@@ -359,7 +360,8 @@ def test_model_remove_associated_asset(model: Model):
 
     # Remove the association and make sure it was
     # removed from assets and model
-    asset1.remove_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+    asset1.remove_associated_assets(
+        fieldname = 'appExecutedApps', assets = {asset2})
     assert 'appExecutedApps' not in asset1.associated_assets
     assert 'hostApp' not in asset2.associated_assets
 
@@ -372,7 +374,8 @@ def test_model_remove_associated_asset_with_leftovers(model: Model):
     asset2 = model.add_asset(asset_type = 'Application')
     asset3 = model.add_asset(asset_type = 'Application')
 
-    asset1.add_associated_assets(fieldname = 'appExecutedApps', assets = [asset2, asset3])
+    asset1.add_associated_assets(
+        fieldname = 'appExecutedApps', assets = {asset2, asset3})
 
     assert 'appExecutedApps' in asset1.associated_assets
     assert asset2 in asset1.associated_assets['appExecutedApps']
@@ -384,7 +387,8 @@ def test_model_remove_associated_asset_with_leftovers(model: Model):
 
     # Remove the association and make sure it was
     # removed from assets and model
-    asset1.remove_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+    asset1.remove_associated_assets(
+        fieldname = 'appExecutedApps', assets = {asset2})
 
     assert 'appExecutedApps' in asset1.associated_assets
     assert asset2 not in asset1.associated_assets['appExecutedApps']
@@ -406,7 +410,8 @@ def test_model_remove_nonexisting_associated_assets(model: Model):
 
     # So we should expect a LookupError when trying to remove one
     with pytest.raises(LookupError):
-        asset1.remove_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+        asset1.remove_associated_assets(
+            fieldname = 'appExecutedApps', assets = {asset2})
 
 
 def test_model_remove_asset_from_association_nonexisting_asset(
@@ -422,18 +427,19 @@ def test_model_remove_asset_from_association_nonexisting_asset(
     asset4 = model.add_asset(asset_type = 'Application')
 
     # Create an association between asset1 and asset2
-    asset1.add_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+    asset1.add_associated_assets(
+        fieldname = 'appExecutedApps', assets = {asset2})
 
     # We are removing asset3 from association where it does not exist
     with pytest.raises(LookupError):
         asset1.remove_associated_assets(fieldname = 'appExecutedApps',
-            assets = [asset3])
+            assets = {asset3})
 
     # We are removing asset4 from association, but asset4
     # does not exist in the model
     with pytest.raises(LookupError):
         asset1.remove_associated_assets(fieldname = 'appExecutedApps',
-            assets = [asset4])
+            assets = {asset4})
 
 
 def test_model_add_attacker(model: Model):
@@ -585,7 +591,8 @@ def test_serialize(model: Model):
     asset3 = model.add_asset(asset_type = 'Application')
 
     # Create and add an association between asset1 and asset2
-    asset1.add_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+    asset1.add_associated_assets(
+        fieldname = 'appExecutedApps', assets = {asset2})
 
     # Add attacker
     attacker = AttackerAttachment()
@@ -626,7 +633,8 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     asset3 = model.add_asset(asset_type = 'Application')
 
     # Create and add an association between asset1 and asset2
-    asset1.add_associated_assets(fieldname = 'appExecutedApps', assets = [asset2])
+    asset1.add_associated_assets(
+        fieldname = 'appExecutedApps', assets = {asset2})
 
     # Add attacker
     attacker = AttackerAttachment()
