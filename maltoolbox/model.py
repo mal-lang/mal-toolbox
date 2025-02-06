@@ -161,10 +161,13 @@ class Model():
 
     def add_asset(
             self,
-            asset: ModelAsset,
+            asset_type: str,
+            name: Optional[str] = None,
             asset_id: Optional[int] = None,
+            defenses: Optional[dict[str, float]] = None,
+            extras: Optional[dict] = None,
             allow_duplicate_names: bool = True
-        ) -> None:
+        ) -> ModelAsset:
         """Add an asset to the model.
 
         Arguments:
@@ -176,36 +179,47 @@ class Model():
                                   be appended with the id.
 
         Return:
-        An asset matching the name if it exists in the model.
+        The newly created asset.
         """
 
         # TODO: simplify these lines
         # Set asset ID and check for duplicates
-        asset.id = asset_id or self.next_id
-        if asset.id in self.asset_ids:
+        asset_id = asset_id or self.next_id
+        if asset_id in self.asset_ids:
             raise ValueError(f'Asset index {asset_id} already in use.')
-        self.asset_ids.add(asset.id)
+        self.asset_ids.add(asset_id)
 
-        self.next_id = max(asset.id + 1, self.next_id)
+        self.next_id = max(asset_id + 1, self.next_id)
 
-        if not hasattr(asset, 'name'):
-            asset.name = asset.type + ':' + str(asset.id)
+        if not name:
+            name = asset_type + ':' + str(asset_id)
         else:
-            if asset.name in self.asset_names:
+            if name in self.asset_names:
                 if allow_duplicate_names:
-                    asset.name = asset.name + ':' + str(asset.id)
+                    name = name + ':' + str(asset_id)
                 else:
                     raise ValueError(
-                        f'Asset name {asset.name} is a duplicate'
+                        f'Asset name {name} is a duplicate'
                         ' and we do not allow duplicates.'
                     )
-        self.asset_names.add(asset.name)
+        self.asset_names.add(name)
+
+        lg_asset = self.lang_graph.assets[asset_type]
+
+        asset = ModelAsset(
+            name = name,
+            asset_id = asset_id,
+            lg_asset = lg_asset,
+            defenses = defenses,
+            extras = extras)
 
         logger.debug(
-            'Add "%s"(%d) to model "%s".', asset.name, asset.id, self.name
+            'Add "%s"(%d) to model "%s".', name, asset_id, self.name
         )
-        self.assets[asset.id] = asset
-        self._name_to_asset[asset.name] = asset
+        self.assets[asset_id] = asset
+        self._name_to_asset[name] = asset
+
+        return asset
 
 
     def remove_attacker(self, attacker: AttackerAttachment) -> None:
@@ -405,26 +419,31 @@ class Model():
             mt_version = maltoolbox_version)
 
         # Reconstruct the assets
-        for asset_id, asset_object in serialized_object['assets'].items():
+        for asset_id, asset_dict in serialized_object['assets'].items():
 
             if logger.isEnabledFor(logging.DEBUG):
                 # Avoid running json.dumps when not in debug
                 logger.debug(
-                    "Loading asset:\n%s", json.dumps(asset_object, indent=2)
+                    "Loading asset:\n%s", json.dumps(asset_dict, indent=2)
                 )
 
             # Allow defining an asset via type only.
-            asset_object = (
-                asset_object
-                if isinstance(asset_object, dict)
+            asset_dict = (
+                asset_dict
+                if isinstance(asset_dict, dict)
                 else {
-                    'type': asset_object,
-                    'name': f"{asset_object}:{asset_id}"
+                    'type': asset_dict,
+                    'name': f"{asset_dict}:{asset_id}"
                 }
             )
 
-            asset = ModelAsset._from_dict(asset_object, lang_graph)
-            model.add_asset(asset, asset_id = int(asset_id))
+            model.add_asset(
+                asset_type = asset_dict['type'],
+                name = asset_dict['name'],
+                defenses = {defense: float(value) for defense, value in \
+                    asset_dict.get('defenses', {}).items()},
+                extras = asset_dict.get('extras', {}),
+                asset_id = int(asset_id))
 
         # Reconstruct the association links
         for asset_id, asset_dict in serialized_object['assets'].items():
@@ -486,13 +505,14 @@ class ModelAsset:
     def __init__(
         self,
         name: str,
+        asset_id: int,
         lg_asset: LanguageGraphAsset,
         defenses: Optional[dict[str, float]] = None,
         extras: Optional[dict] = None
     ):
 
         self.name: str = name
-        self.id: Optional[int] = None
+        self._id: int = asset_id
         self.lg_asset: LanguageGraphAsset = lg_asset
         self.type = self.lg_asset.name
         self.defenses: dict[str, float] = defenses or {}
@@ -542,27 +562,10 @@ class ModelAsset:
 
         return {self.id: asset_dict}
 
-    @classmethod
-    def _from_dict(
-        cls,
-        asset_object: dict,
-        lang_graph: LanguageGraph,
-        ) -> ModelAsset:
-
-        lg_asset = lang_graph.assets[asset_object['type']]
-
-        asset = ModelAsset(
-            name = f"{asset_object['name']}",
-            lg_asset = lg_asset,
-            defenses = {defense: float(value) for defense, value in \
-                asset_object.get('defenses', {}).items()},
-            extras = asset_object.get('extras', {})
-        )
-
-        return asset
 
     def __repr__(self):
         return self.name
+
 
     def validate_new_association(
             self, fieldname: str, assets_to_add: set[ModelAsset]
@@ -657,3 +660,8 @@ class ModelAsset:
     @property
     def associated_assets(self):
         return self._associated_assets
+
+
+    @property
+    def id(self):
+        return self._id

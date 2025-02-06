@@ -9,9 +9,6 @@ from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.model import Model, AttackerAttachment
 
-from test_model import create_asset
-
-
 @pytest.fixture
 def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """Fixture that generates an example attack graph
@@ -23,10 +20,8 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """
 
     # Create 2 assets
-    app1 = create_asset(model, "Application 1", 'Application')
-    app2 = create_asset(model, "Application 2", 'Application')
-    model.add_asset(app1)
-    model.add_asset(app2)
+    app1 = model.add_asset(asset_type = 'Application', name = 'Application 1')
+    app2 = model.add_asset(asset_type = 'Application', name = 'Application 2')
 
     # Create association between app1 and app2
     # assoc = create_association(model, left_assets=[app1], right_assets=[app2])
@@ -315,10 +310,8 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     AttackGraph contains expected nodes"""
 
     # Create 2 assets
-    app1 = create_asset(model, "Application 1", 'Application')
-    app2 = create_asset(model, "Application 2", 'Application')
-    model.add_asset(app1)
-    model.add_asset(app2)
+    app1 = model.add_asset(asset_type = 'Application')
+    app2 = model.add_asset(asset_type = 'Application')
 
     # Create association between app1 and app2
     app1.add_associated_assets(fieldname='appExecutedApps', assets=[app2])
@@ -567,21 +560,17 @@ def test_attackgraph_subtype():
         'tests/testdata/subtype_attack_step.mal'))
     test_model = Model('Test Model', test_lang_graph)
     # Create assets
-    baseasset1 = create_asset(test_model,
+    baseasset1 = test_model.add_asset(
         name = 'BaseAsset 1',
         asset_type = 'BaseAsset')
 
-    subasset1 = create_asset(test_model,
+    subasset1 = test_model.add_asset(
         name = 'SubAsset 1',
         asset_type = 'SubAsset')
 
-    otherasset1 = create_asset(test_model,
+    otherasset1 = test_model.add_asset(
         name = 'OtherAsset 1',
         asset_type = 'OtherAsset')
-
-    test_model.add_asset(baseasset1)
-    test_model.add_asset(subasset1)
-    test_model.add_asset(otherasset1)
 
     # Create association between subasset1 and otherasset1
     subasset1.add_associated_assets('field2', [otherasset1])
@@ -617,23 +606,18 @@ def test_attackgraph_setops():
     test_model = Model('Test Model', test_lang_graph)
 
     # Create assets
-    set_ops_a1 = create_asset(test_model,
+    set_ops_a1 = test_model.add_asset(
         asset_type = 'SetOpsAssetA',
         name = 'SetOpsAssetA 1')
-    set_ops_b1 = create_asset(test_model,
+    set_ops_b1 = test_model.add_asset(
         asset_type = 'SetOpsAssetB',
         name = 'SetOpsAssetB 1')
-    set_ops_b2 = create_asset(test_model,
+    set_ops_b2 = test_model.add_asset(
         asset_type = 'SetOpsAssetB',
         name = 'SetOpsAssetB 2')
-    set_ops_b3 = create_asset(test_model,
+    set_ops_b3 = test_model.add_asset(
         asset_type = 'SetOpsAssetB',
         name = 'SetOpsAssetB 3')
-
-    test_model.add_asset(set_ops_a1)
-    test_model.add_asset(set_ops_b1)
-    test_model.add_asset(set_ops_b2)
-    test_model.add_asset(set_ops_b3)
 
     # Create association
     set_ops_a1.add_associated_assets('fieldB1', [set_ops_b1])
@@ -683,31 +667,24 @@ def test_attackgraph_transitive():
         'tests/testdata/transitive.mal'))
     test_model = Model('Test Model', test_lang_graph)
 
-    asset1 = create_asset(test_model,
+    asset1 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 1')
-    asset2 = create_asset(test_model,
+    asset2 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 2')
-    asset3 = create_asset(test_model,
+    asset3 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 3')
-    asset4 = create_asset(test_model,
+    asset4 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 4')
-    asset5 = create_asset(test_model,
+    asset5 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 5')
-    asset6 = create_asset(test_model,
+    asset6 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 6')
-
-    test_model.add_asset(asset1)
-    test_model.add_asset(asset2)
-    test_model.add_asset(asset3)
-    test_model.add_asset(asset4)
-    test_model.add_asset(asset5)
-    test_model.add_asset(asset6)
 
     asset1.add_associated_assets('field2', [asset2])
     asset2.add_associated_assets('field2', [asset3])
@@ -786,23 +763,18 @@ def test_attackgraph_transitive_advanced():
     test_lang_graph.save_to_file('tmp/trans_adv_lang_graph.yml')
     test_model = Model('Test Model', test_lang_graph)
 
-    asset1 = create_asset(test_model,
+    asset1 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 1')
-    asset2 = create_asset(test_model,
+    asset2 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 2')
-    asset3 = create_asset(test_model,
+    asset3 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 3')
-    asset4 = create_asset(test_model,
+    asset4 = test_model.add_asset(
         asset_type = 'TestAsset',
         name = 'TestAsset 4')
-
-    test_model.add_asset(asset1)
-    test_model.add_asset(asset2)
-    test_model.add_asset(asset3)
-    test_model.add_asset(asset4)
 
     asset1.add_associated_assets('fieldA2', [asset2, asset3])
     asset1.add_associated_assets('fieldB2', [asset3, asset4])
