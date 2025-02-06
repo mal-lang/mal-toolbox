@@ -15,6 +15,7 @@ Subpackages
    maltoolbox.attackgraph
    maltoolbox.ingestors
    maltoolbox.language
+   maltoolbox.patternfinder
    maltoolbox.translators
 
 Submodules
