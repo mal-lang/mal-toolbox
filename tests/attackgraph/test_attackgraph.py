@@ -24,7 +24,6 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     app2 = model.add_asset(asset_type = 'Application', name = 'Application 2')
 
     # Create association between app1 and app2
-    # assoc = create_association(model, left_assets=[app1], right_assets=[app2])
     app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
 
     attacker = AttackerAttachment()
@@ -314,8 +313,8 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     app2 = model.add_asset(asset_type = 'Application')
 
     # Create association between app1 and app2
-    app1.add_associated_assets(fieldname='appExecutedApps', assets=[app2])
-    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    app1.add_associated_assets(fieldname='appExecutedApps', assets = {app2})
+    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model = model)
 
     # These are all attack 71 steps and defenses for Application asset in MAL
     expected_node_names_application = [
@@ -573,8 +572,8 @@ def test_attackgraph_subtype():
         asset_type = 'OtherAsset')
 
     # Create association between subasset1 and otherasset1
-    subasset1.add_associated_assets('field2', [otherasset1])
-    baseasset1.add_associated_assets('field2', [otherasset1])
+    subasset1.add_associated_assets('field2', {otherasset1})
+    baseasset1.add_associated_assets('field2', {otherasset1})
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
@@ -620,11 +619,11 @@ def test_attackgraph_setops():
         name = 'SetOpsAssetB 3')
 
     # Create association
-    set_ops_a1.add_associated_assets('fieldB1', [set_ops_b1])
-    set_ops_a1.add_associated_assets('fieldB1', [set_ops_b2])
+    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b1})
+    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b2})
 
-    set_ops_a1.add_associated_assets('fieldB2', [set_ops_b2])
-    set_ops_a1.add_associated_assets('fieldB2', [set_ops_b3])
+    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b2})
+    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b3})
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
@@ -686,11 +685,11 @@ def test_attackgraph_transitive():
         asset_type = 'TestAsset',
         name = 'TestAsset 6')
 
-    asset1.add_associated_assets('field2', [asset2])
-    asset2.add_associated_assets('field2', [asset3])
-    asset3.add_associated_assets('field2', [asset4])
-    asset3.add_associated_assets('field2', [asset5])
-    asset6.add_associated_assets('field2', [asset1])
+    asset1.add_associated_assets('field2', {asset2})
+    asset2.add_associated_assets('field2', {asset3})
+    asset3.add_associated_assets('field2', {asset4})
+    asset3.add_associated_assets('field2', {asset5})
+    asset6.add_associated_assets('field2', {asset1})
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
@@ -776,8 +775,8 @@ def test_attackgraph_transitive_advanced():
         asset_type = 'TestAsset',
         name = 'TestAsset 4')
 
-    asset1.add_associated_assets('fieldA2', [asset2, asset3])
-    asset1.add_associated_assets('fieldB2', [asset3, asset4])
+    asset1.add_associated_assets('fieldA2', {asset2, asset3})
+    asset1.add_associated_assets('fieldB2', {asset3, asset4})
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
