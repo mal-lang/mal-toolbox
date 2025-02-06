@@ -271,6 +271,7 @@ class LanguageGraphAssociation:
             return self.right_field
         return self.left_field
 
+
     def contains_fieldname(self, fieldname: str) -> bool:
         """
         Check if the association contains the field name given as a parameter.
@@ -623,11 +624,6 @@ class LanguageGraph():
                 "id": lang["defines"]["id"],
             }
             self._generate_graph()
-
-
-    @cached_property
-    def associations(self):
-        return {k: v for asset in self.assets.values() for k, v in asset.associations.items()}
 
 
     @classmethod
