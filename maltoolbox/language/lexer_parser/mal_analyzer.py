@@ -34,6 +34,7 @@ class malAnalyzer(malAnalyzerInterface):
         
     def __init__(self, *args, **kwargs) -> None:
         self._error: bool = False
+        self._warn: bool = False
         self._preform_post_analysis = True
 
         self._defines: dict     = {}
@@ -49,6 +50,9 @@ class malAnalyzer(malAnalyzerInterface):
         
     def has_error(self) -> bool:
         return self._error
+    
+    def has_warning(self) -> bool:
+        return self._warn
 
     def _post_analysis(self) -> None:
         '''
@@ -66,15 +70,7 @@ class malAnalyzer(malAnalyzerInterface):
     def _analyse_defines(self) -> None:
         '''
         Check for mandatory defines: ID & Version
-        Verify no repeated defines
         '''
-        seen = []
-        for define in self._defines.keys():
-            if define in seen:
-                logging.error("Define '%s' previously defined", define)
-                self._error = True
-            seen.append(define)
-
         if 'id' in self._defines.keys():
             define_value: str = self._defines['id']['value']
             if (len(define_value) == 0):
@@ -129,6 +125,7 @@ class malAnalyzer(malAnalyzerInterface):
                         found = True
                         break
                 if not found:
+                    self._warn = True
                     logging.warn(f'Asset \'{parent_ctx.ID()[0].getText()}\' is abstract but never extended to')
     
     def _analyse_parents(self) -> None:
@@ -446,8 +443,8 @@ class malAnalyzer(malAnalyzerInterface):
             self._error = True
             return
 
-        # Check if asset was previously defined in same category.
-        if asset_name in self._assets.keys() and str(self._assets[asset_name]['parent']['name']) == str(category_name):
+        # Check if asset was previously defined // in same category.
+        if asset_name in self._assets.keys(): # and str(self._assets[asset_name]['parent']['name']) == str(category_name):
             prev_asset_line = self._assets[asset_name]['ctx'].start.line
             logging.error(f"Asset '{asset_name}' previously defined at {prev_asset_line}")
             self._error = True
