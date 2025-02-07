@@ -137,3 +137,25 @@ def test_association_5() -> None:
         categories=['Example'],
         assets=['Asset1', 'Asset2']
     )
+
+def test_association_6() -> None:
+    '''
+    Defines correct version and ID.
+    Defines category with name.
+    Defines an association between undefined assets.
+    '''
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+
+    category System {
+    }
+    associations {
+        Asset1 [foo] * <-- connects --> * [bar] Asset2
+    }                
+                                        
+    ''').test(
+        error=True,
+        defines=['id', 'version'],
+        categories=['System'],
+    )
