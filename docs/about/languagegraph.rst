@@ -13,6 +13,5 @@ Load a LanguageGraph
 
     from maltoolbox.language import LanguageGraph
 
-    # First load the language either from .mal or .mar
-    # lang_graph = LanguageGraph.from_mar_archive(lang_file_path)
-    lang_graph = LanguageGraph.from_mal_spec(lang_file_path)
+    # Will load the MAL language (.mal/.mar) or a saved language graph (yml/json)
+    lang_graph = LanguageGraph.load_from_file(lang_file_path)

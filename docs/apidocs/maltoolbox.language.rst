@@ -20,5 +20,4 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
-   maltoolbox.language.classes_factory
    maltoolbox.language.languagegraph
