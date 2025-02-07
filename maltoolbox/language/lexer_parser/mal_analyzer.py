@@ -457,32 +457,16 @@ class malAnalyzer(malAnalyzerInterface):
         Given a meta, verify if it was previously defined for the same type (category, asset, step or association)
         '''
         ((meta_name, _),) = data
-        parent_name: str = ''
-        location_name: str = ''
 
-        # Finding metadata type
-        if isinstance(ctx.parentCtx, malParser.CategoryContext):
-            parent_name = str(ctx.parentCtx.ID().getText())
-            location_name = 'category'
-        elif isinstance(ctx.parentCtx, malParser.AssetContext):
-            parent_name = str(ctx.parentCtx.ID()[0].getText())
-            location_name = 'asset'
-        elif isinstance(ctx.parentCtx, malParser.StepContext):
-            parent_name = str(ctx.parentCtx.ID().getText())
-            location_name = 'step'
-        elif isinstance(ctx.parentCtx, malParser.AssociationContext):
-            parent_name = str(ctx.parentCtx.ID()[0].getText())
-            location_name = 'association'
-
-        # Validate that the metadata is unique
-        if not location_name in self._metas.keys():
-            self._metas[location_name] = {parent_name: {meta_name: ctx}}
-        elif not parent_name in self._metas[location_name].keys():
-            self._metas[location_name][parent_name] = {meta_name: ctx}
-        elif not meta_name in self._metas[location_name][parent_name].keys():
-            self._metas[location_name][parent_name][meta_name] = ctx
+        # Check if we don't have the metas for this parent (category, asset, step or association)
+        if ctx.parentCtx not in self._metas.keys():
+            self._metas[ctx.parentCtx] = {meta_name:ctx}
+        # Check if the new meta is not already defined
+        elif ctx.parentCtx in self._metas.keys() and meta_name not in self._metas[ctx.parentCtx]:
+            self._metas[ctx.parentCtx][meta_name] = ctx
+        # Otherwise, throw error
         else:
-            prev_ctx = self._metas[location_name][parent_name][meta_name]
+            prev_ctx = self._metas[ctx.parentCtx][meta_name]
             logging.error(f'Metadata {meta_name} previously defined at {prev_ctx.start.line}')
             self._error = True
 
