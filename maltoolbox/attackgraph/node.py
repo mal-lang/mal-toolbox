@@ -89,22 +89,22 @@ class AttackGraphNode:
             return memo[id(self)]
 
         copied_node = AttackGraphNode(
-            self.type,
-            self.lang_graph_attack_step,
-            self.name,
-            self.ttc,
-            self.id,
-            self.asset,
-            [],
-            [],
-            self.defense_status,
-            self.existence_status,
-            self.is_viable,
-            self.is_necessary,
-            [],
-            set(),
-            {},
-            {}
+            type=self.type,
+            lang_graph_attack_step=self.lang_graph_attack_step,
+            name=self.name,
+            ttc=self.ttc,
+            id=self.id,
+            asset=self.asset,
+            children=[],
+            parents=[],
+            defense_status=self.defense_status,
+            existence_status=self.existence_status,
+            is_viable=self.is_viable,
+            is_necessary=self.is_necessary,
+            compromised_by=[],
+            tags=set(),
+            attributes={},
+            extras={},
         )
 
         copied_node.tags = copy.deepcopy(self.tags, memo)
