@@ -16,14 +16,14 @@ from .file_utils import (
 )
 
 from . import __version__
-from .exceptions import DuplicateModelAssociationError, ModelAssociationException
+from .exceptions import ModelException
 
 if TYPE_CHECKING:
     from typing import Any, Optional
     from .language import (
         LanguageGraph,
         LanguageGraphAsset,
-        LanguageGraphAssociation)
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -505,7 +505,13 @@ class Model():
             serialized_model = load_dict_from_json_file(filename)
         else:
             raise ValueError('Unknown file extension, expected json/yml/yaml')
-        return cls._from_dict(serialized_model, lang_graph)
+        try:
+            return cls._from_dict(serialized_model, lang_graph)
+        except Exception as e:
+            raise ModelException(
+                "Could not load model. It might be of an older version. "
+                "Try to upgrade it with 'maltoolbox upgrade-model'"
+            ) from e
 
 
 class ModelAsset:
