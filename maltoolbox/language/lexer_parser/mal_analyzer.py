@@ -541,7 +541,7 @@ class malAnalyzer(malAnalyzerInterface):
                                 f"=/= \'{parent_attackStep_ctx.steptype().getText()}\'"))
                             self._error = True
                 else:
-                    # Asset already defined in this asset
+                    # Step already defined in this asset
                     logging.error(f'Attack step \'{attackStep}\' previously defined at {self._steps[parent][attackStep]['ctx'].start.line}')
                     self._error = True
             seen_steps.append((parent,current_steps))

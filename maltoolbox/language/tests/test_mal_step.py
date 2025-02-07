@@ -1,7 +1,7 @@
 from .mal_analyzer_test_wrapper import AnalyzerTestWrapper
 
 '''
-A file to test different cases of the OR-step `|` instruction in MAL.
+A file to test different cases of the step creation in MAL, i.e. if step repetition in the same asset is detected
 '''
 
 import os
@@ -114,9 +114,7 @@ def test_step_4() -> None:
 
 def test_step_5() -> None:
     '''
-    Defines correct version and ID.
-    Defines category with name.
-    Defines asset with name.
+    Test if two assets with steps with the same name can exist
     '''
     AnalyzerTestWrapper('''
     #id: "org.mal-lang.testAnalyzer"
@@ -125,169 +123,16 @@ def test_step_5() -> None:
     category System {
         asset Test 
         {
-            | guessPassword
-            +> authenticate
-            | stealPassword
-            -> authenticate
+            | step1
+        } 
+        asset AnotherTest 
+        {
+            | step1
         } 
     } 
                                         
     ''').test(
-        error=True,
         defines=['id', 'version'],
         categories=['System'],
-        assets=['Test']
-    )
-
-
-def test_step_6() -> None:
-    '''
-    Defines correct version and ID.
-    Defines category with name.
-    Defines asset with name.
-    '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset OperatingSystem
-        {
-        | spyware
-            -> logKeystrokes
-        | logKeystrokes
-        }
-
-        asset Linux
-        {
-        | spyware
-            +> readBashHistory
-        & readBashHistory
-        }
-    } 
-                                        
-    ''').test(
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux', 'OperatingSystem']
-    )
-
-def test_step_7() -> None:
-    '''
-    Defines correct version and ID.
-    Defines category with name.
-    Defines asset with name.
-    '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset OperatingSystem
-        {
-        | spyware
-        }
-
-        asset Linux
-        {
-        & spyware
-        }
-    } 
-                                        
-    ''').test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux', 'OperatingSystem']
-    )
-
-def test_step_8() -> None:
-    '''
-    Defines correct version and ID.
-    Defines category with name.
-    Defines asset with name.
-    '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset OperatingSystem
-        {
-            | obtainPassword
-            -> authenticate
-            | obtainMFAToken
-            -> authenticate
-            & authenticate
-        }
-    } 
-                                        
-    ''').test(
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['OperatingSystem']
-    )
-
-def test_step_9() -> None:
-    path = "./generated_test_mal.mal"
-    with open(path, 'w') as file:
-        file.write('''
-        category System {
-            asset OperatingSystem {
-            | spyware
-                -> logKeystrokes
-            | logKeystrokes
-            }
-        } 
-        ''')
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    include "./generated_test_mal.mal"
-                        
-    category System {
-        asset Linux {
-        | spyware
-            +> readBashHistory
-        & readBashHistory
-        }
-    } 
-                           
-    ''').test(
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux', 'OperatingSystem']
-    )
-
-    if os.path.exists(path):
-        os.remove(path)
-
-def test_step_10() -> None:
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-    
-
-    category System {          
-        asset Linux {
-            E hasCamera
-            <- hardware[Camera]
-            -> hijackCamera
-            | hijackCamera
-        }
-        asset Camera {
-            | photo
-        }
-    } 
-                        
-    associations 
-    {
-        Linux [linux] * <-- L --> * [hardware] Camera
-    }  
-                           
-    ''').test(
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux', 'Camera']
+        assets=['Test','AnotherTest']
     )
