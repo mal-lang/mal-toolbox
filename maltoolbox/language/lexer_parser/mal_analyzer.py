@@ -45,6 +45,7 @@ class malAnalyzer(malAnalyzerInterface):
         self._vars: dict        = {}
 
         self._associations      = []
+        self._current_vars      = []
 
         super().__init__(*args, **kwargs)
         
@@ -66,6 +67,7 @@ class malAnalyzer(malAnalyzerInterface):
         self._analyse_reaches()
         self._analyse_association()
         self._analyse_steps()
+        self._analyse_variables()
     
     def _analyse_defines(self) -> None:
         '''
@@ -247,17 +249,17 @@ class malAnalyzer(malAnalyzerInterface):
         # Verify if there is a variable defined with the same name; possible the user forgot to call it
         extra=""
         if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
-            extra=f', did you mean the variable \'{expr[name]}()\'?'
+            extra=f', did you mean the variable \'{expr['name']}()\'?'
     
-        logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\'')
+        logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\''+extra)
         return None
    
     def _check_variable_expr(self, asset, expr):
         '''
-        Check if there is a variable reference in this asset with the used identifier.
+        Check if there is a variable reference in this asset with the user identifier.
         '''        
         if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
-            return self._check_to_asset(asset, self._vars[asset][expr['name']]['var']['stepExpression']) 
+            return self._variable_to_asset(asset, expr['name']) 
 
         logging.error(f'Variable \'{expr["name"]}\' is not defined')
         self._error = True
@@ -380,6 +382,42 @@ class malAnalyzer(malAnalyzerInterface):
             return self._assets[ctx.ID()[1].getText()]['ctx']
         return None
     
+    def _variable_to_asset(self, asset: str, var: str):
+        '''
+        Checks if there is no cycle in the variables and verifies that it points to 
+        an existing asset
+        '''
+        if var not in self._current_vars:
+            self._current_vars.append(var)
+            res = self._check_to_asset(asset, self._vars[asset][var]['var']['stepExpression'])
+            self._current_vars.pop()
+            return res
+        cycle = '->'.join(self._current_vars)+'->'+var
+        logging.error(f'Variable \'{var}\' contains cycle {cycle}')
+        return None
+
+    def _analyse_variables(self):
+        '''
+        This function will verify if an asset which extends another does not redefine a variable.
+        It also updates the list of variables for an asset to includes its parent's variables
+
+        Once that is done, we need to guarantee that the variable points to an asset and that 
+        there are no loops in the variables, i.e. a variable does not somehow reference itself
+        '''
+        for asset in self._vars.keys():
+            parents = self._get_parents(self._assets[asset]['ctx'])
+            parents.pop() # The last element is the asset itself
+            for parent in parents:
+                for var in self._vars[asset].keys():
+                    if var in self._vars[parent].keys():
+                        logging.error(f'Variable \'{var}\' previously defined at {self._vars[parent][var]['ctx'].start.line}')
+                        self._error = True
+                    self._vars[asset][var] = self._vars[parent][var]
+        
+            for var in self._vars[asset].keys():
+                if self._variable_to_asset(asset, var)==None:
+                    logging.error(f'Variable \'{var}\' defined at {var_values['ctx'].start.line} does not point to an asset')
+
     def checkMal(self, ctx: malParser.MalContext) -> None:
         '''
         We only want to preform _post_analysis as the very last step.
@@ -653,11 +691,13 @@ class malAnalyzer(malAnalyzerInterface):
                 cias.append(letter)
             index += 1
 
-    def check(self, ctx: malParser.VariableContext, var: dict) -> None:
+    def checkVariable(self, ctx: malParser.VariableContext, var: dict) -> None:
         '''
+        This checks if the variable has been defined in the current asset.
+
         self._vars = {
             <asset-name>: {
-                <var-name>: <var-ctx>
+                <var-name>: {'ctx': <var-ctx>, 'var' <var-dict>}
             }
         }
         '''
