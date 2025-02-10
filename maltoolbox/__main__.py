@@ -25,14 +25,12 @@ Notes:
 
 import logging
 import json
-import zipfile
 import docopt
 
 from . import log_configs, neo4j_configs
 from .attackgraph import create_attack_graph
 from .language.compiler import MalCompiler
-# TODO: Re-enable this import when the neo4j module has been updated
-# from .ingestors import neo4j
+from .ingestors import neo4j
 from .language.languagegraph import LanguageGraph
 from .translators.updater import load_model_from_older_version
 
@@ -56,21 +54,25 @@ def generate_attack_graph(
             log_configs['attackgraph_file']
         )
 
-    # if send_to_neo4j:
-    #     logger.debug('Ingest model graph into Neo4J database.')
-    #     neo4j.ingest_model(attack_graph.model,
-    #         neo4j_configs['uri'],
-    #         neo4j_configs['username'],
-    #         neo4j_configs['password'],
-    #         neo4j_configs['dbname'],
-    #         delete=True)
-    #     logger.debug('Ingest attack graph into Neo4J database.')
-    #     neo4j.ingest_attack_graph(attack_graph,
-    #         neo4j_configs['uri'],
-    #         neo4j_configs['username'],
-    #         neo4j_configs['password'],
-    #         neo4j_configs['dbname'],
-    #         delete=False)
+    if send_to_neo4j:
+        logger.debug('Ingest model graph into Neo4J database.')
+        neo4j.ingest_model(
+            attack_graph.model,
+            neo4j_configs['uri'],
+            neo4j_configs['username'],
+            neo4j_configs['password'],
+            neo4j_configs['dbname'],
+            delete=True
+        )
+        logger.debug('Ingest attack graph into Neo4J database.')
+        neo4j.ingest_attack_graph(
+            attack_graph,
+            neo4j_configs['uri'],
+            neo4j_configs['username'],
+            neo4j_configs['password'],
+            neo4j_configs['dbname'],
+            delete=False
+        )
 
 
 def compile(lang_file: str, output_file: str) -> None:
