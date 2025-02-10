@@ -236,7 +236,9 @@ def convert_model_dict_from_version_0_2(model_dict: dict) -> dict:
         right_field_name = list(assoc_dict.keys())[1]
 
         for l_asset_id in assoc_dict[left_field_name]:
+            l_asset_id = int(l_asset_id)  # json compatibility
             for r_asset_id in assoc_dict[right_field_name]:
+                r_asset_id = int(r_asset_id)  # json compatibility
                 l_asset_dict = new_model_dict['assets'][l_asset_id]
                 r_asset_dict = new_model_dict['assets'][r_asset_id]
 
