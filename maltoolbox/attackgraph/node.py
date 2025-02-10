@@ -51,7 +51,7 @@ class AttackGraphNode:
         }
 
         for detector in self.detectors.values():
-            node_dict.setdefault('detectors', {})[detector] = detector.to_dict()
+            node_dict.setdefault('detectors', {})[detector.name] = detector.to_dict()
         if self.asset is not None:
             node_dict['asset'] = str(self.asset.name)
         if self.defense_status is not None:

@@ -51,12 +51,15 @@ class Detector:
 class Context(dict):
     def __init__(self, context) -> None:
         super().__init__(context)
+        self._context_dict = context
         for label, asset in context.items():
             setattr(self, label, asset)
 
     def to_dict(self) -> dict:
         return {label: asset.name for label, asset in self.items()}
 
+    def __str__(self) -> str:
+        return str({label: asset.name for label, asset in self._context_dict.items()})
 
 @dataclass
 class LanguageGraphAsset:
