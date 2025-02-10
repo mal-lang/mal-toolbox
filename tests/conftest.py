@@ -56,12 +56,27 @@ def dummy_lang_graph(corelang_lang_graph):
         name = 'DummyAsset'
     )
     lang_graph.assets['DummyAsset'] = dummy_asset
-    dummy_attack_step_node = LanguageGraphAttackStep(
-        name = 'DummyAttackStep',
+    dummy_or_attack_step_node = LanguageGraphAttackStep(
+        name = 'DummyOrAttackStep',
         type = 'or',
         asset = dummy_asset
     )
-    dummy_asset.attack_steps['DummyAttackStep'] = dummy_attack_step_node
+    dummy_asset.attack_steps['DummyOrAttackStep'] = dummy_or_attack_step_node
 
+    dummy_and_attack_step_node = LanguageGraphAttackStep(
+        name = 'DummyAndAttackStep',
+        type = 'and',
+        asset = dummy_asset
+    )
+    dummy_asset.attack_steps['DummyAndAttackStep'] =\
+        dummy_and_attack_step_node
+
+    dummy_defense_attack_step_node = LanguageGraphAttackStep(
+        name = 'DummyDefenseAttackStep',
+        type = 'defense',
+        asset = dummy_asset
+    )
+    dummy_asset.attack_steps['DummyDefenseAttackStep'] =\
+        dummy_defense_attack_step_node
 
     return lang_graph

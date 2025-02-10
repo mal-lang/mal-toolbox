@@ -202,8 +202,8 @@ def attackgraph_save_and_load_json_yml_model_given(
 
         for node in loaded_attackgraph.nodes:
             # Make sure node gets an asset when loaded with model
-            assert node.asset
-            assert node.full_name == node.asset.name + ":" + node.name
+            assert node.model_asset
+            assert node.full_name == node.model_asset.name + ":" + node.name
 
             # Make sure node was added to lookup dict with correct id / name
             assert node.id is not None
@@ -324,7 +324,7 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model = model)
 
     # These are all attack 71 steps and defenses for Application asset in MAL
-    expected_node_names_application = [
+    expected_node_names_application = {
         "notPresent", "attemptUseVulnerability", "successfulUseVulnerability",
         "useVulnerability", "attemptReverseReach", "successfulReverseReach",
         "reverseReach", "localConnect", "networkConnectUninspected",
@@ -367,14 +367,15 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
         "attemptModify", "successfulModify", "modify", "specificAccessModify",
         "attemptDeny", "successfulDeny", "deny",
         "specificAccessDelete", "denyFromNetworkingAsset", "denyFromLockout"
-    ]
+    }
 
-    # Make sure the nodes in the AttackGraph have the expected names and order
-    for i, expected_name in enumerate(expected_node_names_application):
-        assert attack_graph.nodes[i].name == expected_name
+    # Make sure the nodes in the AttackGraph have the expected names
+    app_attack_steps_names = {attack_step.name for attack_step in
+        attack_graph.nodes}
+    assert app_attack_steps_names == expected_node_names_application
 
     # notPresent is a defense step and its children are (according to corelang):
-    extected_children_of_not_present = [
+    expected_children_of_notpresent = {
         "successfulUseVulnerability",
         "successfulReverseReach",
         "networkConnectFromResponse",
@@ -392,12 +393,12 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
         "successfulRead",
         "successfulModify",
         "successfulDeny"
-    ]
+    }
     # Make sure children are also added for defense step notPresent
-    not_present_children = [
-        n.name for n in attack_graph.nodes[0].children
-    ]
-    assert not_present_children == extected_children_of_not_present
+    notpresent_attack_step = attack_graph.nodes[0]
+    notpresent_children_names = {attack_step.name for attack_step in
+        notpresent_attack_step.children}
+    assert notpresent_children_names == expected_children_of_notpresent
 
 
 def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
@@ -455,7 +456,7 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
         assert original_node
         assert id(original_node) != id(node)
         assert original_node.to_dict() == node.to_dict()
-        assert id(original_node.asset) == id(node.asset)
+        assert id(original_node.model_asset) == id(node.model_asset)
 
         # Make sure thes node in the copied attack graph are the same
         same_node = copied_attackgraph.get_node_by_id(node.id)

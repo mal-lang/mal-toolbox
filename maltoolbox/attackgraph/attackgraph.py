@@ -204,13 +204,15 @@ class AttackGraph():
                     node_dict['lang_graph_attack_step'])
             lg_attack_step = lang_graph.assets[lg_asset_name].\
                 attack_steps[lg_attack_step_name]
-            ag_node = AttackGraphNode(
-                type=node_dict['type'],
-                lang_graph_attack_step = lg_attack_step,
-                name=node_dict['name'],
-                ttc=node_dict['ttc'],
-                asset=node_asset
+            ag_node = attack_graph.add_node(
+                lg_attack_step = lg_attack_step,
+                node_id = node_dict['id'],
+                model_asset = node_asset,
             )
+            ag_node.defense_status = node_dict.get('defense_status', None)
+            ag_node.existence_status = node_dict.get('existence_status', None)
+            ag_node.tags = set(node_dict.get('tags', {}))
+            ag_node.extras = node_dict.get('extras', {})
 
             if node_asset:
                 # Add AttackGraphNode to attack_step_nodes of asset
@@ -221,20 +223,6 @@ class AttackGraph():
                 else:
                     node_asset.attack_step_nodes = [ag_node]
 
-            ag_node.defense_status = float(node_dict['defense_status']) if \
-                'defense_status' in node_dict else None
-            ag_node.existence_status = node_dict['existence_status'] \
-                == 'True' if 'existence_status' in node_dict else None
-            ag_node.is_viable = node_dict['is_viable'] == 'True' if \
-                'is_viable' in node_dict else True
-            ag_node.is_necessary = node_dict['is_necessary'] == 'True' if \
-                'is_necessary' in node_dict else True
-            ag_node.tags = set(node_dict['tags']) if \
-                'tags' in node_dict else set()
-            ag_node.extras = node_dict.get('extras', {})
-
-            # Add AttackGraphNode to AttackGraph
-            attack_graph.add_node(ag_node, node_id=node_dict['id'])
 
         # Re-establish links between nodes.
         for node_dict in serialized_attack_steps.values():
@@ -252,7 +240,7 @@ class AttackGraph():
                                ' when loading from attack graph from dict')
                         logger.error(msg, child_id)
                         raise LookupError(msg % child_id)
-                    _ag_node.children.append(child)
+                    _ag_node.children.add(child)
 
                 for parent_id in node_dict['parents']:
                     parent = attack_graph.get_node_by_id(int(parent_id))
@@ -261,7 +249,7 @@ class AttackGraph():
                                'when loading from attack graph from dict')
                         logger.error(msg, parent_id)
                         raise LookupError(msg % parent_id)
-                    _ag_node.parents.append(parent)
+                    _ag_node.parents.add(parent)
 
         for attacker in serialized_attackers.values():
             ag_attacker = Attacker(
@@ -615,24 +603,14 @@ class AttackGraph():
                     case _:
                         pass
 
-                ag_node = AttackGraphNode(
-                    type = attack_step.type,
-                    lang_graph_attack_step = attack_step,
-                    asset = asset,
-                    name = attack_step.name,
-                    ttc = attack_step.ttc,
-                    children = [],
-                    parents = [],
-                    detectors = attack_step.detectors,
-                    defense_status = defense_status,
-                    existence_status = existence_status,
-                    is_viable = True,
-                    is_necessary = True,
-                    tags = set(attack_step.tags),
-                    compromised_by = []
+                ag_node = self.add_node(
+                    lg_attack_step = attack_step,
+                    model_asset = asset
                 )
+                ag_node.defense_status = defense_status
+                ag_node.existence_status = existence_status
                 attack_step_nodes.append(ag_node)
-                self.add_node(ag_node)
+
             asset.attack_step_nodes = attack_step_nodes
 
         # Then, link all of the nodes according to their associations.
@@ -643,12 +621,13 @@ class AttackGraph():
                 ag_node.id
             )
 
-            if not ag_node.asset:
+            if not ag_node.model_asset:
                 raise AttackGraphException('Attack graph node is missing '
                     'asset link')
-            lang_graph_asset = self.lang_graph.assets[ag_node.asset.type]
+            lang_graph_asset = self.lang_graph.assets[
+                ag_node.model_asset.type]
 
-            lang_graph_attack_step = lang_graph_asset.attack_steps[\
+            lang_graph_attack_step = lang_graph_asset.attack_steps[
                 ag_node.name]
 
             while lang_graph_attack_step:
@@ -656,7 +635,7 @@ class AttackGraph():
                     for target_attack_step, expr_chain in child:
                         target_assets = self._follow_expr_chain(
                             self.model,
-                            set([ag_node.asset]),
+                            set([ag_node.model_asset]),
                             expr_chain
                         )
 
@@ -696,8 +675,8 @@ class AttackGraph():
                                         target_node.id
                                     )
                                 )
-                                ag_node.children.append(target_node)
-                                target_node.parents.append(ag_node)
+                                ag_node.children.add(target_node)
+                                target_node.parents.add(ag_node)
                 if lang_graph_attack_step.overrides:
                     break
                 lang_graph_attack_step = lang_graph_attack_step.inherits
@@ -715,14 +694,14 @@ class AttackGraph():
 
     def add_node(
             self,
-            node: AttackGraphNode,
-            node_id: Optional[int] = None
-        ) -> None:
-        """Add a node to the graph
-        Arguments:
-        node    - the node to add
-        node_id - the id to assign to this node, usually used when loading
-                  an attack graph from a file
+            lg_attack_step: LanguageGraphAttackStep,
+            node_id: Optional[int] = None,
+            model_asset: Optional[ModelAsset] = None,
+        ) -> AttackGraphNode:
+        """Create and add a node to the graph
+
+        Return:
+        The newly created attack step.
         """
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
@@ -730,15 +709,23 @@ class AttackGraph():
                 f'with id:{node_id}:\n' \
                 + json.dumps(node.to_dict(), indent = 2))
 
-        if node.id in self._id_to_node:
-            raise ValueError(f'Node index {node_id} already in use.')
 
-        node.id = node_id if node_id is not None else self.next_node_id
-        self.next_node_id = max(node.id + 1, self.next_node_id)
+        node_id = node_id if node_id is not None else self.next_node_id
+        if node_id in self._id_to_node:
+            raise ValueError(f'Node index {node_id} already in use.')
+        self.next_node_id = max(node_id + 1, self.next_node_id)
+
+        node = AttackGraphNode(
+            node_id = node_id,
+            lg_attack_step = lg_attack_step,
+            model_asset = model_asset
+        )
 
         self.nodes.append(node)
         self._id_to_node[node.id] = node
         self._full_name_to_node[node.full_name] = node
+
+        return node
 
     def remove_node(self, node: AttackGraphNode) -> None:
         """Remove node from attack graph

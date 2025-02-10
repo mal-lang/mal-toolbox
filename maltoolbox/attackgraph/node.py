@@ -1,10 +1,9 @@
 """
-MAL-Toolbox Attack Graph Node Dataclass
+MAL-Toolbox Attack Graph Node
 """
 
 from __future__ import annotations
 import copy
-from dataclasses import field, dataclass
 from functools import cached_property
 from typing import TYPE_CHECKING
 
@@ -13,47 +12,54 @@ if TYPE_CHECKING:
     from . import Attacker
     from ..language import LanguageGraphAttackStep, Detector
 
-@dataclass
 class AttackGraphNode:
     """Node part of AttackGraph"""
-    type: str
-    lang_graph_attack_step: LanguageGraphAttackStep
-    name: str
-    ttc: Optional[dict] = None
-    id: Optional[int] = None
-    asset: Optional[Any] = None
-    children: list[AttackGraphNode] = field(default_factory=list)
-    parents: list[AttackGraphNode] = field(default_factory=list)
-    detectors: dict[str, Detector] = field(default_factory=dict)
-    defense_status: Optional[float] = None
-    existence_status: Optional[bool] = None
-    is_viable: bool = True
-    is_necessary: bool = True
-    compromised_by: list[Attacker] = field(default_factory=list)
-    tags: set[str] = field(default_factory=set)
-    attributes: Optional[dict] = None
 
-    # Optional extra metadata for AttackGraphNode
-    extras: dict = field(default_factory=dict)
+    def __init__(
+        self,
+        node_id: int,
+        lg_attack_step: LanguageGraphAttackStep,
+        model_asset: Optional[ModelAsset] = None,
+    ):
+        self.lg_attack_step = lg_attack_step
+        self.name = lg_attack_step.name
+        self.type = lg_attack_step.type
+        self.ttc = lg_attack_step.ttc
+        self.tags = lg_attack_step.tags
+        self.detectors = lg_attack_step.detectors
+
+        self.id = node_id
+        self.model_asset = model_asset
+
+        self.defense_status = None
+        self.existence_status = None
+        self.children = set()
+        self.parents = set()
+        self.is_viable: bool = True
+        self.is_necessary: bool = True
+        self.compromised_by = []
+        self.extras = {}
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict: dict = {
             'id': self.id,
             'type': self.type,
-            'lang_graph_attack_step': self.lang_graph_attack_step.full_name,
+            'lang_graph_attack_step': self.lg_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,
-            'children': {child.id: child.full_name for child in self.children},
-            'parents': {parent.id: parent.full_name for parent in self.parents},
+            'children': {child.id: child.full_name for child in
+                self.children},
+            'parents': {parent.id: parent.full_name for parent in
+                self.parents},
             'compromised_by': [attacker.name for attacker in \
                 self.compromised_by]
         }
 
         for detector in self.detectors.values():
             node_dict.setdefault('detectors', {})[detector.name] = detector.to_dict()
-        if self.asset is not None:
-            node_dict['asset'] = str(self.asset.name)
+        if self.model_asset is not None:
+            node_dict['asset'] = str(self.model_asset.name)
         if self.defense_status is not None:
             node_dict['defense_status'] = str(self.defense_status)
         if self.existence_status is not None:
@@ -71,7 +77,7 @@ class AttackGraphNode:
 
 
     def __repr__(self) -> str:
-        return str(self.to_dict())
+        return '%s(id:%d, type:%s)' % (self.full_name, self.id, self.type)
 
 
     def __deepcopy__(self, memo) -> AttackGraphNode:
@@ -89,28 +95,20 @@ class AttackGraphNode:
             return memo[id(self)]
 
         copied_node = AttackGraphNode(
-            type=self.type,
-            lang_graph_attack_step=self.lang_graph_attack_step,
-            name=self.name,
-            ttc=self.ttc,
-            id=self.id,
-            asset=self.asset,
-            children=[],
-            parents=[],
-            detectors=self.detectors,
-            defense_status=self.defense_status,
-            existence_status=self.existence_status,
-            is_viable=self.is_viable,
-            is_necessary=self.is_necessary,
-            compromised_by=[],
-            tags=set(),
-            attributes={},
-            extras={},
+            node_id = self.id,
+            model_asset = self.model_asset,
+            lg_attack_step = self.lg_attack_step
         )
 
         copied_node.tags = copy.deepcopy(self.tags, memo)
-        copied_node.attributes = copy.deepcopy(self.attributes, memo)
         copied_node.extras = copy.deepcopy(self.extras, memo)
+        copied_node.ttc = copy.deepcopy(self.ttc, memo)
+        copied_node.detectors = copy.deepcopy(self.detectors, memo)
+
+        copied_node.defense_status = self.defense_status
+        copied_node.existence_status = self.existence_status
+        copied_node.is_viable = self.is_viable
+        copied_node.is_necessary = self.is_necessary
 
         # Remember that self was already copied
         memo[id(self)] = copied_node
@@ -188,8 +186,8 @@ class AttackGraphNode:
         asset name to which the attack step belongs and attack step name
         itself.
         """
-        if self.asset:
-            full_name = self.asset.name + ':' + self.name
+        if self.model_asset:
+            full_name = self.model_asset.name + ':' + self.name
         else:
             full_name = str(self.id) + ':' + self.name
         return full_name

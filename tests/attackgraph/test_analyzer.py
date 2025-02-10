@@ -1,7 +1,9 @@
 """Tests for analyzers"""
 
 from maltoolbox.attackgraph import AttackGraphNode
+from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.attackgraph.analyzers.apriori import propagate_viability_from_unviable_node
+from maltoolbox.language import LanguageGraph
 
 # Apriori analyzer
 # TODO: Add apriori analyzer test implementations
@@ -35,7 +37,7 @@ def test_analyzers_apriori_calculate_viability_and_necessity():
 def test_analyzers_apriori_prune_unviable_and_unnecessary_nodes():
     pass
 
-def test_analyzers_apriori_propagate_viability_from_unviable_node():
+def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_graph: LanguageGraph):
     r"""Create a graph from nodes
 
             node1
@@ -45,45 +47,31 @@ def test_analyzers_apriori_propagate_viability_from_unviable_node():
     node4  node5    node6
     """
 
-    # Create a graph of nodes according to above diagram
-    node1 = AttackGraphNode(
-        type = "defense",
-        name = "node1",
-        lang_graph_attack_step = None,
-    )
-    node2 = AttackGraphNode(
-        type = "or",
-        name = "node2",
-        lang_graph_attack_step = None,
-    )
-    node3 = AttackGraphNode(
-        type = "or",
-        name = "node3",
-        lang_graph_attack_step = None,
-        defense_status=0.0
-    )
-    node4 = AttackGraphNode(
-        type = "or",
-        name = "node4",
-        lang_graph_attack_step = None,
-    )
-    node5 = AttackGraphNode(
-        type = "or",
-        name = "node5",
-        lang_graph_attack_step = None,
-    )
-    node6 = AttackGraphNode(
-        type = "or",
-        name = "node6",
-        lang_graph_attack_step = None,
-    )
+    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyOrAttackStep']
+    dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyDefenseAttackStep']
+    attack_graph = AttackGraph(dummy_lang_graph)
 
-    node1.id = 1
-    node2.id = 2
-    node3.id = 3
-    node4.id = 4
-    node5.id = 5
-    node6.id = 6
+    # Create a graph of nodes according to above diagram
+    node1 = attack_graph.add_node(
+        lg_attack_step = dummy_defense_attack_step
+    )
+    node2 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    node3 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    node4 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    node5 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    node6 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
 
     node1.children = [node2, node3]
     node2.children = [node4, node5]
