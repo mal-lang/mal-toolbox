@@ -35,17 +35,18 @@ class malAnalyzer(malAnalyzerInterface):
     def __init__(self, *args, **kwargs) -> None:
         self._error: bool = False
         self._warn: bool = False
-        self._preform_post_analysis = True
+        self._preform_post_analysis = 0 
 
-        self._defines: dict     = {}
-        self._assets: dict      = {}
-        self._category: dict    = {}
-        self._metas: dict       = {}
-        self._steps: dict       = {}
-        self._vars: dict        = {}
+        self._defines: dict      = {}
+        self._assets: dict       = {}
+        self._category: dict     = {}
+        self._metas: dict        = {}
+        self._steps: dict        = {}
+        self._vars: dict         = {}
+        self._associations: dict = {}
 
-        self._associations      = []
-        self._current_vars      = []
+        self._all_associations   = []
+        self._current_vars       = []
 
         super().__init__(*args, **kwargs)
         
@@ -64,10 +65,11 @@ class malAnalyzer(malAnalyzerInterface):
         self._analyse_extends()
         self._analyse_abstract()
         self._analyse_parents()
-        self._analyse_reaches()
         self._analyse_association()
         self._analyse_steps()
+        self._analyse_fields()
         self._analyse_variables()
+        self._analyse_reaches()
     
     def _analyse_defines(self) -> None:
         '''
@@ -238,13 +240,15 @@ class malAnalyzer(malAnalyzerInterface):
         '''
         Check if an asset exists by checking the associations for the current asset
         '''
-        for association in self._associations:
-            if (expr['name'] == association['leftField']):
-                if (self._get_asset_name(association['leftAsset'])):
-                    return association['leftAsset']
-            if (expr['name'] == association['rightField']):
-                if (self._get_asset_name(association['rightAsset'])):
-                    return association['rightAsset']
+        if asset in self._associations.keys():
+            for association in self._associations[asset].keys():
+                association = self._associations[asset][association]['association']
+                if (expr['name'] == association['leftField']):
+                    if (self._get_asset_name(association['leftAsset'])):
+                        return association['leftAsset']
+                if (expr['name'] == association['rightField']):
+                    if (self._get_asset_name(association['rightAsset'])):
+                        return association['rightAsset']
 
         # Verify if there is a variable defined with the same name; possible the user forgot to call it
         extra=""
@@ -363,9 +367,9 @@ class malAnalyzer(malAnalyzerInterface):
         '''
         For every association, verify if the assets exist
         '''
-        for association in self._associations:
-            leftAsset = association['leftAsset']
-            rightAsset = association['rightAsset']
+        for association in self._all_associations:
+            leftAsset = association['association']['leftAsset']
+            rightAsset= association['association']['rightAsset']
 
             if (not leftAsset in self._assets.keys()):
                 logging.error(f'Left asset \'{leftAsset}\' is not defined')
@@ -373,6 +377,48 @@ class malAnalyzer(malAnalyzerInterface):
             if (not rightAsset in self._assets.keys()):
                 logging.error(f'Right asset \'{leftAsset}\' is not defined')
                 self._error = True
+
+    def _analyse_fields(self) -> None:
+        '''
+        Update a variable's fields (associations) to include its parents associations. 
+        Also checks if an association has been defined more than once in a hierarchy
+        '''
+        for asset in self._assets.keys():
+            parents = self._get_parents(self._assets[asset]['ctx'])
+            for parent in parents:
+                for association in self._all_associations:
+                    leftAsset = association['association']['leftAsset']
+                    rightAsset= association['association']['rightAsset']
+                    if leftAsset==parent:
+                        rightField = association['association']['rightField']
+                        self._add_field(parent, asset, rightField, association)
+                    if rightAsset==parent:
+                        leftField = association['association']['leftField']
+                        self._add_field(parent, asset, leftField, association)
+    
+    def _add_field(self, parent: str, asset: str, field: str, association: dict):
+        # Check that this asset does not have an assoication with the same name
+        if asset not in self._associations or field not in self._associations[asset]:
+            # Check if there isn't a step with the same name
+            step_ctx = self._has_step(asset, field)
+            if not step_ctx:
+                if not asset in self._associations.keys():
+                    self._associations[asset] = {field: {k: association[k] for k in ["association", "ctx"]}}
+                else:
+                    self._associations[asset][field] = {k: association[k] for k in ["association", "ctx"]}
+            # Otherwise, this will be an error
+            else:
+                self._error = True
+                logging.error(f'Field {field} previously defined as an attack step at {step_ctx.start.line}')
+        # Association field was already defined for this asset
+        else:
+            logging.error(f'Field {parent}.{field} previously defined at {self._associations[asset][field]['ctx'].start.line}')
+            self._error = True
+
+    def _has_step(self, asset, field):
+        if asset in self._steps.keys() and field in self._steps[asset]:
+            return self._steps[asset][field]['ctx']
+        return None
 
     def _get_assets_extendee(self, ctx: malParser.AssetContext) -> malParser.AssetContext:
         '''
@@ -394,6 +440,7 @@ class malAnalyzer(malAnalyzerInterface):
             return res
         cycle = '->'.join(self._current_vars)+'->'+var
         logging.error(f'Variable \'{var}\' contains cycle {cycle}')
+        self._error = True
         return None
 
     def _analyse_variables(self):
@@ -409,22 +456,24 @@ class malAnalyzer(malAnalyzerInterface):
             parents.pop() # The last element is the asset itself
             for parent in parents:
                 for var in self._vars[asset].keys():
-                    if var in self._vars[parent].keys():
+                    if parent in self._vars.keys() and var in self._vars[parent].keys():
                         logging.error(f'Variable \'{var}\' previously defined at {self._vars[parent][var]['ctx'].start.line}')
                         self._error = True
-                    self._vars[asset][var] = self._vars[parent][var]
+                if parent in self._vars.keys():
+                    self._vars[asset].update(self._vars[parent])
         
             for var in self._vars[asset].keys():
                 if self._variable_to_asset(asset, var)==None:
-                    logging.error(f'Variable \'{var}\' defined at {var_values['ctx'].start.line} does not point to an asset')
+                    logging.error(f'Variable \'{var}\' defined at {self._vars[asset][var]['ctx'].start.line} does not point to an asset')
+                    self._error = True
 
     def checkMal(self, ctx: malParser.MalContext) -> None:
         '''
         We only want to preform _post_analysis as the very last step.
         '''
-        if (self._preform_post_analysis):
+        if (self._preform_post_analysis==0):
             self._post_analysis()
-        self._preform_post_analysis = True
+        self._preform_post_analysis -= 1 
 
     def checkInclude(self, ctx: malParser.MalContext, data: Tuple[str, str]) -> None:       
         '''
@@ -433,7 +482,7 @@ class malAnalyzer(malAnalyzerInterface):
         variable to false and, every time the file is finished being analysed, it is set
         to True again (in checkMal()). This prevents out-of-order analysis.
         '''
-        self._preform_post_analysis = False
+        self._preform_post_analysis += 1 
 
     def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
         '''
@@ -516,6 +565,8 @@ class malAnalyzer(malAnalyzerInterface):
         parents = [ctx.ID()[0].getText()]
         while ctx.EXTENDS():
             parent_name = ctx.ID()[1].getText()
+            if parent_name in parents:
+                break
             parents.insert(0, parent_name) 
             ctx = self._assets[parent_name]['ctx']
         return parents
@@ -718,4 +769,4 @@ class malAnalyzer(malAnalyzerInterface):
             raise 
 
     def checkAssociation(self, ctx: malParser.AssociationContext, association: dict):
-        self._associations.append(association)
+        self._all_associations.append({'name': association['name'], 'association': association,'ctx':ctx})
