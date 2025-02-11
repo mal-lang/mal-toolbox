@@ -399,10 +399,6 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     ]
     assert not_present_children == extected_children_of_not_present
 
-def test_attackgraph_regenerate_graph():
-    """Make sure graph is regenerated"""
-    pass
-
 
 def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
     """Make sure nodes are removed correctly"""
@@ -811,3 +807,77 @@ def test_create_attack_graph():
 
     # Make sure that it runs without errors
     create_attack_graph(mar, model)
+
+
+def tests_create_ag_from_model():
+    """We have a predefined model in trainingLang with these associations:
+    
+    User:3 --- Host:0 --- Network:3 --- Host:1
+                 |
+                 |
+               Data:2
+    """
+    def check_parent_child_relationship(
+            ag: AttackGraph, parent_fn: str, children_fns: list[str]
+        ):
+
+        parent = ag.get_node_by_full_name(parent_fn)
+        assert parent, f"Could not find node {parent_fn}"
+
+        # Verify that parent has given children
+        assert {c.full_name for c in parent.children} == set(children_fns)
+
+        # Verify that child has given parent
+        for child_fn in children_fns:
+            child = ag.get_node_by_full_name(child_fn)
+            assert child, f"Could not find child by full name {child_fn}"
+            assert parent_fn in [p.full_name for p in child.parents]
+
+    mar = path_testdata('org.mal-lang.trainingLang-1.0.0.mar')
+    model = path_testdata('simple_traininglang_model.yml')
+
+    # Make sure attack graph is created without errors
+    created_ag = create_attack_graph(mar, model)
+
+    # Make sure all nodes were generated for the model
+    assert {n.full_name for n in created_ag.nodes} == {
+        'Host:0:notPresent', 'Host:0:authenticate', 'Host:0:connect',
+        'Host:0:access', 'Host:1:notPresent', 'Host:1:authenticate',
+        'Host:1:connect', 'Host:1:access', 'Data:2:notPresent',
+        'Data:2:read', 'Data:2:modify', 'User:3:notPresent',
+        'User:3:compromise', 'User:3:phishing', 'Network:3:access'
+    }
+
+    # Make sure associations were added as parent/child relationships
+    check_parent_child_relationship(
+        created_ag, 'Host:0:notPresent', ['Host:0:connect', 'Host:0:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:0:authenticate', ['Host:0:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:0:connect', ['Host:0:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:0:access',
+        ['Data:2:modify', 'Data:2:read', 'Network:3:access']
+    )
+    check_parent_child_relationship(
+        created_ag, 'Host:1:notPresent', ['Host:1:connect', 'Host:1:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:1:authenticate', ['Host:1:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:1:connect', ['Host:1:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:1:access', ['Network:3:access'])
+    check_parent_child_relationship(
+        created_ag, 'Data:2:notPresent', ['Data:2:read', 'Data:2:modify'])
+    check_parent_child_relationship(
+        created_ag, 'Data:2:read', [])
+    check_parent_child_relationship(
+        created_ag, 'Data:2:modify', [])
+    check_parent_child_relationship(
+        created_ag, 'User:3:notPresent', ['User:3:compromise'])
+    check_parent_child_relationship(
+        created_ag, 'User:3:compromise', ['Host:0:authenticate'])
+    check_parent_child_relationship(
+        created_ag, 'User:3:phishing', ['User:3:compromise'])
+    check_parent_child_relationship(
+        created_ag, 'Network:3:access', ['Host:0:connect', 'Host:1:connect'])
