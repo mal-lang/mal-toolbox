@@ -45,7 +45,7 @@ class AnalyzerTestWrapper(malAnalyzer):
         except RuntimeError:
             self._error = True
     
-    def test(self, error:bool=False, warn:bool=False, defines:list=[], categories:list=[], assets:list=[], lets:list=[]):
+    def test(self, error:bool=False, warn:bool=False, defines:list=[], categories:list=[], assets:list=[], lets:list=[], associations:list=[]):
         assert(self.has_error() == error)
         assert(self.has_warning() == warn)
         if (defines):
@@ -59,6 +59,10 @@ class AnalyzerTestWrapper(malAnalyzer):
                 where, name = let
                 if (not (self._vars[where] and self._vars[where][name])):
                     assert(False)
+        if (associations):
+            assert(set(self._associations.keys())==set([asset for asset, _ in associations]))
+            for asset, association_list in associations:
+                assert(set(association_list)==set(self._associations[asset].keys()))
 
 
 
