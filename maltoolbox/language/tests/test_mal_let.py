@@ -267,3 +267,67 @@ def test_let_8() -> None:
         assets=['Asset1','Asset3','Asset4'],
         lets=[('Asset3', ['component'])]
     )
+
+def test_let_9() -> None:
+    '''
+    Defines correct version and ID.
+    Defines category with name.
+    Defines asset with name.
+    Defines let only in a parent.
+    '''
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+
+    category System {
+        asset Asset1 {
+            let component = asset4
+        }
+        asset Asset3 extends Asset1 {
+        }
+        asset Asset4 {
+        }
+    }
+    associations {
+        Asset1 [asset1] 1 <-- One --> 1 [asset4] Asset4
+    }
+    ''').test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1','Asset3','Asset4'],
+        lets=[('Asset1', ['component']),('Asset3', ['component'])]
+    )
+    
+def test_let_10() -> None:
+    '''
+    Defines correct version and ID.
+    Defines category with name.
+    Defines asset with name.
+    Redefines the exact same let in asset in a hierarchy.
+    '''
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+
+    category System {
+        asset Asset1 {
+            let component = asset3
+        }
+        asset Asset2 extends Asset1 {
+            let component = asset3
+        }
+        asset Asset3 {
+        }
+        asset Asset4 {
+        }
+    }
+    associations {
+        Asset1 [asset1] 1 <-- One --> 1 [asset3] Asset3
+    }
+    ''').test(
+        error=True,
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1','Asset2','Asset3','Asset4'],
+        lets=[('Asset1', ['component']),('Asset2',['component'])]
+    )
