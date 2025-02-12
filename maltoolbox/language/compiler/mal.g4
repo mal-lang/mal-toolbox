@@ -12,20 +12,31 @@ include: INCLUDE STRING;
 define: HASH ID COLON STRING; // TODO version and id are mandatory
 
 category: CATEGORY ID meta* LCURLY asset* RCURLY;
-meta: ID INFO COLON STRING;
+meta: ID INFO COLON text;
+text: STRING | MULTILINE_STRING;
 asset: ABSTRACT? ASSET ID (EXTENDS ID)? meta* LCURLY (step|variable)* RCURLY;
 
-step: steptype ID tag* cias? ttc? meta* precondition? reaches?;
+step: steptype ID tag* cias? pdist? meta* detector* precondition? reaches?;
 steptype: AND | OR | HASH | EXISTS | NOTEXISTS;
 tag: AT ID;
 cias: LCURLY cia (COMMA cia)* RCURLY;
 cia: C|I|A;
-ttc: LSQUARE ttcexpr RSQUARE;
-ttcexpr: ttcterm ((PLUS | MINUS) ttcterm)*;
-ttcterm: ttcfact ((STAR | DIVIDE) ttcfact)*;
-ttcfact: ttcatom (POWER ttcatom)?;
-ttcatom: ttcdist | LPAREN ttcexpr RPAREN | number;
-ttcdist: ID (LPAREN (number (COMMA number)*)? RPAREN)?;
+ttc: pdist;
+pdist: LSQUARE pdistexpr RSQUARE;
+pdistexpr: pdistterm ((PLUS | MINUS) pdistterm)*;
+pdistterm: pdistfact ((STAR | DIVIDE) pdistfact)*;
+pdistfact: pdistatom (POWER pdistatom)?;
+pdistatom: pdistdist | LPAREN pdistexpr RPAREN | number;
+pdistdist: ID (LPAREN (number (COMMA number)*)? RPAREN)?;
+detector: bang detectorname? context detectortype? tprate?;
+bang: EXCLAMATION | EXCLM_COMM;
+detectorname: ID (DOT ID)*;
+context: LPAREN contextpart (COMMA contextpart)* RPAREN;
+contextpart: contextasset contextlabel;
+contextasset: ID;
+contextlabel: ID;
+detectortype: ID;
+tprate: pdist;
 precondition: REQUIRES expr (COMMA expr)*;
 reaches: (INHERITS | LEADSTO) expr (COMMA expr)*;
 number: INT | FLOAT;  // defined as rule, otherwise it would conflict with INT/FLOAT tokens
@@ -62,7 +73,9 @@ INFO: 'info';
 LET: 'let';
 
 // patterns
-STRING: '"' .*? '"';
+STRING: '"' ( ~["\\\r\n] | '\\' . )* '"';
+MULTILINE_STRING: '"""' ( '"'? '"'? ~["] | '\n' | '\r' )* '"""';
+
 INT: [0-9]+;
 FLOAT: [0-9]* DOT [0-9]+;
 EXISTS: 'E';  //
@@ -92,6 +105,7 @@ RANGE: '..';
 DOT: '.';
 AND: '&';
 OR: '|';
+EXCLAMATION: '!';
 NOTEXISTS: '!E';
 AT: '@';
 REQUIRES: '<-';
@@ -101,10 +115,10 @@ COMMA: ',';
 PLUS: '+';
 DIVIDE: '/';
 POWER: '^';
+EXCLM_COMM: '//!';
 
 
 // garbage
-INLINE_COMMENT: '//' ~[\r\n]* -> skip;
+INLINE_COMMENT: '//' ~[!]~[\r\n]* -> skip;
 MULTILINE_COMMENT: '/*' .*? '*/' -> skip;
 WS: [ \t\r\n] -> skip;
-

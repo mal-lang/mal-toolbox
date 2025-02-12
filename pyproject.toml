@@ -1,6 +1,6 @@
 [project]
 name = "mal-toolbox"
-version = "0.1.6"
+version = "0.2.0"
 authors = [
   { name="Andrei Buhaiu", email="buhaiu@kth.se" },
   { name="Giuseppe Nebbione", email="nebbione@kth.se" },
@@ -13,7 +13,6 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "py2neo>=2021.2.3",
-  "python-jsonschema-objects>=0.5.5",
   "antlr4-tools",
   "antlr4-python3-runtime",
   "docopt",
@@ -35,6 +34,9 @@ classifiers = [
 "Bug Tracker" = "https://github.com/mal-lang/mal-toolbox/issues"
 "Repository" = "https://github.com/mal-lang/mal-toolbox"
 
+[project.scripts]
+"maltoolbox" = "maltoolbox.__main__:main"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
@@ -53,7 +55,6 @@ filterwarnings = "ignore:invalid escape sequence"
 exclude = [
   'maltoolbox/ingestors',
   'maltoolbox/translators',
-  'maltoolbox/language/compiler',
-  'venv'
+  'maltoolbox/language/compiler'
 ]
 allow_redefinition = true

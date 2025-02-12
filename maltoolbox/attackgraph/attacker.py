@@ -4,6 +4,7 @@ MAL-Toolbox Attack Graph Attacker Class
 
 from __future__ import annotations
 from dataclasses import dataclass, field
+import copy
 import logging
 
 from typing import Optional
@@ -47,6 +48,27 @@ class Attacker:
 
     def __hash__(self) -> int:
         return hash((self.id, self.name))
+    def __deepcopy__(self, memo) -> Attacker:
+        """Deep copy an Attacker"""
+
+        # Check if the object is already in the memo dictionary
+        if id(self) in memo:
+            return memo[id(self)]
+
+        copied_attacker = Attacker(
+            id = self.id,
+            name = self.name,
+        )
+
+        # Remember that self was already copied
+        memo[id(self)] = copied_attacker
+
+        copied_attacker.entry_points = copy.deepcopy(
+            self.entry_points, memo = memo)
+        copied_attacker.reached_attack_steps = copy.deepcopy(
+            self.reached_attack_steps, memo = memo)
+
+        return copied_attacker
 
     def compromise(self, node: AttackGraphNode) -> None:
         """

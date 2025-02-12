@@ -3,13 +3,19 @@
 from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
+from maltoolbox.language import LanguageGraph
 
-def test_attacker_to_dict():
+def test_attacker_to_dict(dummy_lang_graph: LanguageGraph):
     """Test Attacker to dict conversion"""
+
+    dummy_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyAttackStep']
+
     node1 = AttackGraphNode(
         id = 1,
         type = "or",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = dummy_attack_step,
     )
     attacker_id = 0
     attacker = Attacker("Test Attacker", attacker_id, [], [node1])
@@ -25,32 +31,46 @@ def test_attacker_to_dict():
         "reachable_attack_steps": {}
     }
 
-def test_attacker_compromise():
+def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
     """Attack a node and see expected behavior"""
+
+    dummy_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyAttackStep']
+
     node1 = AttackGraphNode(
         type = "or",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = dummy_attack_step,
     )
     attacker = Attacker("Test Attacker", [], [])
-    attack_graph = AttackGraph()
+    assert not attacker.entry_points
+    attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_node(node1)
     attack_graph.add_attacker(attacker)
 
     attacker.compromise(node1)
     assert attacker.reached_attack_steps == [node1]
+    assert not attacker.entry_points
+
     assert node1.compromised_by == [attacker]
+
     attacker.compromise(node1) # Compromise same node again not a problem
     assert attacker.reached_attack_steps == [node1]
     assert node1.compromised_by == [attacker]
 
-def test_attacker_undo_compromise():
+def test_attacker_undo_compromise(dummy_lang_graph: LanguageGraph):
     """Make sure undo compromise removes attacker/node"""
+
+    dummy_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyAttackStep']
+
     node1 = AttackGraphNode(
         type = "or",
-        name = "node1"
+        name = "node1",
+        lang_graph_attack_step = dummy_attack_step,
     )
     attacker = Attacker("attacker1", [], [])
-    attack_graph = AttackGraph()
+    attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_node(node1)
     attack_graph.add_attacker(attacker)
 

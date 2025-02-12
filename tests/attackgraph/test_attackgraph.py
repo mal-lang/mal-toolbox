@@ -1,19 +1,26 @@
 """Unit tests for AttackGraph functionality"""
 
+import copy
 import pytest
 from unittest.mock import patch
 
+from conftest import path_testdata
 from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, Attacker
 from maltoolbox.attackgraph.query import calculate_reachability
+from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.attackgraph import (
+    AttackGraph,
+    AttackGraphNode,
+    Attacker,
+    create_attack_graph
+)
 from maltoolbox.model import Model, AttackerAttachment
-
-from test_model import create_application_asset, create_association
 
 
 @pytest.fixture
 def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """Fixture that generates an example attack graph
+       with unattached attacker
 
     Uses coreLang specification and model with two applications
     with an association and an attacker to create and return
@@ -21,14 +28,11 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """
 
     # Create 2 assets
-    app1 = create_application_asset(model, "Application 1")
-    app2 = create_application_asset(model, "Application 2")
-    model.add_asset(app1)
-    model.add_asset(app2)
+    app1 = model.add_asset(asset_type = 'Application', name = 'Application 1')
+    app2 = model.add_asset(asset_type = 'Application', name = 'Application 2')
 
     # Create association between app1 and app2
-    assoc = create_association(model, left_assets=[app1], right_assets=[app2])
-    model.add_association(assoc)
+    app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
 
     attacker = AttackerAttachment()
     attacker.entry_points = [
@@ -54,29 +58,18 @@ def test_attackgraph_init(corelang_lang_graph, model):
         )
         assert _generate_graph.call_count == 1
 
-    # _generate_graph is not called when no langspec or model is given
+    # _generate_graph is not called when no model is given
     with patch("maltoolbox.attackgraph.AttackGraph._generate_graph")\
         as _generate_graph:
-        AttackGraph(
-            lang_graph=None,
-            model=None
-        )
-        assert _generate_graph.call_count == 0
-
         AttackGraph(
             lang_graph=corelang_lang_graph,
             model=None
         )
         assert _generate_graph.call_count == 0
 
-        AttackGraph(
-            lang_graph=None,
-            model=model
-        )
-        assert _generate_graph.call_count == 0
-
 def attackgraph_save_load_no_model_given(
         example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph,
         attach_attackers: bool
     ):
     """Save AttackGraph to a file and load it
@@ -94,7 +87,8 @@ def attackgraph_save_load_no_model_given(
     example_attackgraph.save_to_file(example_graph_path)
 
     # Load the attack graph
-    loaded_attack_graph = AttackGraph.load_from_file(example_graph_path)
+    loaded_attack_graph = AttackGraph.load_from_file(example_graph_path,
+        corelang_lang_graph)
     assert node_with_reward_before.id is not None
     node_with_reward_after = loaded_attack_graph.get_node_by_id(
         node_with_reward_before.id
@@ -163,17 +157,22 @@ def attackgraph_save_load_no_model_given(
         assert loaded_attacker_dict == original_attacker_dict
 
 def test_attackgraph_save_load_no_model_given_without_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
-    attackgraph_save_load_no_model_given(example_attackgraph, False)
+    attackgraph_save_load_no_model_given(example_attackgraph,
+        corelang_lang_graph, False)
 
 def test_attackgraph_save_load_no_model_given_with_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
-    attackgraph_save_load_no_model_given(example_attackgraph, True)
+    attackgraph_save_load_no_model_given(example_attackgraph,
+        corelang_lang_graph, True)
 
 def attackgraph_save_and_load_json_yml_model_given(
         example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph,
         attach_attackers: bool
     ):
     """Try to save and load attack graph from json and yml with model given,
@@ -186,7 +185,10 @@ def attackgraph_save_and_load_json_yml_model_given(
     for attackgraph_path in ("/tmp/attackgraph.yml", "/tmp/attackgraph.json"):
         example_attackgraph.save_to_file(attackgraph_path)
         loaded_attackgraph = AttackGraph.load_from_file(
-            attackgraph_path, model=example_attackgraph.model)
+            attackgraph_path,
+            corelang_lang_graph,
+            model=example_attackgraph.model
+        )
 
         # Make sure model was 'attached' correctly
         assert loaded_attackgraph.model == example_attackgraph.model
@@ -222,18 +224,22 @@ def attackgraph_save_and_load_json_yml_model_given(
             assert loaded_attacker_dict == original_attacker_dict
 
 def test_attackgraph_save_and_load_json_yml_model_given_without_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
         attackgraph_save_and_load_json_yml_model_given(
             example_attackgraph,
+            corelang_lang_graph,
             False
         )
 
 def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
-        example_attackgraph: AttackGraph
+        example_attackgraph: AttackGraph,
+        corelang_lang_graph: LanguageGraph
     ):
         attackgraph_save_and_load_json_yml_model_given(
             example_attackgraph,
+            corelang_lang_graph,
             True
         )
 
@@ -253,8 +259,13 @@ def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     app1_ncu = example_attackgraph.get_node_by_full_name(
         'Application 1:networkConnectUninspected'
     )
+    app1_auv = example_attackgraph.get_node_by_full_name(
+        'Application 1:attemptUseVulnerability'
+    )
 
     assert app1_ncu
+    assert app1_auv
+
     assert not example_attackgraph.attackers
 
     example_attackgraph.attach_attackers()
@@ -262,7 +273,15 @@ def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
     assert len(example_attackgraph.attackers) == 1
     attacker = example_attackgraph.attackers[0]
 
+    assert app1_ncu in attacker.entry_points
     assert app1_ncu in attacker.reached_attack_steps
+    assert not app1_auv in attacker.entry_points
+    assert not app1_auv in attacker.reached_attack_steps
+
+    attacker.compromise(app1_auv)
+    assert app1_auv in attacker.reached_attack_steps
+    assert app1_auv not in attacker.entry_points
+
 
     for node in attacker.reached_attack_steps:
         # Make sure the Attacker is present on the nodes they have compromised
@@ -282,7 +301,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     # Calculate how many nodes we should expect
     num_assets_attack_steps = 0
     assert example_attackgraph.model
-    for asset in example_attackgraph.model.assets:
+    for asset in example_attackgraph.model.assets.values():
         attack_steps = example_attackgraph.\
             lang_graph._get_attacks_for_asset_type(
                 asset.type
@@ -298,15 +317,12 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     AttackGraph contains expected nodes"""
 
     # Create 2 assets
-    app1 = create_application_asset(model, "Application 1")
-    app2 = create_application_asset(model, "Application 2")
-    model.add_asset(app1)
-    model.add_asset(app2)
+    app1 = model.add_asset(asset_type = 'Application')
+    app2 = model.add_asset(asset_type = 'Application')
 
     # Create association between app1 and app2
-    assoc = create_association(model, left_assets=[app1], right_assets=[app2])
-    model.add_association(assoc)
-    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    app1.add_associated_assets(fieldname='appExecutedApps', assets = {app2})
+    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model = model)
 
     # These are all attack 71 steps and defenses for Application asset in MAL
     expected_node_names_application = [
@@ -383,10 +399,6 @@ def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
         n.name for n in attack_graph.nodes[0].children
     ]
     assert not_present_children == extected_children_of_not_present
-
-def test_attackgraph_regenerate_graph():
-    """Make sure graph is regenerated"""
-    pass
 
 
 def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
@@ -627,3 +639,468 @@ def test_attackgraph_reachability_two_paths_needed():
     calculate_reachability(graph)
     should_be_reachable = set([node1, node2, node3, node4])
     assert attacker.reachable_attack_steps == should_be_reachable
+    
+def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
+    """
+    Try to deepcopy an attackgraph object. The nodes of the attack graph
+    and attackers should be duplicated into new objects, while references to
+    the instance model should remain the same.
+    """
+    example_attackgraph.attach_attackers()
+    copied_attackgraph: AttackGraph = copy.deepcopy(example_attackgraph)
+
+    assert copied_attackgraph != example_attackgraph
+    assert copied_attackgraph._to_dict() == example_attackgraph._to_dict()
+
+    assert copied_attackgraph.next_node_id == example_attackgraph.next_node_id
+    assert copied_attackgraph.next_attacker_id == example_attackgraph.next_attacker_id
+
+    assert len(copied_attackgraph.nodes) == len(example_attackgraph.nodes)
+
+    assert list(copied_attackgraph._id_to_node.keys()) \
+        == list(example_attackgraph._id_to_node.keys())
+
+    assert list(copied_attackgraph._id_to_attacker.keys()) \
+        == list(example_attackgraph._id_to_attacker.keys())
+
+    assert list(copied_attackgraph._full_name_to_node.keys()) \
+        == list(example_attackgraph._full_name_to_node.keys())
+
+    assert id(copied_attackgraph.model) == id(example_attackgraph.model)
+
+    assert len(copied_attackgraph.nodes) \
+        == len(example_attackgraph.nodes)
+
+    for node in copied_attackgraph.nodes:
+        assert node.id is not None
+        original_node = example_attackgraph.get_node_by_id(node.id)
+
+        assert original_node
+        assert id(original_node) != id(node)
+        assert original_node.to_dict() == node.to_dict()
+        assert id(original_node.asset) == id(node.asset)
+
+        # Make sure thes node in the copied attack graph are the same
+        same_node = copied_attackgraph.get_node_by_id(node.id)
+        assert id(same_node) == id(node)
+
+        for attacker in node.compromised_by:
+            assert id(attacker) == id(copied_attackgraph.attackers[0])
+            original_node.compromised_by
+
+    # Make sure parents and children are same as those in the copied attack graph
+    for node in copied_attackgraph.nodes:
+        for parent in node.parents:
+            assert parent.id is not None
+            attack_graph_parent = copied_attackgraph.get_node_by_id(parent.id)
+            assert id(attack_graph_parent) == id(parent)
+        for child in node.children:
+            assert child.id is not None
+            attack_graph_child = copied_attackgraph.get_node_by_id(child.id)
+            assert id(attack_graph_child) == id(child)
+
+    assert len(copied_attackgraph.attackers) \
+        == len(example_attackgraph.attackers)
+    assert id(copied_attackgraph.attackers) \
+        != id(example_attackgraph.attackers)
+
+    for attacker in copied_attackgraph.attackers:
+
+        for entry_point in attacker.entry_points:
+            assert entry_point.id
+            entry_point_in_attack_graph = copied_attackgraph.get_node_by_id(entry_point.id)
+            assert entry_point_in_attack_graph
+            assert entry_point == entry_point_in_attack_graph
+            assert id(entry_point) == id(entry_point_in_attack_graph)
+
+        assert attacker.id is not None
+        original_attacker = example_attackgraph.get_attacker_by_id(attacker.id)
+        assert original_attacker
+        assert id(original_attacker) != id(attacker)
+        assert original_attacker.to_dict() == attacker.to_dict()
+
+
+def test_attackgraph_deepcopy_attackers(example_attackgraph: AttackGraph):
+    """
+    Make sure attackers entry points and reached steps are copied correctly
+    """
+    example_attackgraph.attach_attackers()
+
+    original_attacker = example_attackgraph.attackers[0]
+    for reached in original_attacker.reached_attack_steps:
+        assert reached.id
+        node = example_attackgraph.get_node_by_id(reached.id)
+        assert node
+        assert id(node) == id(reached)
+
+    for entrypoint in original_attacker.entry_points:
+        assert entrypoint.id
+        node = example_attackgraph.get_node_by_id(entrypoint.id)
+        assert node
+        assert id(node) == id(entrypoint)
+
+    copied_attackgraph = copy.deepcopy(example_attackgraph)
+    copied_attacker = copied_attackgraph.attackers[0]
+    for reached in copied_attacker.reached_attack_steps:
+        assert reached.id
+        node = copied_attackgraph.get_node_by_id(reached.id)
+        assert node
+        assert id(node) == id(reached)
+
+    for entrypoint in copied_attacker.entry_points:
+        assert entrypoint.id
+        node = copied_attackgraph.get_node_by_id(entrypoint.id)
+        assert node
+        assert id(node) == id(entrypoint)
+
+
+def test_deepcopy_memo_test(example_attackgraph: AttackGraph):
+    """
+    Make sure memo is filled up with expected number of objects
+    """
+    example_attackgraph.attach_attackers()
+    memo: dict = {}
+
+    # Deep copy nodes
+    copied_nodes = copy.deepcopy(example_attackgraph.nodes, memo)
+
+    # Make sure memo contains all of the nodes
+    memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
+    assert len(copied_nodes) == len(memo_nodes) == len(example_attackgraph.nodes)
+
+    # Deep copy attackers
+    copied_attackers = copy.deepcopy(example_attackgraph.attackers, memo)
+
+    # Make sure memo stored all of the attackers
+    memo_attackers = [o for o in memo.values() if isinstance(o, Attacker)]
+    assert len(copied_attackers) == len(memo_attackers) == len(example_attackgraph.attackers)
+
+    # Make sure memo didn't store any new nodes
+    memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
+    assert len(memo_nodes) == len(example_attackgraph.nodes)
+
+def test_attackgraph_subtype():
+
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/subtype_attack_step.mal'))
+    test_model = Model('Test Model', test_lang_graph)
+    # Create assets
+    baseasset1 = test_model.add_asset(
+        name = 'BaseAsset 1',
+        asset_type = 'BaseAsset')
+
+    subasset1 = test_model.add_asset(
+        name = 'SubAsset 1',
+        asset_type = 'SubAsset')
+
+    otherasset1 = test_model.add_asset(
+        name = 'OtherAsset 1',
+        asset_type = 'OtherAsset')
+
+    # Create association between subasset1 and otherasset1
+    subasset1.add_associated_assets('field2', {otherasset1})
+    baseasset1.add_associated_assets('field2', {otherasset1})
+
+    test_attack_graph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+    ba_1_base_step1 = test_attack_graph.get_node_by_full_name(
+        'BaseAsset 1:base_step1')
+    ba_1_base_step2 = test_attack_graph.get_node_by_full_name(
+        'BaseAsset 1:base_step2')
+    sa_1_base_step1 = test_attack_graph.get_node_by_full_name(
+        'SubAsset 1:base_step1')
+    sa_1_base_step2 = test_attack_graph.get_node_by_full_name(
+        'SubAsset 1:base_step2')
+    sa_1_subasset_step1 = test_attack_graph.get_node_by_full_name(
+        'SubAsset 1:subasset_step1')
+    oa_1_other_step1 = test_attack_graph.get_node_by_full_name(
+        'OtherAsset 1:other_step1')
+
+    assert ba_1_base_step1 in oa_1_other_step1.children
+    assert ba_1_base_step2 not in oa_1_other_step1.children
+    assert sa_1_base_step1 in oa_1_other_step1.children
+    assert sa_1_base_step2 in oa_1_other_step1.children
+    assert sa_1_subasset_step1 in oa_1_other_step1.children
+
+def test_attackgraph_setops():
+
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/set_ops.mal'))
+    test_model = Model('Test Model', test_lang_graph)
+
+    # Create assets
+    set_ops_a1 = test_model.add_asset(
+        asset_type = 'SetOpsAssetA',
+        name = 'SetOpsAssetA 1')
+    set_ops_b1 = test_model.add_asset(
+        asset_type = 'SetOpsAssetB',
+        name = 'SetOpsAssetB 1')
+    set_ops_b2 = test_model.add_asset(
+        asset_type = 'SetOpsAssetB',
+        name = 'SetOpsAssetB 2')
+    set_ops_b3 = test_model.add_asset(
+        asset_type = 'SetOpsAssetB',
+        name = 'SetOpsAssetB 3')
+
+    # Create association
+    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b1})
+    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b2})
+
+    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b2})
+    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b3})
+
+    test_attack_graph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+
+    assetA1_opsA = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetA 1:testStepSetOpsA')
+    assetB1_opsB1 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 1:testStepSetOpsB1')
+    assetB1_opsB2 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 1:testStepSetOpsB2')
+    assetB1_opsB3 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 1:testStepSetOpsB3')
+    assetB2_opsB1 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 2:testStepSetOpsB1')
+    assetB2_opsB2 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 2:testStepSetOpsB2')
+    assetB2_opsB3 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 2:testStepSetOpsB3')
+    assetB3_opsB1 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 3:testStepSetOpsB1')
+    assetB3_opsB2 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 3:testStepSetOpsB2')
+    assetB3_opsB3 = test_attack_graph.get_node_by_full_name(
+        'SetOpsAssetB 3:testStepSetOpsB3')
+
+    assert assetB1_opsB1 in assetA1_opsA.children
+    assert assetB1_opsB2 not in assetA1_opsA.children
+    assert assetB1_opsB3 in assetA1_opsA.children
+    assert assetB2_opsB1 in assetA1_opsA.children
+    assert assetB2_opsB2 in assetA1_opsA.children
+    assert assetB2_opsB3 not in assetA1_opsA.children
+    assert assetB3_opsB1 in assetA1_opsA.children
+    assert assetB3_opsB2 not in assetA1_opsA.children
+    assert assetB3_opsB3 not in assetA1_opsA.children
+
+def test_attackgraph_transitive():
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/transitive.mal'))
+    test_model = Model('Test Model', test_lang_graph)
+
+    asset1 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 1')
+    asset2 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 2')
+    asset3 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 3')
+    asset4 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 4')
+    asset5 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 5')
+    asset6 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 6')
+
+    asset1.add_associated_assets('field2', {asset2})
+    asset2.add_associated_assets('field2', {asset3})
+    asset3.add_associated_assets('field2', {asset4})
+    asset3.add_associated_assets('field2', {asset5})
+    asset6.add_associated_assets('field2', {asset1})
+
+    test_attack_graph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+
+    asset1_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 1:test_step')
+    asset2_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 2:test_step')
+    asset3_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 3:test_step')
+    asset4_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 4:test_step')
+    asset5_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 5:test_step')
+    asset6_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 6:test_step')
+
+    assert asset1_test_step in asset1_test_step.children
+    assert asset2_test_step in asset1_test_step.children
+    assert asset3_test_step in asset1_test_step.children
+    assert asset4_test_step in asset1_test_step.children
+    assert asset5_test_step in asset1_test_step.children
+    assert asset6_test_step not in asset1_test_step.children
+
+    assert asset1_test_step not in asset2_test_step.children
+    assert asset2_test_step in asset2_test_step.children
+    assert asset3_test_step in asset2_test_step.children
+    assert asset4_test_step in asset2_test_step.children
+    assert asset5_test_step in asset2_test_step.children
+    assert asset6_test_step not in asset2_test_step.children
+
+    assert asset1_test_step not in asset3_test_step.children
+    assert asset2_test_step not in asset3_test_step.children
+    assert asset3_test_step in asset3_test_step.children
+    assert asset4_test_step in asset3_test_step.children
+    assert asset5_test_step in asset3_test_step.children
+    assert asset6_test_step not in asset3_test_step.children
+
+    assert asset1_test_step not in asset4_test_step.children
+    assert asset2_test_step not in asset4_test_step.children
+    assert asset3_test_step not in asset4_test_step.children
+    assert asset4_test_step in asset4_test_step.children
+    assert asset5_test_step not in asset4_test_step.children
+    assert asset6_test_step not in asset4_test_step.children
+
+    assert asset1_test_step not in asset5_test_step.children
+    assert asset2_test_step not in asset5_test_step.children
+    assert asset3_test_step not in asset5_test_step.children
+    assert asset4_test_step not in asset5_test_step.children
+    assert asset5_test_step in asset5_test_step.children
+    assert asset6_test_step not in asset5_test_step.children
+
+    assert asset1_test_step in asset6_test_step.children
+    assert asset2_test_step in asset6_test_step.children
+    assert asset3_test_step in asset6_test_step.children
+    assert asset4_test_step in asset6_test_step.children
+    assert asset5_test_step in asset6_test_step.children
+    assert asset6_test_step in asset6_test_step.children
+
+
+def test_attackgraph_transitive_advanced():
+    # TODO: Improve this test to actually use more complex transitive
+    # relationships. Right now it is just the asset and any direct
+    # associations it may have.
+
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/transitive_advanced.mal'))
+    test_model = Model('Test Model', test_lang_graph)
+
+    asset1 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 1')
+    asset2 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 2')
+    asset3 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 3')
+    asset4 = test_model.add_asset(
+        asset_type = 'TestAsset',
+        name = 'TestAsset 4')
+
+    asset1.add_associated_assets('fieldA2', {asset2, asset3})
+    asset1.add_associated_assets('fieldB2', {asset3, asset4})
+
+    test_attack_graph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+
+    asset1_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 1:test_step')
+    asset2_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 2:test_step')
+    asset3_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 3:test_step')
+    asset4_test_step = test_attack_graph.get_node_by_full_name(
+        'TestAsset 4:test_step')
+
+    assert asset1_test_step in asset1_test_step.children
+    assert asset2_test_step not in asset1_test_step.children
+    assert asset3_test_step in asset1_test_step.children
+    assert asset4_test_step not in asset1_test_step.children
+
+
+def test_create_attack_graph():
+    """See that the create attack graph wrapper works"""
+    mar = path_testdata('org.mal-lang.coreLang-1.0.0.mar')
+    model = path_testdata('simple_example_model.yml')
+
+    # Make sure that it runs without errors
+    create_attack_graph(mar, model)
+
+
+def tests_create_ag_from_model():
+    """We have a predefined model in trainingLang with these associations:
+    
+    User:3 --- Host:0 --- Network:3 --- Host:1
+                 |
+                 |
+               Data:2
+    """
+    def check_parent_child_relationship(
+            ag: AttackGraph, parent_fn: str, children_fns: list[str]
+        ):
+
+        parent = ag.get_node_by_full_name(parent_fn)
+        assert parent, f"Could not find node {parent_fn}"
+
+        # Verify that parent has given children
+        assert {c.full_name for c in parent.children} == set(children_fns)
+
+        # Verify that child has given parent
+        for child_fn in children_fns:
+            child = ag.get_node_by_full_name(child_fn)
+            assert child, f"Could not find child by full name {child_fn}"
+            assert parent_fn in [p.full_name for p in child.parents]
+
+    mar = path_testdata('org.mal-lang.trainingLang-1.0.0.mar')
+    model = path_testdata('simple_traininglang_model.yml')
+
+    # Make sure attack graph is created without errors
+    created_ag = create_attack_graph(mar, model)
+
+    # Make sure all nodes were generated for the model
+    assert {n.full_name for n in created_ag.nodes} == {
+        'Host:0:notPresent', 'Host:0:authenticate', 'Host:0:connect',
+        'Host:0:access', 'Host:1:notPresent', 'Host:1:authenticate',
+        'Host:1:connect', 'Host:1:access', 'Data:2:notPresent',
+        'Data:2:read', 'Data:2:modify', 'User:3:notPresent',
+        'User:3:compromise', 'User:3:phishing', 'Network:3:access'
+    }
+
+    # Make sure associations were added as parent/child relationships
+    check_parent_child_relationship(
+        created_ag, 'Host:0:notPresent', ['Host:0:connect', 'Host:0:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:0:authenticate', ['Host:0:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:0:connect', ['Host:0:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:0:access',
+        ['Data:2:modify', 'Data:2:read', 'Network:3:access']
+    )
+    check_parent_child_relationship(
+        created_ag, 'Host:1:notPresent', ['Host:1:connect', 'Host:1:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:1:authenticate', ['Host:1:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:1:connect', ['Host:1:access'])
+    check_parent_child_relationship(
+        created_ag, 'Host:1:access', ['Network:3:access'])
+    check_parent_child_relationship(
+        created_ag, 'Data:2:notPresent', ['Data:2:read', 'Data:2:modify'])
+    check_parent_child_relationship(
+        created_ag, 'Data:2:read', [])
+    check_parent_child_relationship(
+        created_ag, 'Data:2:modify', [])
+    check_parent_child_relationship(
+        created_ag, 'User:3:notPresent', ['User:3:compromise'])
+    check_parent_child_relationship(
+        created_ag, 'User:3:compromise', ['Host:0:authenticate'])
+    check_parent_child_relationship(
+        created_ag, 'User:3:phishing', ['User:3:compromise'])
+    check_parent_child_relationship(
+        created_ag, 'Network:3:access', ['Host:0:connect', 'Host:1:connect'])

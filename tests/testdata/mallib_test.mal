@@ -1,0 +1,84 @@
+#id: "org.mal-lang.test"
+#version: "1.0.0"
+
+category Category1 {}
+
+category _Category2
+  meta info: "line"
+  other info: """
+              {
+                "multiple": "lines"
+              }
+              """
+{
+  abstract asset Asset1 {}
+  abstract asset _Asset2 meta info: "line" {}
+  abstract asset Asset_3 meta1 info: "\"line\"" meta2 info: "line1\nline2" {}
+  abstract asset Asset4 extends Asset1 {}
+  abstract asset _Asset5 extends _Asset2 meta info: "line" {}
+  abstract asset Asset_6 extends Asset_3 meta1 info: "\"line\"" meta2 info: "line1\nline2" {}
+  asset Asset7 {}
+  asset _Asset8 meta info: "line" {}
+  asset Asset_9 meta1 info: "\"line\"" meta2 info: "line1\nline2" {}
+  asset Asset10 extends Asset4 {}
+  asset _Asset11 extends _Asset5 meta info: "line" {}
+  asset Asset_12 extends Asset_6 meta1 info: "\"line\"" meta2 info: "line1\nline2" {}
+}
+
+category Category_3
+  meta1 info: "\"line\""
+  meta2 info: "line1\nline2"
+{
+  asset Asset
+  {
+    let var1 = asset1s
+    let var2 = var1()[Asset4]
+    | noSteps
+    | or @tag {C} []
+      -> subAssets*.and
+    & and @tag1 @tag2 {C, I, A} [Infinity]
+      -> var1()._asset.noSteps,
+         subAssets*.var2()._asset.noSteps
+    # defense
+      -> asset8s._asset.noSteps
+    E exist
+      <- asset1s \/ asset1s[Asset4].asset10s
+      -> asset7s._asset.noSteps
+    !E notExist
+      <- (asset1s /\ asset1s[Asset4]).asset10s,
+         var1() - var2()
+    let var3 = var1() \/ var2() /\ var1().asset10s - subAssets*.var1()
+  }
+
+  asset SubAsset extends Asset
+  {
+    | or {}
+      meta info: "string"
+      +> defense
+    & and @tag3
+      -> noSteps
+    # defense [Enabled]
+    # defense2 [Disabled]
+    # defense3 [Bernoulli(0.4)]
+    | a1 [EasyAndCertain + EasyAndUncertain() * HardAndCertain + HardAndUncertain() / VeryHardAndCertain - (VeryHardAndUncertain() ^ Zero)]
+    | a2 [1 + 2 * 3]
+    | a3 [(1 + 2) * 3]
+    | a4 [Bernoulli(0.6) + Binomial(3, 0.9) + Exponential(0.1) + Gamma(1, 2) + LogNormal(5, 1.1) + Pareto(2, 2) + TruncatedNormal(5, 1.1) + Uniform(5, 10)]
+  }
+}
+
+category CombinedMeta meta1 info: "\"line\"" {}
+category CombinedMeta meta2 info: "line1\nline2" {}
+
+associations {}
+associations
+{
+  Asset [subAssets] * <-- Assoc0 --> 0..1 [superAsset] Asset
+  Asset [_asset] 1 <-- Assoc1 --> * [asset1s] Asset1
+    meta info: "line"
+  Asset1 [asset1] 0..1 <-- Assoc2 --> 0..* [asset10s] Asset10
+    meta1 info: "\"line\""
+    meta2 info: "line1\nline2"
+  Asset [_asset] 1..1 <-- Assoc3 --> 1..* [asset7s] Asset7
+  Asset [_asset] 1 <-- Assoc4 --> * [asset8s] _Asset8
+}

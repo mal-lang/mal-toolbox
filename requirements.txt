@@ -1,9 +1,6 @@
 docopt
 PyYAML
 
-#maltoolbox.language.class_factory:
-python-jsonschema-objects
-
 #maltoolbox.ingestors:
 py2neo
 

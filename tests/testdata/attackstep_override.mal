@@ -1,0 +1,38 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+    asset EmptyParent {
+      | target1
+
+      | target2
+
+      | target3
+
+      | target4
+    }
+
+    asset Child1 extends EmptyParent {
+      | attackstep
+    }
+
+    asset Child2 extends Child1 {
+    }
+
+    asset Child3 extends Child2 {
+      | attackstep
+        +> target1
+    }
+
+    asset Child4 extends Child3 {
+    }
+
+    asset FinalChild extends Child4 {
+      | attackstep
+        +> target1,
+           target2,
+           target3,
+           target4
+    }
+}

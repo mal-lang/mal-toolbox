@@ -1,2 +1,12 @@
-from .languagegraph import LanguageGraph
-from .classes_factory import LanguageClassesFactory
+"""Contains tools to process MAL languages"""
+
+from .languagegraph import (
+    Context,
+    Detector,
+    ExpressionsChain,
+    LanguageGraph,
+    LanguageGraphAsset,
+    LanguageGraphAssociation,
+    LanguageGraphAttackStep,
+    disaggregate_attack_step_full_name,
+)

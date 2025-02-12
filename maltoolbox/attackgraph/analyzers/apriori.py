@@ -12,10 +12,12 @@ Currently these are:
 """
 
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
 import logging
 
-from ..attackgraph import AttackGraph
-from ..node import AttackGraphNode
+if TYPE_CHECKING:
+    from ..attackgraph import AttackGraph
+    from ..node import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +54,17 @@ def propagate_necessity_from_node(node: AttackGraphNode) -> None:
         'Propagate necessity from "%s"(%d) with necessity status %s.',
         node.full_name, node.id, node.is_necessary
     )
+
+    if node.ttc and 'name' in node.ttc:
+        if node.ttc['name'] not in ['Enabled', 'Disabled', 'Instant']:
+            # Do not propagate unnecessary state from nodes that have a TTC
+            # probability distribution associated with them.
+            # TODO: Evaluate this more carefully, how do we want to have TTCs
+            # impact necessity and viability.
+            # TODO: Have this condition be any probability that has a
+            # Bernoulli component
+            return
+
     for child in node.children:
         original_value = child.is_necessary
         if child.type == 'or':
@@ -165,7 +178,59 @@ def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
     graph       - the attack graph for which we wish to remove the
                   the nodes which are not viable or necessary.
     """
+    logger.debug('Prune unviable and unnecessary nodes from the attack graph.')
     for node in graph.nodes:
         if (node.type == 'or' or node.type == 'and') and \
             (not node.is_viable or not node.is_necessary):
             graph.remove_node(node)
+
+
+def propagate_viability_from_unviable_node(
+        unviable_node: AttackGraphNode,
+    ) -> list[AttackGraphNode]:
+    """
+    Update viability of nodes affected by newly enabled defense
+    `unviable_node` in the graph and return any attack steps
+    that are no longer viable because of it.
+
+    Propagate recursively via children as long as changes occur.
+
+    Arguments:
+    unviable_node               - the node to propagate viability from
+
+    Returns:
+    attack_steps_made_unviable  - list of the attack steps that have been
+                                  made unviable by a defense enabled in the
+                                  current step. Builds up recursively.
+    """
+
+    attack_steps_made_unviable = []
+
+    logger.debug(
+        'Update viability for node "%s"(%d)',
+        unviable_node.full_name,
+        unviable_node.id
+    )
+
+    assert not unviable_node.is_viable, (
+        "propagate_viability_from_unviable_node should not be called"
+       f" on viable node {unviable_node.full_name}"
+    )
+
+    if unviable_node.type in ('and', 'or'):
+        attack_steps_made_unviable.append(unviable_node)
+
+    for child in unviable_node.children:
+        original_value = child.is_viable
+        if child.type == 'or':
+            child.is_viable = False
+            for parent in child.parents:
+                child.is_viable = child.is_viable or parent.is_viable
+        if child.type == 'and':
+            child.is_viable = False
+
+        if child.is_viable != original_value:
+            attack_steps_made_unviable += \
+                propagate_viability_from_unviable_node(child)
+
+    return attack_steps_made_unviable
