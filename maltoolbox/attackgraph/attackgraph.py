@@ -89,7 +89,7 @@ class AttackGraph():
         # or full name faster
         self._id_to_attacker: dict[int, Attacker] = {}
 
-        self.model =model
+        self.model = model
         self.lang_graph = lang_graph
         self.next_node_id = 0
         self.next_attacker_id = 0
