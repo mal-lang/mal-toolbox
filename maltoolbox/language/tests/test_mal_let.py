@@ -38,7 +38,7 @@ def test_let_1() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Computer','Platform','Software','Hardware'],
-        lets=[('Computer', 'components')]
+        lets=[('Computer', ['components'])]
     )
 
 def test_let_2() -> None:
@@ -77,7 +77,7 @@ def test_let_2() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Computer','Platform','Hardware','Software'],
-        lets=[('Computer', 'component')]
+        lets=[('Computer', ['component'])]
     )
 
 def test_let_3() -> None:
@@ -102,7 +102,7 @@ def test_let_3() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Computer'],
-        lets=[('Computer', 'component')]
+        lets=[('Computer', ['component'])]
     )
 
 def test_let_4() -> None:
@@ -136,7 +136,7 @@ def test_let_4() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Asset1','Asset2','Asset3','Asset4'],
-        lets=[('Asset1', 'component'),('Asset2','another_component')]
+        lets=[('Asset1', ['component']),('Asset2', ['component','another_component'])]
     )
 
 
@@ -172,7 +172,7 @@ def test_let_5() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Asset1','Asset2','Asset3','Asset4'],
-        lets=[('Asset1', 'component'),('Asset2','component')]
+        lets=[('Asset1', ['component']),('Asset2',['component'])]
     )
 
 def test_let_6() -> None:
@@ -205,7 +205,7 @@ def test_let_6() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Asset1','Asset3','Asset4'],
-        lets=[('Asset1', 'component1'),('Asset1','component2')]
+        lets=[('Asset1', ['component1','component2'])]
     )
 
 def test_let_7() -> None:
@@ -235,7 +235,7 @@ def test_let_7() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Asset1','Asset3','Asset4'],
-        lets=[('Asset3', 'component')]
+        lets=[('Asset3', ['component'])]
     )
 
 def test_let_8() -> None:
@@ -265,5 +265,5 @@ def test_let_8() -> None:
         defines=['id', 'version'],
         categories=['System'],
         assets=['Asset1','Asset3','Asset4'],
-        lets=[('Asset3', 'component')]
+        lets=[('Asset3', ['component'])]
     )

@@ -47,7 +47,8 @@ class AnalyzerTestWrapper(malAnalyzer):
     
     def test(self, error:bool=False, warn:bool=False, defines:list=[], categories:list=[], assets:list=[], lets:list=[], associations:list=[]):
         assert(self.has_error() == error)
-        assert(self.has_warning() == warn)
+        if (warn):
+            assert(self.has_warning() == warn)
         if (defines):
             assert(set(defines) == set(self._defines.keys()))
         if (categories):
@@ -55,10 +56,9 @@ class AnalyzerTestWrapper(malAnalyzer):
         if (assets):
             assert(set(assets) == set(self._assets.keys()))
         if (lets):
-            for let in lets:
-                where, name = let
-                if (not (self._vars[where] and self._vars[where][name])):
-                    assert(False)
+            assert(set(self._vars.keys())==set([asset for asset, _ in lets]))
+            for asset, variables in lets:
+                assert(set(variables)==set(self._vars[asset].keys()))
         if (associations):
             assert(set(self._associations.keys())==set([asset for asset, _ in associations]))
             for asset, association_list in associations:
