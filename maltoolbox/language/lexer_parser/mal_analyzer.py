@@ -334,7 +334,7 @@ class malAnalyzer(malAnalyzerInterface):
         Given expr*, obtain the asset given by expr and verify if it is a child of the current asset
         '''
         if (res := self._check_to_asset(asset, expr['stepExpression'])):
-            if (self._is_child(res, asset)):
+            if (self._is_child(asset,res)):
                 return res
    
             logging.error(f'Previous asset \'{asset}\' is not of type \'{res}\'')
