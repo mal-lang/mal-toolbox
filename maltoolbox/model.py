@@ -135,7 +135,8 @@ class Model():
     next_id: int = 0
 
     def __repr__(self) -> str:
-        return f'Model {self.name}'
+        return 'Model(name: "%s", language: %s)' % (
+            self.name, self.lang_graph)
 
 
     def __init__(
@@ -577,7 +578,8 @@ class ModelAsset:
 
 
     def __repr__(self):
-        return self.name
+        return 'ModelAsset(name: "%s", id: %d, type: %s)' % (
+            self.name, self.id, self.type)
 
 
     def validate_associated_assets(

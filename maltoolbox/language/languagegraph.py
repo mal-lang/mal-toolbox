@@ -61,6 +61,7 @@ class Context(dict):
     def __str__(self) -> str:
         return str({label: asset.name for label, asset in self._context_dict.items()})
 
+
 @dataclass
 class LanguageGraphAsset:
     name: str
@@ -104,7 +105,7 @@ class LanguageGraphAsset:
 
 
     def __repr__(self) -> str:
-        return str(self.to_dict())
+        return 'LanguageGraphAsset(name: "%s")' % self.name
 
 
     def __hash__(self):
@@ -274,7 +275,9 @@ class LanguageGraphAssociation:
 
 
     def __repr__(self) -> str:
-        return str(self.to_dict())
+        return ('LanguageGraphAssociation(name: "%s", '
+            'left_field: %s, right_field: %s)' %
+            (self.name, self.left_field, self.right_field))
 
 
     @property
@@ -658,6 +661,13 @@ class LanguageGraph():
             self._generate_graph()
 
 
+    def __repr__(self) -> str:
+        return 'LanguageGraph(id: "%s", version: "%s")' % (
+            self.metadata.get('id', 'N/A'),
+            self.metadata.get('version', 'N/A')
+        )
+
+
     @classmethod
     def from_mal_spec(cls, mal_spec_file: str) -> LanguageGraph:
         """
@@ -692,7 +702,7 @@ class LanguageGraph():
             'Serializing %s assets.', len(self.assets.items())
         )
 
-        serialized_graph = {}
+        serialized_graph = {'metadata': self.metadata}
         for asset in self.assets.values():
             serialized_graph[asset.name] = asset.to_dict()
 
@@ -719,6 +729,8 @@ class LanguageGraph():
 
         logger.debug('Create language graph from dictionary.')
         lang_graph = LanguageGraph()
+        lang_graph.metadata = serialized_graph.pop('metadata')
+
         # Recreate all of the assets
         for asset_dict in serialized_graph.values():
             logger.debug(

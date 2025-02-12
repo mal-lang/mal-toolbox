@@ -78,7 +78,8 @@ class AttackGraphNode:
 
 
     def __repr__(self) -> str:
-        return '%s(id:%d, type:%s)' % (self.full_name, self.id, self.type)
+        return 'AttackGraphNode(name: "%s", id: %d, type: %s)' % (
+            self.full_name, self.id, self.type)
 
 
     def __deepcopy__(self, memo) -> AttackGraphNode:

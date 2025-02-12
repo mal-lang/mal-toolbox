@@ -3,7 +3,6 @@ MAL-Toolbox Attack Graph Attacker Class
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
 import copy
 import logging
 
@@ -46,7 +45,8 @@ class Attacker:
         return attacker_dict
 
     def __repr__(self) -> str:
-        return str(self.to_dict())
+        return 'Attacker(name: "%s", id: %d)' % (
+            self.name, self.id if self.id is not None else -1)
 
     def __deepcopy__(self, memo) -> Attacker:
         """Deep copy an Attacker"""
