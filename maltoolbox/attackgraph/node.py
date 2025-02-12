@@ -30,6 +30,7 @@ class AttackGraphNode:
     is_viable: bool = True
     is_necessary: bool = True
     compromised_by: list[Attacker] = field(default_factory=list)
+    reachable_by: set[Attacker] = field(default_factory=set)
     tags: set[str] = field(default_factory=set)
     attributes: Optional[dict] = None
 
@@ -47,7 +48,9 @@ class AttackGraphNode:
             'children': {child.id: child.full_name for child in self.children},
             'parents': {parent.id: parent.full_name for parent in self.parents},
             'compromised_by': [attacker.name for attacker in \
-                self.compromised_by]
+                self.compromised_by],
+            'reachable_by': [attacker.name for attacker in \
+                self.reachable_by]
         }
 
         for detector in self.detectors.values():
@@ -73,6 +76,8 @@ class AttackGraphNode:
     def __repr__(self) -> str:
         return str(self.to_dict())
 
+    def __hash__(self) -> int:
+        return hash((self.id, self.full_name))
 
     def __deepcopy__(self, memo) -> AttackGraphNode:
         """Deep copy an attackgraph node
@@ -159,6 +164,22 @@ class AttackGraphNode:
         """
         attacker.undo_compromise(self)
 
+    def is_reachable(self) -> bool:
+        """
+        Return True if any attackers can reach this node.
+        False, otherwise.
+        """
+        return len(self.reachable_by) > 0
+
+    def is_reachable_by(self, attacker: Attacker) -> bool:
+        """
+        Return True if the attacker given as argument can reach this node.
+        False, otherwise.
+
+        Arguments:
+        attacker    - the attacker we are interested in
+        """
+        return attacker in self.reachable_by
 
     def is_enabled_defense(self) -> bool:
         """

@@ -17,17 +17,18 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Attacker:
     name: str
-    entry_points: list[AttackGraphNode] = field(default_factory=list)
-    reached_attack_steps: list[AttackGraphNode] = \
-        field(default_factory=list)
     id: Optional[int] = None
+    entry_points: list[AttackGraphNode] = field(default_factory=list)
+    reached_attack_steps: list[AttackGraphNode] = field(default_factory=list)
+    reachable_attack_steps: set[AttackGraphNode] = field(default_factory=set)
 
     def to_dict(self) -> dict:
         attacker_dict: dict = {
             'id': self.id,
             'name': self.name,
             'entry_points': {},
-            'reached_attack_steps': {}
+            'reached_attack_steps': {},
+            'reachable_attack_steps': {}
         }
 
         for entry_point in self.entry_points:
@@ -36,12 +37,17 @@ class Attacker:
         for attack_step in self.reached_attack_steps:
             attacker_dict['reached_attack_steps'][attack_step.id] = \
                 attack_step.full_name
+        for attack_step in self.reachable_attack_steps:
+            attacker_dict['reachable_attack_steps'][attack_step.id] = \
+                attack_step.full_name
 
         return attacker_dict
 
     def __repr__(self) -> str:
         return str(self.to_dict())
 
+    def __hash__(self) -> int:
+        return hash((self.id, self.name))
     def __deepcopy__(self, memo) -> Attacker:
         """Deep copy an Attacker"""
 

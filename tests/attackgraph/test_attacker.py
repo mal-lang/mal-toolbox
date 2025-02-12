@@ -12,18 +12,23 @@ def test_attacker_to_dict(dummy_lang_graph: LanguageGraph):
         attack_steps['DummyAttackStep']
 
     node1 = AttackGraphNode(
+        id = 1,
         type = "or",
         name = "node1",
         lang_graph_attack_step = dummy_attack_step,
     )
-    attacker = Attacker("Test Attacker", [], [node1])
+    attacker_id = 0
+    attacker = Attacker("Test Attacker", attacker_id, [], [node1])
+
     assert attacker.to_dict() == {
-        "id": None,
+        "id": attacker.id,
         "name": "Test Attacker",
         "entry_points": {},
         "reached_attack_steps": {
             node1.id : str(node1.id) + ':' + node1.name
-        }
+        },
+        # calculate_reachability not run - reachable_attack_steps empty
+        "reachable_attack_steps": {}
     }
 
 def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
