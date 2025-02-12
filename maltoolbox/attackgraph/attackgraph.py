@@ -2,12 +2,12 @@
 MAL-Toolbox Attack Graph Module
 """
 from __future__ import annotations
-import copy
 import logging
 import json
 import sys
 import zipfile
 
+from copy import deepcopy
 from itertools import chain
 from typing import TYPE_CHECKING
 
@@ -25,6 +25,7 @@ from ..file_utils import (
     load_dict_from_yaml_file,
     save_dict_to_file
 )
+from ..utils import LookupDict
 
 
 if TYPE_CHECKING:
@@ -82,12 +83,10 @@ def create_attack_graph(
 class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph, model: Optional[Model] = None):
-        self.nodes: list[AttackGraphNode] = []
+        self.nodes: LookupDict[int, AttackGraphNode] = LookupDict()
         self.attackers: list[Attacker] = []
         # Dictionaries used in optimization to get nodes and attackers by id
         # or full name faster
-        self._id_to_node: dict[int, AttackGraphNode] = {}
-        self._full_name_to_node: dict[str, AttackGraphNode] = {}
         self._id_to_attacker: dict[int, Attacker] = {}
 
         self.model = model
@@ -104,7 +103,7 @@ class AttackGraph():
         """Convert AttackGraph to dict"""
         serialized_attack_steps = {}
         serialized_attackers = {}
-        for ag_node in self.nodes:
+        for ag_node in self.nodes.values():
             serialized_attack_steps[ag_node.full_name] =\
                 ag_node.to_dict()
         for attacker in self.attackers:
@@ -124,40 +123,24 @@ class AttackGraph():
             return memo[id(self)]
 
         copied_attackgraph = AttackGraph(self.lang_graph)
+
+        memo[id(self)] = copied_attackgraph
+
         copied_attackgraph.model = self.model
+        copied_attackgraph.nodes = deepcopy(self.nodes, memo)
+        copied_attackgraph.attackers = deepcopy(self.attackers, memo)
 
-        copied_attackgraph.nodes = []
-
-        # Deep copy nodes
-        for node in self.nodes:
-            copied_node = copy.deepcopy(node, memo)
-            copied_attackgraph.nodes.append(copied_node)
-
-        # Re-link node references
-        for node in self.nodes:
+        for node in self.nodes.values():
+            nid = id(node)
             if node.parents:
-                memo[id(node)].parents = copy.deepcopy(node.parents, memo)
+                memo[nid].parents = deepcopy(node.parents, memo)
             if node.children:
-                memo[id(node)].children = copy.deepcopy(node.children, memo)
-
-        # Deep copy attackers and references to them
-        copied_attackgraph.attackers = copy.deepcopy(self.attackers, memo)
-
-        # Re-link attacker references
-        for node in self.nodes:
+                memo[nid].children = deepcopy(node.children, memo)
             if node.compromised_by:
-                memo[id(node)].compromised_by = copy.deepcopy(
-                    node.compromised_by, memo)
+                memo[nid].compromised_by = deepcopy(node.compromised_by, memo)
 
-        # Copy lookup dicts
-        copied_attackgraph._id_to_attacker = \
-            copy.deepcopy(self._id_to_attacker, memo)
-        copied_attackgraph._id_to_node = \
-            copy.deepcopy(self._id_to_node, memo)
-        copied_attackgraph._full_name_to_node = \
-            copy.deepcopy(self._full_name_to_node, memo)
+        copied_attackgraph._id_to_attacker = deepcopy(self._id_to_attacker, memo)
 
-        # Copy counters
         copied_attackgraph.next_node_id = self.next_node_id
         copied_attackgraph.next_attacker_id = self.next_attacker_id
 
@@ -192,8 +175,9 @@ class AttackGraph():
             # Recreate asset links if model is available.
             node_asset = None
             if model and 'asset' in node_dict:
-                node_asset = model.get_asset_by_name(node_dict['asset'])
-                if node_asset is None:
+                try:
+                    node_asset = model.assets.fetch("name", node_dict['asset'])
+                except KeyError:
                     msg = ('Failed to find asset with name "%s"'
                             ' when loading from attack graph dict')
                     logger.error(msg, node_dict["asset"])
@@ -238,7 +222,7 @@ class AttackGraph():
 
         # Re-establish links between nodes.
         for node_dict in serialized_attack_steps.values():
-            _ag_node = attack_graph.get_node_by_id(node_dict['id'])
+            _ag_node = attack_graph.nodes[node_dict['id']]
             if not isinstance(_ag_node, AttackGraphNode):
                 msg = ('Failed to find node with id %s when loading'
                        ' attack graph from dict')
@@ -246,7 +230,7 @@ class AttackGraph():
                 raise LookupError(msg % node_dict["id"])
             else:
                 for child_id in node_dict['children']:
-                    child = attack_graph.get_node_by_id(int(child_id))
+                    child = attack_graph.nodes[int(child_id)]
                     if child is None:
                         msg = ('Failed to find child node with id %s'
                                ' when loading from attack graph from dict')
@@ -255,7 +239,7 @@ class AttackGraph():
                     _ag_node.children.append(child)
 
                 for parent_id in node_dict['parents']:
-                    parent = attack_graph.get_node_by_id(int(parent_id))
+                    parent = attack_graph.nodes[int(parent_id)]
                     if parent is None:
                         msg = ('Failed to find parent node with id %s '
                                'when loading from attack graph from dict')
@@ -305,35 +289,6 @@ class AttackGraph():
         return cls._from_dict(serialized_attack_graph,
             lang_graph, model = model)
 
-    def get_node_by_id(self, node_id: int) -> Optional[AttackGraphNode]:
-        """
-        Return the attack node that matches the id provided.
-
-        Arguments:
-        node_id     - the id of the attack graph node we are looking for
-
-        Return:
-        The attack step node that matches the given id.
-        """
-
-        logger.debug('Looking up node with id %s', node_id)
-        return self._id_to_node.get(node_id)
-
-    def get_node_by_full_name(self, full_name: str) -> Optional[AttackGraphNode]:
-        """
-        Return the attack node that matches the full name provided.
-
-        Arguments:
-        full_name   - the full name of the attack graph node we are looking
-                      for
-
-        Return:
-        The attack step node that matches the given full name.
-        """
-
-        logger.debug(f'Looking up node with full name "%s"', full_name)
-        return self._full_name_to_node.get(full_name)
-
     def get_attacker_by_id(self, attacker_id: int) -> Optional[Attacker]:
         """
         Return the attacker that matches the id provided.
@@ -380,7 +335,7 @@ class AttackGraph():
             for (asset, attack_steps) in attacker_info.entry_points:
                 for attack_step in attack_steps:
                     full_name = asset.name + ':' + attack_step
-                    ag_node = self.get_node_by_full_name(full_name)
+                    ag_node = self.nodes.fetch("full_name", full_name)
                     if not ag_node:
                         logger.warning(
                             'Failed to find attacker entry point '
@@ -636,7 +591,7 @@ class AttackGraph():
             asset.attack_step_nodes = attack_step_nodes
 
         # Then, link all of the nodes according to their associations.
-        for ag_node in self.nodes:
+        for ag_node in self.nodes.values():
             logger.debug(
                 'Determining children for attack step "%s"(%d)',
                 ag_node.full_name,
@@ -664,8 +619,8 @@ class AttackGraph():
                             if target_asset is not None:
                                 target_node_full_name = target_asset.name + \
                                     ':' + target_attack_step.name
-                                target_node = self.get_node_by_full_name(
-                                    target_node_full_name)
+                                target_node = self.nodes.fetch("full_name",
+                                     target_node_full_name)
                                 if target_node is None:
                                     msg = ('Failed to find target node '
                                            '"%s" to link with for attack '
@@ -709,7 +664,7 @@ class AttackGraph():
         the MAL language specification provided at initialization.
         """
 
-        self.nodes = []
+        self.nodes = LookupDict()
         self.attackers = []
         self._generate_graph()
 
@@ -730,15 +685,13 @@ class AttackGraph():
                 f'with id:{node_id}:\n' \
                 + json.dumps(node.to_dict(), indent = 2))
 
-        if node.id in self._id_to_node:
+        if node.id in self.nodes:
             raise ValueError(f'Node index {node_id} already in use.')
 
         node.id = node_id if node_id is not None else self.next_node_id
         self.next_node_id = max(node.id + 1, self.next_node_id)
 
-        self.nodes.append(node)
-        self._id_to_node[node.id] = node
-        self._full_name_to_node[node.full_name] = node
+        self.nodes[node.id] = node
 
     def remove_node(self, node: AttackGraphNode) -> None:
         """Remove node from attack graph
@@ -752,12 +705,10 @@ class AttackGraph():
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
-        self.nodes.remove(node)
+        self.nodes.pop(node.id)  # type: ignore[call-overload,arg-type]
 
         if not isinstance(node.id, int):
             raise ValueError(f'Invalid node id.')
-        del self._id_to_node[node.id]
-        del self._full_name_to_node[node.full_name]
 
     def add_attacker(
             self,
@@ -796,7 +747,7 @@ class AttackGraph():
 
         self.next_attacker_id = max(attacker.id + 1, self.next_attacker_id)
         for node_id in reached_attack_steps:
-            node = self.get_node_by_id(node_id)
+            node = self.nodes[node_id]
             if node:
                 attacker.compromise(node)
             else:
@@ -805,7 +756,7 @@ class AttackGraph():
                 logger.error(msg, node_id)
                 raise AttackGraphException(msg % node_id)
         for node_id in entry_points:
-            node = self.get_node_by_id(int(node_id))
+            node = self.nodes[int(node_id)]
             if node:
                 attacker.entry_points.append(node)
             else:
