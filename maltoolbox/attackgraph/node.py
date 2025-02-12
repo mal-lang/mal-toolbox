@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from typing import Any, Optional
     from . import Attacker
     from ..language import LanguageGraphAttackStep, Detector
+    from ..model import ModelAsset
 
 class AttackGraphNode:
     """Node part of AttackGraph"""
@@ -31,14 +32,14 @@ class AttackGraphNode:
         self.id = node_id
         self.model_asset = model_asset
 
-        self.defense_status = None
-        self.existence_status = None
-        self.children = set()
-        self.parents = set()
+        self.defense_status: Optional[float] = None
+        self.existence_status: Optional[bool] = None
+        self.children: set[AttackGraphNode] = set()
+        self.parents: set[AttackGraphNode] = set()
         self.is_viable: bool = True
         self.is_necessary: bool = True
-        self.compromised_by = []
-        self.extras = {}
+        self.compromised_by: set[Attacker] = set()
+        self.extras: dict = {}
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
@@ -195,4 +196,4 @@ class AttackGraphNode:
 
     @cached_property
     def info(self) -> dict[str, str]:
-        return self.lang_graph_attack_step.info
+        return self.lg_attack_step.info

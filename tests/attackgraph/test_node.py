@@ -45,32 +45,32 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
         lg_attack_step = dummy_or_attack_step
     )
 
-    node1.children = [node2, node3]
-    node2.children = [node4, node5]
-    node3.children = [node5, node6]
+    node1.children = {node2, node3}
+    node2.children = {node4, node5}
+    node3.children = {node5, node6}
 
-    node2.parents = [node1]
-    node4.parents = [node2]
-    node5.parents = [node2, node3]
-    node6.parents = [node3]
+    node2.parents = {node1}
+    node4.parents = {node2}
+    node5.parents = {node2, node3}
+    node6.parents = {node3}
 
     # Make sure compromised node has attacker added to it
     attacker = Attacker(
         name = "Test Attacker",
-        entry_points = [node1],
-        reached_attack_steps = []
+        entry_points = {node1},
+        reached_attack_steps = set()
     )
 
     attack_graph.add_attacker(attacker)
 
     node6.compromise(attacker)
-    assert node6.compromised_by == [attacker]
+    assert node6.compromised_by == {attacker}
     assert node6.is_compromised()
     assert node6.is_compromised_by(attacker)
 
     # Make sure uncompromise will remove the attacker
     node6.undo_compromise(attacker)
-    assert node6.compromised_by == []
+    assert node6.compromised_by == set()
     assert not node6.is_compromised()
 
     # Node 3 is disabled defense

@@ -19,7 +19,7 @@ from ..exceptions import AttackGraphStepExpressionError, AttackGraphException
 from ..exceptions import LanguageGraphException
 from ..model import Model
 from ..language import (LanguageGraph, ExpressionsChain,
-    disaggregate_attack_step_full_name)
+    LanguageGraphAttackStep, disaggregate_attack_step_full_name)
 from ..file_utils import (
     load_dict_from_json_file,
     load_dict_from_yaml_file,
@@ -207,7 +207,7 @@ class AttackGraph():
             ag_node = attack_graph.add_node(
                 lg_attack_step = lg_attack_step,
                 node_id = node_dict['id'],
-                model_asset = node_asset,
+                model_asset = node_asset
             )
             ag_node.defense_status = node_dict.get('defense_status', None)
             ag_node.existence_status = node_dict.get('existence_status', None)
@@ -254,8 +254,8 @@ class AttackGraph():
         for attacker in serialized_attackers.values():
             ag_attacker = Attacker(
                 name = attacker['name'],
-                entry_points = [],
-                reached_attack_steps = []
+                entry_points = set(),
+                reached_attack_steps = set()
             )
             attack_graph.add_attacker(
                 attacker = ag_attacker,
@@ -360,8 +360,8 @@ class AttackGraph():
 
             attacker = Attacker(
                 name = attacker_info.name,
-                entry_points = [],
-                reached_attack_steps = []
+                entry_points = set(),
+                reached_attack_steps = set()
             )
             self.add_attacker(attacker)
 
@@ -378,7 +378,7 @@ class AttackGraph():
                         continue
                     attacker.compromise(ag_node)
 
-            attacker.entry_points = list(attacker.reached_attack_steps)
+            attacker.entry_points = set(attacker.reached_attack_steps)
 
     def _follow_expr_chain(
             self,
@@ -699,21 +699,36 @@ class AttackGraph():
             model_asset: Optional[ModelAsset] = None,
         ) -> AttackGraphNode:
         """Create and add a node to the graph
+        Arguments:
+        lg_attack_step  - the language graph attack step that corresponds to
+                          the attack graph node to create
+        node_id         - id to assign to the newly created node, usually
+                          provided only when loading an existing attack graph
+                          from a file. If not provided the id will be set to
+                          the next highest id available.
+        model_asset     - the model asset that corresponds to the attack step
+                          node. While optional it is highly recommended that
+                          this be provided. It should only be ommitted if the
+                          model which was used to generate the attack graph is
+                          not available when loading an attack graph from a
+                          file.
 
         Return:
-        The newly created attack step.
+        The newly created attack step node.
         """
-        if logger.isEnabledFor(logging.DEBUG):
-            # Avoid running json.dumps when not in debug
-            logger.debug(f'Add node \"{node.full_name}\" '
-                f'with id:{node_id}:\n' \
-                + json.dumps(node.to_dict(), indent = 2))
-
-
         node_id = node_id if node_id is not None else self.next_node_id
         if node_id in self._id_to_node:
             raise ValueError(f'Node index {node_id} already in use.')
         self.next_node_id = max(node_id + 1, self.next_node_id)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            # Avoid running json.dumps when not in debug
+            logger.debug('Create and add to attackgraph node of type "%s" '
+                'with id:%d.\n' % (
+                    lg_attack_step.full_name,
+                    node_id
+                ))
+
 
         node = AttackGraphNode(
             node_id = node_id,
@@ -794,7 +809,7 @@ class AttackGraph():
         for node_id in entry_points:
             node = self.get_node_by_id(int(node_id))
             if node:
-                attacker.entry_points.append(node)
+                attacker.entry_points.add(node)
             else:
                 msg = ("Could not find node with id %d"
                        "in attacker entrypoints.")

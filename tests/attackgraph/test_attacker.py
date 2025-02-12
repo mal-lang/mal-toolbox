@@ -15,7 +15,7 @@ def test_attacker_to_dict(dummy_lang_graph: LanguageGraph):
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    attacker = Attacker("Test Attacker", [], [node1])
+    attacker = Attacker("Test Attacker", set(), {node1})
     assert attacker.to_dict() == {
         "id": None,
         "name": "Test Attacker",
@@ -35,20 +35,20 @@ def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    attacker = Attacker("Test Attacker", [], [])
+    attacker = Attacker("Test Attacker", set(), set())
     assert not attacker.entry_points
     attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_attacker(attacker)
 
     attacker.compromise(node1)
-    assert attacker.reached_attack_steps == [node1]
+    assert attacker.reached_attack_steps == {node1}
     assert not attacker.entry_points
 
-    assert node1.compromised_by == [attacker]
+    assert node1.compromised_by == {attacker}
 
     attacker.compromise(node1) # Compromise same node again not a problem
-    assert attacker.reached_attack_steps == [node1]
-    assert node1.compromised_by == [attacker]
+    assert attacker.reached_attack_steps == {node1}
+    assert node1.compromised_by == {attacker}
 
 def test_attacker_undo_compromise(dummy_lang_graph: LanguageGraph):
     """Make sure undo compromise removes attacker/node"""
@@ -60,18 +60,18 @@ def test_attacker_undo_compromise(dummy_lang_graph: LanguageGraph):
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    attacker = Attacker("attacker1", [], [])
+    attacker = Attacker("attacker1", set(), set())
     attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_attacker(attacker)
 
     attacker.compromise(node1)
-    assert attacker.reached_attack_steps == [node1]
-    assert node1.compromised_by == [attacker]
+    assert attacker.reached_attack_steps == {node1}
+    assert node1.compromised_by == {attacker}
     attacker.compromise(node1) # Compromise same node again not a problem
-    assert attacker.reached_attack_steps == [node1]
-    assert node1.compromised_by == [attacker]
+    assert attacker.reached_attack_steps == {node1}
+    assert node1.compromised_by == {attacker}
 
     attacker.undo_compromise(node1)
     # Make sure attacker/node  was removed
-    assert attacker.reached_attack_steps == []
-    assert node1.compromised_by == []
+    assert attacker.reached_attack_steps == set()
+    assert node1.compromised_by == set()

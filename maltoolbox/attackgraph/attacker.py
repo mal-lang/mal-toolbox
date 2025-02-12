@@ -14,13 +14,19 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-@dataclass
 class Attacker:
-    name: str
-    entry_points: list[AttackGraphNode] = field(default_factory=list)
-    reached_attack_steps: list[AttackGraphNode] = \
-        field(default_factory=list)
-    id: Optional[int] = None
+
+    def __init__(
+        self,
+        name: str,
+        entry_points: set[AttackGraphNode],
+        reached_attack_steps: set[AttackGraphNode],
+        attacker_id: Optional[int] = None
+    ):
+        self.name = name
+        self.entry_points = entry_points
+        self.reached_attack_steps = reached_attack_steps
+        self.id = attacker_id
 
     def to_dict(self) -> dict:
         attacker_dict: dict = {
@@ -50,8 +56,10 @@ class Attacker:
             return memo[id(self)]
 
         copied_attacker = Attacker(
-            id = self.id,
             name = self.name,
+            attacker_id = self.id,
+            entry_points = set(),
+            reached_attack_steps = set()
         )
 
         # Remember that self was already copied
@@ -90,8 +98,8 @@ class Attacker:
             )
             return
 
-        node.compromised_by.append(self)
-        self.reached_attack_steps.append(node)
+        node.compromised_by.add(self)
+        self.reached_attack_steps.add(node)
 
     def undo_compromise(self, node: AttackGraphNode) -> None:
         """

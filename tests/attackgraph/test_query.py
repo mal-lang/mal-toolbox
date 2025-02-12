@@ -18,8 +18,8 @@ def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     # An attacker with no meaningful data
     attacker = Attacker(
         name = "Test Attacker",
-        entry_points = [],
-        reached_attack_steps = []
+        entry_points = set(),
+        reached_attack_steps = set()
     )
     attack_graph.add_attacker(attacker)
 
@@ -45,8 +45,8 @@ def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     node4 = attack_graph.add_node(
         lg_attack_step = dummy_and_attack_step
     )
-    node4.parents = [node2, node3]
-    node2.children = [node4]
-    node3.children = [node4]
+    node4.parents = {node2, node3}
+    node2.children = {node4}
+    node3.children = {node4}
     traversable = is_node_traversable_by_attacker(node4, attacker)
     assert not traversable

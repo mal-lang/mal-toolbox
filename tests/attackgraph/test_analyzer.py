@@ -73,20 +73,20 @@ def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_gra
         lg_attack_step = dummy_or_attack_step
     )
 
-    node1.children = [node2, node3]
-    node2.children = [node4, node5]
-    node3.children = [node5, node6]
+    node1.children = {node2, node3}
+    node2.children = {node4, node5}
+    node3.children = {node5, node6}
 
-    node2.parents = [node1]
-    node4.parents = [node2]
-    node5.parents = [node2, node3]
-    node6.parents = [node3]
+    node2.parents = {node1}
+    node4.parents = {node2}
+    node5.parents = {node2, node3}
+    node6.parents = {node3}
 
     node1.defense_status = 1.0
     node1.is_viable = False
     unviable_nodes = propagate_viability_from_unviable_node(node1)
     unviable_node_names = {node.name for node in unviable_nodes}
-    expected_unviable_node_names = set(
-        [node2.name, node3.name, node4.name, node5.name, node6.name]
-    )
+    expected_unviable_node_names = {
+        node2.name, node3.name, node4.name, node5.name, node6.name
+    }
     assert unviable_node_names == expected_unviable_node_names
