@@ -254,6 +254,7 @@ class malAnalyzer(malAnalyzerInterface):
         extra=""
         if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
             extra=f', did you mean the variable \'{expr['name']}()\'?'
+            self._warn = True
     
         logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\''+extra)
         return None
@@ -290,7 +291,7 @@ class malAnalyzer(malAnalyzerInterface):
         if (target := self._get_LCA(lhs_target, rhs_target)):
             return target
         
-        logging.error(f'Types \'{lhs_target["name"]}\' and \'{rhs_target["name"]}\' have no common ancestor')
+        logging.error(f'Types \'{lhs_target}\' and \'{rhs_target}\' have no common ancestor')
         self._error = True
         return None
 
@@ -451,21 +452,28 @@ class malAnalyzer(malAnalyzerInterface):
         Once that is done, we need to guarantee that the variable points to an asset and that 
         there are no loops in the variables, i.e. a variable does not somehow reference itself
         '''
-        for asset in self._vars.keys():
+        for asset in self._assets.keys():
             parents = self._get_parents(self._assets[asset]['ctx'])
-            parents.pop() # The last element is the asset itself
+            parents.pop() # The last element is the asset itself, no need to check again if variable is defined twice
             for parent in parents:
+                if parent not in self._vars.keys():
+                    continue # If parent has no variables, we don't need to do anything
+                if asset not in self._vars.keys():
+                    self._vars[asset] = self._vars[parent] # If asset has no variables, just inherit its parents variables
+                    continue
+                # Otherwise, we do need to check if variables are defined more than once
                 for var in self._vars[asset].keys():
-                    if parent in self._vars.keys() and var in self._vars[parent].keys():
+                    if parent in self._vars.keys() and var in self._vars[parent].keys() and self._vars[asset][var]['ctx']!=self._vars[parent][var]['ctx']:
                         logging.error(f'Variable \'{var}\' previously defined at {self._vars[parent][var]['ctx'].start.line}')
                         self._error = True
-                if parent in self._vars.keys():
-                    self._vars[asset].update(self._vars[parent])
+                self._vars[asset].update(self._vars[parent])
         
-            for var in self._vars[asset].keys():
-                if self._variable_to_asset(asset, var)==None:
-                    logging.error(f'Variable \'{var}\' defined at {self._vars[asset][var]['ctx'].start.line} does not point to an asset')
-                    self._error = True
+            # If the current asset has variables, we wnat to check they point to an asset
+            if asset in self._vars.keys():
+                for var in self._vars[asset].keys():
+                    if self._variable_to_asset(asset, var)==None:
+                        logging.error(f'Variable \'{var}\' defined at {self._vars[asset][var]['ctx'].start.line} does not point to an asset')
+                        self._error = True
 
     def checkMal(self, ctx: malParser.MalContext) -> None:
         '''
