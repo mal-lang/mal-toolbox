@@ -435,6 +435,45 @@ def test_steps_13() -> None:
 
 def test_steps_14() -> None:
     '''
+    Test inherit parent steps
+    '''
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+    
+
+    category System {          
+        asset Asset1 {
+            | step1
+        }
+
+        asset Asset2 extends Asset1 {
+            | step2
+        }
+
+        asset Asset3 extends Asset2 {
+            | step3
+        }
+
+        asset Asset4 extends Asset3 {
+            | step4
+        }
+    } 
+                        
+    associations 
+    {
+    }  
+                           
+    ''').test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1', 'Asset2', 'Asset3', 'Asset4'],
+        steps = [('Asset1',['step1']), ('Asset2',['step1','step2']), (
+            'Asset3', ['step1','step2','step3']), ('Asset4',['step1','step2','step3','step4'])]
+    )
+
+def test_steps_15() -> None:
+    '''
     A complex example which should work
     '''
     AnalyzerTestWrapper('''
