@@ -190,9 +190,9 @@ class malAnalyzer(malAnalyzerInterface):
             # Returns an attackStep if it exists for this asset
             case 'attackStep':
                 if (asset in self._assets.keys()):
-                    for attackStep in self._assets[asset]['obj']['attackSteps']:
-                        if (attackStep['name'] == expr['name']):
-                            return attackStep
+                    for attackStep in self._steps[asset].keys():
+                        if (attackStep == expr['name']):
+                            return self._steps[asset][attackStep]['step']
                         
                 logging.error(f'Attack step \'{expr["name"]}\' not defined for asset \'{asset}\'')
                 self._error = True
@@ -583,9 +583,9 @@ class malAnalyzer(malAnalyzerInterface):
         '''
         For each asset, obtain its parents and analyse each step
         '''
-        for asset in self._steps.keys():
+        for asset in self._assets.keys():
             parents = self._get_parents(self._assets[asset]['ctx'])
-            self._read_steps(parents)
+            self._read_steps(asset, parents)
     
     def _attackStep_seen_in_parent(self, attackStep: str, seen_steps: List) -> str:
         '''
@@ -596,15 +596,16 @@ class malAnalyzer(malAnalyzerInterface):
                 return parent
         return None 
 
-    def _read_steps(self, parents: List) -> None:
+    def _read_steps(self, asset: str, parents: List) -> None:
         '''
         For an asset, check if every step is properly defined in accordance to its hierarchy, i.e. if any of the asset's parents 
         also defines this step
         '''
+
         seen_steps = []
         for parent in parents:
             # If this parent has no steps, skip it
-            if parent not in self._steps:
+            if parent not in self._steps.keys():
                 continue
 
             current_steps = []
@@ -641,7 +642,15 @@ class malAnalyzer(malAnalyzerInterface):
                     # Step already defined in this asset
                     logging.error(f'Attack step \'{attackStep}\' previously defined at {self._steps[parent][attackStep]['ctx'].start.line}')
                     self._error = True
+
             seen_steps.append((parent,current_steps))
+
+        for parent, steps in seen_steps:
+            for step in steps:
+                if asset not in self._steps.keys():
+                    self._steps[asset] = {step: self._steps[parent][step]}
+                else:
+                    self._steps[asset][step] = self._steps[parent][step]
                 
     def checkStep(self, ctx: malParser.StepContext, step: dict) -> None:
         '''
