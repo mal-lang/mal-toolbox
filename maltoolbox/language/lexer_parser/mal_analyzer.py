@@ -257,8 +257,8 @@ class malAnalyzer(malAnalyzerInterface):
             self._warn = True
     
         logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\''+extra)
-        return None
-   
+        self._error = True
+
     def _check_variable_expr(self, asset, expr):
         '''
         Check if there is a variable reference in this asset with the user identifier.
