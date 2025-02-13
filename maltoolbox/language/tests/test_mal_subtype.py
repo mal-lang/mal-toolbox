@@ -167,7 +167,7 @@ def test_subtype_4() -> None:
         assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
     )
 
-def test_subtype_4() -> None:
+def test_subtype_5() -> None:
     '''
     Test subtype in a long hierarchy
     '''
