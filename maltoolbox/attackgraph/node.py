@@ -107,7 +107,6 @@ class AttackGraphNode:
         copied_node.tags = copy.deepcopy(self.tags, memo)
         copied_node.extras = copy.deepcopy(self.extras, memo)
         copied_node.ttc = copy.deepcopy(self.ttc, memo)
-        copied_node.detectors = copy.deepcopy(self.detectors, memo)
 
         copied_node.defense_status = self.defense_status
         copied_node.existence_status = self.existence_status

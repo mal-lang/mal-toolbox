@@ -212,7 +212,7 @@ class AttackGraph():
                 defense_status = node_dict.get('defense_status', None),
                 existence_status = node_dict.get('existence_status', None)
             )
-            ag_node.tags = set(node_dict.get('tags', {}))
+            ag_node.tags = set(node_dict.get('tags', []))
             ag_node.extras = node_dict.get('extras', {})
 
             if node_asset:

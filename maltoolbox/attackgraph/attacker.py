@@ -49,7 +49,13 @@ class Attacker:
             self.name, self.id if self.id is not None else -1)
 
     def __deepcopy__(self, memo) -> Attacker:
-        """Deep copy an Attacker"""
+        """Deep copy an Attacker
+        The deepcopy will copy over attacker specific information, name and
+        id, but it will not copy relations to attack graph nodes, reached
+        attack steps or entry points. These references should be recreated
+        when deepcopying the attack graph itself.
+
+        """
 
         # Check if the object is already in the memo dictionary
         if id(self) in memo:
@@ -74,7 +80,7 @@ class Attacker:
 
     def compromise(self, node: AttackGraphNode) -> None:
         """
-        Have the attacke compromise the node given as a parameter.
+        Have the attacker compromise the node given as a parameter.
 
         Arguments:
         node    - the node that the attacker will compromise
