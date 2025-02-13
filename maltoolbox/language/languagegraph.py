@@ -105,7 +105,7 @@ class LanguageGraphAsset:
 
 
     def __repr__(self) -> str:
-        return 'LanguageGraphAsset(name: "%s")' % self.name
+        return f'LanguageGraphAsset(name: "{self.name}")'
 
 
     def __hash__(self):
@@ -275,9 +275,9 @@ class LanguageGraphAssociation:
 
 
     def __repr__(self) -> str:
-        return ('LanguageGraphAssociation(name: "%s", '
-            'left_field: %s, right_field: %s)' %
-            (self.name, self.left_field, self.right_field))
+        return (f'LanguageGraphAssociation(name: "{self.name}", '
+            f'left_field: {self.left_field}, '
+            f'right_field: {self.right_field})')
 
 
     @property
@@ -662,10 +662,8 @@ class LanguageGraph():
 
 
     def __repr__(self) -> str:
-        return 'LanguageGraph(id: "%s", version: "%s")' % (
-            self.metadata.get('id', 'N/A'),
-            self.metadata.get('version', 'N/A')
-        )
+        return (f'LanguageGraph(id: "{self.metadata.get("id", "N/A")}", '
+            f'version: "{self.metadata.get("version", "N/A")}")')
 
 
     @classmethod

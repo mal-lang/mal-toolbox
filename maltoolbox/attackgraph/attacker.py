@@ -45,8 +45,7 @@ class Attacker:
         return attacker_dict
 
     def __repr__(self) -> str:
-        return 'Attacker(name: "%s", id: %d)' % (
-            self.name, self.id if self.id is not None else -1)
+        return f'Attacker(name: "{self.name}", id: {self.id})'
 
     def __deepcopy__(self, memo) -> Attacker:
         """Deep copy an Attacker

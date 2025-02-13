@@ -96,8 +96,8 @@ class AttackGraph():
             self._generate_graph()
 
     def __repr__(self) -> str:
-        return 'AttackGraph(Number of nodes: %d, model: %s, language: %s)' % (
-            len(self.nodes), self.model, self.lang_graph)
+        return (f'AttackGraph(Number of nodes: {len(self.nodes)}, '
+            f'model: {self.model}, language: {self.lang_graph}')
 
     def _to_dict(self) -> dict:
         """Convert AttackGraph to dict"""
