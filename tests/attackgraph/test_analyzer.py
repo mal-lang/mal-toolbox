@@ -1,41 +1,53 @@
 """Tests for analyzers"""
 
-from maltoolbox.attackgraph import AttackGraphNode
 from maltoolbox.attackgraph.attackgraph import AttackGraph
-from maltoolbox.attackgraph.analyzers.apriori import propagate_viability_from_unviable_node
+from maltoolbox.attackgraph.analyzers.apriori import (
+    propagate_viability_from_unviable_node,
+    prune_unviable_and_unnecessary_nodes,
+)
 from maltoolbox.language import LanguageGraph
 
 # Apriori analyzer
 # TODO: Add apriori analyzer test implementations
 
-def test_analyzers_apriori_propagate_viability_from_node():
-    """See if viability is propagated correctly"""
-    pass
+# def test_analyzers_apriori_propagate_viability_from_node():
+#     """See if viability is propagated correctly"""
+#     pass
 
 
-def test_analyzers_apriori_propagate_necessity_from_node():
-    """See if necessity is propagated correctly"""
-    pass
+# def test_analyzers_apriori_propagate_necessity_from_node():
+#     """See if necessity is propagated correctly"""
+#     pass
 
 
-def test_analyzers_apriori_evaluate_viability():
-    pass
+# def test_analyzers_apriori_evaluate_viability():
+#     pass
 
 
-def test_analyzers_apriori_evaluate_necessity():
-    pass
+# def test_analyzers_apriori_evaluate_necessity():
+#     pass
 
 
-def test_analyzers_apriori_evaluate_viability_and_necessity():
-    pass
+# def test_analyzers_apriori_evaluate_viability_and_necessity():
+#     pass
 
 
-def test_analyzers_apriori_calculate_viability_and_necessity():
-    pass
+# def test_analyzers_apriori_calculate_viability_and_necessity():
+#     pass
 
 
-def test_analyzers_apriori_prune_unviable_and_unnecessary_nodes():
-    pass
+def test_analyzers_apriori_prune_unviable_and_unnecessary_nodes(example_attackgraph: AttackGraph):
+
+    # Pick out an or node and make it non-necessary
+    node_to_make_non_necessary = next(
+        node for node in example_attackgraph.nodes.values()
+        if node.type == 'or'
+    )
+
+    node_to_make_non_necessary.is_necessary = False
+    prune_unviable_and_unnecessary_nodes(example_attackgraph)
+    assert node_to_make_non_necessary.id not in example_attackgraph.nodes
+
 
 def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_graph: LanguageGraph):
     r"""Create a graph from nodes

@@ -4,7 +4,8 @@ import pytest
 
 from maltoolbox.language import (LanguageGraph, LanguageGraphAsset,
     LanguageGraphAttackStep)
-from maltoolbox.model import Model, ModelAsset
+from maltoolbox.model import Model, AttackerAttachment
+from maltoolbox.attackgraph import AttackGraph
 
 
 ## Helpers
@@ -80,3 +81,32 @@ def dummy_lang_graph(corelang_lang_graph):
         dummy_defense_attack_step_node
 
     return lang_graph
+
+
+@pytest.fixture
+def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
+    """Fixture that generates an example attack graph
+       with unattached attacker
+
+    Uses coreLang specification and model with two applications
+    with an association and an attacker to create and return
+    an AttackGraph object
+    """
+
+    # Create 2 assets
+    app1 = model.add_asset(asset_type = 'Application', name = 'Application 1')
+    app2 = model.add_asset(asset_type = 'Application', name = 'Application 2')
+
+    # Create association between app1 and app2
+    app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
+
+    attacker = AttackerAttachment()
+    attacker.entry_points = [
+        (app1, ['networkConnectUninspected'])
+    ]
+    model.add_attacker(attacker)
+
+    return AttackGraph(
+        lang_graph=corelang_lang_graph,
+        model=model
+    )
