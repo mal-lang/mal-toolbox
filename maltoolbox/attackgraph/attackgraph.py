@@ -208,10 +208,10 @@ class AttackGraph():
             ag_node = attack_graph.add_node(
                 lg_attack_step = lg_attack_step,
                 node_id = node_dict['id'],
-                model_asset = node_asset
+                model_asset = node_asset,
+                defense_status = node_dict.get('defense_status', None),
+                existence_status = node_dict.get('existence_status', None)
             )
-            ag_node.defense_status = node_dict.get('defense_status', None)
-            ag_node.existence_status = node_dict.get('existence_status', None)
             ag_node.tags = set(node_dict.get('tags', {}))
             ag_node.extras = node_dict.get('extras', {})
 
@@ -579,8 +579,7 @@ class AttackGraph():
                         # Set the defense status for defenses
                         defense_status = asset.defenses[attack_step.name]
                         logger.debug(
-                            'Setting the defense status of \"%s\" to '
-                            '\"%s\".',
+                            'Setting the defense status of \"%s\" to "%s".',
                             node_name, defense_status
                         )
 
@@ -601,15 +600,21 @@ class AttackGraph():
                                 existence_status = True
                                 break
 
+                        logger.debug(
+                            'Setting the existence status of \"%s\" to '
+                            '%s.',
+                            node_name, existence_status
+                        )
+
                     case _:
                         pass
 
                 ag_node = self.add_node(
                     lg_attack_step = attack_step,
-                    model_asset = asset
+                    model_asset = asset,
+                    defense_status = defense_status,
+                    existence_status = existence_status
                 )
-                ag_node.defense_status = defense_status
-                ag_node.existence_status = existence_status
                 attack_step_nodes.append(ag_node)
 
             asset.attack_step_nodes = attack_step_nodes
@@ -698,21 +703,28 @@ class AttackGraph():
             lg_attack_step: LanguageGraphAttackStep,
             node_id: Optional[int] = None,
             model_asset: Optional[ModelAsset] = None,
+            defense_status: Optional[float] = None,
+            existence_status: Optional[bool] = None
         ) -> AttackGraphNode:
         """Create and add a node to the graph
         Arguments:
-        lg_attack_step  - the language graph attack step that corresponds to
-                          the attack graph node to create
-        node_id         - id to assign to the newly created node, usually
-                          provided only when loading an existing attack graph
-                          from a file. If not provided the id will be set to
-                          the next highest id available.
-        model_asset     - the model asset that corresponds to the attack step
-                          node. While optional it is highly recommended that
-                          this be provided. It should only be ommitted if the
-                          model which was used to generate the attack graph is
-                          not available when loading an attack graph from a
-                          file.
+        lg_attack_step      - the language graph attack step that corresponds
+                              to the attack graph node to create
+        node_id             - id to assign to the newly created node, usually
+                              provided only when loading an existing attack
+                              graph from a file. If not provided the id will
+                              be set to the next highest id available.
+        model_asset         - the model asset that corresponds to the attack
+                              step node. While optional it is highly
+                              recommended that this be provided. It should
+                              only be ommitted if the model which was used to
+                              generate the attack graph is not available when
+                              loading an attack graph from a file.
+        defese_status       - the defense status of the node. Only, relevant
+                              for defense type nodes. A value between 0.0 and
+                              1.0 is expected.
+        existence_status    - the existence status of the node. Only, relevant
+                              for exist and notExist type nodes.
 
         Return:
         The newly created attack step node.
@@ -734,7 +746,9 @@ class AttackGraph():
         node = AttackGraphNode(
             node_id = node_id,
             lg_attack_step = lg_attack_step,
-            model_asset = model_asset
+            model_asset = model_asset,
+            defense_status = defense_status,
+            existence_status = existence_status
         )
 
         self.nodes.append(node)

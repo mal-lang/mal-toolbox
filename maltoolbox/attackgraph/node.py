@@ -21,6 +21,8 @@ class AttackGraphNode:
         node_id: int,
         lg_attack_step: LanguageGraphAttackStep,
         model_asset: Optional[ModelAsset] = None,
+        defense_status: Optional[float] = None,
+        existence_status: Optional[bool] = None
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
@@ -31,9 +33,9 @@ class AttackGraphNode:
 
         self.id = node_id
         self.model_asset = model_asset
+        self.defense_status = defense_status
+        self.existence_status = existence_status
 
-        self.defense_status: Optional[float] = None
-        self.existence_status: Optional[bool] = None
         self.children: set[AttackGraphNode] = set()
         self.parents: set[AttackGraphNode] = set()
         self.is_viable: bool = True
