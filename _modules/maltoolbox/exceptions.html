@@ -1,0 +1,179 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>maltoolbox.exceptions &mdash; MAL Toolbox  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            MAL Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About MAL Toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidocs/maltoolbox.html">API documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">MAL Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">maltoolbox.exceptions</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for maltoolbox.exceptions</h1><div class="highlight"><pre>
+<div class="viewcode-block" id="MalToolboxException">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.MalToolboxException">[docs]</a>
+<span></span><span class="k">class</span> <span class="nc">MalToolboxException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base exception for all other maltoolbox exceptions to inherit from.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="LanguageGraphException">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.LanguageGraphException">[docs]</a>
+<span class="k">class</span> <span class="nc">LanguageGraphException</span><span class="p">(</span><span class="n">MalToolboxException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base exception for all language-graph related exceptions.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="LanguageGraphSuperAssetNotFoundError">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.LanguageGraphSuperAssetNotFoundError">[docs]</a>
+<span class="k">class</span> <span class="nc">LanguageGraphSuperAssetNotFoundError</span><span class="p">(</span><span class="n">LanguageGraphException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Asset&#39;s super asset not found in language graph during attack graph construction.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="LanguageGraphAssociationError">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.LanguageGraphAssociationError">[docs]</a>
+<span class="k">class</span> <span class="nc">LanguageGraphAssociationError</span><span class="p">(</span><span class="n">LanguageGraphException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Error in building an association.</span>
+
+<span class="sd">    For example, right or left-hand side asset of association missing in</span>
+<span class="sd">    language graph.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="LanguageGraphStepExpressionError">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.LanguageGraphStepExpressionError">[docs]</a>
+<span class="k">class</span> <span class="nc">LanguageGraphStepExpressionError</span><span class="p">(</span><span class="n">LanguageGraphException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A target asset cannot be linked with for a step expression.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="AttackGraphException">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.AttackGraphException">[docs]</a>
+<span class="k">class</span> <span class="nc">AttackGraphException</span><span class="p">(</span><span class="n">MalToolboxException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base exception for all attack-graph related exceptions.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="AttackGraphStepExpressionError">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.AttackGraphStepExpressionError">[docs]</a>
+<span class="k">class</span> <span class="nc">AttackGraphStepExpressionError</span><span class="p">(</span><span class="n">AttackGraphException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A target attack step cannot be linked with for a step expression.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="ModelException">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.ModelException">[docs]</a>
+<span class="k">class</span> <span class="nc">ModelException</span><span class="p">(</span><span class="n">MalToolboxException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Exception for all Model related exceptions&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="ModelAssociationException">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.ModelAssociationException">[docs]</a>
+<span class="k">class</span> <span class="nc">ModelAssociationException</span><span class="p">(</span><span class="n">ModelException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception related to associations in Model&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="DuplicateModelAssociationError">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.exceptions.html#maltoolbox.exceptions.DuplicateModelAssociationError">[docs]</a>
+<span class="k">class</span> <span class="nc">DuplicateModelAssociationError</span><span class="p">(</span><span class="n">ModelException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Associations should be unique as part of Model&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Andrei Buhaiu, Giuseppe Nebbione, Nikolaos Kakouros, Jakob Nyberg, Joakim Loxdal.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
