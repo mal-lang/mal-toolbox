@@ -186,7 +186,8 @@ def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
     graph       - the attack graph
     """
     logger.debug('Get the defense surface.')
-    return [node for node in graph.nodes if node.is_available_defense()]
+    return [node for node in graph.nodes.values()
+        if node.is_available_defense()]
 
 def get_enabled_defenses(graph: AttackGraph) -> list[AttackGraphNode]:
     """
@@ -197,4 +198,5 @@ def get_enabled_defenses(graph: AttackGraph) -> list[AttackGraphNode]:
     graph       - the attack graph
     """
     logger.debug('Get the enabled defenses.')
-    return [node for node in graph.nodes if node.is_enabled_defense()]
+    return [node for node in graph.nodes.values()
+        if node.is_enabled_defense()]
