@@ -871,3 +871,10 @@ def tests_create_ag_from_model():
         created_ag, 'User:3:phishing', ['User:3:compromise'])
     check_parent_child_relationship(
         created_ag, 'Network:3:access', ['Host:0:connect', 'Host:1:connect'])
+
+
+def test_attackgraph_remove_attacker(example_attackgraph: AttackGraph):
+    example_attackgraph.attach_attackers()
+    attackers = list(example_attackgraph.attackers.values())
+    for attacker in attackers:
+        example_attackgraph.remove_attacker(attacker)

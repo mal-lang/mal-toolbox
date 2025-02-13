@@ -808,11 +808,16 @@ class AttackGraph():
         """
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
-            logger.debug('Remove attacker "%s" with id:%d.',
-                attacker.name,
-                attacker.id)
-        for node in attacker.reached_attack_steps:
+            logger.debug(
+                'Remove attacker "%s" with id:%d.',
+                attacker.name, attacker.id
+            )
+
+        # Copy set - we can not remove elements from a set we are looping over
+        nodes_to_uncompromise = set(attacker.reached_attack_steps)
+        for node in nodes_to_uncompromise:
             attacker.undo_compromise(node)
+
         if not isinstance(attacker.id, int):
-            raise ValueError(f'Invalid attacker id.')
+            raise ValueError(f'Invalid attacker id: {attacker.id}')
         del self.attackers[attacker.id]
