@@ -16,11 +16,13 @@ if TYPE_CHECKING:
 class AttackGraphNode:
     """Node part of AttackGraph"""
 
+    _max_id = -1
+
     def __init__(
         self,
-        node_id: int,
         lg_attack_step: LanguageGraphAttackStep,
         model_asset: Optional[ModelAsset] = None,
+        node_id: int = None,
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
@@ -29,7 +31,9 @@ class AttackGraphNode:
         self.tags = lg_attack_step.tags
         self.detectors = lg_attack_step.detectors
 
-        self.id = node_id
+        AttackGraphNode._max_id = max(self._max_id + 1, node_id or 0)
+        self.id = AttackGraphNode._max_id
+
         self.model_asset = model_asset
 
         self.defense_status: Optional[float] = None
@@ -40,6 +44,10 @@ class AttackGraphNode:
         self.is_necessary: bool = True
         self.compromised_by: set[Attacker] = set()
         self.extras: dict = {}
+
+    @staticmethod
+    def reset_ids(id = None):
+        AttackGraphNode._max_id = id if id is not None else -1
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
@@ -96,11 +104,14 @@ class AttackGraphNode:
         if id(self) in memo:
             return memo[id(self)]
 
+        old_max_id = AttackGraphNode._max_id
+        AttackGraphNode.reset_ids()
         copied_node = AttackGraphNode(
             node_id = self.id,
             model_asset = self.model_asset,
             lg_attack_step = self.lg_attack_step
         )
+        AttackGraphNode.reset_ids(old_max_id)
 
         copied_node.tags = copy.deepcopy(self.tags, memo)
         copied_node.extras = copy.deepcopy(self.extras, memo)
