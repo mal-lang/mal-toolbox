@@ -753,8 +753,8 @@ class malAnalyzer(malAnalyzerInterface):
                 letter = 'A' if cia.A() else letter
                 
                 if (letter in cias):
-                    logging.error(f'Attack step {asset_name}.{step_name} contains duplicate classification {letter}')
-                    self._error = True
+                    logging.warning(f'Attack step {asset_name}.{step_name} contains duplicate classification {letter}')
+                    self._warn = True
                     return
                 cias.append(letter)
             index += 1
