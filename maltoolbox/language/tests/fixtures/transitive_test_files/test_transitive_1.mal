@@ -1,0 +1,26 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Computer
+    {
+        | openAllSubFolders
+        -> folders.subFolder*.access
+    }
+
+    asset Folder
+    {
+    }
+
+    asset SubFolder extends Folder
+    {
+        | access
+    }
+}
+                    
+associations 
+{
+    Computer [host] * <-- L --> 0..1 [folders] Folder
+    Folder [parent] 1 <-- L --> 0..* [subFolder] SubFolder
+}  
+                                    

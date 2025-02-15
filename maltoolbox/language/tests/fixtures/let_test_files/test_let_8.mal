@@ -1,0 +1,15 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {
+    }
+    asset Asset3 extends Asset1 {
+        let component = asset4
+    }
+    asset Asset4 {
+    }
+}
+associations {
+    Asset1 [asset1] 1 <-- One --> 1 [asset4] Asset4
+}

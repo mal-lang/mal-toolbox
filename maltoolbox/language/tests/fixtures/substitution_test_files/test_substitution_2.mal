@@ -1,0 +1,30 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Network {
+        //                       COMMENTED
+        //                           |
+        //                           v
+        // let hostsOperatingSystems = hosts.operatingSystems
+        | access
+        -> hostsOperatingSystems().attack
+    }
+
+    asset Computer
+    {
+        | shutDown
+    }
+
+    asset OperatingSystem 
+    {
+        | attack
+    }
+}
+                    
+associations 
+{
+    Network [network] 1 <-- L --> * [hosts] Computer
+    Computer [computer] 1 <-- L --> * [operatingSystems] OperatingSystem
+}  
+                                    

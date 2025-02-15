@@ -1,0 +1,29 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Computer
+    {
+        let targets = windows - linux
+    }
+
+    abstract asset OperatingSystem 
+    {
+        | attack
+    }
+    asset Windows 
+    {
+        | attack
+    }
+    asset Linux 
+    {
+        | attack
+    }
+}
+                    
+associations 
+{
+    Computer [computers] * <-- L --> 0..1 [linux] Linux
+    Computer [computers] * <-- L --> 0..1 [windows] Windows
+}  
+                                    

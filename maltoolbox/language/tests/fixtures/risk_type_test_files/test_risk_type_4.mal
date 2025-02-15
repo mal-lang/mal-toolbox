@@ -1,0 +1,17 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset CIA_TEST 
+    {
+    # step {C}
+    } 
+    
+    asset Mock {
+    }
+} 
+
+association {
+    CIA_TEST [test] 1 <-- L --> 1 [mock] Mock
+}
+                                    

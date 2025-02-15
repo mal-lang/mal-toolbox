@@ -1,0 +1,19 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category Example {
+    asset Asset1 
+    {
+        | compromise
+        -> b.compromise
+    }
+    asset Asset2 
+    {
+        | compromise
+    }
+}
+associations 
+{
+    Asset1 [a] * <-- L --> * [b] Asset2
+}               
+                                    

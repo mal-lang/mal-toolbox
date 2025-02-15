@@ -1,0 +1,5 @@
+include "./test_assets_6_aux.mal"
+
+category System {
+    asset Test {}
+}

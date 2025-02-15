@@ -1,0 +1,12 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset CIA_TEST 
+    {
+    | readOnly {C}
+    | readAndAppend {C, I, I}
+    | fullAccess {C, I, A}
+    } 
+} 
+                                    

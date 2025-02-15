@@ -1,0 +1,6 @@
+include "test_steps_13_aux1.mal"
+category System {
+    asset Computer extends Machine {
+    & logKeyStrokes
+    }
+} 

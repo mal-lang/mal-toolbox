@@ -1,0 +1,18 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Machine {
+    | compromise
+    }
+    
+    asset Computer extends Machine {
+    | stealCredentials
+    }
+
+    asset Thinkpad extends Computer {
+    & compromise
+        +> shutDown
+    & shutDown
+    }
+}

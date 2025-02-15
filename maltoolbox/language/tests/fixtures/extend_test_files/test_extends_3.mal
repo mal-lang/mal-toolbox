@@ -1,0 +1,11 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Foo1 extends Foo2 {}
+    asset Foo2 extends Foo3 {}
+    asset Foo3 extends Foo4 {}
+    asset Foo4 extends Foo5 {}
+    asset Foo5 extends Foo1 {}
+}
+                                    

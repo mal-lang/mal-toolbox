@@ -1,0 +1,17 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System 
+    random info: "This is a category"
+    another_random info: "This is more"
+{
+    asset Foo
+        random info: "Hello"
+        another_random info: "Hello again"
+    {
+        | compromise
+        random info: "Hello from the attack step"
+        another_random info: "Hello from the attack step once more"
+    }
+}
+                                    

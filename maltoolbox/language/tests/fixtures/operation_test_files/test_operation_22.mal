@@ -1,0 +1,40 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Main
+    {
+        | do
+        -> (((grandchild \/ child) /\ parent) - grandparent).bigAttack
+    }
+
+    asset Generator {
+        | bigAttack
+    }
+
+    asset Grandparent extends Generator {
+        | attack
+    }
+
+    asset Parent extends Grandparent
+    {
+        | attack
+    }
+    asset Child extends Parent
+    {
+        | attack
+    }
+    asset Grandchild extends Child
+    {
+        | attack
+    }
+}
+                    
+associations 
+{
+    Main [host] * <-- L --> 0..1 [grandparent]  Grandparent
+    Main [host1] * <-- L --> 0..1 [parent]      Parent
+    Main [host2] * <-- L --> 0..1 [child]       Child 
+    Main [host3] * <-- L --> 0..1 [grandchild]  Grandchild
+}  
+                                    

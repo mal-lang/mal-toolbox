@@ -1,0 +1,18 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {
+    !E step1 [Bernoulli(0.2)]
+        <- a2
+    }
+    asset Asset2 {
+    & attack
+    }
+    asset Asset3 {}
+}
+associations {
+    Asset1 [a1] * <-- connects --> * [a3] Asset3
+    Asset1 [a1] * <-- connects --> * [a2] Asset2
+}                
+                                    

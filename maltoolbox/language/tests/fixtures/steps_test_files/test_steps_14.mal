@@ -1,0 +1,26 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+
+category System {          
+    asset Asset1 {
+        | step1
+    }
+
+    asset Asset2 extends Asset1 {
+        | step2
+    }
+
+    asset Asset3 extends Asset2 {
+        | step3
+    }
+
+    asset Asset4 extends Asset3 {
+        | step4
+    }
+} 
+                    
+associations 
+{
+}  
+                        

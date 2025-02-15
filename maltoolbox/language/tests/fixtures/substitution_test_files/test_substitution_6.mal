@@ -1,0 +1,32 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Network {
+        | accessChild
+        -> hostsOperatingSystems().attack
+    }
+
+    asset SubNet extends Network {
+        let hostsOperatingSystems = hosts.operatingSystems
+        | acces
+        -> hostsOperatingSystems(),attack 
+    }
+
+    asset Computer
+    {
+        | shutDown
+    }
+
+    asset OperatingSystem 
+    {
+        | attack
+    }
+}
+                    
+associations 
+{
+    SubNet [network] 1 <-- L --> * [hosts] Computer
+    Computer [computer] 1 <-- L --> * [operatingSystems] OperatingSystem
+}  
+                                    

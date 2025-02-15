@@ -1,8 +1,14 @@
 from .mal_analyzer_test_wrapper import AnalyzerTestWrapper
 
+from pathlib import Path
+import pytest
+
 '''
 A file to test fields in MAL
 '''
+
+@pytest.mark.usefixtures("setup_test_environment")
+@pytest.mark.parametrize("setup_test_environment", [Path(__file__).parent / "fixtures/fields_test_files"], indirect=True)
 
 def test_fields_1() -> None:
     '''
@@ -10,21 +16,9 @@ def test_fields_1() -> None:
     Defines category with name.
     Defines associations correctly
     '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset Asset1 {}
-        asset Asset2 extends Asset1 {}
-        asset Asset3 {}
-    }
-    associations {
-        Asset1 [a1] * <-- connects --> * [a3] Asset3
-        Asset2 [a2] * <-- connects --> * [a3_again] Asset3
-    }                
-                                        
-    ''').test(
+    AnalyzerTestWrapper(
+        test_file="test_fields_1.mal"
+    ).test(
         defines=['id', 'version'],
         categories=['System'],
         assets=['Asset1','Asset2','Asset3'],
@@ -37,21 +31,9 @@ def test_fields_2() -> None:
     Defines category with name.
     Defines association in child with same name as parent
     '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset Asset1 {}
-        asset Asset2 extends Asset1 {}
-        asset Asset3 {}
-    }
-    associations {
-        Asset1 [a1] * <-- connects --> * [a3] Asset3
-        Asset2 [a2] * <-- connects --> * [a3] Asset3
-    }                
-                                        
-    ''').test(
+    AnalyzerTestWrapper(
+        test_file="test_fields_2.mal"
+    ).test(
         error=True,
         defines=['id', 'version'],
         categories=['System'],
@@ -65,23 +47,9 @@ def test_fields_3() -> None:
     Defines category with name.
     Defines association with same name as attack step
     '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset Asset1 {}
-        asset Asset2 extends Asset1 {
-          | attack
-        }
-        asset Asset3 {}
-    }
-    associations {
-        Asset1 [a1] * <-- connects --> * [a3] Asset3
-        Asset2 [a2] * <-- connects --> * [attack] Asset3
-    }                
-                                        
-    ''').test(
+    AnalyzerTestWrapper(
+        test_file="test_fields_3.mal"
+    ).test(
         error=True,
         defines=['id', 'version'],
         categories=['System'],

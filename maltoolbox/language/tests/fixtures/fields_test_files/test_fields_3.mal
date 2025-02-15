@@ -1,0 +1,15 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {}
+    asset Asset2 extends Asset1 {
+        | attack
+    }
+    asset Asset3 {}
+}
+associations {
+    Asset1 [a1] * <-- connects --> * [a3] Asset3
+    Asset2 [a2] * <-- connects --> * [attack] Asset3
+}                
+                                    

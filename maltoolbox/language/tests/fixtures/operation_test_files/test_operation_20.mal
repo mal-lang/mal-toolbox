@@ -1,0 +1,30 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Network
+    {
+        let allComputers = computers[ThinkPad] - computers[Asus]
+        | access
+        -> allComputers().compromise
+    }
+
+    asset Machine {
+        | compromise
+    }
+
+    asset Computer extends Machine {
+    }
+
+    asset ThinkPad extends Computer {
+    }
+
+    asset Asus extends Computer {
+    }
+}
+                    
+associations 
+{
+    Network [network] 1 <-- L --> * [computers] Computer
+}  
+                                    

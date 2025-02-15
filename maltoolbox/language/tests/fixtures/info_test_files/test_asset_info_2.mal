@@ -1,0 +1,10 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Foo
+    random info: "Hello"
+    random info: "Hello once more!"
+    {}
+}
+                                    

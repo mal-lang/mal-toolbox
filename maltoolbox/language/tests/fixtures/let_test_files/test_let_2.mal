@@ -1,0 +1,23 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Platform {
+        | access
+    }
+    asset Computer {
+        let component = software 
+        let component = hardware 
+        | access
+    }
+    asset Software extends Platform {
+        | compromise
+    }
+    asset Hardware extends Platform {
+        | overheat
+    }
+}
+associations {
+    Computer [host] 1 <-- Programs --> * [software] Software
+    Computer [host] 1 <-- SpecificHardware --> * [hardware] Hardware
+}

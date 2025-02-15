@@ -1,0 +1,14 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Test 
+    {
+        | step1
+        -> step3
+        | step2
+        -> step3
+        | step3
+    } 
+} 
+                                    

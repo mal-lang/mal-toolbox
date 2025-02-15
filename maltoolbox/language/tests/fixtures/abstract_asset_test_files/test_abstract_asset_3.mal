@@ -1,0 +1,8 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    abstract asset Foo {}
+    abstract asset Bar extends Foo {}
+    asset Baz extends Bar {}
+}

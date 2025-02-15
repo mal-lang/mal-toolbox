@@ -7,6 +7,7 @@ from lexer_parser.mal_visitor import malVisitor
 from lexer_parser.mal_analyzer import malAnalyzer
 
 import os
+from pathlib import Path
 
 class MockCompiler():
     def __init__(self, analyzer: malAnalyzer):
@@ -30,8 +31,13 @@ class MockCompiler():
         return malVisitor(compiler=self, analyzer=self._analyzer).visit(tree)
 
 class AnalyzerTestWrapper(malAnalyzer):
-    def __init__(self, input_string: str) -> None:
+    def __init__(self, input_string: str = None, test_file: str = None) -> None:
         super().__init__()
+
+        if test_file and Path(test_file).exists():
+            with open(test_file,"r") as file:
+                input_string = file.read()
+
         input_stream = InputStream(input_string)
         lexer = malLexer(input_stream)
         stream = CommonTokenStream(lexer)

@@ -1,0 +1,5 @@
+include "test_extends_4_aux.mal"
+
+category System {
+    asset SubTest extends Test {}
+}

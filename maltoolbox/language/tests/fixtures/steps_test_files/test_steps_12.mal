@@ -1,0 +1,13 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+include "test_steps_12_aux2.mal"
+                    
+category System {
+    asset Thinkpad extends Computer {
+    | compromise
+        +> logIn
+    & logIn
+    }
+} 
+                        

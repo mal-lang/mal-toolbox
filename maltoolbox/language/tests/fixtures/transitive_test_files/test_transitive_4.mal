@@ -1,0 +1,35 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Computer
+    {
+        let recursive_subfolders = fileSystem.fileSystemEntries.folders.subFolder*
+        | openAllSubFolders
+        -> recursive_subfolders().access
+    }
+
+    asset FileSystem {
+    }
+
+    asset FileSystemEntries {
+    }
+
+    asset Folder
+    {
+    }
+
+    asset SubFolder extends Folder
+    {
+        | access
+    }
+}
+                    
+associations 
+{
+    Computer [host] * <-- L --> 0..1 [fileSystem] FileSystem
+    FileSystem [host] * <-- L --> 0..1 [fileSystemEntries] FileSystemEntries
+    Folder [folders] * <-- L --> 0..1 [holder] FileSystemEntries
+    Folder [parent] 1 <-- L --> 0..* [subFolder] SubFolder
+}  
+                                    

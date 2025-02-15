@@ -1,0 +1,19 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System 
+    random info: "This is a category"
+    modeler info: "This is to trick"
+    random info: "This is the same category"
+{
+    asset Foo
+        random info: "Hello"
+    {
+        & compromise
+        random info: "Hello from the attack step"
+        | beforeCompromise
+        random info: "Stepping stone to compromise"
+        -> compromise
+    }
+}
+                                    

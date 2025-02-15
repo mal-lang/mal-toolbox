@@ -1,10 +1,15 @@
 from .mal_analyzer_test_wrapper import AnalyzerTestWrapper
 
 import os
+import pytest
+from pathlib import Path
 
 '''
 A file to test different cases of the `extends` instruction in MAL.
 '''
+
+@pytest.mark.usefixtures("setup_test_environment")
+@pytest.mark.parametrize("setup_test_environment", [Path(__file__).parent / "fixtures/extend_test_files"], indirect=True)
 
 def test_extends_1() -> None:
     '''
@@ -13,16 +18,9 @@ def test_extends_1() -> None:
     Defines asset with name.
     Defines asset with extends.
     '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset OperatingSystem {}
-        asset Linux extends OperatingSystem {}
-    }
-                                        
-    ''').test(
+    AnalyzerTestWrapper(
+        test_file="test_extends_1.mal"
+    ).test(
         defines=['id', 'version'],
         categories=['System'],
         assets=['OperatingSystem', 'Linux']
@@ -35,15 +33,9 @@ def test_extends_2() -> None:
     Defines asset with name.
     Extends asset with undefined asset.
     '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset Foo1 extends Foo2 {}
-    }
-                                        
-    ''').test(
+    AnalyzerTestWrapper(
+        test_file="test_extends_2.mal"
+    ).test(
         error=True,
         defines=['id', 'version'],
         categories=['System'],
@@ -57,19 +49,9 @@ def test_extends_3() -> None:
     Defines asset with name.
     Tests circular dependency with extends
     '''
-    AnalyzerTestWrapper('''
-    #id: "org.mal-lang.testAnalyzer"
-    #version:"0.0.0"
-
-    category System {
-        asset Foo1 extends Foo2 {}
-        asset Foo2 extends Foo3 {}
-        asset Foo3 extends Foo4 {}
-        asset Foo4 extends Foo5 {}
-        asset Foo5 extends Foo1 {}
-    }
-                                        
-    ''').test(
+    AnalyzerTestWrapper(
+        test_file="test_extends_3.mal"
+    ).test(
         error=True,
         defines=['id', 'version'],
         categories=['System'],
@@ -81,29 +63,10 @@ def test_extends_4() -> None:
     '''
     Tests valid extends across files
     '''
-
-    path = "./generated_test_mal.mal"
-    with open(path, 'w') as file:
-        file.write('''
-        #version:"0.0.0"
-        #id: "org.mal-lang.testAnalyzer"
-
-        category System {
-            asset Test {}
-        }
-        ''')
-
-    AnalyzerTestWrapper('''
-    include "'''+path+'''"
-
-    category System {
-        asset SubTest extends Test {}
-    }
-    ''').test(
+    AnalyzerTestWrapper(
+        test_file="test_extends_4.mal"
+    ).test(
         defines=['id', 'version'],
         categories=['System'],
         assets=['Test','SubTest'],
     )
-
-    if os.path.exists(path):
-        os.remove(path)

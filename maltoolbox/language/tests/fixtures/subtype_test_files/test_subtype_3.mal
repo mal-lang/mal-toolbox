@@ -1,0 +1,32 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Computer
+    {
+        | attack
+        -> operatingSystems[Windows].foundWindows
+    }
+
+    abstract asset OperatingSystem 
+    {
+        | attack
+    }
+    //        COMMENTED
+    //            |
+    //            v
+    asset Windows // extends OperatingSystem
+    {
+        | foundWindows 
+    }
+    asset Linux extends OperatingSystem
+    {
+        | foundLinux 
+    }
+}
+                    
+associations 
+{
+    Computer [computers] * <-- L --> 0..1 [operatingSystems] OperatingSystem
+}  
+                                    

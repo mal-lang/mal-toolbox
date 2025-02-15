@@ -1,0 +1,13 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Test 
+    {
+        | guessPassword
+        +> authenticate
+        | stealPassword
+        -> authenticate
+    } 
+} 
+                                    

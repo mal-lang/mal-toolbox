@@ -1,0 +1,33 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Hardware {
+        | overHeat
+    }
+    asset Machine {
+        let hardwareComponents = components
+        | access
+    }
+
+    asset Computer extends Machine {
+        | turnOff
+    }
+
+    asset Lenovo extends Computer 
+    {
+        | shutDown
+    }
+
+    asset LenovoThinkPad extends Lenovo 
+    {
+        | attack
+        -> hardwareComponents().overHeat
+    }
+}
+                    
+associations 
+{
+    Machine [host] 1 <-- L --> * [components] Hardware
+}  
+                                    

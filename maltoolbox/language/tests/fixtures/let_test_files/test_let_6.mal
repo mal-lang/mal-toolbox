@@ -1,0 +1,17 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {
+        let component1 = component2()
+        let component2 = component1()
+    }
+    asset Asset3 {
+    }
+    asset Asset4 {
+    }
+}
+associations {
+    Asset1 [asset1] 1 <-- One --> 1 [asset3] Asset3
+    Asset1 [asset1] 1 <-- Two --> 1 [asset4] Asset4
+}

@@ -1,0 +1,24 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Computer
+    {
+    E compromiseCamera
+        <- camera 
+    }
+
+    asset ThinkPad extends Computer
+    {
+    !E compromiseCamera
+        <- camera
+    }
+
+    asset Camera {
+    | turnOn
+    }
+} 
+
+associations {
+    Computer [computer] 1 <-- CameraUsage --> 1 [camera] Camera
+}                                    

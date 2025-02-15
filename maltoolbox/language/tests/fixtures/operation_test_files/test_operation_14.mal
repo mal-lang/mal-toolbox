@@ -1,0 +1,34 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Computer
+    {
+        | do
+        -> (windows \/ linux).softwareStep
+    }
+
+    abstract asset Software {
+        | softwareStep
+    }
+
+    abstract asset OperatingSystem extends Software
+    {
+        | attack
+    }
+    asset Windows extends OperatingSystem
+    {
+        | attack
+    }
+    asset Linux extends OperatingSystem
+    {
+        | attack
+    }
+}
+                    
+associations 
+{
+    Computer [computers] * <-- L --> 0..1 [linux] Linux
+    Computer [computers] * <-- L --> 0..1 [windows] Windows
+}  
+                                    

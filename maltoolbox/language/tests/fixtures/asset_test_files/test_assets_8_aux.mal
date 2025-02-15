@@ -1,0 +1,6 @@
+#version:"0.0.0"
+#id: "org.mal-lang.testAnalyzer"
+
+category System {
+    asset Test {}
+}

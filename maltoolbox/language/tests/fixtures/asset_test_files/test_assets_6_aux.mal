@@ -1,0 +1,7 @@
+// Auxiliary file for the test
+#version:"0.0.0"
+#id: "org.mal-lang.testAnalyzer"
+
+category AnotherSystem {
+    asset AnotherTest {}
+}
