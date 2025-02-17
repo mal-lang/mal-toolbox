@@ -35,7 +35,7 @@ def ingest_attack_graph(graph,
 
     nodes = {}
     rels = []
-    for node in graph.nodes:
+    for node in graph.nodes.values():
         node_dict = node.to_dict()
         nodes[node.id] = Node(
             node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
@@ -50,7 +50,7 @@ def ingest_attack_graph(graph,
                 in node_dict else 'N/A')
 
 
-    for node in graph.nodes:
+    for node in graph.nodes.values():
         for child in node.children:
             rels.append(Relationship(nodes[node.id], nodes[child.id]))
 
