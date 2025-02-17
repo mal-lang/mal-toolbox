@@ -195,7 +195,7 @@ def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
 
 def propagate_viability_from_unviable_node(
         unviable_node: AttackGraphNode,
-    ) -> list[AttackGraphNode]:
+    ) -> set[AttackGraphNode]:
     """
     Update viability of nodes affected by newly enabled defense
     `unviable_node` in the graph and return any attack steps
@@ -207,12 +207,12 @@ def propagate_viability_from_unviable_node(
     unviable_node               - the node to propagate viability from
 
     Returns:
-    attack_steps_made_unviable  - list of the attack steps that have been
+    attack_steps_made_unviable  - set of the attack steps that have been
                                   made unviable by a defense enabled in the
                                   current step. Builds up recursively.
     """
 
-    attack_steps_made_unviable = []
+    attack_steps_made_unviable = set()
 
     logger.debug(
         'Update viability for node "%s"(%d)',
@@ -226,7 +226,7 @@ def propagate_viability_from_unviable_node(
     )
 
     if unviable_node.type in ('and', 'or'):
-        attack_steps_made_unviable.append(unviable_node)
+        attack_steps_made_unviable.add(unviable_node)
 
     for child in unviable_node.children:
         original_value = child.is_viable
@@ -238,7 +238,7 @@ def propagate_viability_from_unviable_node(
             child.is_viable = False
 
         if child.is_viable != original_value:
-            attack_steps_made_unviable += \
+            attack_steps_made_unviable |= \
                 propagate_viability_from_unviable_node(child)
 
     return attack_steps_made_unviable
