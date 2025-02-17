@@ -34,8 +34,8 @@ def disaggregate_attack_step_full_name(
 
 @dataclass
 class Detector:
-    context: Context
     name: Optional[str]
+    context: Context
     type: Optional[str]
     tprate: Optional[dict]
 
@@ -61,6 +61,8 @@ class Context(dict):
     def __str__(self) -> str:
         return str({label: asset.name for label, asset in self._context_dict.items()})
 
+    def __repr__(self) -> str:
+        return f"Context({str(self)}))"
 
 @dataclass
 class LanguageGraphAsset:
