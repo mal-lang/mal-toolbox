@@ -20,12 +20,12 @@ from ..exceptions import LanguageGraphException
 from ..model import Model
 from ..language import (LanguageGraph, ExpressionsChain,
     LanguageGraphAttackStep, disaggregate_attack_step_full_name)
-from ..file_utils import (
+from ..utils import (
     load_dict_from_json_file,
     load_dict_from_yaml_file,
-    save_dict_to_file
+    save_dict_to_file,
+    LookupDict,
 )
-from ..utils import LookupDict
 
 
 if TYPE_CHECKING:

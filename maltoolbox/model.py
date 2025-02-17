@@ -9,12 +9,13 @@ import logging
 from typing import TYPE_CHECKING
 import math
 
-from .file_utils import (
+from .utils import (
     load_dict_from_json_file,
     load_dict_from_yaml_file,
-    save_dict_to_file
+    save_dict_to_file,
+    LookupDict,
 )
-from .utils import LookupDict
+
 
 from . import __version__
 from .exceptions import ModelException
