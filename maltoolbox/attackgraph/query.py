@@ -116,7 +116,7 @@ def is_node_traversable_by_attacker(
 
 def get_attack_surface(
         attacker: Attacker,
-        nodes: Iterable[AttackGraphNode] = None,
+        nodes: Iterable[AttackGraphNode] | None = None,
     ) -> set[AttackGraphNode]:
     """
     Get the current attack surface of an attacker. This includes all of the
@@ -159,7 +159,7 @@ def get_attack_surface(
 
     return attack_surface
 
-def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
+def get_defense_surface(graph: AttackGraph) -> set[AttackGraphNode]:
     """
     Get the defense surface. All non-suppressed defense steps that are not
     already fully enabled.
@@ -168,8 +168,8 @@ def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
     graph       - the attack graph
     """
     logger.debug('Get the defense surface.')
-    return [node for node in graph.nodes.values()
-        if node.is_available_defense()]
+    return {node for node in graph.nodes.values()
+        if node.is_available_defense()}
 
 def get_enabled_defenses(graph: AttackGraph) -> list[AttackGraphNode]:
     """
