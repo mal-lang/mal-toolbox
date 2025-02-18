@@ -15,17 +15,25 @@ logger = logging.getLogger(__name__)
 
 class Attacker:
 
+    _max_id = -1
+
     def __init__(
         self,
         name: str,
-        entry_points: set[AttackGraphNode],
-        reached_attack_steps: set[AttackGraphNode],
-        attacker_id: Optional[int] = None
+        entry_points: set[AttackGraphNode] = None,
+        reached_attack_steps: set[AttackGraphNode] = None,
+        attacker_id: Optional[int] = None,
     ):
         self.name = name
-        self.entry_points = entry_points
-        self.reached_attack_steps = reached_attack_steps
-        self.id = attacker_id
+        self.entry_points = entry_points or set()
+        self.reached_attack_steps = reached_attack_steps or set()
+
+        Attacker._max_id = max(Attacker._max_id + 1, attacker_id or 0)
+        self.id = Attacker._max_id
+
+    @staticmethod
+    def reset_ids(id=None):
+        Attacker._max_id = id if id is not None else -1
 
     def to_dict(self) -> dict:
         attacker_dict: dict = {
@@ -60,12 +68,15 @@ class Attacker:
         if id(self) in memo:
             return memo[id(self)]
 
+        old_max_id = Attacker._max_id
+        Attacker.reset_ids()
         copied_attacker = Attacker(
             name = self.name,
             attacker_id = self.id,
             entry_points = set(),
             reached_attack_steps = set()
         )
+        Attacker.reset_ids(old_max_id)
 
         # Remember that self was already copied
         memo[id(self)] = copied_attacker

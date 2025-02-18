@@ -10,14 +10,13 @@ def test_attacker_to_dict(dummy_lang_graph: LanguageGraph):
 
     dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyOrAttackStep']
-    attack_graph = AttackGraph(dummy_lang_graph)
 
-    node1 = attack_graph.add_node(
+    node1 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
     attacker = Attacker("Test Attacker", set(), {node1})
     assert attacker.to_dict() == {
-        "id": None,
+        "id": 0,
         "name": "Test Attacker",
         "entry_points": {},
         "reached_attack_steps": {
@@ -30,15 +29,12 @@ def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
 
     dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyOrAttackStep']
-    attack_graph = AttackGraph(dummy_lang_graph)
 
-    node1 = attack_graph.add_node(
+    node1 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
     attacker = Attacker("Test Attacker", set(), set())
     assert not attacker.entry_points
-    attack_graph = AttackGraph(dummy_lang_graph)
-    attack_graph.add_attacker(attacker)
 
     attacker.compromise(node1)
     assert attacker.reached_attack_steps == {node1}
@@ -55,9 +51,8 @@ def test_attacker_undo_compromise(dummy_lang_graph: LanguageGraph):
 
     dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyOrAttackStep']
-    attack_graph = AttackGraph(dummy_lang_graph)
 
-    node1 = attack_graph.add_node(
+    node1 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
     attacker = Attacker("attacker1", set(), set())

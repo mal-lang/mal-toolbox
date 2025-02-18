@@ -21,27 +21,26 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
         attack_steps['DummyAndAttackStep']
     dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyDefenseAttackStep']
-    attack_graph = AttackGraph(dummy_lang_graph)
 
     # Create a graph of nodes according to above diagram
-    node1 = attack_graph.add_node(
+    node1 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
-    node2 = attack_graph.add_node(
+    node2 = AttackGraphNode(
         lg_attack_step = dummy_defense_attack_step
     )
     node2.defense_status = 1.0
-    node3 = attack_graph.add_node(
+    node3 = AttackGraphNode(
         lg_attack_step = dummy_defense_attack_step
     )
     node3.defense_status = 0.0
-    node4 = attack_graph.add_node(
+    node4 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
-    node5 = attack_graph.add_node(
+    node5 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
-    node6 = attack_graph.add_node(
+    node6 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
 
@@ -60,8 +59,6 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
         entry_points = {node1},
         reached_attack_steps = set()
     )
-
-    attack_graph.add_attacker(attacker)
 
     node6.compromise(attacker)
     assert node6.compromised_by == {attacker}

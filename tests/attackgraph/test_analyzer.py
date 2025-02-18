@@ -1,6 +1,6 @@
 """Tests for analyzers"""
 
-from maltoolbox.attackgraph.attackgraph import AttackGraph
+from maltoolbox.attackgraph.attackgraph import AttackGraph, AttackGraphNode
 from maltoolbox.attackgraph.analyzers.apriori import (
     propagate_viability_from_unviable_node,
     prune_unviable_and_unnecessary_nodes,
@@ -63,25 +63,24 @@ def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_gra
         attack_steps['DummyOrAttackStep']
     dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyDefenseAttackStep']
-    attack_graph = AttackGraph(dummy_lang_graph)
 
     # Create a graph of nodes according to above diagram
-    node1 = attack_graph.add_node(
+    node1 = AttackGraphNode(
         lg_attack_step = dummy_defense_attack_step
     )
-    node2 = attack_graph.add_node(
+    node2 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
-    node3 = attack_graph.add_node(
+    node3 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
-    node4 = attack_graph.add_node(
+    node4 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
-    node5 = attack_graph.add_node(
+    node5 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
-    node6 = attack_graph.add_node(
+    node6 = AttackGraphNode(
         lg_attack_step = dummy_or_attack_step
     )
 

@@ -90,8 +90,6 @@ class AttackGraph():
 
         self.model = model
         self.lang_graph = lang_graph
-        self.next_node_id = 0
-        self.next_attacker_id = 0
         if self.model is not None:
             self._generate_graph()
 
@@ -154,10 +152,6 @@ class AttackGraph():
         copied_attackgraph._full_name_to_node = \
             copy.deepcopy(self._full_name_to_node, memo)
 
-        # Copy counters
-        copied_attackgraph.next_node_id = self.next_node_id
-        copied_attackgraph.next_attacker_id = self.next_attacker_id
-
         return copied_attackgraph
 
     def save_to_file(self, filename: str) -> None:
@@ -201,15 +195,17 @@ class AttackGraph():
                     node_dict['lang_graph_attack_step'])
             lg_attack_step = lang_graph.assets[lg_asset_name].\
                 attack_steps[lg_attack_step_name]
-            ag_node = attack_graph.add_node(
+            ag_node = AttackGraphNode(
                 lg_attack_step = lg_attack_step,
-                node_id = node_dict['id'],
                 model_asset = node_asset,
+                node_id = node_dict['id'],
                 defense_status = node_dict.get('defense_status', None),
                 existence_status = node_dict.get('existence_status', None)
             )
             ag_node.tags = set(node_dict.get('tags', []))
             ag_node.extras = node_dict.get('extras', {})
+            attack_graph.nodes[ag_node.id] = ag_node
+            attack_graph._full_name_to_node[ag_node.full_name] = ag_node
 
             if node_asset:
                 # Add AttackGraphNode to attack_step_nodes of asset
@@ -249,20 +245,14 @@ class AttackGraph():
                     _ag_node.parents.add(parent)
 
         for attacker in serialized_attackers.values():
-            ag_attacker = Attacker(
-                name = attacker['name'],
-                entry_points = set(),
-                reached_attack_steps = set()
-            )
             attack_graph.add_attacker(
-                attacker = ag_attacker,
-                attacker_id = int(attacker['id']),
+                attacker=Attacker(name=attacker['name']),
                 entry_points = [
                     int(node_id) # Convert to int since they can be strings
                     for node_id in attacker['entry_points'].keys()
                 ],
-                reached_attack_steps = [
-                    int(node_id) # Convert to int since they can be strings
+                reached_attack_steps=[
+                    int(node_id)  # Convert to int since they can be strings
                     for node_id in attacker['reached_attack_steps'].keys()
                 ]
             )
@@ -323,6 +313,7 @@ class AttackGraph():
             'Attach attackers from "%s" model to the graph.', self.model.name
         )
 
+        Attacker.reset_ids()
         for attacker_info in self.model.attackers:
 
             if not attacker_info.name:
@@ -330,11 +321,7 @@ class AttackGraph():
                 logger.error(msg)
                 raise AttackGraphException(msg)
 
-            attacker = Attacker(
-                name = attacker_info.name,
-                entry_points = set(),
-                reached_attack_steps = set()
-            )
+            attacker = Attacker(attacker_info.name)
             self.add_attacker(attacker)
 
             for (asset, attack_steps) in attacker_info.entry_points:
@@ -520,6 +507,7 @@ class AttackGraph():
         Generate the attack graph based on the original model instance and the
         MAL language specification provided at initialization.
         """
+        AttackGraphNode.reset_ids()
 
         if not self.model:
             msg = "Can not generate AttackGraph without model"
@@ -580,12 +568,14 @@ class AttackGraph():
                     case _:
                         pass
 
-                ag_node = self.add_node(
+                ag_node = AttackGraphNode(
                     lg_attack_step = attack_step,
                     model_asset = asset,
                     defense_status = defense_status,
                     existence_status = existence_status
                 )
+                self.nodes[ag_node.id] = ag_node
+                self._full_name_to_node[ag_node.full_name] = ag_node
                 attack_step_nodes.append(ag_node)
 
             asset.attack_step_nodes = attack_step_nodes
@@ -669,64 +659,6 @@ class AttackGraph():
         self.attackers = {}
         self._generate_graph()
 
-    def add_node(
-            self,
-            lg_attack_step: LanguageGraphAttackStep,
-            node_id: Optional[int] = None,
-            model_asset: Optional[ModelAsset] = None,
-            defense_status: Optional[float] = None,
-            existence_status: Optional[bool] = None
-        ) -> AttackGraphNode:
-        """Create and add a node to the graph
-        Arguments:
-        lg_attack_step      - the language graph attack step that corresponds
-                              to the attack graph node to create
-        node_id             - id to assign to the newly created node, usually
-                              provided only when loading an existing attack
-                              graph from a file. If not provided the id will
-                              be set to the next highest id available.
-        model_asset         - the model asset that corresponds to the attack
-                              step node. While optional it is highly
-                              recommended that this be provided. It should
-                              only be ommitted if the model which was used to
-                              generate the attack graph is not available when
-                              loading an attack graph from a file.
-        defese_status       - the defense status of the node. Only, relevant
-                              for defense type nodes. A value between 0.0 and
-                              1.0 is expected.
-        existence_status    - the existence status of the node. Only, relevant
-                              for exist and notExist type nodes.
-
-        Return:
-        The newly created attack step node.
-        """
-        node_id = node_id if node_id is not None else self.next_node_id
-        if node_id in self.nodes:
-            raise ValueError(f'Node index {node_id} already in use.')
-        self.next_node_id = max(node_id + 1, self.next_node_id)
-
-        if logger.isEnabledFor(logging.DEBUG):
-            # Avoid running json.dumps when not in debug
-            logger.debug('Create and add to attackgraph node of type "%s" '
-                'with id:%d.\n' % (
-                    lg_attack_step.full_name,
-                    node_id
-                ))
-
-
-        node = AttackGraphNode(
-            node_id = node_id,
-            lg_attack_step = lg_attack_step,
-            model_asset = model_asset,
-            defense_status = defense_status,
-            existence_status = existence_status
-        )
-
-        self.nodes[node_id] = node
-        self._full_name_to_node[node.full_name] = node
-
-        return node
-
     def remove_node(self, node: AttackGraphNode) -> None:
         """Remove node from attack graph
         Arguments:
@@ -748,9 +680,8 @@ class AttackGraph():
     def add_attacker(
             self,
             attacker: Attacker,
-            attacker_id: Optional[int] = None,
-            entry_points: list[int] = [],
-            reached_attack_steps: list[int] = []
+            entry_points: list[int] = None,
+            reached_attack_steps: list[int] = None
         ):
         """Add an attacker to the graph
         Arguments:
@@ -765,24 +696,10 @@ class AttackGraph():
         """
 
         if logger.isEnabledFor(logging.DEBUG):
-            # Avoid running json.dumps when not in debug
-            if attacker_id is not None:
-                logger.debug('Add attacker "%s" with id:%d.',
-                    attacker.name,
-                    attacker_id
-                )
-            else:
-                logger.debug('Add attacker "%s" without id.',
-                    attacker.name
-                )
+            logger.debug('Add attacker "%s" with id:%d.', attacker.name, attacker.id)
 
-        attacker.id = attacker_id or self.next_attacker_id
-        if attacker.id in self.attackers:
-            raise ValueError(f'Attacker index {attacker_id} already in use.')
-
-        self.next_attacker_id = max(attacker.id + 1, self.next_attacker_id)
-        for node_id in reached_attack_steps:
-            node = self.nodes[node_id]
+        for node_id in reached_attack_steps or []:
+            node = self.get_node_by_id(node_id)
             if node:
                 attacker.compromise(node)
             else:
@@ -790,8 +707,8 @@ class AttackGraph():
                        "in reached attack steps.")
                 logger.error(msg, node_id)
                 raise AttackGraphException(msg % node_id)
-        for node_id in entry_points:
-            node = self.nodes[node_id]
+        for node_id in entry_points or []:
+            node = self.get_node_by_id(int(node_id))
             if node:
                 attacker.entry_points.add(node)
             else:
