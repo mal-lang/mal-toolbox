@@ -5,6 +5,7 @@ This submodule contains functions that analyze the information present in the
 attack graph, but do not alter the structure or nodes in any way.
 """
 from __future__ import annotations
+from collections.abc import Iterable
 import logging
 from typing import TYPE_CHECKING
 
@@ -114,8 +115,9 @@ def is_node_traversable_by_attacker(
             return False
 
 def get_attack_surface(
-        attacker: Attacker
-    ) -> list[AttackGraphNode]:
+        attacker: Attacker,
+        nodes: Iterable[AttackGraphNode] = None,
+    ) -> set[AttackGraphNode]:
     """
     Get the current attack surface of an attacker. This includes all of the
     viable children nodes of already reached attack steps that are of 'or'
@@ -124,14 +126,16 @@ def get_attack_surface(
 
     Arguments:
     attacker    - the Attacker whose attack surface is sought
+    nodes       - the nodes to calculate the attack surface from; defaults to
+                  the attackers compromised nodes list if omitted
     """
     logger.debug(
         'Get the attack surface for Attacker "%s"(%d).',
         attacker.name,
         attacker.id
     )
-    attack_surface = []
-    for attack_step in attacker.reached_attack_steps:
+    attack_surface = set()
+    for attack_step in nodes or attacker.reached_attack_steps:
         logger.debug(
             'Determine attack surface stemming from '
             '"%s"(%d) for Attacker "%s"(%d).',
@@ -143,51 +147,16 @@ def get_attack_surface(
         for child in attack_step.children:
             if is_node_traversable_by_attacker(child, attacker) and \
                     child not in attack_surface:
-                attack_surface.append(child)
-    return attack_surface
-
-def update_attack_surface_add_nodes(
-        attacker: Attacker,
-        current_attack_surface: list[AttackGraphNode],
-        nodes: list[AttackGraphNode]
-    ) -> list[AttackGraphNode]:
-    """
-    Update the attack surface of an attacker with the new attack step nodes
-    provided to see if any of their children can be added.
-
-    Arguments:
-    attacker                - the Attacker whose attack surface is sought
-    current_attack_surface  - the current attack surface that we wish to
-                              expand
-    nodes                   - the newly compromised attack step nodes that we
-                              wish to see if any of their children should be
-                              added to the attack surface
-    """
-    logger.debug('Update the attack surface for Attacker "%s"(%d).',
-        attacker.name,
-        attacker.id)
-    attack_surface = current_attack_surface
-    for attack_step in nodes:
-        logger.debug(
-            'Determine attack surface stemming from "%s"(%d) '
-            'for Attacker "%s"(%d).',
-            attack_step.full_name,
-            attack_step.id,
-            attacker.name,
-            attacker.id
-        )
-        for child in attack_step.children:
-            is_traversable = is_node_traversable_by_attacker(child, attacker)
-            if is_traversable and child not in attack_surface:
                 logger.debug(
-                    'Add node "%s"(%d) to the attack surface of '
+                    'Add node "%s"(%d) to the attack surface for '
                     'Attacker "%s"(%d).',
                     child.full_name,
                     child.id,
                     attacker.name,
                     attacker.id
                 )
-                attack_surface.append(child)
+                attack_surface.add(child)
+
     return attack_surface
 
 def get_defense_surface(graph: AttackGraph) -> list[AttackGraphNode]:
