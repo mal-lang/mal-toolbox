@@ -6,7 +6,7 @@ import yaml
 import logging
 from ..model import Model
 from ..language import LanguageGraph
-from ..file_utils import load_dict_from_json_file, load_dict_from_yaml_file
+from ..utils import load_dict_from_json_file, load_dict_from_yaml_file
 
 logger = logging.getLogger(__name__)
 
