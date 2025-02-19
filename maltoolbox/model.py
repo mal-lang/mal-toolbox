@@ -154,7 +154,6 @@ class Model():
 
         # Below sets used to check for duplicate names or ids,
         # better for optimization than iterating over all assets
-        self.asset_ids: set[int] = set()
         self.asset_names: set[str] = set()
 
 
@@ -192,9 +191,8 @@ class Model():
 
         # Set asset ID and check for duplicates
         asset_id = asset_id or self.next_id
-        if asset_id in self.asset_ids:
+        if asset_id in self.assets:
             raise ValueError(f'Asset index {asset_id} already in use.')
-        self.asset_ids.add(asset_id)
 
         self.next_id = max(asset_id + 1, self.next_id)
 
