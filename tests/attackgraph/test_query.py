@@ -1,10 +1,10 @@
 """Unit tests for AttackGraph functionality"""
 
-from maltoolbox.attackgraph import AttackGraphNode, Attacker, AttackGraph
+from maltoolbox.attackgraph import Attacker, AttackGraph, AttackGraphNode
+from maltoolbox.attackgraph.query import (calculate_attack_surface,
+                                          is_node_traversable_by_attacker)
 from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph.query import (
-    is_node_traversable_by_attacker,
-)
+
 
 def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     """Make sure it returns True or False when expected"""
@@ -17,22 +17,22 @@ def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
 
     # An attacker with no meaningful data
     attacker = Attacker(
-        name = "Test Attacker",
-        entry_points = set(),
-        reached_attack_steps = set()
+        name="Test Attacker",
+        entry_points=set(),
+        reached_attack_steps=set()
     )
     attack_graph.add_attacker(attacker)
 
     # Node 3 should not be traversable since node has type AND and it has two
     # parents that are not compromised by attacker
     node1 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
+        lg_attack_step=dummy_or_attack_step
     )
     node2 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
+        lg_attack_step=dummy_or_attack_step
     )
     node3 = attack_graph.add_node(
-        lg_attack_step = dummy_and_attack_step
+        lg_attack_step=dummy_and_attack_step
     )
     node3.parents = {node1, node2}
     node2.children = {node3}
@@ -54,13 +54,13 @@ def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     # Node 6 should not be traversable since node has type OR and neither of
     # its two parents are not compromised by attacker
     node4 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
+        lg_attack_step=dummy_or_attack_step
     )
     node5 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
+        lg_attack_step=dummy_or_attack_step
     )
     node6 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
+        lg_attack_step=dummy_or_attack_step
     )
     node6.parents = {node4, node5}
     node4.children = {node6}
@@ -72,3 +72,73 @@ def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     attacker.compromise(node4)
     traversable = is_node_traversable_by_attacker(node6, attacker)
     assert traversable
+
+
+def test_get_attack_surface(dummy_lang_graph: LanguageGraph):
+    r"""Create a graph from nodes
+
+             ___node0___
+            /    \      \
+        node1    node2   node3
+        /   \        \      \
+    node4  node5    node6   node7
+    """
+
+    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyOrAttackStep']
+    attack_graph = AttackGraph(dummy_lang_graph)
+
+    # Create a graph of nodes according to above diagram
+    node0 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node1 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node2 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node3 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node4 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node5 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node6 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node7 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+
+    node0.children = {node1, node2, node3}
+    node1.children = {node4, node5}
+    node2.children = {node6}
+    node3.children = {node7}
+
+    node1.parents = {node0}
+    node2.parents = {node0}
+    node3.parents = {node0}
+    node4.parents = {node1}
+    node5.parents = {node1}
+    node6.parents = {node2}
+    node7.parents = {node3}
+
+    # Make sure compromised node has attacker added to it
+    attacker = Attacker(
+        name="Test Attacker",
+        entry_points={node0},
+        reached_attack_steps={node0}
+    )
+
+    attack_graph.add_attacker(attacker)
+
+    node0.compromise(attacker)
+    node1.compromise(attacker)
+    node2.compromise(attacker)
+
+    attack_surface = calculate_attack_surface(attacker)
+    assert attack_surface == {node1, node2, node3, node4, node5, node6}
+
+    attack_surface = calculate_attack_surface(attacker, skip_compromised=True)
+    assert attack_surface == {node3, node4, node5, node6}
+
+    attack_surface = calculate_attack_surface(attacker, from_nodes={node0})
+    assert attack_surface == {node1, node2, node3}
+
+    attack_surface = calculate_attack_surface(
+        attacker, from_nodes={node0}, skip_compromised=True)
+    assert attack_surface == {node3}
+
+    attack_surface = calculate_attack_surface(attacker, from_nodes={node1})
+    assert attack_surface == {node4, node5}
+
+    attack_surface = calculate_attack_surface(attacker, from_nodes={node3})
+    assert attack_surface == set()
