@@ -114,10 +114,13 @@ def is_node_traversable_by_attacker(
             )
             return False
 
-def get_attack_surface(
+
+def calculate_attack_surface(
         attacker: Attacker,
-        nodes: Iterable[AttackGraphNode] | None = None,
-    ) -> set[AttackGraphNode]:
+        *,
+        from_nodes: Iterable[AttackGraphNode] | None = None,
+        skip_compromised: bool = False,
+) -> set[AttackGraphNode]:
     """
     Get the current attack surface of an attacker. This includes all of the
     viable children nodes of already reached attack steps that are of 'or'
@@ -125,9 +128,10 @@ def get_attack_surface(
     parents in the attack steps reached.
 
     Arguments:
-    attacker    - the Attacker whose attack surface is sought
-    nodes       - the nodes to calculate the attack surface from; defaults to
-                  the attackers compromised nodes list if omitted
+    attacker          - the Attacker whose attack surface is sought
+    nodes             - the nodes to calculate the attack surface from; defaults
+                        to the attackers compromised nodes list if omitted
+    skip_compromised  - do not add already compromised nodes to the attack surface
     """
     logger.debug(
         'Get the attack surface for Attacker "%s"(%d).',
@@ -135,7 +139,7 @@ def get_attack_surface(
         attacker.id
     )
     attack_surface = set()
-    for attack_step in nodes or attacker.reached_attack_steps:
+    for attack_step in from_nodes or attacker.reached_attack_steps:
         logger.debug(
             'Determine attack surface stemming from '
             '"%s"(%d) for Attacker "%s"(%d).',
@@ -145,6 +149,8 @@ def get_attack_surface(
             attacker.id
         )
         for child in attack_step.children:
+            if skip_compromised and child.is_compromised_by(attacker):
+                continue
             if is_node_traversable_by_attacker(child, attacker) and \
                     child not in attack_surface:
                 logger.debug(
