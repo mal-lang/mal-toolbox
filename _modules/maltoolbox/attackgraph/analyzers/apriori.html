@@ -1,0 +1,372 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>maltoolbox.attackgraph.analyzers.apriori &mdash; MAL Toolbox  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../../../about.html" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            MAL Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../about.html">About MAL Toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../apidocs/maltoolbox.html">API documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">MAL Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">maltoolbox.attackgraph.analyzers.apriori</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for maltoolbox.attackgraph.analyzers.apriori</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">MAL-Toolbox Attack Graph Apriori Analyzer Submodule</span>
+
+<span class="sd">This submodule contains analyzers that are relevant before attackers are even</span>
+<span class="sd">connected to the attack graph.</span>
+<span class="sd">Currently these are:</span>
+<span class="sd">- Viability = Determine if a node can be traversed under any circumstances or</span>
+<span class="sd">  if the model structure makes it unviable.</span>
+<span class="sd">- Necessity = Determine if a node is necessary for the attacker or if the</span>
+<span class="sd">  model structure means it is not needed(it behaves as if it were already</span>
+<span class="sd">  compromised) to compromise children attack steps.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">..attackgraph</span> <span class="kn">import</span> <span class="n">AttackGraph</span>
+    <span class="kn">from</span> <span class="nn">..node</span> <span class="kn">import</span> <span class="n">AttackGraphNode</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="propagate_viability_from_node">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.propagate_viability_from_node">[docs]</a>
+<span class="k">def</span> <span class="nf">propagate_viability_from_node</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">AttackGraphNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">    node        - the attack graph node from which to propagate the viable</span>
+<span class="sd">                  status</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s1">&#39;Propagate viability from &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">) with viability status </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+        <span class="n">original_value</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span>
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;or&#39;</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="ow">or</span> <span class="n">parent</span><span class="o">.</span><span class="n">is_viable</span>
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;and&#39;</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">!=</span> <span class="n">original_value</span><span class="p">:</span>
+            <span class="n">propagate_viability_from_node</span><span class="p">(</span><span class="n">child</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="propagate_necessity_from_node">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.propagate_necessity_from_node">[docs]</a>
+<span class="k">def</span> <span class="nf">propagate_necessity_from_node</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">AttackGraphNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">    node        - the attack graph node from which to propagate the necessary</span>
+<span class="sd">                  status</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s1">&#39;Propagate necessity from &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">) with necessity status </span><span class="si">%s</span><span class="s1">.&#39;</span><span class="p">,</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">ttc</span> <span class="ow">and</span> <span class="s1">&#39;name&#39;</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">ttc</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">ttc</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Enabled&#39;</span><span class="p">,</span> <span class="s1">&#39;Disabled&#39;</span><span class="p">,</span> <span class="s1">&#39;Instant&#39;</span><span class="p">]:</span>
+            <span class="c1"># Do not propagate unnecessary state from nodes that have a TTC</span>
+            <span class="c1"># probability distribution associated with them.</span>
+            <span class="c1"># TODO: Evaluate this more carefully, how do we want to have TTCs</span>
+            <span class="c1"># impact necessity and viability.</span>
+            <span class="c1"># TODO: Have this condition be any probability that has a</span>
+            <span class="c1"># Bernoulli component</span>
+            <span class="k">return</span>
+
+    <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+        <span class="n">original_value</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">is_necessary</span>
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;or&#39;</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;and&#39;</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">is_necessary</span> <span class="ow">or</span> <span class="n">parent</span><span class="o">.</span><span class="n">is_necessary</span>
+
+        <span class="c1"># TODO: Update TTC for child attack step before if it is not necessary</span>
+        <span class="c1"># before propagating it further.</span>
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">!=</span> <span class="n">original_value</span><span class="p">:</span>
+            <span class="n">propagate_necessity_from_node</span><span class="p">(</span><span class="n">child</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="evaluate_viability">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.evaluate_viability">[docs]</a>
+<span class="k">def</span> <span class="nf">evaluate_viability</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">AttackGraphNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">    graph       - the node to evaluate viability for.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">match</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">type</span><span class="p">):</span>
+        <span class="k">case</span> <span class="s1">&#39;exist&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">existence_status</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span> \
+                <span class="sa">f</span><span class="s1">&#39;Existence status not defined for </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s1">.&#39;</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">existence_status</span>
+        <span class="k">case</span> <span class="s1">&#39;notExist&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">existence_status</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span> \
+                <span class="sa">f</span><span class="s1">&#39;Existence status not defined for </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s1">.&#39;</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">existence_status</span>
+        <span class="k">case</span> <span class="s1">&#39;defense&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">defense_status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> \
+                   <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">node</span><span class="o">.</span><span class="n">defense_status</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">,</span> \
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s1"> defense status invalid: </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">defense_status</span><span class="si">}</span><span class="s1">.&#39;</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">defense_status</span> <span class="o">!=</span> <span class="mf">1.0</span>
+        <span class="k">case</span> <span class="s1">&#39;or&#39;</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="ow">or</span> <span class="n">parent</span><span class="o">.</span><span class="n">is_viable</span>
+        <span class="k">case</span> <span class="s1">&#39;and&#39;</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="ow">and</span> <span class="n">parent</span><span class="o">.</span><span class="n">is_viable</span>
+        <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Evaluate viability was provided node &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">) which &#39;</span>
+                   <span class="s1">&#39;is of unknown type &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">type</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="evaluate_necessity">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.evaluate_necessity">[docs]</a>
+<span class="k">def</span> <span class="nf">evaluate_necessity</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">AttackGraphNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">    graph       - the node to evaluate necessity for.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">match</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">type</span><span class="p">):</span>
+        <span class="k">case</span> <span class="s1">&#39;exist&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">existence_status</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span> \
+                <span class="sa">f</span><span class="s1">&#39;Existence status not defined for </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s1">.&#39;</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">existence_status</span>
+        <span class="k">case</span> <span class="s1">&#39;notExist&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">existence_status</span><span class="p">,</span> <span class="nb">bool</span><span class="p">),</span> \
+                <span class="sa">f</span><span class="s1">&#39;Existence status not defined for </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s1">.&#39;</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">existence_status</span><span class="p">)</span>
+        <span class="k">case</span> <span class="s1">&#39;defense&#39;</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">node</span><span class="o">.</span><span class="n">defense_status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> \
+                   <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">node</span><span class="o">.</span><span class="n">defense_status</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">,</span> \
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s1"> defense status invalid: </span><span class="si">{</span><span class="n">node</span><span class="o">.</span><span class="n">defense_status</span><span class="si">}</span><span class="s1">.&#39;</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">defense_status</span> <span class="o">!=</span> <span class="mf">0.0</span>
+        <span class="k">case</span> <span class="s1">&#39;or&#39;</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="ow">and</span> <span class="n">parent</span><span class="o">.</span><span class="n">is_necessary</span>
+        <span class="k">case</span> <span class="s1">&#39;and&#39;</span><span class="p">:</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span> <span class="ow">or</span> <span class="n">parent</span><span class="o">.</span><span class="n">is_necessary</span>
+        <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Evaluate necessity was provided node &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">) which &#39;</span>
+                   <span class="s1">&#39;is of unknown type &quot;</span><span class="si">%s</span><span class="s1">&quot;&#39;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">type</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="evaluate_viability_and_necessity">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.evaluate_viability_and_necessity">[docs]</a>
+<span class="k">def</span> <span class="nf">evaluate_viability_and_necessity</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">AttackGraphNode</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">    graph       - the node to evaluate viability and necessity for.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">evaluate_viability</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    <span class="n">evaluate_necessity</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calculate_viability_and_necessity">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.calculate_viability_and_necessity">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_viability_and_necessity</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AttackGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">    graph       - the attack graph for which we wish to determine the</span>
+<span class="sd">                  viability and necessity statuses for the nodes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;exist&#39;</span><span class="p">,</span> <span class="s1">&#39;notExist&#39;</span><span class="p">,</span> <span class="s1">&#39;defense&#39;</span><span class="p">]:</span>
+            <span class="n">evaluate_viability_and_necessity</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span><span class="p">:</span>
+                <span class="n">propagate_viability_from_node</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span><span class="p">:</span>
+                <span class="n">propagate_necessity_from_node</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="prune_unviable_and_unnecessary_nodes">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.prune_unviable_and_unnecessary_nodes">[docs]</a>
+<span class="k">def</span> <span class="nf">prune_unviable_and_unnecessary_nodes</span><span class="p">(</span><span class="n">graph</span><span class="p">:</span> <span class="n">AttackGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">    graph       - the attack graph for which we wish to remove the</span>
+<span class="sd">                  the nodes which are not viable or necessary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s1">&#39;Prune unviable and unnecessary nodes from the attack graph.&#39;</span><span class="p">)</span>
+
+    <span class="n">nodes_to_remove</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;or&#39;</span><span class="p">,</span> <span class="s1">&#39;and&#39;</span><span class="p">)</span> <span class="ow">and</span> \
+            <span class="p">(</span><span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_viable</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">is_necessary</span><span class="p">):</span>
+            <span class="n">nodes_to_remove</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+    <span class="c1"># Do the removal separatly so we don&#39;t remove</span>
+    <span class="c1"># nodes from a set we are looping over</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_to_remove</span><span class="p">:</span>
+        <span class="n">graph</span><span class="o">.</span><span class="n">remove_node</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="propagate_viability_from_unviable_node">
+<a class="viewcode-back" href="../../../../apidocs/maltoolbox.attackgraph.analyzers.apriori.html#maltoolbox.attackgraph.analyzers.apriori.propagate_viability_from_unviable_node">[docs]</a>
+<span class="k">def</span> <span class="nf">propagate_viability_from_unviable_node</span><span class="p">(</span>
+        <span class="n">unviable_node</span><span class="p">:</span> <span class="n">AttackGraphNode</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AttackGraphNode</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Update viability of nodes affected by newly enabled defense</span>
+<span class="sd">    `unviable_node` in the graph and return any attack steps</span>
+<span class="sd">    that are no longer viable because of it.</span>
+
+<span class="sd">    Propagate recursively via children as long as changes occur.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">    unviable_node               - the node to propagate viability from</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    attack_steps_made_unviable  - list of the attack steps that have been</span>
+<span class="sd">                                  made unviable by a defense enabled in the</span>
+<span class="sd">                                  current step. Builds up recursively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">attack_steps_made_unviable</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s1">&#39;Update viability for node &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">)&#39;</span><span class="p">,</span>
+        <span class="n">unviable_node</span><span class="o">.</span><span class="n">full_name</span><span class="p">,</span>
+        <span class="n">unviable_node</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">unviable_node</span><span class="o">.</span><span class="n">is_viable</span><span class="p">,</span> <span class="p">(</span>
+        <span class="s2">&quot;propagate_viability_from_unviable_node should not be called&quot;</span>
+       <span class="sa">f</span><span class="s2">&quot; on viable node </span><span class="si">{</span><span class="n">unviable_node</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">unviable_node</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;and&#39;</span><span class="p">,</span> <span class="s1">&#39;or&#39;</span><span class="p">):</span>
+        <span class="n">attack_steps_made_unviable</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">unviable_node</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">unviable_node</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+        <span class="n">original_value</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span>
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;or&#39;</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">parents</span><span class="p">:</span>
+                <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="ow">or</span> <span class="n">parent</span><span class="o">.</span><span class="n">is_viable</span>
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;and&#39;</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">is_viable</span> <span class="o">!=</span> <span class="n">original_value</span><span class="p">:</span>
+            <span class="n">attack_steps_made_unviable</span> <span class="o">+=</span> \
+                <span class="n">propagate_viability_from_unviable_node</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">attack_steps_made_unviable</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Andrei Buhaiu, Giuseppe Nebbione, Nikolaos Kakouros, Jakob Nyberg, Joakim Loxdal.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
