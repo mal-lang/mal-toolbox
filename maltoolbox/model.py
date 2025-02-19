@@ -152,10 +152,6 @@ class Model():
         self.lang_graph = lang_graph
         self.maltoolbox_version: str = mt_version
 
-        # Below sets used to check for duplicate names or ids,
-        # better for optimization than iterating over all assets
-        self.asset_names: set[str] = set()
-
 
     def add_asset(
             self,
@@ -199,7 +195,7 @@ class Model():
         if not name:
             name = asset_type + ':' + str(asset_id)
         else:
-            if name in self.asset_names:
+            if name in self._name_to_asset:
                 if allow_duplicate_names:
                     name = name + ':' + str(asset_id)
                 else:
@@ -207,7 +203,6 @@ class Model():
                         f'Asset name {name} is a duplicate'
                         ' and we do not allow duplicates.'
                     )
-        self.asset_names.add(name)
 
         lg_asset = self.lang_graph.assets[asset_type]
 
