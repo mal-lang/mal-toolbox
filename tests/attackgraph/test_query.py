@@ -23,30 +23,52 @@ def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     )
     attack_graph.add_attacker(attacker)
 
-    # Node1 should be traversable since node type is OR
+    # Node 3 should not be traversable since node has type AND and it has two
+    # parents that are not compromised by attacker
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    traversable = is_node_traversable_by_attacker(node1, attacker)
-    assert traversable
-
-    # Node2 should be traversable since node has no parents
     node2 = attack_graph.add_node(
-        lg_attack_step = dummy_and_attack_step
+        lg_attack_step = dummy_or_attack_step
     )
-    traversable = is_node_traversable_by_attacker(node2, attacker)
-    assert traversable
-
-    # Node 4 should not be traversable since node has type AND
-    # and it has two parents that are not compromised by attacker
     node3 = attack_graph.add_node(
         lg_attack_step = dummy_and_attack_step
     )
-    node4 = attack_graph.add_node(
-        lg_attack_step = dummy_and_attack_step
-    )
-    node4.parents = {node2, node3}
-    node2.children = {node4}
-    node3.children = {node4}
-    traversable = is_node_traversable_by_attacker(node4, attacker)
+    node3.parents = {node1, node2}
+    node2.children = {node3}
+    node1.children = {node3}
+    traversable = is_node_traversable_by_attacker(node3, attacker)
     assert not traversable
+
+    # After compromising one of its parents it should still be untraversable
+    # as the other parent has not been compromised.
+    attacker.compromise(node1)
+    traversable = is_node_traversable_by_attacker(node3, attacker)
+    assert not traversable
+
+    # After compromising both of its parents it should be traversable.
+    attacker.compromise(node2)
+    traversable = is_node_traversable_by_attacker(node3, attacker)
+    assert traversable
+
+    # Node 6 should not be traversable since node has type OR and neither of
+    # its two parents are not compromised by attacker
+    node4 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    node5 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    node6 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    node6.parents = {node4, node5}
+    node4.children = {node6}
+    node5.children = {node6}
+    traversable = is_node_traversable_by_attacker(node6, attacker)
+    assert not traversable
+
+    # After compromising one of its parents it should still be traversable.
+    attacker.compromise(node4)
+    traversable = is_node_traversable_by_attacker(node6, attacker)
+    assert traversable

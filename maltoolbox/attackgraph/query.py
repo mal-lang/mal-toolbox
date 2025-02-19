@@ -46,13 +46,26 @@ def is_node_traversable_by_attacker(
 
     match(node.type):
         case 'or':
+            for parent in node.parents:
+                if parent.is_compromised_by(attacker):
+                    logger.debug(
+                        '"%s"(%d) is traversable because it is viable, and '
+                        'of type "or", and its parent "%s(%d)" has already '
+                        'been compromised.',
+                        node.full_name,
+                        node.id,
+                        parent.full_name,
+                        parent.id
+                    )
+                    return True
             logger.debug(
-                '"%s"(%d) is traversable because it is viable and '
-                'of type "or".',
+                '"%s"(%d) is not traversable because while it is '
+                'viable, and of type "or", none of its parents '
+                'have been compromised.',
                 node.full_name,
                 node.id
             )
-            return True
+            return False
 
         case 'and':
             for parent in node.parents:
