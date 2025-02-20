@@ -1,0 +1,41 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Network {
+        | access
+    }
+
+    asset Machine {
+        | machineStep
+    }
+
+    asset Computer extends Machine
+    {
+        | machineStep
+          +> computerStep,
+             server.WRONG_ATTACK_STEP, // WRONG!!!
+             shutDown
+
+        
+        | computerStep
+        
+        | shutDown
+    }
+
+    asset Server extends Machine
+    {
+        | overwhelm
+    }
+
+    asset Lenovo extends Computer {
+        | lenovoStep
+    }
+}
+                    
+associations 
+{
+    Network [network] 1 <-- L --> * [hosts] Computer
+    Server [server] 1 <-- L --> * [hosts] Computer
+}  
+                                    
