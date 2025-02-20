@@ -1,0 +1,41 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Network {
+        | access
+        //                      Error
+        //                        |
+        //                        V 
+        -> hosts.operatingSystems.fileSystems.files
+    }
+
+    asset Computer
+    {
+        | shutDown
+    }
+
+    asset OperatingSystem 
+    {
+        | attack
+    }
+
+    asset FileSystem
+    {
+        | compromise
+    }
+
+    asset File 
+    {
+        | open
+    }
+}
+                    
+associations 
+{
+    Network [network] 1 <-- L --> * [hosts] Computer
+    Computer [computer] 1 <-- L --> * [operatingSystems] OperatingSystem
+    // GONE! OperatingSystem [os] 1 <-- L --> 1..* [fileSystems] FileSystem
+    FileSystem [fs] 1 <-- L --> * [files] File
+}  
+                                    

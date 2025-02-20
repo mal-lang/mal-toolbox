@@ -1,0 +1,86 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Network {
+        let thisNetworkHosts = hosts
+        | access
+          //                                                                                                                          Error (no longer child of folder)
+          //                                                                                                                                          |
+          //                                                                                                                                          v
+          -> thisNetworkHosts().(operatingSystems[Windows] \/ operatingSystems[Linux] - operatingSystems[WindowsVista]).fileSystems.folders.subfolders*.(configfiles /\ nonrootfiles).open
+    }
+
+    asset Computer
+    {
+        | shutDown
+    }
+
+    asset OperatingSystem 
+    {
+        | attack
+    }
+
+    asset Linux extends OperatingSystem
+    {
+        | linuxStep
+    }
+
+    asset Windows extends OperatingSystem
+    {
+        | windowsStep
+    }
+
+    asset WindowsVista extends Windows
+    {
+        | windowsVistaStep
+    }
+
+    asset FileSystem
+    {
+        | compromise
+    }
+
+    asset Folder 
+    {
+        | folderStep
+    }
+
+    asset SubFolder // GONE!!! extends Folder
+    {
+        | subFolderStep
+    }
+
+    asset File 
+    {
+        | open
+    }
+
+    asset ConfigFile extends File
+    {
+        | openConfigFile
+    }
+
+    asset RootFile extends File
+    {
+        | openRootFile
+    }
+
+    asset NonRootFile extends File
+    {
+        | openNonRootFile
+    }
+}
+                    
+associations 
+{
+    Network [network] 1 <-- L --> * [hosts] Computer
+    Computer [computer] 1 <-- L --> * [operatingSystems] OperatingSystem
+    OperatingSystem [os] 1 <-- L --> 1..* [fileSystems] FileSystem
+    FileSystem [fs] 1 <-- L --> * [folders] Folder
+    Folder [parent] 1 <-- L --> * [subfolders] SubFolder
+    SubFolder [location] 1 <-- L --> * [configfiles] ConfigFile
+    SubFolder [location] 1 <-- L --> * [rootfiles] RootFile
+    SubFolder [location] 1 <-- L --> * [nonrootfiles] NonRootFile
+}  
+                                    
