@@ -1,0 +1,19 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 
+    {
+        E step1
+            <- a3, a2
+            -> step
+        | step
+    }
+    asset Asset2 {}
+    asset Asset3 {}
+}
+associations {
+    Asset1 [a1] * <-- connects --> * [a3] Asset3
+    Asset1 [a1] * <-- connects --> * [a2] Asset2
+}                
+                                    
