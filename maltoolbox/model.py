@@ -245,7 +245,10 @@ class Model():
             )
 
         # First remove all of the associated assets
-        for fieldname, assoc_assets in asset.associated_assets.items():
+        # We can not remove from the dict while iterating over it
+        # so we first have to copy the keys and then remove those assets
+        associated_fieldnames = dict(asset.associated_assets)
+        for fieldname, assoc_assets in associated_fieldnames.items():
             asset.remove_associated_assets(fieldname, assoc_assets)
 
         # Also remove all of the entry points
@@ -649,23 +652,24 @@ class ModelAsset:
                 other_fieldname, set()
             ).add(self)
 
-    def remove_associated_assets(self, fieldname: str,
-        assets: set[ModelAsset]):
+    def remove_associated_assets(
+            self, fieldname: str, assets: set[ModelAsset]):
         """ Remove the assets provided as a parameter from the set of
         associated assets dictionary entry corresponding to the fieldname
         parameter.
         """
-        self._associated_assets[fieldname] -= set(assets)
-        if len(self._associated_assets[fieldname]) == 0:
-            del self._associated_assets[fieldname]
-
-        # Also remove this asset to the associated assets' dictionaries
+        # Remove this asset from its associated assets' dictionaries
         lg_assoc = self.lg_asset.associations[fieldname]
         other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)
         for asset in assets:
             asset._associated_assets[other_fieldname].remove(self)
             if len(asset._associated_assets[other_fieldname]) == 0:
                 del asset._associated_assets[other_fieldname]
+
+        # Remove associated assets from this asset
+        self._associated_assets[fieldname] -= set(assets)
+        if len(self._associated_assets[fieldname]) == 0:
+            del self._associated_assets[fieldname]
 
 
     @property

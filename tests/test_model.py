@@ -230,15 +230,22 @@ def test_model_add_asset_duplicate_name(model: Model):
     assert len(model.assets) == 2
 
 
-def test_model_remove_asset(model: Model):
+def test_model_remove_asset_with_association(model: Model):
     """Remove assets from a model"""
 
     # Add two program assets to the model
     asset1 = model.add_asset(asset_type = 'Application')
     asset2 = model.add_asset(asset_type = 'Application')
+    asset1.add_associated_assets('hostApp', {asset2})
 
+    assert asset1.associated_assets == {'hostApp': {asset2}}
+    assert asset2.associated_assets == {'appExecutedApps': {asset1}}
     num_assets_before = len(model.assets)
+
     model.remove_asset(asset1)
+
+    assert asset1.associated_assets == {}
+    assert asset2.associated_assets == {}
 
     # Make sure asset asset1 was deleted, but asset2 still exists
     assert asset1 not in model.assets.values()
@@ -362,6 +369,7 @@ def test_model_remove_associated_asset(model: Model):
     # removed from assets and model
     asset1.remove_associated_assets(
         fieldname = 'appExecutedApps', assets = {asset2})
+
     assert 'appExecutedApps' not in asset1.associated_assets
     assert 'hostApp' not in asset2.associated_assets
 
