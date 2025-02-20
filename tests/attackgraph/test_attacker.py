@@ -15,9 +15,9 @@ def test_attacker_to_dict(dummy_lang_graph: LanguageGraph):
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    attacker = Attacker("Test Attacker", set(), {node1})
+    attacker = Attacker("Test Attacker", set(), {node1}, attacker_id = 100)
     assert attacker.to_dict() == {
-        "id": None,
+        "id": 100,
         "name": "Test Attacker",
         "entry_points": {},
         "reached_attack_steps": {

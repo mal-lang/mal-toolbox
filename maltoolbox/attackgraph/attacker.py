@@ -23,9 +23,11 @@ class Attacker:
         attacker_id: Optional[int] = None
     ):
         self.name = name
-        self.entry_points = entry_points
-        self.reached_attack_steps = reached_attack_steps
         self.id = attacker_id
+        self.entry_points = entry_points
+        self.reached_attack_steps: set[AttackGraphNode] = set()
+        for node in reached_attack_steps:
+            self.compromise(node)
 
     def to_dict(self) -> dict:
         attacker_dict: dict = {
