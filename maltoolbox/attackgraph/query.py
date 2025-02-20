@@ -122,10 +122,14 @@ def calculate_attack_surface(
         skip_compromised: bool = False,
 ) -> set[AttackGraphNode]:
     """
-    Get the current attack surface of an attacker. This includes all of the
-    viable children nodes of already reached attack steps that are of 'or'
-    type and the 'and' type children nodes which have all of their necessary
-    parents in the attack steps reached.
+    Calculate the attack surface for the attacker. If from_nodes is provided,
+    calculate attack surface as if the attacker was standing on those nodes,
+    otherwise use all nodes the attacker has compromised. If skip_compromised is
+    set, exclude already compromised nodes from the returned attack surface.
+
+    The attack surface includes all of the viable children nodes of from_nodes
+    that are of 'or' type and the 'and' type children nodes which have all of
+    their necessary parents compromised but the attacker.
 
     Arguments:
     attacker          - the Attacker whose attack surface is sought
