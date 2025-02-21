@@ -7,7 +7,7 @@ attack graph, but do not alter the structure or nodes in any way.
 from __future__ import annotations
 from collections.abc import Iterable
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from .attackgraph import AttackGraph, Attacker
 
@@ -118,24 +118,25 @@ def is_node_traversable_by_attacker(
 def calculate_attack_surface(
         attacker: Attacker,
         *,
-        from_nodes: Iterable[AttackGraphNode] | None = None,
+        from_nodes: Optional[Iterable[AttackGraphNode]] = None,
         skip_compromised: bool = False,
 ) -> set[AttackGraphNode]:
     """
-    Calculate the attack surface for the attacker. If from_nodes is provided,
-    calculate attack surface as if the attacker was standing on those nodes,
-    otherwise use all nodes the attacker has compromised. If skip_compromised is
-    set, exclude already compromised nodes from the returned attack surface.
+    Calculate the attack surface of the attacker. If from_nodes are provided
+    only calculate the attack surface stemming from those nodes, otherwise use
+    all nodes the attacker has compromised. If skip_compromised is true,
+    exclude already compromised nodes from the returned attack surface.
 
-    The attack surface includes all of the viable children nodes of from_nodes
-    that are of 'or' type and the 'and' type children nodes which have all of
-    their necessary parents compromised but the attacker.
+    The attack surface includes all of the viable children nodes that are of
+    'or' type and the 'and' type children nodes which have all of their
+    necessary parents compromised by the attacker.
 
     Arguments:
     attacker          - the Attacker whose attack surface is sought
-    nodes             - the nodes to calculate the attack surface from; defaults
+    from_nodes        - the nodes to calculate the attack surface from; defaults
                         to the attackers compromised nodes list if omitted
-    skip_compromised  - do not add already compromised nodes to the attack surface
+    skip_compromised  - if true do not add already compromised nodes to the
+                        attack surface
     """
     logger.debug(
         'Get the attack surface for Attacker "%s"(%d).',
@@ -158,7 +159,7 @@ def calculate_attack_surface(
             if is_node_traversable_by_attacker(child, attacker) and \
                     child not in attack_surface:
                 logger.debug(
-                    'Add node "%s"(%d) to the attack surface for '
+                    'Add node "%s"(%d) to the attack surface of '
                     'Attacker "%s"(%d).',
                     child.full_name,
                     child.id,
