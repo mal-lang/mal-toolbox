@@ -144,7 +144,8 @@ def calculate_attack_surface(
         attacker.id
     )
     attack_surface = set()
-    for attack_step in from_nodes or attacker.reached_attack_steps:
+    frontier = from_nodes if from_nodes is not None else attacker.reached_attack_steps
+    for attack_step in frontier:
         logger.debug(
             'Determine attack surface stemming from '
             '"%s"(%d) for Attacker "%s"(%d).',
