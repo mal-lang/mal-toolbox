@@ -63,10 +63,11 @@ def test_operation_4() -> None:
 
 def test_operation_5() -> None:
     '''
-    Test /\\ directly in the step but use assets without an LCA
+    Test /\\ in variable but use assets without an LCA
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_5.mal"
+        test_file="test_operation_5.mal",
+        error_msg="Variable 'targets' defined at 7 does not point to an asset"
     ).test(
         error=True,
         warn=True,
@@ -158,10 +159,11 @@ def test_operation_11() -> None:
 
 def test_operation_12() -> None:
     '''
-    Test \\/ directly in the step but use assets without an LCA
+    Test \\/ in variable but use assets without an LCA
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_12.mal"
+        test_file="test_operation_12.mal",
+        error_msg="Variable 'targets' defined at 7 does not point to an asset",
     ).test(
         error=True,
         warn=True,
@@ -255,7 +257,8 @@ def test_operation_19() -> None:
     Test - directly in the step but use assets without an LCA
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_19.mal"
+        test_file="test_operation_19.mal",
+        error_msg="Variable 'targets' defined at 7 does not point to an asset",
     ).test(
         error=True,
         warn=True,

@@ -6,11 +6,11 @@ category System {
         let component = asset3
     }
     asset Asset2 extends Asset1 {
+    }
+    asset Asset3 extends Asset2 {
+    }
+    asset Asset4 extends Asset3 {
         let component = asset3
-    }
-    asset Asset3 {
-    }
-    asset Asset4 {
     }
 }
 associations {

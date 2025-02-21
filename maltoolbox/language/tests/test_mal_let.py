@@ -34,13 +34,8 @@ def test_let_2() -> None:
     Defines same let twice.
     '''
     AnalyzerTestWrapper(
-        test_file="test_let_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer','Platform','Hardware','Software'],
-        lets=[('Computer', ['component'])]
+        test_file="test_let_2.mal",
+        error_msg = 'Variable \'component\' previously defined at line 9'
     )
 
 def test_let_3() -> None:
@@ -51,13 +46,8 @@ def test_let_3() -> None:
     Defines let not pointing to asset.
     '''
     AnalyzerTestWrapper(
-        test_file="test_let_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer'],
-        lets=[('Computer', ['component'])]
+        test_file="test_let_3.mal",
+        error_msg="Variable 'component' defined at 6 does not point to an asset"
     )
 
 def test_let_4() -> None:
@@ -85,13 +75,8 @@ def test_let_5() -> None:
     Redefines let in asset in a hierarchy.
     '''
     AnalyzerTestWrapper(
-        test_file="test_let_5.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3','Asset4'],
-        lets=[('Asset1', ['component']),('Asset2',['component'])]
+        test_file="test_let_5.mal",
+        error_msg = 'Variable \'component\' previously defined at 6'
     )
 
 def test_let_6() -> None:
@@ -102,13 +87,8 @@ def test_let_6() -> None:
     Defines let in circular manner.
     '''
     AnalyzerTestWrapper(
-        test_file="test_let_6.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset3','Asset4'],
-        lets=[('Asset1', ['component1','component2'])]
+        test_file="test_let_6.mal",
+        error_msg="Variable 'component1' contains cycle component1->component2->component1"
     )
 
 def test_let_7() -> None:
@@ -167,11 +147,6 @@ def test_let_10() -> None:
     Redefines the exact same let in asset in a hierarchy.
     '''
     AnalyzerTestWrapper(
-        test_file="test_let_10.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3','Asset4'],
-        lets=[('Asset1', ['component']),('Asset2',['component'])]
+        test_file="test_let_10.mal",
+        error_msg="Variable 'component' previously defined at 6"
     )

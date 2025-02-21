@@ -40,7 +40,8 @@ def test_transitive_3() -> None:
     relationship between X and A (A is not a child of X, given X.A*)
     '''
     AnalyzerTestWrapper(
-        test_file="test_transitive_3.mal"
+        test_file="test_transitive_3.mal",
+        error_msg="Variable 'recursive_subfolders' defined at 7 does not point to an asset"
     ).test(
         error=True,
         defines=['id', 'version'],

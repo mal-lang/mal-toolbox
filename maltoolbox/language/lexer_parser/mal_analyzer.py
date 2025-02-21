@@ -451,10 +451,11 @@ class malAnalyzer(malAnalyzerInterface):
             res = self._check_to_asset(asset, self._vars[asset][var]['var']['stepExpression'])
             self._current_vars.pop()
             return res
+
         cycle = '->'.join(self._current_vars)+'->'+var
-        logging.error(f'Variable \'{var}\' contains cycle {cycle}')
-        self._error = True
-        return None
+        error_msg = f'Variable \'{var}\' contains cycle {cycle}'
+        logging.error(error_msg)
+        raise malAnalyzerException(error_msg)
 
     def _analyse_variables(self):
         '''
@@ -476,16 +477,19 @@ class malAnalyzer(malAnalyzerInterface):
                 # Otherwise, we do need to check if variables are defined more than once
                 for var in self._vars[asset].keys():
                     if parent in self._vars.keys() and var in self._vars[parent].keys() and self._vars[asset][var]['ctx']!=self._vars[parent][var]['ctx']:
-                        logging.error(f'Variable \'{var}\' previously defined at {self._vars[parent][var]['ctx'].start.line}')
-                        self._error = True
+                        error_msg = f'Variable \'{var}\' previously defined at {self._vars[parent][var]['ctx'].start.line}'
+                        logging.error(error_msg)
+                        raise malAnalyzerException(error_msg)
                 self._vars[asset].update(self._vars[parent])
         
-            # If the current asset has variables, we wnat to check they point to an asset
+            # If the current asset has variables, we want to check they point to an asset
             if asset in self._vars.keys():
                 for var in self._vars[asset].keys():
                     if self._variable_to_asset(asset, var)==None:
-                        logging.error(f'Variable \'{var}\' defined at {self._vars[asset][var]['ctx'].start.line} does not point to an asset')
-                        self._error = True
+                        error_msg = f'Variable \'{var}\' defined at {self._vars[asset][var]['ctx'].start.line} does not point to an asset'
+                        logging.error(error_msg)
+                        raise malAnalyzerException(error_msg)
+                        
 
     def checkMal(self, ctx: malParser.MalContext) -> None:
         '''
@@ -802,11 +806,9 @@ class malAnalyzer(malAnalyzerInterface):
                 self._vars[asset_name][var_name] = {'ctx': ctx, 'var': var}
             else: 
                 prev_define_line = self._vars[asset_name][var_name]['ctx'].start.line
-                logging.error(f'Variable \'{var_name}\' previously defined at line {prev_define_line}')
-                self._error = True
-        else:
-            # TODO
-            raise 
+                error_msg = f'Variable \'{var_name}\' previously defined at line {prev_define_line}'
+                logging.error(error_msg)
+                raise malAnalyzerException(error_msg)
 
     def checkAssociation(self, ctx: malParser.AssociationContext, association: dict):
         self._all_associations.append({'name': association['name'], 'association': association,'ctx':ctx})

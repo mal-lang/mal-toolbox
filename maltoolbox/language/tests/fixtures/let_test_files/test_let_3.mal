@@ -3,7 +3,13 @@
 
 category System {
     asset Computer {
-        let component = hardware
+        let component = hardware.overheat
     }
+    asset Hardware {
+        | overheat
+    }
+}
+associations {
+    Computer [host] 1 <-- SpecificHardware --> * [hardware] Hardware
 }
                                     
