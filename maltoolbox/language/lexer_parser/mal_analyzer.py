@@ -381,10 +381,10 @@ class malAnalyzer(malAnalyzerInterface):
 
             if (not leftAsset in self._assets.keys()):
                 error_msg =f'Left asset \'{leftAsset}\' is not defined' 
-                self._error = True
+                self._raise_analyzer_exception(error_msg)
             if (not rightAsset in self._assets.keys()):
                 error_msg = f'Right asset \'{leftAsset}\' is not defined'
-                self._error = True
+                self._raise_analyzer_exception(error_msg)
 
     def _analyse_fields(self) -> None:
         '''

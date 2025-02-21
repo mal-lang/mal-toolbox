@@ -34,12 +34,8 @@ def test_association_2() -> None:
     and one undefined right asset.
     '''
     AnalyzerTestWrapper(
-        test_file="test_association_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1']
+        test_file="test_association_2.mal",
+        error_msg="Right asset 'Asset1' is not defined"
     )
 
 def test_association_3() -> None:
@@ -51,14 +47,9 @@ def test_association_3() -> None:
     and one undefined left asset.
     '''
     AnalyzerTestWrapper(
-        test_file="test_association_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset2']
+        test_file="test_association_3.mal",
+        error_msg="Left asset 'Asset1' is not defined"
     )
-
 
 def test_association_4() -> None:
     '''
@@ -92,9 +83,6 @@ def test_association_6() -> None:
     Defines an association between undefined assets.
     '''
     AnalyzerTestWrapper(
-        test_file="test_association_6.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
+        test_file="test_association_6.mal",
+        error_msg="Left asset 'Asset1' is not defined"
     )
