@@ -29,14 +29,9 @@ def test_asset_info_2() -> None:
     Defines random info twice.
     '''
     AnalyzerTestWrapper(
-      test_file="test_asset_info_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Foo']
+      test_file="test_asset_info_2.mal",
+      error_msg = "Metadata random previously defined at 6"
     )
-
 
 def test_asset_info_3() -> None:
     '''
@@ -44,12 +39,8 @@ def test_asset_info_3() -> None:
     Defines random info in asset and attack step twice.
     '''
     AnalyzerTestWrapper(
-      test_file="test_asset_info_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Foo']
+      test_file="test_asset_info_3.mal",
+      error_msg = "Metadata random previously defined at 9"
     )
 
 def test_asset_info_4() -> None:
@@ -84,12 +75,8 @@ def test_asset_info_6() -> None:
     Defines random info in asset, attack step and category twice.
     '''
     AnalyzerTestWrapper(
-      test_file="test_asset_info_6.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Foo']
+      test_file="test_asset_info_6.mal",
+      error_msg = "Metadata random previously defined at 5"
     )
 
 def test_asset_info_7() -> None:
@@ -137,12 +124,8 @@ def test_asset_info_10() -> None:
     Defines random info in asset, attack step, category and twice in the association
     '''
     AnalyzerTestWrapper(
-      test_file="test_asset_info_10.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System','AnotherSystem'],
-        assets=['Foo','Bar']
+      test_file="test_asset_info_10.mal",
+      error_msg = "Metadata random previously defined at 28"
     )
 
 def test_asset_info_11() -> None:
@@ -178,12 +161,8 @@ def test_asset_info_13() -> None:
     Defines random info in asset twice but with a different meta between them
     '''
     AnalyzerTestWrapper(
-      test_file="test_asset_info_13.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Foo']
+      test_file="test_asset_info_13.mal",
+      error_msg = "Metadata random previously defined at 5"
     )
 
 def test_asset_info_14() -> None:

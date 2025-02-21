@@ -584,8 +584,9 @@ class malAnalyzer(malAnalyzerInterface):
         # Otherwise, throw error
         else:
             prev_ctx = self._metas[ctx.parentCtx][meta_name]
-            logging.error(f'Metadata {meta_name} previously defined at {prev_ctx.start.line}')
-            self._error = True
+            error_msg = f'Metadata {meta_name} previously defined at {prev_ctx.start.line}'
+            logging.error(error_msg)
+            raise malAnalyzerException(error_msg)
 
     def _get_parents(self, ctx: malParser.AssetContext) -> List[dict[str, malParser.AssetContext]]:
         '''
