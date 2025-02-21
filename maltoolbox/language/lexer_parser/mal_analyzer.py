@@ -416,12 +416,12 @@ class malAnalyzer(malAnalyzerInterface):
                     self._associations[asset][field] = {k: association[k] for k in ["association", "ctx"]}
             # Otherwise, this will be an error
             else:
-                self._error = True
-                logging.error(f'Field {field} previously defined as an attack step at {step_ctx.start.line}')
+                error_msg = f'Field {field} previously defined as an attack step at {step_ctx.start.line}'
+                self._raise_analyzer_exception(error_msg)
         # Association field was already defined for this asset
         else:
-            logging.error(f'Field {parent}.{field} previously defined at {self._associations[asset][field]['ctx'].start.line}')
-            self._error = True
+            error_msg = f'Field {parent}.{field} previously defined at {self._associations[asset][field]['ctx'].start.line}'
+            self._raise_analyzer_exception(error_msg)
 
     def _has_step(self, asset, field):
         if asset in self._steps.keys() and field in self._steps[asset]:

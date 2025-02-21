@@ -32,13 +32,8 @@ def test_fields_2() -> None:
     Defines association in child with same name as parent
     '''
     AnalyzerTestWrapper(
-        test_file="test_fields_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
-        associations=[('Asset1',['a3']), ('Asset2',['a3']), ('Asset3',['a1','a2'])]
+        test_file="test_fields_2.mal",
+        error_msg="Field Asset2.a3 previously defined at 10"
     )
 
 def test_fields_3() -> None:
@@ -48,11 +43,6 @@ def test_fields_3() -> None:
     Defines association with same name as attack step
     '''
     AnalyzerTestWrapper(
-        test_file="test_fields_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
-        associations=[('Asset1',['a3']), ('Asset2',['a3']), ('Asset3',['a1','a2'])]
+        test_file="test_fields_3.mal",
+        error_msg = "Field attack previously defined as an attack step at 7"
     )
