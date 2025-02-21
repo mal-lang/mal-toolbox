@@ -28,7 +28,7 @@ def test_define_2() -> None:
 
 def test_define_3() -> None:
     '''
-    Defines correct version but wrong ID.
+    Defines correct ID but wrong version.
     '''
     AnalyzerTestWrapper('''
     #id: "org.mal-lang.testAnalyzer"
@@ -51,14 +51,13 @@ def test_define_4() -> None:
 
 def test_define_5() -> None:
     '''
-    Defines correct version and ID, but ID twice.
+    Defines correct version and ID, but version twice.
     '''
     AnalyzerTestWrapper('''
     #id: "org.mal-lang.testAnalyzer"
     #version:"0.0.0"
     #version:"1.0.0"
     ''').test(
-        error=True,
         defines=['id', 'version']
     )
 
@@ -88,4 +87,16 @@ def test_define_7() -> None:
     ''').test(
         error=True,
         defines=['id', 'version', 'key']
+    )
+
+def test_define_8() -> None:
+    '''
+    Defines correct version and ID, but id twice.
+    '''
+    AnalyzerTestWrapper('''
+    #id: "org.mal-lang.testAnalyzer"
+    #version:"0.0.0"
+    #version:"1.0.0"
+    ''').test(
+        defines=['id', 'version']
     )

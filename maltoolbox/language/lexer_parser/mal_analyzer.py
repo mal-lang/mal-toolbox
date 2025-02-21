@@ -499,7 +499,8 @@ class malAnalyzer(malAnalyzerInterface):
         _, obj = data
         key, value = list(obj.items())[0]
         
-        if(key in self._defines.keys()):
+        # ID and version can be defined multiple times
+        if(key!='id' and key!='version' and key in self._defines.keys()):
             prev_define_line = self._defines[key]['ctx'].start.line
             logging.error(f'Define \'{key}\' previously defined at line {prev_define_line}')
             self._error = True
