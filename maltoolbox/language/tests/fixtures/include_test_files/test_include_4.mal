@@ -1,0 +1,2 @@
+include "test_include_4_aux.mal" 
+#key: "test"

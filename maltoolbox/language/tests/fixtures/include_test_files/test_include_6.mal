@@ -1,0 +1,5 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+                    
+include "test_include_empty.mal"                     
+include "test_include_empty.mal"                     

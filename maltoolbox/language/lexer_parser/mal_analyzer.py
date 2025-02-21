@@ -47,6 +47,7 @@ class malAnalyzer(malAnalyzerInterface):
 
         self._all_associations   = []
         self._current_vars       = []
+        self._include_stack      = []
 
         super().__init__(*args, **kwargs)
         
@@ -481,16 +482,24 @@ class malAnalyzer(malAnalyzerInterface):
         '''
         if (self._preform_post_analysis==0):
             self._post_analysis()
-        self._preform_post_analysis -= 1 
+        else:
+            self._include_stack.pop()
+            self._preform_post_analysis -= 1 
 
     def checkInclude(self, ctx: malParser.MalContext, data: Tuple[str, str]) -> None:       
         '''
         When an include is found, it triggers the analysis of a new MAL file. To prevent
-        checkMal from being performed before all files have been analysed, we set the 
-        variable to false and, every time the file is finished being analysed, it is set
-        to True again (in checkMal()). This prevents out-of-order analysis.
+        checkMal from being performed before all files have been analysed, we increment
+        the variable and, every time the file is finished being analysed, it is decreased 
+        again (in checkMal()). This prevents out-of-order analysis.
         '''
         self._preform_post_analysis += 1 
+
+        include_file = ctx.STRING().getText()
+        if include_file in self._include_stack:
+            logging.error(self._error)
+            self._error = True
+        self._include_stack.append(ctx.STRING().getText())
 
     def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
         '''

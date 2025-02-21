@@ -1,0 +1,3 @@
+include "test_include_5_aux1.mal" 
+include "test_include_5_aux2.mal" 
+#key: "test"

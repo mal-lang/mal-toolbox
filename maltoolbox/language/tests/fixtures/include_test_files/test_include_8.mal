@@ -1,0 +1,4 @@
+include "test_include_8_aux1.mal"
+
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"                  
