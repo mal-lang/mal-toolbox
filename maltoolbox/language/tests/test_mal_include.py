@@ -16,7 +16,8 @@ def test_include_1() -> None:
     Missing keys ID and version.
     '''
     AnalyzerTestWrapper(
-        test_file="test_include_1.mal"
+        test_file="test_include_1.mal",
+        error_msg = 'Missing required define \'#id: ""\''
     ).test(
         error=True
     )

@@ -27,6 +27,11 @@ class malAnalyzerInterface:
     def checkReaches(self, ctx: malParser.ReachesContext, data: dict) -> None:
         pass
 
+class malAnalyzerException(Exception):
+    def __init__(self, error_message):
+        self._error_message = error_message
+        super().__init__(self._error_message)
+
 class malAnalyzer(malAnalyzerInterface):
     '''
     A class to preform syntax-checks for MAL.
@@ -34,6 +39,7 @@ class malAnalyzer(malAnalyzerInterface):
         
     def __init__(self, *args, **kwargs) -> None:
         self._error: bool = False
+        self._error_msg: str = ""
         self._warn: bool = False
         self._preform_post_analysis = 0 
 
@@ -79,20 +85,27 @@ class malAnalyzer(malAnalyzerInterface):
         if 'id' in self._defines.keys():
             define_value: str = self._defines['id']['value']
             if (len(define_value) == 0):
-                logging.error('Define \'id\' cannot be empty')
+                error_msg = 'Define \'id\' cannot be empty'
+                logging.error(error_msg)
                 self._error = True
         else:
-            logging.error('Missing required define \'#id: ""\'')
+            error_msg = 'Missing required define \'#id: ""\''
+            logging.error(error_msg)
             self._error = True
+            raise malAnalyzerException(error_msg)
 
         if 'version' in self._defines.keys():
             version: str = self._defines['version']['value']
             if not re.match(r"\d+\.\d+\.\d+", version):
-                logging.error(f'Define \'version\' must be valid semantic versioning without pre-release identifier and build metadata')
+                error_msg = 'Define \'version\' must be valid semantic versioning without pre-release identifier and build metadata'
+                logging.error(error_msg)
                 self._error = True
+                raise malAnalyzerException(error_msg)
         else:
-            logging.error('Missing required define \'#version: ""\'')
+            error_msg = 'Missing required define \'#version: ""\''
+            logging.error(error_msg)
             self._error = True
+            raise malAnalyzerException(error_msg)
 
     def _analyse_extends(self) -> None:
         '''

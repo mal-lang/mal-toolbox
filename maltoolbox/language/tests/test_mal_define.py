@@ -15,7 +15,8 @@ def test_define_1() -> None:
     Defines only version.
     '''
     AnalyzerTestWrapper(
-        test_file="test_define_1.mal"
+        test_file="test_define_1.mal",
+        error_msg = 'Missing required define \'#id: ""\''
     ).test(
         error=True,
         defines=['version']
@@ -26,7 +27,8 @@ def test_define_2() -> None:
     Defines only ID.
     '''
     AnalyzerTestWrapper(
-        test_file="test_define_2.mal"
+        test_file="test_define_2.mal",
+        error_msg='Missing required define \'#version: ""\''
     ).test(
         error=True,
         defines=['id']
@@ -37,7 +39,8 @@ def test_define_3() -> None:
     Defines correct ID but wrong version.
     '''
     AnalyzerTestWrapper(
-        test_file="test_define_3.mal"
+        test_file="test_define_3.mal",
+        error_msg='Define \'version\' must be valid semantic versioning without pre-release identifier and build metadata'
     ).test(
         error=True,
         defines=['id', 'version']
