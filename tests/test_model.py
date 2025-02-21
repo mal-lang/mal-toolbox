@@ -455,14 +455,12 @@ def test_model_add_attacker(model: Model):
 
     # Add attacker 1
     attacker1 = AttackerAttachment()
-    attacker1.entry_points = []
     model.add_attacker(attacker1)
     assert attacker1.name == f'Attacker:{attacker1.id}'
 
     # Add attacker 2 with explicit id set (can be duplicate id)
     attacker2_id = attacker1.id
     attacker2 = AttackerAttachment()
-    attacker2.entry_points = []
     model.add_attacker(attacker2, attacker_id=attacker2_id)
 
     # Add attacker 2 with explicit id set (can be duplicate id)
@@ -515,7 +513,6 @@ def test_model_get_attacker_by_id(model: Model):
 
     # Add attacker 1
     attacker1 = AttackerAttachment()
-    attacker1.entry_points = []
     model.add_attacker(attacker1)
 
     assert attacker1.id is not None

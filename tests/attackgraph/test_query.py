@@ -16,11 +16,7 @@ def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
     attack_graph = AttackGraph(dummy_lang_graph)
 
     # An attacker with no meaningful data
-    attacker = Attacker(
-        name = "Test Attacker",
-        entry_points = set(),
-        reached_attack_steps = set()
-    )
+    attacker = Attacker(name = "Test Attacker")
     attack_graph.add_attacker(attacker)
 
     # Node 3 should not be traversable since node has type AND and it has two
@@ -114,7 +110,6 @@ def test_get_attack_surface(dummy_lang_graph: LanguageGraph):
     # Make sure compromised node has attacker added to it
     attacker = Attacker(
         name = "Test Attacker",
-        entry_points = set(),
         reached_attack_steps = {node0, node1, node2},
         attacker_id = 100
     )

@@ -58,7 +58,6 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
     attacker = Attacker(
         name = "Test Attacker",
         entry_points = {node1},
-        reached_attack_steps = set()
     )
 
     attack_graph.add_attacker(attacker)

@@ -18,15 +18,15 @@ class Attacker:
     def __init__(
         self,
         name: str,
-        entry_points: set[AttackGraphNode],
-        reached_attack_steps: set[AttackGraphNode],
+        entry_points: Optional[set[AttackGraphNode]] = None,
+        reached_attack_steps: Optional[set[AttackGraphNode]] = None,
         attacker_id: Optional[int] = None
     ):
         self.name = name
         self.id = attacker_id
-        self.entry_points = entry_points
+        self.entry_points = entry_points or set()
         self.reached_attack_steps: set[AttackGraphNode] = set()
-        for node in reached_attack_steps:
+        for node in reached_attack_steps or {}:
             self.compromise(node)
 
     def to_dict(self) -> dict:
@@ -62,12 +62,7 @@ class Attacker:
         if id(self) in memo:
             return memo[id(self)]
 
-        copied_attacker = Attacker(
-            name = self.name,
-            attacker_id = self.id,
-            entry_points = set(),
-            reached_attack_steps = set()
-        )
+        copied_attacker = Attacker(self.name, attacker_id = self.id)
 
         # Remember that self was already copied
         memo[id(self)] = copied_attacker
