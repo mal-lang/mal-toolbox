@@ -555,7 +555,6 @@ class malAnalyzer(malAnalyzerInterface):
         asset_name = asset['name']
         category_name = ctx.parentCtx.ID().getText()
 
-        # TODO: is this really needed? doesn't the grammar prevent this?
         if (not asset_name or asset_name == '<missing <INVALID>>'):
             logging.error(f"Asset was defined without a name at line {ctx.start.line}")
             self._error = True
@@ -564,8 +563,10 @@ class malAnalyzer(malAnalyzerInterface):
         # Check if asset was previously defined // in same category.
         if asset_name in self._assets.keys(): # and str(self._assets[asset_name]['parent']['name']) == str(category_name):
             prev_asset_line = self._assets[asset_name]['ctx'].start.line
-            logging.error(f"Asset '{asset_name}' previously defined at {prev_asset_line}")
+            error_msg = f"Asset '{asset_name}' previously defined at {prev_asset_line}"
+            logging.error(error_msg)
             self._error = True
+            raise(malAnalyzerException(error_msg))
             return
         else:
             self._assets[asset_name] = {'ctx': ctx, 'obj': asset, 'parent': {'name': ctx.parentCtx.ID().getText() ,'ctx': ctx.parentCtx}}
