@@ -5,8 +5,10 @@ from lexer_parser.mal_lexer import malLexer
 from lexer_parser.mal_parser import malParser
 from lexer_parser.mal_visitor import malVisitor
 from lexer_parser.mal_analyzer import malAnalyzer
+from lexer_parser.mal_analyzer import malAnalyzerException
 
 import os
+import pytest
 from pathlib import Path
 
 class MockCompiler():
@@ -31,7 +33,7 @@ class MockCompiler():
         return malVisitor(compiler=self, analyzer=self._analyzer).visit(tree)
 
 class AnalyzerTestWrapper(malAnalyzer):
-    def __init__(self, input_string: str = None, test_file: str = None) -> None:
+    def __init__(self, input_string: str = None, test_file: str = None, error_msg: str = None) -> None:
         super().__init__()
 
         if test_file and Path(test_file).exists():
@@ -45,7 +47,11 @@ class AnalyzerTestWrapper(malAnalyzer):
         tree = parser.mal()
         compiler = MockCompiler(self)
         try:
-            self._result = malVisitor(compiler=compiler,  analyzer=self).visit(tree)
+            if error_msg:
+                with pytest.raises(malAnalyzerException, match=error_msg):
+                    self._result = malVisitor(compiler=compiler,  analyzer=self).visit(tree)
+            else:
+                self._result = malVisitor(compiler=compiler,  analyzer=self).visit(tree)
         except SyntaxError:
             self._error = True
         except RuntimeError:
