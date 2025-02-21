@@ -123,11 +123,9 @@ class malAnalyzer(malAnalyzerInterface):
                     in the same category? If so we can load the asset
                     and check it's parent
                     '''
-                    logging.error(f'Asset \'{extend_asset_name}\' not defined')
-                    raise_error = True
-        if raise_error:
-            self._error = True   # Maybe unnecessary if we raise
-            raise SyntaxError(f'Asset \'{extend_asset_name}\' not defined')
+                    error_msg = f'Asset \'{extend_asset_name}\' not defined'
+                    logging.error(error_msg)
+                    raise malAnalyzerException(error_msg)
 
     def _analyse_abstract(self) -> None:
         '''
@@ -157,11 +155,11 @@ class malAnalyzer(malAnalyzerInterface):
             while (isinstance(parent_ctx, malParser.AssetContext)):
                 parent_name: str = parent_ctx.ID()[0].getText()
                 if (parent_name in parents):
-                    err_msg: str = ' -> '.join(parents)
-                    err_msg += f' -> {parent_name}' 
-                    logging.error(f'Asset \'{parent_name}\' extends in loop \'{err_msg}\'')
-                    self._error = True
-                    break
+                    error_msg: str = ' -> '.join(parents)
+                    error_msg += f' -> {parent_name}' 
+                    error_msg = f'Asset \'{parent_name}\' extends in loop \'{error_msg}\''
+                    logging.error(error_msg)
+                    raise malAnalyzerException(error_msg)
                 parents.append(parent_name)
                 parent_ctx = self._get_assets_extendee(parent_ctx)
 

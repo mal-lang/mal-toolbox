@@ -34,12 +34,8 @@ def test_extends_2() -> None:
     Extends asset with undefined asset.
     '''
     AnalyzerTestWrapper(
-        test_file="test_extends_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Foo1']
+        test_file="test_extends_2.mal",
+        error_msg = "Asset \'Foo2\' not defined"
     )
 
 def test_extends_3() -> None:
@@ -50,14 +46,9 @@ def test_extends_3() -> None:
     Tests circular dependency with extends
     '''
     AnalyzerTestWrapper(
-        test_file="test_extends_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Foo1', 'Foo2', 'Foo3', 'Foo4', 'Foo5']
+        test_file="test_extends_3.mal",
+        error_msg = "Asset 'Foo1' extends in loop 'Foo1 -> Foo2 -> Foo3 -> Foo4 -> Foo5 -> Foo1'"
     )
-
 
 def test_extends_4() -> None:
     '''
