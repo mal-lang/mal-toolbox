@@ -56,7 +56,11 @@ class malAnalyzer(malAnalyzerInterface):
         self._include_stack      = []
 
         super().__init__(*args, **kwargs)
-        
+    
+    def _raise_analyzer_exception(self, error_msg:str):
+        logging.error(error_msg)
+        raise malAnalyzerException(error_msg)
+
     def has_error(self) -> bool:
         return self._error
     
@@ -86,26 +90,19 @@ class malAnalyzer(malAnalyzerInterface):
             define_value: str = self._defines['id']['value']
             if (len(define_value) == 0):
                 error_msg = 'Define \'id\' cannot be empty'
-                logging.error(error_msg)
-                self._error = True
+                self._raise_analyzer_exception(error_msg)
         else:
             error_msg = 'Missing required define \'#id: ""\''
-            logging.error(error_msg)
-            self._error = True
-            raise malAnalyzerException(error_msg)
+            self._raise_analyzer_exception(error_msg)
 
         if 'version' in self._defines.keys():
             version: str = self._defines['version']['value']
             if not re.match(r"\d+\.\d+\.\d+", version):
                 error_msg = 'Define \'version\' must be valid semantic versioning without pre-release identifier and build metadata'
-                logging.error(error_msg)
-                self._error = True
-                raise malAnalyzerException(error_msg)
+                self._raise_analyzer_exception(error_msg)
         else:
             error_msg = 'Missing required define \'#version: ""\''
-            logging.error(error_msg)
-            self._error = True
-            raise malAnalyzerException(error_msg)
+            self._raise_analyzer_exception(error_msg)
 
     def _analyse_extends(self) -> None:
         '''
@@ -124,8 +121,7 @@ class malAnalyzer(malAnalyzerInterface):
                     and check it's parent
                     '''
                     error_msg = f'Asset \'{extend_asset_name}\' not defined'
-                    logging.error(error_msg)
-                    raise malAnalyzerException(error_msg)
+                    self._raise_analyzer_exception(error_msg)
 
     def _analyse_abstract(self) -> None:
         '''
@@ -158,8 +154,7 @@ class malAnalyzer(malAnalyzerInterface):
                     error_msg: str = ' -> '.join(parents)
                     error_msg += f' -> {parent_name}' 
                     error_msg = f'Asset \'{parent_name}\' extends in loop \'{error_msg}\''
-                    logging.error(error_msg)
-                    raise malAnalyzerException(error_msg)
+                    self._raise_analyzer_exception(error_msg)
                 parents.append(parent_name)
                 parent_ctx = self._get_assets_extendee(parent_ctx)
 
@@ -385,10 +380,10 @@ class malAnalyzer(malAnalyzerInterface):
             rightAsset= association['association']['rightAsset']
 
             if (not leftAsset in self._assets.keys()):
-                logging.error(f'Left asset \'{leftAsset}\' is not defined')
+                error_msg =f'Left asset \'{leftAsset}\' is not defined' 
                 self._error = True
             if (not rightAsset in self._assets.keys()):
-                logging.error(f'Right asset \'{leftAsset}\' is not defined')
+                error_msg = f'Right asset \'{leftAsset}\' is not defined'
                 self._error = True
 
     def _analyse_fields(self) -> None:
@@ -454,8 +449,7 @@ class malAnalyzer(malAnalyzerInterface):
 
         cycle = '->'.join(self._current_vars)+'->'+var
         error_msg = f'Variable \'{var}\' contains cycle {cycle}'
-        logging.error(error_msg)
-        raise malAnalyzerException(error_msg)
+        self._raise_analyzer_exception(error_msg)
 
     def _analyse_variables(self):
         '''
@@ -478,8 +472,7 @@ class malAnalyzer(malAnalyzerInterface):
                 for var in self._vars[asset].keys():
                     if parent in self._vars.keys() and var in self._vars[parent].keys() and self._vars[asset][var]['ctx']!=self._vars[parent][var]['ctx']:
                         error_msg = f'Variable \'{var}\' previously defined at {self._vars[parent][var]['ctx'].start.line}'
-                        logging.error(error_msg)
-                        raise malAnalyzerException(error_msg)
+                        self._raise_analyzer_exception(error_msg)
                 self._vars[asset].update(self._vars[parent])
         
             # If the current asset has variables, we want to check they point to an asset
@@ -487,8 +480,7 @@ class malAnalyzer(malAnalyzerInterface):
                 for var in self._vars[asset].keys():
                     if self._variable_to_asset(asset, var)==None:
                         error_msg = f'Variable \'{var}\' defined at {self._vars[asset][var]['ctx'].start.line} does not point to an asset'
-                        logging.error(error_msg)
-                        raise malAnalyzerException(error_msg)
+                        self._raise_analyzer_exception(error_msg)
                         
 
     def checkMal(self, ctx: malParser.MalContext) -> None:
@@ -566,10 +558,7 @@ class malAnalyzer(malAnalyzerInterface):
         if asset_name in self._assets.keys(): # and str(self._assets[asset_name]['parent']['name']) == str(category_name):
             prev_asset_line = self._assets[asset_name]['ctx'].start.line
             error_msg = f"Asset '{asset_name}' previously defined at {prev_asset_line}"
-            logging.error(error_msg)
-            self._error = True
-            raise(malAnalyzerException(error_msg))
-            return
+            self._raise_analyzer_exception(error_msg)
         else:
             self._assets[asset_name] = {'ctx': ctx, 'obj': asset, 'parent': {'name': ctx.parentCtx.ID().getText() ,'ctx': ctx.parentCtx}}
 
@@ -589,8 +578,7 @@ class malAnalyzer(malAnalyzerInterface):
         else:
             prev_ctx = self._metas[ctx.parentCtx][meta_name]
             error_msg = f'Metadata {meta_name} previously defined at {prev_ctx.start.line}'
-            logging.error(error_msg)
-            raise malAnalyzerException(error_msg)
+            self._raise_analyzer_exception(error_msg)
 
     def _get_parents(self, ctx: malParser.AssetContext) -> List[dict[str, malParser.AssetContext]]:
         '''
@@ -807,8 +795,7 @@ class malAnalyzer(malAnalyzerInterface):
             else: 
                 prev_define_line = self._vars[asset_name][var_name]['ctx'].start.line
                 error_msg = f'Variable \'{var_name}\' previously defined at line {prev_define_line}'
-                logging.error(error_msg)
-                raise malAnalyzerException(error_msg)
+                self._raise_analyzer_exception(error_msg)
 
     def checkAssociation(self, ctx: malParser.AssociationContext, association: dict):
         self._all_associations.append({'name': association['name'], 'association': association,'ctx':ctx})

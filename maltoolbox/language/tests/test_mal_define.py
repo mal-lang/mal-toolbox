@@ -17,9 +17,6 @@ def test_define_1() -> None:
     AnalyzerTestWrapper(
         test_file="test_define_1.mal",
         error_msg = 'Missing required define \'#id: ""\''
-    ).test(
-        error=True,
-        defines=['version']
     )
 
 def test_define_2() -> None:
@@ -29,9 +26,6 @@ def test_define_2() -> None:
     AnalyzerTestWrapper(
         test_file="test_define_2.mal",
         error_msg='Missing required define \'#version: ""\''
-    ).test(
-        error=True,
-        defines=['id']
     )
 
 def test_define_3() -> None:
@@ -41,9 +35,6 @@ def test_define_3() -> None:
     AnalyzerTestWrapper(
         test_file="test_define_3.mal",
         error_msg='Define \'version\' must be valid semantic versioning without pre-release identifier and build metadata'
-    ).test(
-        error=True,
-        defines=['id', 'version']
     )
 
 def test_define_4() -> None:
@@ -84,9 +75,6 @@ def test_define_7() -> None:
     '''
     AnalyzerTestWrapper(
         test_file="test_define_7.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version', 'key']
     )
 
 def test_define_8() -> None:
