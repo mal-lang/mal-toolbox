@@ -501,7 +501,6 @@ class malAnalyzer(malAnalyzerInterface):
             cycle = '->'.join([file.replace('"',"") for file in self._include_stack])+' -> '+include_file.replace('"',"")
             error_msg = f'Include sequence contains cycle: {cycle}'
             self._raise_analyzer_exception(error_msg)
-            #self._error = True
         self._include_stack.append(ctx.STRING().getText())
 
     def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
@@ -514,9 +513,8 @@ class malAnalyzer(malAnalyzerInterface):
         # ID and version can be defined multiple times
         if(key!='id' and key!='version' and key in self._defines.keys()):
             prev_define_line = self._defines[key]['ctx'].start.line
-            logging.error(f'Define \'{key}\' previously defined at line {prev_define_line}')
-            self._error = True
-            return 
+            error_msg = f'Define \'{key}\' previously defined at line {prev_define_line}'
+            self._raise_analyzer_exception(error_msg)
         
         self._defines[key] = {'ctx': ctx, 'value': value}
     

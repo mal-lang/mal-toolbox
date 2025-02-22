@@ -74,7 +74,8 @@ def test_define_7() -> None:
     Defines Key with value twice.
     '''
     AnalyzerTestWrapper(
-        test_file="test_define_7.mal"
+        test_file="test_define_7.mal",
+        error_msg="Define 'key' previously defined at line 3"
     )
 
 def test_define_8() -> None:
