@@ -637,8 +637,8 @@ class malAnalyzer(malAnalyzerInterface):
                             current_steps.append(attackStep)
                         else:
                             # Step was defined using '+>', but there is nothing to inherit from
-                            logging.error(f'Cannot inherit attack step \'{attackStep}\' without previous definition')
-                            self._error = True
+                            error_msg = f'Cannot inherit attack step \'{attackStep}\' without previous definition'
+                            self._raise_analyzer_exception(error_msg)
                     else:
                         # Step was previously defined in a parent
                         # So it must be of the same type (&, |, #, E, !E)
@@ -649,10 +649,10 @@ class malAnalyzer(malAnalyzerInterface):
                             current_steps.append(attackStep)
                         else:
                             # Invalid, type mismatches that of parent
-                            logging.error((f"Cannot override attack step \'{attackStep}\' previously defined "
-                                f"at {parent_attackStep_ctx.start.line} with different type \'{attackStep_ctx.steptype().getText()}\' "
-                                f"=/= \'{parent_attackStep_ctx.steptype().getText()}\'"))
-                            self._error = True
+                            error_msg = f"Cannot override attack step \'{attackStep}\' previously defined " + \
+                                        f"at {parent_attackStep_ctx.start.line} with different type \'{attackStep_ctx.steptype().getText()}\' " + \
+                                        f"=/= \'{parent_attackStep_ctx.steptype().getText()}\'"
+                            self._raise_analyzer_exception(error_msg)
                 else:
                     # Step already defined in this asset
                     logging.error(f'Attack step \'{attackStep}\' previously defined at {self._steps[parent][attackStep]['ctx'].start.line}')
@@ -684,8 +684,8 @@ class malAnalyzer(malAnalyzerInterface):
         # Otherwise, log error
         else:
             prev_ctx = self._steps[asset_name][step_name]['ctx']
-            logging.error(f'Attack step \'{step_name}\' previously defined at {prev_ctx.start.line}')
-            self._error = True
+            error_msg = f'Attack step \'{step_name}\' previously defined at {prev_ctx.start.line}'
+            self._raise_analyzer_exception(error_msg)
 
         self._validate_CIA(ctx, step)
         self._validate_TTC(ctx, asset_name, step)

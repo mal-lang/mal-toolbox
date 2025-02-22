@@ -33,14 +33,9 @@ def test_step_2() -> None:
     Defines steps with same name and other type.
     '''
     AnalyzerTestWrapper(
-        test_file="test_step_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Test']
+        test_file="test_step_2.mal",
+        error_msg="Attack step 'step1' previously defined at 7"
     )
-
 
 def test_step_3() -> None:
     '''
@@ -50,12 +45,8 @@ def test_step_3() -> None:
     Defines steps with same name and same type.
     '''
     AnalyzerTestWrapper(
-        test_file="test_step_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Test']
+        test_file="test_step_3.mal",
+        error_msg="Attack step 'step1' previously defined at 7"
     )
 
 def test_step_4() -> None:

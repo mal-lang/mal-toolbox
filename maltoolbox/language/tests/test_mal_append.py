@@ -89,10 +89,6 @@ def test_append_7() -> None:
     Test append to a child's step
     '''
     AnalyzerTestWrapper(
-        test_file='test_append_7.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'Machine', 'Lenovo', 'Server']
+        test_file='test_append_7.mal',
+        error_msg="Cannot inherit attack step 'lenovoStep' without previous definition"
     )

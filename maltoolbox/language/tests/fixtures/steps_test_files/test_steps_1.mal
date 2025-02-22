@@ -5,9 +5,10 @@ category System {
     asset Test 
     {
         | guessPassword
-        +> authenticate
+        -> authenticate
         | stealPassword
         -> authenticate
+        | authenticate
     } 
 } 
                                     

@@ -20,7 +20,6 @@ def test_steps_1() -> None:
     AnalyzerTestWrapper(
         test_file="test_steps_1.mal"
     ).test(
-        error=True,
         defines=['id', 'version'],
         categories=['System'],
         assets=['Test']
@@ -34,12 +33,8 @@ def test_steps_2() -> None:
     Defines a step with '+>' when there isn't parent asset with that step
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux']
+        test_file="test_steps_2.mal",
+        error_msg="Cannot inherit attack step 'spyware' without previous definition"
     )
 
 def test_steps_3() -> None:
@@ -50,12 +45,8 @@ def test_steps_3() -> None:
     Defines a step with '+>' when there is another asset with that step but it isn't extended
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux', 'OperatingSystem']
+        test_file="test_steps_3.mal",
+        error_msg="Cannot inherit attack step 'spyware' without previous definition"
     )
 
 def test_steps_4() -> None:
@@ -75,12 +66,8 @@ def test_steps_5() -> None:
     Define an asset with a step inherited from the parent but with different types (&)
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_5.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux', 'OperatingSystem']
+        test_file="test_steps_5.mal",
+        error_msg="Cannot override attack step 'spyware' previously defined at 7 with different type '|' =/= '&"
     )
 
 def test_steps_6() -> None:
@@ -88,12 +75,8 @@ def test_steps_6() -> None:
     Define an asset with a step inherited from the parent but with different types (|)
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_6.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Linux', 'OperatingSystem']
+        test_file="test_steps_6.mal",
+        error_msg="Cannot override attack step 'spyware' previously defined at 7 with different type '&' =/= '|'"
     )
 
 def test_steps_7() -> None:
@@ -101,12 +84,8 @@ def test_steps_7() -> None:
     Define an asset with a step inherited from the parent but with different types (E)
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_7.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'ThinkPad','Camera']
+        test_file="test_steps_7.mal",
+        error_msg="Cannot override attack step 'compromiseCamera' previously defined at 7 with different type '!E' =/= 'E'"
     )
 
 def test_steps_8() -> None:
@@ -114,12 +93,8 @@ def test_steps_8() -> None:
     Define an asset with a step inherited from the parent but with different types (!E)
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_8.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'ThinkPad','Camera']
+        test_file="test_steps_8.mal",
+        error_msg="Cannot override attack step 'noCamera' previously defined at 7 with different type 'E' =/= '!E'"
     )
 
 def test_steps_9() -> None:
@@ -139,12 +114,8 @@ def test_steps_10() -> None:
     Test wrong type of extend step in a longer hierarchy
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_10.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Machine', 'Computer','Thinkpad']
+        test_file="test_steps_10.mal",
+        error_msg="Cannot override attack step 'compromise' previously defined at 6 with different type '&' =/= '|'"
     )
 
 def test_steps_11() -> None:
@@ -179,12 +150,8 @@ def test_steps_13() -> None:
     Test if mismatched step types works if the extended asset is in another file
     '''
     AnalyzerTestWrapper(
-        test_file="test_steps_13.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Machine', 'Computer','Thinkpad']
+        test_file="test_steps_13.mal",
+        error_msg="Cannot override attack step 'compromise' previously defined at 3 with different type '&' =/= '|'"
     )
 
 def test_steps_14() -> None:
