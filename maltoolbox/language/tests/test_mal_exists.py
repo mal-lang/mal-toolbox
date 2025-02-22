@@ -89,10 +89,6 @@ def test_exists_8() -> None:
     Test normal step with a requires
     '''
     AnalyzerTestWrapper(
-        test_file="test_exists_8.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
+        test_file="test_exists_8.mal",
+        error_msg="Require '<-' may only be defined for attack step type exist 'E' or not-exist '!E'"
     )

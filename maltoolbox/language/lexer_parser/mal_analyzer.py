@@ -178,10 +178,8 @@ class malAnalyzer(malAnalyzerInterface):
                         error_msg = f'Attack step of type \'{attack_step["type"]}\' must have require \'<-\''
                         self._raise_analyzer_exception(error_msg)
                 elif (attack_step['requires']):
-                        logging.error('Require \'<-\' may only be defined for attack step type exist \'E\' or not-exist \'!E\'')
-                        self._error = True
-                        continue 
-                
+                        error_msg = 'Require \'<-\' may only be defined for attack step type exist \'E\' or not-exist \'!E\''
+                        self._raise_analyzer_exception(error_msg)
                 if (attack_step['reaches']):
                     # Verify if every reaches expresion returns an attack step
                     for expr in attack_step['reaches']['stepExpressions']:
