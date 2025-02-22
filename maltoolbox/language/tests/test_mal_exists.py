@@ -27,12 +27,8 @@ def test_exists_2() -> None:
     Test existance with a reach with a non-existing attack step
     '''
     AnalyzerTestWrapper(
-        test_file="test_exists_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
+        test_file="test_exists_2.mal",
+        error_msg="Attack step 'wrongStep' not defined for asset 'Asset1'"
     )
 
 def test_exists_3() -> None:

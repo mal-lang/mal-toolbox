@@ -66,10 +66,6 @@ def test_transitive_5() -> None:
     Define a transitive expression, but call it without a step belonging to the asset
     '''
     AnalyzerTestWrapper(
-        test_file="test_transitive_5.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Folder', 'SubFolder']
+        test_file="test_transitive_5.mal",
+        error_msg="Attack step 'wrongStep' not defined for asset 'SubFolder'"
     )

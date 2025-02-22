@@ -10,7 +10,7 @@ category System {
     asset SubNet extends Network {
         let hostsOperatingSystems = hosts.operatingSystems
         | acces
-        -> hostsOperatingSystems(),attack 
+        -> hostsOperatingSystems().attack 
     }
 
     asset Computer

@@ -53,12 +53,8 @@ def test_operation_4() -> None:
     Test /\\ directly in the step but do not use an attack step belonging to the LCA
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_4.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_operation_4.mal",
+        error_msg="Attack step 'foundWindows' not defined for asset 'OperatingSystem'"
     )
 
 def test_operation_5() -> None:
@@ -149,12 +145,8 @@ def test_operation_11() -> None:
     Test \\/ directly in the step but do not use an attack step belonging to the LCA
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_11.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_operation_11.mal",
+        error_msg="Attack step 'foundWindows' not defined for asset 'OperatingSystem'"
     )
 
 def test_operation_12() -> None:
@@ -244,12 +236,8 @@ def test_operation_18() -> None:
     Test - directly in the step but do not use an attack step belonging to the LCA
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_18.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_operation_18.mal",
+        error_msg="Attack step 'foundWindows' not defined for asset 'OperatingSystem'"
     )
 
 def test_operation_19() -> None:

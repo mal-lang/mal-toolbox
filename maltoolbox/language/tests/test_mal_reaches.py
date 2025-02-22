@@ -37,12 +37,8 @@ def test_reaches_3() -> None:
     Test reaches with wrong attack step
     '''
     AnalyzerTestWrapper(
-        test_file='test_reaches_3.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'Machine', 'Lenovo', 'Server', 'Router']
+        test_file='test_reaches_3.mal',
+        error_msg= "Attack step 'WRONG_ATTACK_STEP' not defined for asset 'Server'"
     )
 
 def test_reaches_4() -> None:
@@ -62,12 +58,8 @@ def test_reaches_5() -> None:
     Test reaches with attack step from child
     '''
     AnalyzerTestWrapper(
-        test_file='test_reaches_5.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'Machine', 'Lenovo', 'Server', 'Router']
+        test_file='test_reaches_5.mal',
+        error_msg="Attack step 'lenovoStep' not defined for asset 'Computer'"
     )
 
 def test_reaches_6() -> None:
@@ -75,10 +67,6 @@ def test_reaches_6() -> None:
     Test reaches not pointing to attack step
     '''
     AnalyzerTestWrapper(
-        test_file='test_reaches_6.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'Machine', 'Lenovo', 'Server', 'Router']
+        test_file='test_reaches_6.mal',
+        error_msg="Attack step 'routers' not defined for asset 'Network'"
     )

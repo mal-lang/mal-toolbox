@@ -52,12 +52,8 @@ def test_subtype_4() -> None:
     Test subtype, but with a wrong attack step
     '''
     AnalyzerTestWrapper(
-        test_file="test_subtype_4.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_subtype_4.mal",
+        error_msg="Attack step 'foundLinux' not defined for asset 'Windows'"
     )
 
 def test_subtype_5() -> None:

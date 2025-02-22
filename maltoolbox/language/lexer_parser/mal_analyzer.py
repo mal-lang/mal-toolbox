@@ -200,10 +200,8 @@ class malAnalyzer(malAnalyzerInterface):
                     for attackStep in self._steps[asset].keys():
                         if (attackStep == expr['name']):
                             return self._steps[asset][attackStep]['step']
-                        
-                logging.error(f'Attack step \'{expr["name"]}\' not defined for asset \'{asset}\'')
-                self._error = True
-                return None
+                error_msg = f'Attack step \'{expr["name"]}\' not defined for asset \'{asset}\''
+                self._raise_analyzer_exception(error_msg)
             # Returns an attackStep if it exists for the asset returned by the lhs expression 
             case 'collect':
                 if (left_target := self._check_to_asset(asset, expr['lhs'])):

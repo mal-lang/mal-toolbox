@@ -38,12 +38,8 @@ def test_append_3() -> None:
     Test append with wrong steps 
     '''
     AnalyzerTestWrapper(
-        test_file='test_append_3.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'Machine', 'Lenovo', 'Server']
+        test_file='test_append_3.mal',
+        error_msg="Attack step 'WRONG_ATTACK_STEP' not defined for asset 'Server'"
     )
 
 def test_append_4() -> None:
@@ -63,12 +59,8 @@ def test_append_5() -> None:
     Test append with attack step from child
     '''
     AnalyzerTestWrapper(
-        test_file='test_append_5.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'Machine', 'Lenovo', 'Server']
+        test_file='test_append_5.mal',
+        error_msg="Attack step 'lenovoStep' not defined for asset 'Computer'"
     )
 
 def test_append_6() -> None:
@@ -76,12 +68,8 @@ def test_append_6() -> None:
     Test append not pointing to attack step 
     '''
     AnalyzerTestWrapper(
-        test_file='test_append_6.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'Machine', 'Lenovo', 'Server']
+        test_file='test_append_6.mal',
+        error_msg="Attack step 'server' not defined for asset 'Computer'"
     )
 
 def test_append_7() -> None:
