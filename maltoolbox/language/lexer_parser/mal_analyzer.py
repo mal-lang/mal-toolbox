@@ -205,10 +205,9 @@ class malAnalyzer(malAnalyzerInterface):
                 self._error = True
                 return None
             case _:
-                logging.error('Last step is not attack step')
-                self._error = True
-                return None
-                
+                error_msg='Last step is not attack step'
+                self._raise_analyzer_exception(error_msg)
+
     def _check_to_asset(self, asset, expr) -> None:
         '''
         Verify if the expression resolves to an existing Asset

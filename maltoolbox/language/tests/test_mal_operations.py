@@ -40,12 +40,8 @@ def test_operation_3() -> None:
     Test /\\ directly in the step but do not point to a step (only point to asset)
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_operation_3.mal",
+        error_msg="Last step is not attack step"
     )
 
 def test_operation_4() -> None:
@@ -132,12 +128,8 @@ def test_operation_10() -> None:
     Test \\/ directly in the step but do not point to a step (only point to asset)
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_10.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_operation_10.mal",
+        error_msg="Last step is not attack step"
     )
 
 def test_operation_11() -> None:
@@ -223,12 +215,8 @@ def test_operation_17() -> None:
     Test - directly in the step but do not point to a step (only point to asset)
     '''
     AnalyzerTestWrapper(
-        test_file="test_operation_17.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_operation_17.mal",
+        error_msg="Last step is not attack step"
     )
 
 def test_operation_18() -> None:
