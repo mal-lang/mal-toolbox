@@ -9,6 +9,7 @@ from lexer_parser.mal_analyzer import malAnalyzerException
 
 import os
 import pytest
+import re
 from pathlib import Path
 
 class MockCompiler():
@@ -48,7 +49,7 @@ class AnalyzerTestWrapper(malAnalyzer):
         compiler = MockCompiler(self)
         try:
             if error_msg:
-                with pytest.raises(malAnalyzerException, match=error_msg):
+                with pytest.raises(malAnalyzerException, match=re.escape(error_msg)):
                     self._result = malVisitor(compiler=compiler,  analyzer=self).visit(tree)
             else:
                 self._result = malVisitor(compiler=compiler,  analyzer=self).visit(tree)

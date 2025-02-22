@@ -36,12 +36,9 @@ def test_exists_3() -> None:
     Test existence with non-existing asset
     '''
     AnalyzerTestWrapper(
-        test_file="test_exists_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
+        test_file="test_exists_3.mal",
+        error_msg="Field 'a2' not defined for asset 'Asset1'\n" + \
+                  "Line 6: All expressions in requires ('<-') must point to a valid asset"
     )
     
 def test_exists_4() -> None:
@@ -49,12 +46,9 @@ def test_exists_4() -> None:
     Test existence with a requires which points to a step
     '''
     AnalyzerTestWrapper(
-        test_file="test_exists_4.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
+        test_file="test_exists_4.mal",
+        error_msg="Field 'attack' not defined for asset 'Asset2'\n" + \
+                  "Line 6: All expressions in requires ('<-') must point to a valid asset"
     )
     
 def test_exists_5() -> None:

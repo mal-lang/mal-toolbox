@@ -44,12 +44,8 @@ def test_risk_type_3() -> None:
     Defines CIA for an existance step 
     '''
     AnalyzerTestWrapper(
-        test_file="test_risk_type_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['CIA_TEST','Mock']
+        test_file="test_risk_type_3.mal",
+        error_msg="Line 7: exist: Defenses cannot have CIA classifications"
     )
 
 def test_risk_type_4() -> None:
@@ -57,11 +53,6 @@ def test_risk_type_4() -> None:
     Defines CIA for a defense step 
     '''
     AnalyzerTestWrapper(
-        test_file="test_risk_type_4.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['CIA_TEST','Mock']
+        test_file="test_risk_type_4.mal",
+        error_msg="Line 7: defense: Defenses cannot have CIA classifications"
     )
-

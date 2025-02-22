@@ -38,12 +38,9 @@ def test_require_3() -> None:
     Test require with non-existing asset 
     '''
     AnalyzerTestWrapper(
-        test_file='test_require_3.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3']
+        test_file='test_require_3.mal',
+        error_msg="Field 'a4' not defined for asset 'Asset1'\n" +
+                  "Line 7: All expressions in requires ('<-') must point to a valid asset"
     )
 
 def test_require_4() -> None:
@@ -63,12 +60,10 @@ def test_require_5() -> None:
     Test require with asset from child's association
     '''
     AnalyzerTestWrapper(
-        test_file='test_require_5.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3', 'Asset0']
+        test_file='test_require_5.mal',
+        error_msg="Field 'a2' not defined for asset 'Asset1'\n" +
+                  "Line 11: All expressions in requires ('<-') must point to a valid asset"
+                   
     )
 
 def test_require_6() -> None:
@@ -76,12 +71,9 @@ def test_require_6() -> None:
     Test require pointing to attack step
     '''
     AnalyzerTestWrapper(
-        test_file='test_require_6.mal'
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3']
+        test_file='test_require_6.mal',
+        error_msg="Field 'asset2_Step' not defined for asset 'Asset2'\n" + \
+                  "Line 7: All expressions in requires ('<-') must point to a valid asset"
     )
 
 def test_require_7() -> None:

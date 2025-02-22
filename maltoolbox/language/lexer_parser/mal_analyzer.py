@@ -55,6 +55,8 @@ class malAnalyzer(malAnalyzerInterface):
         self._current_vars       = []
         self._include_stack      = []
 
+        self._error_msg:str      = ""
+
         super().__init__(*args, **kwargs)
     
     def _raise_analyzer_exception(self, error_msg:str):
@@ -173,7 +175,10 @@ class malAnalyzer(malAnalyzerInterface):
                     if (attack_step['requires']):
                         # Verify if every requires expression returns an asset
                         for expr in attack_step['requires']['stepExpressions']:
-                            self._check_to_asset(asset, expr)
+                            if not self._check_to_asset(asset, expr):
+                                error_msg = f"Line {self._steps[asset][attack_step['name']]['ctx'].start.line}: " + \
+                                            f"All expressions in requires ('<-') must point to a valid asset"
+                                self._raise_analyzer_exception(self._error_msg + error_msg)
                     else:
                         error_msg = f'Attack step of type \'{attack_step["type"]}\' must have require \'<-\''
                         self._raise_analyzer_exception(error_msg)
@@ -184,6 +189,7 @@ class malAnalyzer(malAnalyzerInterface):
                     # Verify if every reaches expresion returns an attack step
                     for expr in attack_step['reaches']['stepExpressions']:
                         self._check_to_step(asset, expr)
+                        # TODO: missing a check here
         
     def _check_to_step(self, asset, expr) -> None:
         '''
@@ -202,6 +208,7 @@ class malAnalyzer(malAnalyzerInterface):
             case 'collect':
                 if (left_target := self._check_to_asset(asset, expr['lhs'])):
                     return self._check_to_step(left_target, expr['rhs'])
+                # TODO this will be deleted
                 self._error = True
                 return None
             case _:
@@ -256,8 +263,9 @@ class malAnalyzer(malAnalyzerInterface):
             extra=f', did you mean the variable \'{expr['name']}()\'?'
             self._warn = True
     
-        logging.error(f'Field \'{expr["name"]}\' not defined for asset \'{asset}\''+extra)
-        self._error = True
+        self._error_msg = f'Field \'{expr["name"]}\' not defined for asset \'{asset}\''+extra+'\n'
+        #logging.error(self._error_msg)
+        #self._error = True
 
     def _check_variable_expr(self, asset, expr):
         '''
@@ -747,9 +755,8 @@ class malAnalyzer(malAnalyzerInterface):
         asset_name = ctx.parentCtx.ID()[0].getText() 
 
         if (step['type'] == 'defense' or step['type'] == 'exist' or step['type'] == 'notExist'):
-            logging.error(f'{step_name}: Defenses cannot have CIA classifications')
-            self._error = True
-            return
+            error_msg = f'Line {ctx.start.line}: {step['type']}: Defenses cannot have CIA classifications'
+            self._raise_analyzer_exception(error_msg)
 
         index = 0
         cias = []
