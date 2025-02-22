@@ -39,7 +39,6 @@ class malAnalyzer(malAnalyzerInterface):
         
     def __init__(self, *args, **kwargs) -> None:
         self._error: bool = False
-        self._error_msg: str = ""
         self._warn: bool = False
         self._preform_post_analysis = 0 
 
@@ -192,7 +191,6 @@ class malAnalyzer(malAnalyzerInterface):
                             error_msg = f"Line {self._steps[asset][attack_step['name']]['ctx'].start.line}: " + \
                                         f"All expressions in reaches ('->') must point to a valid attack step"
                             self._raise_analyzer_exception(self._error_msg + error_msg)
-                        # TODO: missing a check here
         
     def _check_to_step(self, asset, expr) -> None:
         '''
@@ -211,8 +209,6 @@ class malAnalyzer(malAnalyzerInterface):
             case 'collect':
                 if (left_target := self._check_to_asset(asset, expr['lhs'])):
                     return self._check_to_step(left_target, expr['rhs'])
-                # TODO this will be deleted
-                self._error = True
                 return None
             case _:
                 error_msg='Last step is not attack step'
@@ -502,8 +498,10 @@ class malAnalyzer(malAnalyzerInterface):
 
         include_file = ctx.STRING().getText()
         if include_file in self._include_stack:
-            logging.error(self._error)
-            self._error = True
+            cycle = '->'.join([file.replace('"',"") for file in self._include_stack])+' -> '+include_file.replace('"',"")
+            error_msg = f'Include sequence contains cycle: {cycle}'
+            self._raise_analyzer_exception(error_msg)
+            #self._error = True
         self._include_stack.append(ctx.STRING().getText())
 
     def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:

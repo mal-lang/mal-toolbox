@@ -110,12 +110,6 @@ def test_collect_9() -> None:
         test_file="test_collect_9.mal",
         error_msg="Previous asset 'Folder' is not of type 'SubFolder'\n" + \
                   "Line 7: All expressions in reaches ('->') must point to a valid attack step"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'OperatingSystem', 'Linux', 'Windows', 'WindowsVista', 
-        'FileSystem', 'SubFolder', 'Folder', 'File', 'ConfigFile', 'RootFile', 'NonRootFile']
     )
 
 def test_collect_10() -> None:

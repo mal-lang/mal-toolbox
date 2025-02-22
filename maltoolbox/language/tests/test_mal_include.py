@@ -88,7 +88,6 @@ def test_include_8() -> None:
     Test if circular includes are noticed
     '''
     AnalyzerTestWrapper(
-        test_file="test_include_8.mal"
-    ).test(
-        error=True
+        test_file="test_include_8.mal",
+        error_msg="Include sequence contains cycle: test_include_8_aux1.mal->test_include_8_aux2.mal->test_include_8.mal -> test_include_8_aux1.mal"
     )
