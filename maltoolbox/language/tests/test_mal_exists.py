@@ -88,12 +88,8 @@ def test_exists_7() -> None:
     Test existence without a requires
     '''
     AnalyzerTestWrapper(
-        test_file="test_exists_7.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
+        test_file="test_exists_7.mal",
+        error_msg="Attack step of type 'exist' must have require '<-'"
     )
 
 def test_exists_8() -> None:

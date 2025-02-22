@@ -176,9 +176,8 @@ class malAnalyzer(malAnalyzerInterface):
                         for expr in attack_step['requires']['stepExpressions']:
                             self._check_to_asset(asset, expr)
                     else:
-                        logging.error(f'Attack step of type \'{attack_step["type"]}\' must have require \'<-\'')
-                        self._error = True
-                        continue  
+                        error_msg = f'Attack step of type \'{attack_step["type"]}\' must have require \'<-\''
+                        self._raise_analyzer_exception(error_msg)
                 elif (attack_step['requires']):
                         logging.error('Require \'<-\' may only be defined for attack step type exist \'E\' or not-exist \'!E\'')
                         self._error = True
