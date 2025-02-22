@@ -3,7 +3,7 @@
 
 category System {
     asset Asset1 {
-    !E step1 [Bernoulli(0.2)]
+    E step1 [Bernoulli(0.2)]
         <- a2
     }
     asset Asset2 {

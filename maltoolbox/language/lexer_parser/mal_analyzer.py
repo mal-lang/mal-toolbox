@@ -168,9 +168,8 @@ class malAnalyzer(malAnalyzerInterface):
             for attack_step in attack_steps:
                 if (attack_step['type'] in ['exist', 'notExist']):
                     if (attack_step['ttc']):
-                        logging.error(f'Attack step of type \'{attack_step["type"]}\' must not have TTC')
-                        self._error = True
-                        continue
+                        error_msg = f'Attack step of type \'{attack_step["type"]}\' must not have TTC'
+                        self._raise_analyzer_exception(error_msg)
                     if (attack_step['requires']):
                         # Verify if every requires expression returns an asset
                         for expr in attack_step['requires']['stepExpressions']:

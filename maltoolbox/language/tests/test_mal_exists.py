@@ -62,25 +62,17 @@ def test_exists_5() -> None:
     Test existence with a TTC expression
     '''
     AnalyzerTestWrapper(
-        test_file="test_exists_5.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
+        test_file="test_exists_5.mal",
+        error_msg="Attack step of type 'exist' must not have TTC"
     )
 
 def test_exists_6() -> None:
     '''
-    Test existence with a TTC expression
+    Test non-existence with a TTC expression
     '''
     AnalyzerTestWrapper(
-        test_file="test_exists_6.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Asset1','Asset2','Asset3'],
+        test_file="test_exists_6.mal",
+        error_msg = "Attack step of type 'notExist' must not have TTC"
     )
 
 def test_exists_7() -> None:
