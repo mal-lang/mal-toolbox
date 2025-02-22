@@ -5,34 +5,12 @@ import re
 
 from typing import Any, Tuple, List
 
-class malAnalyzerInterface:
-    def checkMal(self, ctx: malParser.MalContext) -> None:
-        pass
-    def checkDefine(self, ctx: malParser.DefineContext, data: Tuple[str, dict]) -> None:
-        pass
-    def checkInclude(self, ctx: malParser.IncludeContext, data: Tuple[str, str]) -> None:
-        pass
-    def checkCategory(self, ctx: malParser.CategoryContext, data: Tuple[str, Tuple[List, Any]]) -> None:
-        pass
-    def checkAsset(self, ctx: malParser.AssetContext, asset: dict) -> None:
-        pass
-    def checkMeta(self, ctx: malParser.MetaContext, data: Tuple[Tuple[str, str],]) -> None:
-        pass
-    def checkStep(self, ctx: malParser.StepContext, step: dict) -> None:
-        pass
-    def checkVariable(self, ctx: malParser.VariableContext, var: dict) -> None:
-        pass
-    def checkAssociation(self, ctx: malParser.AssociationContext, association: dict) -> None:
-        pass
-    def checkReaches(self, ctx: malParser.ReachesContext, data: dict) -> None:
-        pass
-
 class malAnalyzerException(Exception):
     def __init__(self, error_message):
         self._error_message = error_message
         super().__init__(self._error_message)
 
-class malAnalyzer(malAnalyzerInterface):
+class malAnalyzer():
     '''
     A class to preform syntax-checks for MAL.
     '''
@@ -139,7 +117,7 @@ class malAnalyzer(malAnalyzerInterface):
                         break
                 if not found:
                     self._warn = True
-                    logging.warn(f'Asset \'{parent_ctx.ID()[0].getText()}\' is abstract but never extended to')
+                    logging.warning(f'Asset \'{parent_ctx.ID()[0].getText()}\' is abstract but never extended to')
     
     def _analyse_parents(self) -> None:
         '''
@@ -647,11 +625,6 @@ class malAnalyzer(malAnalyzerInterface):
                                         f"at {parent_attackStep_ctx.start.line} with different type \'{attackStep_ctx.steptype().getText()}\' " + \
                                         f"=/= \'{parent_attackStep_ctx.steptype().getText()}\'"
                             self._raise_analyzer_exception(error_msg)
-                else:
-                    # Step already defined in this asset
-                    logging.error(f'Attack step \'{attackStep}\' previously defined at {self._steps[parent][attackStep]['ctx'].start.line}')
-                    self._error = True
-
             seen_steps.append((parent,current_steps))
 
         for parent, steps in seen_steps:

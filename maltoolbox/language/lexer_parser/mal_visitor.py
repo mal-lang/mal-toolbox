@@ -1,7 +1,7 @@
 from antlr4 import ParseTreeVisitor
 
 from .mal_parser import malParser
-from .mal_analyzer import malAnalyzerInterface
+from .mal_analyzer import malAnalyzer
 
 from collections.abc import MutableMapping, MutableSequence
 
@@ -11,7 +11,7 @@ from collections.abc import MutableMapping, MutableSequence
 
 
 class malVisitor(ParseTreeVisitor):
-    def __init__(self, compiler, analyzer: malAnalyzerInterface, *args, **kwargs):
+    def __init__(self, compiler, analyzer: malAnalyzer, *args, **kwargs):
         self.compiler = compiler
         self.analyzer = analyzer
         self.current_file = compiler.current_file  # for debug purposes
