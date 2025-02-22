@@ -188,7 +188,10 @@ class malAnalyzer(malAnalyzerInterface):
                 if (attack_step['reaches']):
                     # Verify if every reaches expresion returns an attack step
                     for expr in attack_step['reaches']['stepExpressions']:
-                        self._check_to_step(asset, expr)
+                        if not self._check_to_step(asset, expr):
+                            error_msg = f"Line {self._steps[asset][attack_step['name']]['ctx'].start.line}: " + \
+                                        f"All expressions in reaches ('->') must point to a valid attack step"
+                            self._raise_analyzer_exception(self._error_msg + error_msg)
                         # TODO: missing a check here
         
     def _check_to_step(self, asset, expr) -> None:
@@ -264,8 +267,6 @@ class malAnalyzer(malAnalyzerInterface):
             self._warn = True
     
         self._error_msg = f'Field \'{expr["name"]}\' not defined for asset \'{asset}\''+extra+'\n'
-        #logging.error(self._error_msg)
-        #self._error = True
 
     def _check_variable_expr(self, asset, expr):
         '''
@@ -274,8 +275,7 @@ class malAnalyzer(malAnalyzerInterface):
         if (asset in self._vars.keys() and expr['name'] in self._vars[asset].keys()):
             return self._variable_to_asset(asset, expr['name']) 
 
-        logging.error(f'Variable \'{expr["name"]}\' is not defined')
-        self._error = True
+        self._error_msg = f'Variable \'{expr["name"]}\' is not defined\n'
         return None
     
     def _check_collect_expr(self, asset, expr):
@@ -299,8 +299,7 @@ class malAnalyzer(malAnalyzerInterface):
         if (target := self._get_LCA(lhs_target, rhs_target)):
             return target
         
-        logging.error(f'Types \'{lhs_target}\' and \'{rhs_target}\' have no common ancestor')
-        self._error = True
+        self._error_msg = f'Types \'{lhs_target}\' and \'{rhs_target}\' have no common ancestor\n'
         return None
 
     def _get_LCA(self, lhs_target, rhs_target):
@@ -333,8 +332,7 @@ class malAnalyzer(malAnalyzerInterface):
             if (self._is_child(target, asset_type)):
                 return asset_type
 
-            logging.error(f'Asset \'{target}\' cannot be of type \'{asset_type}\'')
-            self._error = True
+            self._error_msg = f'Asset \'{asset_type}\' cannot be of type \'{target}\'\n'
         return None
 
     def _check_transitive_expr(self, asset, expr) -> None:
@@ -345,8 +343,7 @@ class malAnalyzer(malAnalyzerInterface):
             if (self._is_child(asset,res)):
                 return res
    
-            logging.error(f'Previous asset \'{asset}\' is not of type \'{res}\'')
-            self._error = True
+            self._error_msg = f'Previous asset \'{asset}\' is not of type \'{res}\'\n'
         return None
     
     def _is_child(self, parent_name, child_name):
@@ -481,7 +478,7 @@ class malAnalyzer(malAnalyzerInterface):
                 for var in self._vars[asset].keys():
                     if self._variable_to_asset(asset, var)==None:
                         error_msg = f'Variable \'{var}\' defined at {self._vars[asset][var]['ctx'].start.line} does not point to an asset'
-                        self._raise_analyzer_exception(error_msg)
+                        self._raise_analyzer_exception(self._error_msg + error_msg)
                         
 
     def checkMal(self, ctx: malParser.MalContext) -> None:

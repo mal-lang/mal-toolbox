@@ -39,12 +39,9 @@ def test_subtype_3() -> None:
     Test subtype without inheritance relationship (given X[A], a is not a child of X)
     '''
     AnalyzerTestWrapper(
-        test_file="test_subtype_3.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        test_file="test_subtype_3.mal",
+        error_msg="Asset 'Windows' cannot be of type 'OperatingSystem'\n" + \
+                  "Line 7: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 def test_subtype_4() -> None:

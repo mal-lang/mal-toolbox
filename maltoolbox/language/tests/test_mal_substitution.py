@@ -27,12 +27,9 @@ def test_substitution_2() -> None:
     Test substitution with a non existing variable 
     '''
     AnalyzerTestWrapper(
-        test_file="test_substitution_2.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'OperatingSystem']
+        test_file="test_substitution_2.mal",
+        error_msg="Variable 'hostsOperatingSystems' is not defined\n" + \
+                  "Line 10: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 def test_substitution_3() -> None:
@@ -40,13 +37,9 @@ def test_substitution_3() -> None:
     Test substitution with an existing variable, but forget to call it, i.e. do not use parenthesis
     '''
     AnalyzerTestWrapper(
-        test_file="test_substitution_3.mal"
-    ).test(
-        error=True,
-        warn=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'OperatingSystem']
+        test_file="test_substitution_3.mal",
+        error_msg="Field 'hostsOperatingSystems' not defined for asset 'Network', did you mean the variable 'hostsOperatingSystems()'?\n" + \
+                  "Line 7: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 def test_substitution_4() -> None:
@@ -78,12 +71,9 @@ def test_substitution_6() -> None:
     Try to call a variable defined in the child
     '''
     AnalyzerTestWrapper(
-        test_file="test_substitution_6.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'SubNet', 'Computer', 'OperatingSystem']
+        test_file="test_substitution_6.mal",
+        error_msg="Variable 'hostsOperatingSystems' is not defined\n" + \
+                  "Line 6: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 def test_substitution_7() -> None:
@@ -91,10 +81,7 @@ def test_substitution_7() -> None:
     Try to call a variable defined in another asset 
     '''
     AnalyzerTestWrapper(
-        test_file="test_substitution_7.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Hardware', 'PhysicalComponent', 'Computer']
+        test_file="test_substitution_7.mal",
+        error_msg="Variable 'physicalComponents' is not defined\n" + \
+                  "Line 15: All expressions in reaches ('->') must point to a valid attack step"
     )

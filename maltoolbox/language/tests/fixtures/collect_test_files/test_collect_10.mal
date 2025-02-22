@@ -46,7 +46,7 @@ category System {
         | folderStep
     }
 
-    asset SubFolder // GONE!!! extends Folder
+    asset SubFolder extends Folder
     {
         | subFolderStep
     }

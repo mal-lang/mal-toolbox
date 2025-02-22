@@ -61,12 +61,9 @@ def test_collect_5() -> None:
     Test correctly with non-existing field
     '''
     AnalyzerTestWrapper(
-        test_file="test_collect_5.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'OperatingSystem', 'FileSystem', 'File']
+        test_file="test_collect_5.mal",
+        error_msg="Field 'fileSystems' not defined for asset 'OperatingSystem'\n" + \
+                  "Line 6: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 # Since many tests require that collect works correctly, the objective of the following tests is to check that 
@@ -90,35 +87,29 @@ def test_collect_7() -> None:
     Test complex set of expressions with error 
     '''
     AnalyzerTestWrapper(
-        test_file="test_collect_7.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'OperatingSystem', 'Linux', 'Windows', 'WindowsVista', 
-        'FileSystem', 'SubFolder', 'Folder', 'File', 'ConfigFile', 'RootFile', 'NonRootFile']
+        test_file="test_collect_7.mal",
+        error_msg="Asset 'WindowsVista' cannot be of type 'OperatingSystem'\n" +\
+                  "Line 7: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 def test_collect_8() -> None:
     '''
-    Test complex set of expressions with error 
+    Test complex set of expressions with error (field without existing association)
     '''
     AnalyzerTestWrapper(
-        test_file="test_collect_8.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'OperatingSystem', 'Linux', 'Windows', 'WindowsVista', 
-        'FileSystem', 'SubFolder', 'Folder', 'File', 'ConfigFile', 'RootFile', 'NonRootFile']
+        test_file="test_collect_8.mal",
+        error_msg="Field 'fileSystems' not defined for asset 'OperatingSystem'\n" + \
+                  "Line 7: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 def test_collect_9() -> None:
     '''
-    Test complex set of expressions with error 
+    Test complex set of expressions with error (transitive step without hierarchy relationship)
     '''
     AnalyzerTestWrapper(
-        test_file="test_collect_9.mal"
+        test_file="test_collect_9.mal",
+        error_msg="Previous asset 'Folder' is not of type 'SubFolder'\n" + \
+                  "Line 7: All expressions in reaches ('->') must point to a valid attack step"
     ).test(
         error=True,
         defines=['id', 'version'],
@@ -129,14 +120,10 @@ def test_collect_9() -> None:
 
 def test_collect_10() -> None:
     '''
-    Test complex set of expressions with error 
+    Test complex set of expressions with error (no common ancestor)
     '''
     AnalyzerTestWrapper(
-        test_file="test_collect_10.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Network', 'Computer', 'OperatingSystem', 'Linux', 'Windows', 'WindowsVista', 
-        'FileSystem', 'SubFolder', 'Folder', 'File', 'ConfigFile', 'RootFile', 'NonRootFile']
+        test_file="test_collect_10.mal",
+        error_msg="Types 'ConfigFile' and 'NonRootFile' have no common ancestor\n" + \
+                  "Line 7: All expressions in reaches ('->') must point to a valid attack step"
     )

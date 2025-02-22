@@ -68,12 +68,9 @@ def test_association_5() -> None:
     Creates an association correctly and tries to access an attack step via association which is not defined
     '''
     AnalyzerTestWrapper(
-        test_file="test_association_5.mal"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['Example'],
-        assets=['Asset1', 'Asset2']
+        test_file="test_association_5.mal",
+        error_msg="Field 'b' not defined for asset 'Asset1'\n" + \
+                  "Line 7: All expressions in reaches ('->') must point to a valid attack step"
     )
 
 def test_association_6() -> None:

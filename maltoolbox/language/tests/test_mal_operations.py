@@ -59,15 +59,9 @@ def test_operation_5() -> None:
     '''
     AnalyzerTestWrapper(
         test_file="test_operation_5.mal",
-        error_msg="Variable 'targets' defined at 7 does not point to an asset"
-    ).test(
-        error=True,
-        warn=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        error_msg="Types 'Windows' and 'Linux' have no common ancestor\n" + \
+                  "Variable 'targets' defined at 7 does not point to an asset"
     )
-
 
 def test_operation_6() -> None:
     '''
@@ -147,15 +141,9 @@ def test_operation_12() -> None:
     '''
     AnalyzerTestWrapper(
         test_file="test_operation_12.mal",
-        error_msg="Variable 'targets' defined at 7 does not point to an asset",
-    ).test(
-        error=True,
-        warn=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        error_msg="Types 'Windows' and 'Linux' have no common ancestor\n" + \
+                  "Variable 'targets' defined at 7 does not point to an asset"
     )
-
 
 def test_operation_13() -> None:
     '''
@@ -234,15 +222,9 @@ def test_operation_19() -> None:
     '''
     AnalyzerTestWrapper(
         test_file="test_operation_19.mal",
-        error_msg="Variable 'targets' defined at 7 does not point to an asset",
-    ).test(
-        error=True,
-        warn=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Windows', 'Linux', 'OperatingSystem']
+        error_msg="Types 'Windows' and 'Linux' have no common ancestor\n" + \
+                  "Variable 'targets' defined at 7 does not point to an asset"
     )
-
 
 def test_operation_20() -> None:
     '''

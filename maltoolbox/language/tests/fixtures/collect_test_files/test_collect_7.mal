@@ -5,10 +5,10 @@ category System {
     asset Network {
         let thisNetworkHosts = hosts
         | access
-          //                                                                                        This is wrong
-          //                                                                                               |
-          //                                                                                               v
-          -> thisNetworkHosts().(operatingSystems[Windows] \/ operatingSystems[Linux] - operatingSystems[error]).fileSystems.folders.subfolders*.(configfiles /\ nonrootfiles).open
+          //                                                                                           This is wrong
+          //                                                                                                  |
+          //                                                                                                  v
+          -> thisNetworkHosts().(operatingSystems[Windows] \/ operatingSystems[Linux] - operatingSystems[WindowsVista]).fileSystems.folders.subfolders*.(configfiles /\ nonrootfiles).open
     }
 
     asset Computer
@@ -31,7 +31,7 @@ category System {
         | windowsStep
     }
 
-    asset WindowsVista extends Windows
+    asset WindowsVista // GONE!!! extends Windows
     {
         | windowsVistaStep
     }

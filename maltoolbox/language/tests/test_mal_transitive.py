@@ -41,12 +41,8 @@ def test_transitive_3() -> None:
     '''
     AnalyzerTestWrapper(
         test_file="test_transitive_3.mal",
-        error_msg="Variable 'recursive_subfolders' defined at 7 does not point to an asset"
-    ).test(
-        error=True,
-        defines=['id', 'version'],
-        categories=['System'],
-        assets=['Computer', 'Folder', 'SubFolder']
+        error_msg="Previous asset 'Folder' is not of type 'SubFolder'\n" + \
+                  "Variable 'recursive_subfolders' defined at 7 does not point to an asset"
     )
 
 def test_transitive_4() -> None:
