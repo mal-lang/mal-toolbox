@@ -21,7 +21,7 @@ def test_attacker_to_dict(dummy_lang_graph: LanguageGraph):
         "name": "Test Attacker",
         "entry_points": {},
         "reached_attack_steps": {
-            node1.id : str(node1.id) + ':' + node1.name
+            node1.id : f"{node1.id}:{node1.name}"
         }
     }
 
@@ -35,7 +35,7 @@ def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    attacker = Attacker("Test Attacker", set(), set())
+    attacker = Attacker("Test Attacker")
     assert not attacker.entry_points
     attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_attacker(attacker)
@@ -60,7 +60,7 @@ def test_attacker_undo_compromise(dummy_lang_graph: LanguageGraph):
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    attacker = Attacker("attacker1", set(), set())
+    attacker = Attacker("attacker1")
     attack_graph = AttackGraph(dummy_lang_graph)
     attack_graph.add_attacker(attacker)
 

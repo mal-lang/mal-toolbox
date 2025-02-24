@@ -464,7 +464,6 @@ class Model():
             attackers_info = serialized_object['attackers']
             for attacker_id in attackers_info:
                 attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
-                attacker.entry_points = []
                 for asset_name, entry_points_dict in \
                         attackers_info[attacker_id]['entry_points'].items():
                     target_asset = model.get_asset_by_id(

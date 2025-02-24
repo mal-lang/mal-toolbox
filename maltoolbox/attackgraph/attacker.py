@@ -3,7 +3,6 @@ MAL-Toolbox Attack Graph Attacker Class
 """
 
 from __future__ import annotations
-import copy
 import logging
 
 from typing import Optional
@@ -18,15 +17,15 @@ class Attacker:
     def __init__(
         self,
         name: str,
-        entry_points: set[AttackGraphNode],
-        reached_attack_steps: set[AttackGraphNode],
+        entry_points: Optional[set[AttackGraphNode]] = None,
+        reached_attack_steps: Optional[set[AttackGraphNode]] = None,
         attacker_id: Optional[int] = None
     ):
         self.name = name
         self.id = attacker_id
-        self.entry_points = entry_points
+        self.entry_points = entry_points or set()
         self.reached_attack_steps: set[AttackGraphNode] = set()
-        for node in reached_attack_steps:
+        for node in reached_attack_steps or {}:
             self.compromise(node)
 
     def to_dict(self) -> dict:
@@ -48,36 +47,6 @@ class Attacker:
 
     def __repr__(self) -> str:
         return f'Attacker(name: "{self.name}", id: {self.id})'
-
-    def __deepcopy__(self, memo) -> Attacker:
-        """Deep copy an Attacker
-        The deepcopy will copy over attacker specific information, name and
-        id, but it will not copy relations to attack graph nodes, reached
-        attack steps or entry points. These references should be recreated
-        when deepcopying the attack graph itself.
-
-        """
-
-        # Check if the object is already in the memo dictionary
-        if id(self) in memo:
-            return memo[id(self)]
-
-        copied_attacker = Attacker(
-            name = self.name,
-            attacker_id = self.id,
-            entry_points = set(),
-            reached_attack_steps = set()
-        )
-
-        # Remember that self was already copied
-        memo[id(self)] = copied_attacker
-
-        copied_attacker.entry_points = copy.deepcopy(
-            self.entry_points, memo = memo)
-        copied_attacker.reached_attack_steps = copy.deepcopy(
-            self.reached_attack_steps, memo = memo)
-
-        return copied_attacker
 
     def compromise(self, node: AttackGraphNode) -> None:
         """

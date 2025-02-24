@@ -249,11 +249,7 @@ class AttackGraph():
                     _ag_node.parents.add(parent)
 
         for attacker in serialized_attackers.values():
-            ag_attacker = Attacker(
-                name = attacker['name'],
-                entry_points = set(),
-                reached_attack_steps = set()
-            )
+            ag_attacker = Attacker(name = attacker['name'])
             attack_graph.add_attacker(
                 attacker = ag_attacker,
                 attacker_id = int(attacker['id']),
@@ -330,11 +326,7 @@ class AttackGraph():
                 logger.error(msg)
                 raise AttackGraphException(msg)
 
-            attacker = Attacker(
-                name = attacker_info.name,
-                entry_points = set(),
-                reached_attack_steps = set()
-            )
+            attacker = Attacker(name = attacker_info.name)
             self.add_attacker(attacker)
 
             for (asset, attack_steps) in attacker_info.entry_points:
