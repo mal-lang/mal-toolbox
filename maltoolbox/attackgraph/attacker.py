@@ -64,7 +64,7 @@ class Attacker:
             node.id
         )
         if node.is_compromised_by(self):
-            logger.info(
+            logger.debug(
                 'Attacker "%s"(%d) already compromised node "%s"(%d). '
                 'Do nothing.',
                 self.name,
