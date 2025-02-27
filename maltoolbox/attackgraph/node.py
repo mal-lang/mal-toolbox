@@ -118,6 +118,8 @@ class AttackGraphNode:
 
         return copied_node
 
+    def __hash__(self):
+        return hash(self.full_name)
 
     def is_compromised(self) -> bool:
         """

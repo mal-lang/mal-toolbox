@@ -12,16 +12,16 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Any, Optional
 
-from maltoolbox.file_utils import (
-    load_dict_from_yaml_file, load_dict_from_json_file,
-    save_dict_to_file
-)
 from .compiler import MalCompiler
 from ..exceptions import (
     LanguageGraphAssociationError,
     LanguageGraphStepExpressionError,
     LanguageGraphException,
     LanguageGraphSuperAssetNotFoundError
+)
+from ..utils import (
+    load_dict_from_yaml_file, load_dict_from_json_file,
+    save_dict_to_file
 )
 
 logger = logging.getLogger(__name__)

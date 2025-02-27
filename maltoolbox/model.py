@@ -9,11 +9,13 @@ import logging
 from typing import TYPE_CHECKING
 import math
 
-from .file_utils import (
+from .utils import (
     load_dict_from_json_file,
     load_dict_from_yaml_file,
-    save_dict_to_file
+    save_dict_to_file,
+    LookupDict,
 )
+
 
 from . import __version__
 from .exceptions import ModelException
@@ -146,8 +148,7 @@ class Model():
         ):
 
         self.name = name
-        self.assets: dict[int, ModelAsset] = {}
-        self._name_to_asset:dict[str, ModelAsset] = {} # optimization
+        self.assets: LookupDict[int, ModelAsset] = LookupDict()
         self.attackers: list[AttackerAttachment] = []
         self.lang_graph = lang_graph
         self.maltoolbox_version: str = mt_version
@@ -217,7 +218,6 @@ class Model():
             'Add "%s"(%d) to model "%s".', name, asset_id, self.name
         )
         self.assets[asset_id] = asset
-        self._name_to_asset[name] = asset
 
         return asset
 
@@ -258,7 +258,6 @@ class Model():
                 attacker.entry_points.remove(entry_point_tuple)
 
         del self.assets[asset.id]
-        del self._name_to_asset[asset.name]
 
 
     def add_attacker(
@@ -282,44 +281,6 @@ class Model():
         if not hasattr(attacker, 'name') or not attacker.name:
             attacker.name = 'Attacker:' + str(attacker.id)
         self.attackers.append(attacker)
-
-
-    def get_asset_by_id(
-            self, asset_id: int
-        ) -> Optional[ModelAsset]:
-        """
-        Find an asset in the model based on its id.
-
-        Arguments:
-        asset_id        - the id of the asset we are looking for
-
-        Return:
-        An asset matching the id if it exists in the model.
-        """
-        logger.debug(
-            'Get asset with id %d from model "%s".',
-            asset_id, self.name
-        )
-        return self.assets.get(asset_id, None)
-
-
-    def get_asset_by_name(
-            self, asset_name: str
-        ) -> Optional[ModelAsset]:
-        """
-        Find an asset in the model based on its name.
-
-        Arguments:
-        asset_name        - the name of the asset we are looking for
-
-        Return:
-        An asset matching the name if it exists in the model.
-        """
-        logger.debug(
-            'Get asset with name "%s" from model "%s".',
-            asset_name, self.name
-        )
-        return self._name_to_asset.get(asset_name, None)
 
 
     def get_attacker_by_id(
@@ -466,9 +427,9 @@ class Model():
                 attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
                 for asset_name, entry_points_dict in \
                         attackers_info[attacker_id]['entry_points'].items():
-                    target_asset = model.get_asset_by_id(
-                        entry_points_dict['asset_id'])
-                    if target_asset is None:
+                    try:
+                        target_asset = model.assets[entry_points_dict['asset_id']]
+                    except KeyError:
                         raise LookupError(
                             'Asset "%s"(%d) is not part of model "%s".' % (
                                 asset_name,
