@@ -80,6 +80,21 @@ def dummy_lang_graph(corelang_lang_graph):
     dummy_asset.attack_steps['DummyDefenseAttackStep'] =\
         dummy_defense_attack_step_node
 
+    dummy_exist_attack_step_node = LanguageGraphAttackStep(
+        name = 'DummyExistAttackStep',
+        type = 'exist',
+        asset = dummy_asset
+    )
+    dummy_asset.attack_steps['DummyExistAttackStep'] =\
+        dummy_exist_attack_step_node
+
+    dummy_exist_attack_step_node = LanguageGraphAttackStep(
+        name = 'DummyNotExistAttackStep',
+        type = 'notExist',
+        asset = dummy_asset
+    )
+    dummy_asset.attack_steps['DummyNotExistAttackStep'] =\
+        dummy_exist_attack_step_node
     return lang_graph
 
 
