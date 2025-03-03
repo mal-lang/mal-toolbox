@@ -3,23 +3,21 @@
 #version: "0.0.0"
 
 category Test{
-  asset SetOpsAssetA {
-    | testStepSetOpsA
-      -> (fieldB1 \/ fieldB2).testStepSetOpsB1,
-         (fieldB1 /\ fieldB2).testStepSetOpsB2,
-         (fieldB1 - fieldB2).testStepSetOpsB3
+  asset SO_A {
+    | originStep
+      -> (fieldB1 \/ fieldB2).unionStep,
+         (fieldB1 /\ fieldB2).intersectionStep,
+         (fieldB1 - fieldB2).differenceStep
   }
 
-  asset SetOpsAssetB {
-    | testStepSetOpsB1
-
-    | testStepSetOpsB2
-
-    | testStepSetOpsB3
+  asset SO_B {
+    | unionStep
+    | intersectionStep
+    | differenceStep
   }
 }
 
 associations {
-  SetOpsAssetA [fieldA1] * <-- SetOps1 --> * [fieldB1] SetOpsAssetB
-  SetOpsAssetA [fieldA2] * <-- SetOps2 --> * [fieldB2] SetOpsAssetB
+  SO_A [fieldA1] * <-- SetOps1 --> * [fieldB1] SO_B
+  SO_A [fieldA2] * <-- SetOps2 --> * [fieldB2] SO_B
 }

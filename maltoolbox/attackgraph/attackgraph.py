@@ -489,11 +489,13 @@ class AttackGraph():
                     target_assets,
                     expr_chain.left_link
                 )
-                rh_targets = self._follow_expr_chain(
-                    model,
-                    lh_targets,
-                    expr_chain.right_link
-                )
+                rh_targets = set()
+                for lh_target in lh_targets:
+                    rh_targets |= self._follow_expr_chain(
+                        model,
+                        {lh_target},
+                        expr_chain.right_link
+                    )
                 return rh_targets
 
             case _:

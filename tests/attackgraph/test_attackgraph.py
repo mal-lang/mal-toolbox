@@ -569,60 +569,113 @@ def test_attackgraph_setops():
 
     # Create assets
     set_ops_a1 = test_model.add_asset(
-        asset_type = 'SetOpsAssetA',
-        name = 'SetOpsAssetA 1')
+        asset_type = 'SO_A',
+        name = 'SO_A 1')
     set_ops_b1 = test_model.add_asset(
-        asset_type = 'SetOpsAssetB',
-        name = 'SetOpsAssetB 1')
+        asset_type = 'SO_B',
+        name = 'SO_B 1')
     set_ops_b2 = test_model.add_asset(
-        asset_type = 'SetOpsAssetB',
-        name = 'SetOpsAssetB 2')
+        asset_type = 'SO_B',
+        name = 'SO_B 2')
     set_ops_b3 = test_model.add_asset(
-        asset_type = 'SetOpsAssetB',
-        name = 'SetOpsAssetB 3')
+        asset_type = 'SO_B',
+        name = 'SO_B 3')
 
     # Create association
-    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b1})
-    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b2})
+    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b1, set_ops_b2})
 
-    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b2})
-    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b3})
+    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b2, set_ops_b3})
 
     test_attack_graph = AttackGraph(
         lang_graph=test_lang_graph,
         model=test_model
     )
 
-    assetA1_opsA = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetA 1:testStepSetOpsA')
-    assetB1_opsB1 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 1:testStepSetOpsB1')
-    assetB1_opsB2 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 1:testStepSetOpsB2')
-    assetB1_opsB3 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 1:testStepSetOpsB3')
-    assetB2_opsB1 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 2:testStepSetOpsB1')
-    assetB2_opsB2 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 2:testStepSetOpsB2')
-    assetB2_opsB3 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 2:testStepSetOpsB3')
-    assetB3_opsB1 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 3:testStepSetOpsB1')
-    assetB3_opsB2 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 3:testStepSetOpsB2')
-    assetB3_opsB3 = test_attack_graph.get_node_by_full_name(
-        'SetOpsAssetB 3:testStepSetOpsB3')
+    assetA1_origStep = test_attack_graph.get_node_by_full_name(
+        'SO_A 1:originStep')
+    assetB1_unionStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 1:unionStep')
+    assetB1_intersectStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 1:intersectionStep')
+    assetB1_diffStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 1:differenceStep')
+    assetB2_unionStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 2:unionStep')
+    assetB2_intersectStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 2:intersectionStep')
+    assetB2_diffStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 2:differenceStep')
+    assetB3_unionStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 3:unionStep')
+    assetB3_intersectStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 3:intersectionStep')
+    assetB3_diffStep = test_attack_graph.get_node_by_full_name(
+        'SO_B 3:differenceStep')
 
-    assert assetB1_opsB1 in assetA1_opsA.children
-    assert assetB1_opsB2 not in assetA1_opsA.children
-    assert assetB1_opsB3 in assetA1_opsA.children
-    assert assetB2_opsB1 in assetA1_opsA.children
-    assert assetB2_opsB2 in assetA1_opsA.children
-    assert assetB2_opsB3 not in assetA1_opsA.children
-    assert assetB3_opsB1 in assetA1_opsA.children
-    assert assetB3_opsB2 not in assetA1_opsA.children
-    assert assetB3_opsB3 not in assetA1_opsA.children
+    assert assetB1_unionStep in assetA1_origStep.children
+    assert assetB1_intersectStep not in assetA1_origStep.children
+    assert assetB1_diffStep in assetA1_origStep.children
+    assert assetB2_unionStep in assetA1_origStep.children
+    assert assetB2_intersectStep in assetA1_origStep.children
+    assert assetB2_diffStep not in assetA1_origStep.children
+    assert assetB3_unionStep in assetA1_origStep.children
+    assert assetB3_intersectStep not in assetA1_origStep.children
+    assert assetB3_diffStep not in assetA1_origStep.children
+
+def test_attackgraph_setops_adv():
+
+    test_lang_graph = LanguageGraph(MalCompiler().compile(
+        'tests/testdata/set_ops_adv.mal'))
+    test_model = Model('Test Model', test_lang_graph)
+
+    # Create assets
+    set_ops_a1 = test_model.add_asset(
+        asset_type = 'SOA_A',
+        name = 'SOA_A 1')
+    set_ops_a2 = test_model.add_asset(
+        asset_type = 'SOA_A',
+        name = 'SOA_A 2')
+    set_ops_a3 = test_model.add_asset(
+        asset_type = 'SOA_A',
+        name = 'SOA_A 3')
+    set_ops_b1 = test_model.add_asset(
+        asset_type = 'SOA_B',
+        name = 'SOA_B 1')
+    set_ops_b2 = test_model.add_asset(
+        asset_type = 'SOA_B',
+        name = 'SOA_B 2')
+    set_ops_b3 = test_model.add_asset(
+        asset_type = 'SOA_B',
+        name = 'SOA_B 3')
+
+    # Create association
+    set_ops_a2.add_associated_assets('fieldB1', {set_ops_b1, set_ops_b2})
+    set_ops_a3.add_associated_assets('fieldB2', {set_ops_b2, set_ops_b3})
+    set_ops_a1.add_associated_assets('fieldA3b', {set_ops_a2, set_ops_a3})
+
+    test_attack_graph = AttackGraph(
+        lang_graph=test_lang_graph,
+        model=test_model
+    )
+
+    assetA1_origInnerStep = test_attack_graph.get_node_by_full_name(
+        'SOA_A 1:originInnerStep')
+    assetA1_origOuterStep = test_attack_graph.get_node_by_full_name(
+        'SOA_A 1:originOuterStep')
+    assetB1_intersectStep = test_attack_graph.get_node_by_full_name(
+        'SOA_B 1:intersectionStep')
+    assetB2_intersectStep = test_attack_graph.get_node_by_full_name(
+        'SOA_B 2:intersectionStep')
+    assetB3_intersectStep = test_attack_graph.get_node_by_full_name(
+        'SOA_B 3:intersectionStep')
+
+    assert assetB1_intersectStep not in assetA1_origInnerStep.children
+    assert assetB2_intersectStep not in assetA1_origInnerStep.children
+    assert assetB3_intersectStep not in assetA1_origInnerStep.children
+
+    assert assetB1_intersectStep not in assetA1_origOuterStep.children
+    assert assetB2_intersectStep in assetA1_origOuterStep.children
+    assert assetB3_intersectStep not in assetA1_origOuterStep.children
 
 def test_attackgraph_transitive():
     test_lang_graph = LanguageGraph(MalCompiler().compile(

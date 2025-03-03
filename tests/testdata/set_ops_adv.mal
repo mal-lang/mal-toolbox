@@ -1,0 +1,25 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset SOA_A {
+    | originInnerStep
+      -> fieldA3b.(fieldB1 /\ fieldB2).intersectionStep
+
+    | originOuterStep
+      -> (fieldA3b.fieldB1 /\ fieldA3b.fieldB2).intersectionStep
+  }
+
+  asset SOA_B {
+    | unionStep
+    | intersectionStep
+    | differenceStep
+  }
+}
+
+associations {
+  SOA_A [fieldA1]  * <-- SetOpsAdv1 --> * [fieldB1]  SOA_B
+  SOA_A [fieldA2]  * <-- SetOpsAdv2 --> * [fieldB2]  SOA_B
+  SOA_A [fieldA3a] * <-- SetOpsAdv3 --> * [fieldA3b] SOA_A
+}
