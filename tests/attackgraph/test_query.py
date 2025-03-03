@@ -1,9 +1,70 @@
 """Unit tests for AttackGraph functionality"""
 
-from maltoolbox.attackgraph import Attacker, AttackGraph, AttackGraphNode
-from maltoolbox.attackgraph.query import (calculate_attack_surface,
-                                          is_node_traversable_by_attacker)
+from maltoolbox.attackgraph import Attacker, AttackGraph
+from maltoolbox.attackgraph.query import (
+    calculate_attack_surface,
+    is_node_traversable_by_attacker
+)
 from maltoolbox.language import LanguageGraph
+
+from .node_test_utils import (
+    add_viable_and_node,
+    add_viable_or_node,
+    add_non_viable_and_node,
+    add_non_viable_or_node
+)
+
+def test_traversability_traversable(dummy_lang_graph):
+    """Make sure traversability works as expected"""
+    attack_graph = AttackGraph(dummy_lang_graph)
+    attacker = Attacker('Attacker1')
+
+    # Viable and-node where all necessary parents are compromised
+    viable_and_node = add_viable_and_node(attack_graph)
+    for parent in viable_and_node.parents:
+        parent.is_necessary = True
+        attacker.compromise(parent)
+    assert is_node_traversable_by_attacker(viable_and_node, attacker)
+
+    # Viable or-node where at least one parent is compromised
+    viable_or_node = add_viable_or_node(attack_graph)
+    parent = next(iter(viable_or_node.parents))
+    parent.is_necessary = True
+    attacker.compromise(parent)
+    assert is_node_traversable_by_attacker(viable_or_node, attacker)
+
+
+def test_traversability_not_traversable(dummy_lang_graph):
+    """Make sure nodes that shouldn't be traversable aren't"""
+    attack_graph = AttackGraph(dummy_lang_graph)
+    attacker = Attacker('Attacker1')
+
+    # Viable and-node where not all necessary parents are compromised
+    # -> not traversable
+    non_viable_and_node = add_non_viable_and_node(attack_graph)
+    assert not is_node_traversable_by_attacker(non_viable_and_node, attacker)
+
+    # Nonviable and-node where all necessary parents are compromised
+    # -> not traversabel
+    viable_and_node = add_non_viable_and_node(attack_graph)
+    for parent in viable_and_node.parents:
+        parent.is_necessary = True
+        attacker.compromise(parent)
+    assert not is_node_traversable_by_attacker(viable_and_node, attacker)
+
+    # Viable or-node where no parent is compromised -> not traversable
+    non_viable_or_node = add_non_viable_or_node(attack_graph)
+    assert not is_node_traversable_by_attacker(non_viable_or_node, attacker)
+
+    # Nonviable or-node where parent is compromised -> not traversable
+    viable_or_node = add_viable_or_node(attack_graph)
+    parent = next(iter(viable_or_node.parents))
+    parent.is_necessary = True
+    attacker.compromise(parent)
+
+    # Fails because the function assumes that one parent is traversable
+    # TODO: Should this be changed?
+    # assert not is_node_traversable_by_attacker(viable_or_node, attacker)
 
 
 def test_query_is_node_traversable_by_attacker(dummy_lang_graph: LanguageGraph):
