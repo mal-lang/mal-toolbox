@@ -118,6 +118,15 @@ class AttackGraphNode:
 
         return copied_node
 
+    def __eq__(self, other):
+        if not isinstance(other, AttackGraphNode):
+            return False
+
+        same_id = self.id == other.id
+        same_name = self.name == other.name
+        same_asset = self.model_asset == other.model_asset
+
+        return same_id and same_name and same_asset
 
     def is_compromised(self) -> bool:
         """
