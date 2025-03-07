@@ -574,6 +574,16 @@ class ModelAsset:
     def __repr__(self):
         return (f'ModelAsset(name: "{self.name}", id: {self.id}, '
             f'type: {self.type})')
+    
+    def __eq__(self, other):
+        if not isinstance(other, ModelAsset):
+            return False
+        
+        same_id = self.id == other.id
+        same_name = self.name == other.name
+        same_type = self.type == other.type
+
+        return same_id and same_name and same_type
 
 
     def validate_associated_assets(
