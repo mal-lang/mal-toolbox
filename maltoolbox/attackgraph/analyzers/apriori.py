@@ -55,17 +55,16 @@ def propagate_necessity_from_node(node: AttackGraphNode) -> None:
         node.full_name, node.id, node.is_necessary
     )
 
-    if node.ttc and 'name' in node.ttc:
-        if node.ttc['name'] not in ['Enabled', 'Disabled', 'Instant']:
+    for child in node.children:
+        if child.ttc and child.ttc.get('name', None) not in ['Enabled',
+                'Disabled', 'Instant']:
             # Do not propagate unnecessary state from nodes that have a TTC
             # probability distribution associated with them.
             # TODO: Evaluate this more carefully, how do we want to have TTCs
             # impact necessity and viability.
             # TODO: Have this condition be any probability that has a
             # Bernoulli component
-            return
-
-    for child in node.children:
+            continue
         original_value = child.is_necessary
         if child.type == 'or':
             child.is_necessary = False
