@@ -668,9 +668,8 @@ class malAnalyzer():
         match step['type']:
             case 'defense':
                 if (step['ttc']['type'] != 'function'):
-                    logging.error(f'Defense {asset_name}.{step["name"]} may not have advanced TTC expressions')
-                    self._error = True
-                    return
+                    error_msg = f'Defense {asset_name}.{step["name"]} may not have advanced TTC expressions'
+                    self._raise_analyzer_exception(error_msg)
                 
                 match step['ttc']['name']:
                     case 'Enabled' | 'Disabled' | 'Bernoulli':
@@ -679,9 +678,8 @@ class malAnalyzer():
                         except DistributionsException as e:
                             self._raise_analyzer_exception(e._error_message)
                     case _:
-                        logging.error(f'Defense {asset_name}.{step["name"]} may only have \'Enabled\', \'Disabled\', or \'Bernoulli(p)\' as TTC')
-                        self._error = True
-                        return
+                        error_msg = f'Defense {asset_name}.{step["name"]} may only have \'Enabled\', \'Disabled\', or \'Bernoulli(p)\' as TTC'
+                        self._raise_analyzer_exception(error_msg)
             case 'exist' | 'notExist':
                 # This should log error, but it happens later in the code
                 pass
@@ -690,29 +688,29 @@ class malAnalyzer():
         
     def _check_TTC_expr(self, expr, isSubDivExp = False):
         match expr['type']:
-            case 'function':
-                if (expr['name'] == 'Enabled' or expr['name'] == 'Disabled'):
-                    logging.error('Distributions \'Enabled\' or \'Disabled\' may not be used as TTC values in \'&\' and \'|\' attack steps')
-                    self._error = True
-                    return
-                if (isSubDivExp and expr['name'] in ['Bernoulli', 'EasyAndUncertain']):
-                    logging.error(f'TTC distribution \'{expr["name"]}\' is not available in subtraction, division or exponential expressions.')
-                    self._error = True
-                    return
-                # try/catch  Distributions.validate(name, params)
             case  'subtraction' | 'exponentiation' | 'division':
                 self._check_TTC_expr(expr['lhs'], True)
                 self._check_TTC_expr(expr['rhs'], True)
             case 'multiplication' | 'addition':
                 self._check_TTC_expr(expr['lhs'], False)
                 self._check_TTC_expr(expr['rhs'], False)
+            case 'function':
+                if (expr['name'] in ['Enabled', 'Disabled']):
+                    error_msg = 'Distributions \'Enabled\' or \'Disabled\' may not be used as TTC values in \'&\' and \'|\' attack steps'
+                    self._raise_analyzer_exception(error_msg)
+                if (isSubDivExp and expr['name'] in ['Bernoulli', 'EasyAndUncertain']):
+                    logging.error(f'TTC distribution \'{expr["name"]}\' is not available in subtraction, division or exponential expressions.')
+                    self._raise_analyzer_exception(error_msg)
+                try:
+                    Distributions.validate(step['ttc']['name'], step['ttc']['arguments'])
+                except DistributionsException as e:
+                    self._raise_analyzer_exception(e._error_message)
             case 'number':
+                # Always ok
                 pass
             case _:
-                logging.error(f'Unexpected expression {expr}')
-                self._error = True
-                # exit(1)
-
+                error_msg = f'Unexpected expression {expr}'
+                self._raise_analyzer_exception(error_msg)
 
     def _validate_CIA(self, ctx: malParser.StepContext, step: dict) -> None:
         '''
