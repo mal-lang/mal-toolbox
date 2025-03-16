@@ -1,4 +1,6 @@
 from .mal_parser import malParser
+from .distributions import Distributions, DistributionsException
+
 
 import logging
 import re
@@ -664,7 +666,7 @@ class malAnalyzer():
         if not step['ttc']:
             return
         match step['type']:
-            case  'defense':
+            case 'defense':
                 if (step['ttc']['type'] != 'function'):
                     logging.error(f'Defense {asset_name}.{step["name"]} may not have advanced TTC expressions')
                     self._error = True
@@ -672,13 +674,16 @@ class malAnalyzer():
                 
                 match step['ttc']['name']:
                     case 'Enabled' | 'Disabled' | 'Bernoulli':
-                        #   try/catch Distributions.validate(name, params)
-                        return
+                        try:
+                            Distributions.validate(step['ttc']['name'], step['ttc']['arguments'])
+                        except DistributionsException as e:
+                            self._raise_analyzer_exception(e._error_message)
                     case _:
                         logging.error(f'Defense {asset_name}.{step["name"]} may only have \'Enabled\', \'Disabled\', or \'Bernoulli(p)\' as TTC')
                         self._error = True
                         return
             case 'exist' | 'notExist':
+                # This should log error, but it happens later in the code
                 pass
             case _:
                 self._check_TTC_expr(step['ttc'])
