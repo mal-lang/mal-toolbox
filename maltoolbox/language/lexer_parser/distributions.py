@@ -14,6 +14,8 @@ class Distributions:
                 Exponential.validate(params)
             case 'Gamma':
                 Gamma.validate(params)
+            case 'LogNormal':
+                LogNormal.validate(params)
             case 'Enabled' | 'Disabled':
                 pass
             case _:
@@ -56,4 +58,13 @@ class Gamma:
             raise(DistributionsException(err_msg))
         if params[1]<=0:
             err_msg = f"{params[1]} is not in valid range 'scale > 0', for Gamma distribution"
+            raise(DistributionsException(err_msg))
+
+class LogNormal:
+    def validate(params: list) -> None:
+        if (not params or len(params)!=2):
+            err_msg = "Expected exactly two parameters (mean, standardDeviation), for LogNormal distribution"
+            raise(DistributionsException(err_msg))
+        if params[1]<=0:
+            err_msg = f"{params[1]} is not in valid range 'standardDeviation > 0', for LogNormal distribution"
             raise(DistributionsException(err_msg))

@@ -182,3 +182,44 @@ def test_ttc_17() -> None:
         test_file="test_ttc_17.mal",
         error_msg = "0 is not in valid range 'scale > 0', for Gamma distribution"
     )
+
+# TESTS FOR LOGNORMAL
+
+def test_ttc_18() -> None:
+    '''
+    Test correct LogNormal
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_18.mal"
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_19() -> None:
+    '''
+    Test LogNormal with more than two parameters
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_19.mal",
+        error_msg = "Expected exactly two parameters (mean, standardDeviation), for LogNormal distribution"
+    )
+
+def test_ttc_20() -> None:
+    '''
+    Test LogNormal with one parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_20.mal",
+        error_msg = "Expected exactly two parameters (mean, standardDeviation), for LogNormal distribution"
+    )
+
+def test_ttc_21() -> None:
+    '''
+    Test LogNormal with invalid standardDeviation
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_21.mal",
+        error_msg = "0 is not in valid range 'standardDeviation > 0', for LogNormal distribution"
+    )
