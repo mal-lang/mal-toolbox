@@ -314,3 +314,44 @@ def test_ttc_30() -> None:
         test_file="test_ttc_30.mal",
         error_msg = "0 is not in valid range 'standardDeviation > 0', for TruncatedNormal distribution"
     )
+
+# TESTS FOR UNIFORM
+
+def test_ttc_31() -> None:
+    '''
+    Test correct Uniform
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_31.mal"
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_32() -> None:
+    '''
+    Test Uniform with more than two parameters
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_32.mal",
+        error_msg = "Expected exactly two parameters (min, max), for Uniform distribution"
+    )
+
+def test_ttc_33() -> None:
+    '''
+    Test Uniform with one parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_33.mal",
+        error_msg = "Expected exactly two parameters (min, max), for Uniform distribution"
+    )
+
+def test_ttc_34() -> None:
+    '''
+    Test Uniform with min greater than max
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_34.mal",
+        error_msg = "(5.0, 4.0) does not meet requirement 'min <= max', for Uniform distribution"
+    )

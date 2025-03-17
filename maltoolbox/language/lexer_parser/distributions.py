@@ -20,6 +20,8 @@ class Distributions:
                 Pareto.validate(params)
             case 'TruncatedNormal':
                 TruncatedNormal.validate(params)
+            case 'Uniform':
+                Uniform.validate(params)
             case 'Enabled' | 'Disabled':
                 pass
             case _:
@@ -92,4 +94,13 @@ class TruncatedNormal:
             raise(DistributionsException(err_msg))
         if params[1]<=0:
             err_msg = f"{params[1]} is not in valid range 'standardDeviation > 0', for TruncatedNormal distribution"
+            raise(DistributionsException(err_msg))
+
+class Uniform:
+    def validate(params: list) -> None:
+        if (not params or len(params)!=2):
+            err_msg = "Expected exactly two parameters (min, max), for Uniform distribution" 
+            raise(DistributionsException(err_msg))
+        if params[0] > params[1]:
+            err_msg = f"({params[0]}, {params[1]}) does not meet requirement 'min <= max', for Uniform distribution"
             raise(DistributionsException(err_msg))
