@@ -1,0 +1,9 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset OperatingSystem {}
+    asset Linux extends OperatingSystem {
+        | login [EasyAndUncertain - Exponential(0.1)]
+    }
+}

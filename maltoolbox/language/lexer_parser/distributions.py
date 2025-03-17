@@ -27,7 +27,8 @@ class Distributions:
                 'VeryHardAndCertain' | 'VeryHardAndUncertain':
                 Combination.validate(params)
             case _:
-                pass
+                err_msg = f"Distribution {distribution_name} is not supported"
+                raise(DistributionsException(err_msg))
 
 class Bernoulli:
     def validate(params: list) -> None:

@@ -1,0 +1,12 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset OperatingSystem {}
+    asset Linux extends OperatingSystem {
+        #                                                                                                                    WRONG!!!
+        #                                                                                                                        |
+        #                                                                                                                        v
+        | login [Bernoulli(0.2) * (Exponential(0.1) / (Gamma(0.5, 0.2) * EasyAndCertain - (LogNormal(0.1, 0.45) ^ 5) * Uniform(0.4, 0.3)))]
+    }
+}
