@@ -699,7 +699,7 @@ class malAnalyzer():
                     error_msg = 'Distributions \'Enabled\' or \'Disabled\' may not be used as TTC values in \'&\' and \'|\' attack steps'
                     self._raise_analyzer_exception(error_msg)
                 if (isSubDivExp and expr['name'] in ['Bernoulli', 'EasyAndUncertain']):
-                    logging.error(f'TTC distribution \'{expr["name"]}\' is not available in subtraction, division or exponential expressions.')
+                    error_msg = f'TTC distribution \'{expr["name"]}\' is not available in subtraction, division or exponential expressions.'
                     self._raise_analyzer_exception(error_msg)
                 try:
                     Distributions.validate(expr['name'], expr['arguments'])

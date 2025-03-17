@@ -132,3 +132,53 @@ def test_ttc_12() -> None:
         test_file="test_ttc_12.mal",
         error_msg = "0 is not in valid range 'lambda > 0', for Exponential distribution"
     )
+
+# TESTS FOR GAMMA
+
+def test_ttc_13() -> None:
+    '''
+    Test correct Gamma
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_13.mal"
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_14() -> None:
+    '''
+    Test Gamma with more than two parameters
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_14.mal",
+        error_msg = "Expected exactly two parameters (shape, scale), for Gamma distribution"
+    )
+
+def test_ttc_15() -> None:
+    '''
+    Test Gamma with one parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_15.mal",
+        error_msg = "Expected exactly two parameters (shape, scale), for Gamma distribution"
+    )
+
+def test_ttc_16() -> None:
+    '''
+    Test Gamma with invalid first parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_16.mal",
+        error_msg = "0 is not in valid range 'shape > 0', for Gamma distribution"
+    )
+
+def test_ttc_17() -> None:
+    '''
+    Test Gamma with invalid second parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_17.mal",
+        error_msg = "0 is not in valid range 'scale > 0', for Gamma distribution"
+    )

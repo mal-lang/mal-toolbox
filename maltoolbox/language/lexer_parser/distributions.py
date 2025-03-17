@@ -12,6 +12,8 @@ class Distributions:
                 Binomial.validate(params)
             case 'Exponential':
                 Exponential.validate(params)
+            case 'Gamma':
+                Gamma.validate(params)
             case 'Enabled' | 'Disabled':
                 pass
             case _:
@@ -42,4 +44,16 @@ class Exponential:
             raise(DistributionsException(err_msg))
         if params[0]<=0:
             err_msg = f"{params[0]} is not in valid range 'lambda > 0', for Exponential distribution"
+            raise(DistributionsException(err_msg))
+
+class Gamma:
+    def validate(params: list) -> None:
+        if (not params or len(params)!=2):
+            err_msg = "Expected exactly two parameters (shape, scale), for Gamma distribution"
+            raise(DistributionsException(err_msg))
+        if params[0]<=0:
+            err_msg = f"{params[0]} is not in valid range 'shape > 0', for Gamma distribution"
+            raise(DistributionsException(err_msg))
+        if params[1]<=0:
+            err_msg = f"{params[1]} is not in valid range 'scale > 0', for Gamma distribution"
             raise(DistributionsException(err_msg))
