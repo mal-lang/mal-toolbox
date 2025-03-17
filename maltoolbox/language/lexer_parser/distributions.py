@@ -18,6 +18,8 @@ class Distributions:
                 LogNormal.validate(params)
             case 'Pareto':
                 Pareto.validate(params)
+            case 'TruncatedNormal':
+                TruncatedNormal.validate(params)
             case 'Enabled' | 'Disabled':
                 pass
             case _:
@@ -81,4 +83,13 @@ class Pareto:
             raise(DistributionsException(err_msg))
         if params[1]<=0:
             err_msg = f"{params[1]} is not in valid range 'shape > 0', for Pareto distribution"
+            raise(DistributionsException(err_msg))
+
+class TruncatedNormal:
+    def validate(params: list) -> None:
+        if (not params or len(params)!=2):
+            err_msg = "Expected exactly two parameters (mean, standardDeviation), for TruncatedNormal distribution" 
+            raise(DistributionsException(err_msg))
+        if params[1]<=0:
+            err_msg = f"{params[1]} is not in valid range 'standardDeviation > 0', for TruncatedNormal distribution"
             raise(DistributionsException(err_msg))

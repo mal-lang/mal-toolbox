@@ -273,3 +273,44 @@ def test_ttc_26() -> None:
         test_file="test_ttc_26.mal",
         error_msg = "0 is not in valid range 'shape > 0', for Pareto distribution"
     )
+
+# TESTS FOR TRUNCATEDNORMAL
+
+def test_ttc_27() -> None:
+    '''
+    Test correct TruncatedNormal
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_27.mal"
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_28() -> None:
+    '''
+    Test TruncatedNormal with more than two parameters
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_28.mal",
+        error_msg = "Expected exactly two parameters (mean, standardDeviation), for TruncatedNormal distribution"
+    )
+
+def test_ttc_29() -> None:
+    '''
+    Test TruncatedNormal with one parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_29.mal",
+        error_msg = "Expected exactly two parameters (mean, standardDeviation), for TruncatedNormal distribution"
+    )
+
+def test_ttc_30() -> None:
+    '''
+    Test TruncatedNormal with invalid standard deviation
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_30.mal",
+        error_msg = "0 is not in valid range 'standardDeviation > 0', for TruncatedNormal distribution"
+    )
