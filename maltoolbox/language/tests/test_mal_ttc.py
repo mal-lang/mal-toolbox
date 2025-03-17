@@ -10,6 +10,8 @@ File to test Time To Compromise (TTC) expressions in MAL
 @pytest.mark.usefixtures("setup_test_environment")
 @pytest.mark.parametrize("setup_test_environment", [Path(__file__).parent / "fixtures/ttc_test_files/"], indirect=True)
 
+# TESTS FOR BERNOULLI
+
 def test_ttc_1() -> None:
     '''
     Test correct Bernoulli
@@ -47,4 +49,45 @@ def test_ttc_4() -> None:
     AnalyzerTestWrapper(
         test_file="test_ttc_4.mal",
         error_msg="2.0 is not in valid range '0 <= probability <= 1', for Bernoulli distribution"
+    )
+
+# TESTS FOR BINOMIAL
+
+def test_ttc_5() -> None:
+    '''
+    Test correct Binomial
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_5.mal"
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_6() -> None:
+    '''
+    Test Binomial with more than two parameters
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_6.mal",
+        error_msg="Expected exactly two parameters (trials, probability), for Binomial distribution"
+    )
+
+def test_ttc_7() -> None:
+    '''
+    Test Binomial with one parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_7.mal",
+        error_msg="Expected exactly two parameters (trials, probability), for Binomial distribution"
+    )
+
+def test_ttc_8() -> None:
+    '''
+    Test Binomial with invalid parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_8.mal",
+        error_msg="2.0 is not in valid range '0 <= probability <= 1', for Binomial distribution"
     )

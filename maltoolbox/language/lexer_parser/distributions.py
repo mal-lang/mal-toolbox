@@ -8,6 +8,8 @@ class Distributions:
         match distribution_name:
             case 'Bernoulli':
                 Bernoulli.validate(params)
+            case 'Binomial':
+                Binomial.validate(params)
             case 'Enabled' | 'Disabled':
                 pass
             case _:
@@ -20,4 +22,13 @@ class Bernoulli:
             raise(DistributionsException(err_msg))
         if not 0<=params[0]<=1:
             err_msg = f"{params[0]} is not in valid range '0 <= probability <= 1', for Bernoulli distribution"
+            raise(DistributionsException(err_msg))
+
+class Binomial:
+    def validate(params: list) -> None:
+        if (not params or len(params)!=2):
+            err_msg = "Expected exactly two parameters (trials, probability), for Binomial distribution" 
+            raise(DistributionsException(err_msg))
+        if not 0<=params[1]<=1:
+            err_msg = f"{params[1]} is not in valid range '0 <= probability <= 1', for Binomial distribution"
             raise(DistributionsException(err_msg))

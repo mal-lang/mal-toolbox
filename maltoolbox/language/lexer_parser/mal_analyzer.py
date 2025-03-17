@@ -702,7 +702,7 @@ class malAnalyzer():
                     logging.error(f'TTC distribution \'{expr["name"]}\' is not available in subtraction, division or exponential expressions.')
                     self._raise_analyzer_exception(error_msg)
                 try:
-                    Distributions.validate(step['ttc']['name'], step['ttc']['arguments'])
+                    Distributions.validate(expr['name'], expr['arguments'])
                 except DistributionsException as e:
                     self._raise_analyzer_exception(e._error_message)
             case 'number':
