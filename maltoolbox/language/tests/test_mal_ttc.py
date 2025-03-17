@@ -223,3 +223,53 @@ def test_ttc_21() -> None:
         test_file="test_ttc_21.mal",
         error_msg = "0 is not in valid range 'standardDeviation > 0', for LogNormal distribution"
     )
+
+# TESTS FOR PARETO
+
+def test_ttc_22() -> None:
+    '''
+    Test correct Pareto
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_22.mal"
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_23() -> None:
+    '''
+    Test Pareto with more than two parameters
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_23.mal",
+        error_msg = "Expected exactly two parameters (min, shape), for Pareto distribution"
+    )
+
+def test_ttc_24() -> None:
+    '''
+    Test Pareto with one parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_24.mal",
+        error_msg = "Expected exactly two parameters (min, shape), for Pareto distribution"
+    )
+
+def test_ttc_25() -> None:
+    '''
+    Test Pareto with invalid min 
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_25.mal",
+        error_msg = "0 is not in valid range 'min > 0', for Pareto distribution"
+    )
+
+def test_ttc_26() -> None:
+    '''
+    Test Pareto with invalid shape 
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_26.mal",
+        error_msg = "0 is not in valid range 'shape > 0', for Pareto distribution"
+    )

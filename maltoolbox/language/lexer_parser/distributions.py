@@ -16,6 +16,8 @@ class Distributions:
                 Gamma.validate(params)
             case 'LogNormal':
                 LogNormal.validate(params)
+            case 'Pareto':
+                Pareto.validate(params)
             case 'Enabled' | 'Disabled':
                 pass
             case _:
@@ -67,4 +69,16 @@ class LogNormal:
             raise(DistributionsException(err_msg))
         if params[1]<=0:
             err_msg = f"{params[1]} is not in valid range 'standardDeviation > 0', for LogNormal distribution"
+            raise(DistributionsException(err_msg))
+
+class Pareto:
+    def validate(params: list) -> None:
+        if (not params or len(params)!=2):
+            err_msg = "Expected exactly two parameters (min, shape), for Pareto distribution"
+            raise(DistributionsException(err_msg))
+        if params[0]<=0:
+            err_msg = f"{params[0]} is not in valid range 'min > 0', for Pareto distribution"
+            raise(DistributionsException(err_msg))
+        if params[1]<=0:
+            err_msg = f"{params[1]} is not in valid range 'shape > 0', for Pareto distribution"
             raise(DistributionsException(err_msg))
