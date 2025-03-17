@@ -1,0 +1,12 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {
+        | test [EasyAndUncertain()]
+            -> done
+        | test1 [EasyAndUncertain]
+            -> done
+        | done
+    }
+}

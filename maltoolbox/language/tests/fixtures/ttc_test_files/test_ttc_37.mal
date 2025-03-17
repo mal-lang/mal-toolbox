@@ -1,0 +1,12 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {
+        | test [Zero()]
+            -> done
+        | test1 [Zero]
+            -> done
+        | done
+    }
+}

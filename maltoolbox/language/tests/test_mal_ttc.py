@@ -355,3 +355,214 @@ def test_ttc_34() -> None:
         test_file="test_ttc_34.mal",
         error_msg = "(5.0, 4.0) does not meet requirement 'min <= max', for Uniform distribution"
     )
+
+# TESTS FOR COMBINATIONS
+def test_ttc_35() -> None:
+    '''
+    Test correct Infinity 
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_35.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_36() -> None:
+    '''
+    Test incorrect Infinity
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_36.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_37() -> None:
+    '''
+    Test correct Zero
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_37.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_38() -> None:
+    '''
+    Test incorrect Zero
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_38.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_39() -> None:
+    '''
+    Test correct EasyAndCertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_39.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_40() -> None:
+    '''
+    Test incorrect EasyAndCertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_40.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_41() -> None:
+    '''
+    Test correct EasyAndUncertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_41.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_42() -> None:
+    '''
+    Test incorrect EasyAndUncertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_42.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_43() -> None:
+    '''
+    Test correct HardAndCertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_43.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_44() -> None:
+    '''
+    Test incorrect HardAndCertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_44.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_45() -> None:
+    '''
+    Test correct HardAndUncertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_45.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_46() -> None:
+    '''
+    Test incorrect HardAndUncertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_46.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_47() -> None:
+    '''
+    Test correct VeryHardAndCertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_47.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_48() -> None:
+    '''
+    Test incorrect VeryHardAndCertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_48.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_49() -> None:
+    '''
+    Test correct VeryHardAndUncertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_49.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_50() -> None:
+    '''
+    Test incorrect VeryHardAndUncertain
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_50.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_51() -> None:
+    '''
+    Test correct Enabled
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_51.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_52() -> None:
+    '''
+    Test incorrect Enabled
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_52.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )
+
+def test_ttc_53() -> None:
+    '''
+    Test correct Disabled
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_53.mal",
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_54() -> None:
+    '''
+    Test incorrect Disabled
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_54.mal",
+        error_msg = "Expected exactly zero parameters, for combination distributions"
+    )

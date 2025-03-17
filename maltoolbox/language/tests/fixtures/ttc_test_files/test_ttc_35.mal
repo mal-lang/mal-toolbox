@@ -1,0 +1,12 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {
+        | test [Infinity()]
+            -> done
+        | test1 [Infinity]
+            -> done
+        | done
+    }
+}

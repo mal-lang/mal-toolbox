@@ -22,8 +22,10 @@ class Distributions:
                 TruncatedNormal.validate(params)
             case 'Uniform':
                 Uniform.validate(params)
-            case 'Enabled' | 'Disabled':
-                pass
+            case 'Enabled' | 'Disabled' | 'Zero' | 'Infinity' | 'EasyAndCertain' | \
+                'EasyAndUncertain' | 'HardAndCertain' | 'HardAndUncertain' | \
+                'VeryHardAndCertain' | 'VeryHardAndUncertain':
+                Combination.validate(params)
             case _:
                 pass
 
@@ -103,4 +105,10 @@ class Uniform:
             raise(DistributionsException(err_msg))
         if params[0] > params[1]:
             err_msg = f"({params[0]}, {params[1]}) does not meet requirement 'min <= max', for Uniform distribution"
+            raise(DistributionsException(err_msg))
+
+class Combination:
+    def validate(params: list) -> None:
+        if (params and len(params)!=0):
+            err_msg = "Expected exactly zero parameters, for combination distributions" 
             raise(DistributionsException(err_msg))

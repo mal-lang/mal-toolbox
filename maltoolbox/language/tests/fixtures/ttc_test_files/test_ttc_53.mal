@@ -1,0 +1,12 @@
+#id: "org.mal-lang.testAnalyzer"
+#version:"0.0.0"
+
+category System {
+    asset Asset1 {
+        # test [Disabled()]
+            -> done
+        # test1 [Disabled]
+            -> done
+        | done
+    }
+}
