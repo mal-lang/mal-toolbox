@@ -10,6 +10,8 @@ class Distributions:
                 Bernoulli.validate(params)
             case 'Binomial':
                 Binomial.validate(params)
+            case 'Exponential':
+                Exponential.validate(params)
             case 'Enabled' | 'Disabled':
                 pass
             case _:
@@ -31,4 +33,13 @@ class Binomial:
             raise(DistributionsException(err_msg))
         if not 0<=params[1]<=1:
             err_msg = f"{params[1]} is not in valid range '0 <= probability <= 1', for Binomial distribution"
+            raise(DistributionsException(err_msg))
+
+class Exponential:
+    def validate(params: list) -> None:
+        if (not params or len(params)!=1):
+            err_msg = "Expected exactly one parameter (lambda), for Exponential distribution"
+            raise(DistributionsException(err_msg))
+        if params[0]<=0:
+            err_msg = f"{params[0]} is not in valid range 'lambda > 0', for Exponential distribution"
             raise(DistributionsException(err_msg))

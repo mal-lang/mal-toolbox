@@ -91,3 +91,44 @@ def test_ttc_8() -> None:
         test_file="test_ttc_8.mal",
         error_msg="2.0 is not in valid range '0 <= probability <= 1', for Binomial distribution"
     )
+
+# TESTS FOR EXPONENTIAL
+
+def test_ttc_9() -> None:
+    '''
+    Test correct Exponential
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_9.mal"
+    ).test(
+        defines=['id', 'version'],
+        categories=['System'],
+        assets=['Asset1']
+    )
+
+def test_ttc_10() -> None:
+    '''
+    Test Exponential with more than one parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_10.mal",
+        error_msg = "Expected exactly one parameter (lambda), for Exponential distribution"
+    )
+
+def test_ttc_11() -> None:
+    '''
+    Test Exponential without parameters
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_11.mal",
+        error_msg = "Expected exactly one parameter (lambda), for Exponential distribution"
+    )
+
+def test_ttc_12() -> None:
+    '''
+    Test Exponential with invalid parameter
+    '''
+    AnalyzerTestWrapper(
+        test_file="test_ttc_12.mal",
+        error_msg = "0 is not in valid range 'lambda > 0', for Exponential distribution"
+    )
