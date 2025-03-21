@@ -6,11 +6,13 @@ from __future__ import annotations
 import copy
 from functools import cached_property
 from typing import TYPE_CHECKING
+import numpy as np
+import math
 
 if TYPE_CHECKING:
     from typing import Any, Optional
     from . import Attacker
-    from ..language import LanguageGraphAttackStep, Detector
+    from ..language import LanguageGraphAttackStep
     from ..model import ModelAsset
 
 class AttackGraphNode:
@@ -181,6 +183,101 @@ class AttackGraphNode:
             'suppress' not in self.tags and \
             self.defense_status != 1.0
 
+    def ttc_sample(self) -> float:
+        """Sample a value from ttc distribution for a node
+
+        TTC Distributions in MAL:
+        https://mal-lang.org/mal-langspec/apidocs/org.mal_lang.langspec/org/mal_lang/langspec/ttc/TtcDistribution.html
+        """
+
+        def sample(exponential: float, bernoulli=1.0):
+            """
+            Generate a random sample for the given distributions.
+            If bernoulli distribution is not given, the sample will
+            simply be from an exponential.
+
+            If the Bernoulli trial fails (0), return infinity (impossible).
+            If the Bernoulli trial succeeds (1), return sample from
+            exponential distribution.
+            """
+
+            # If bernoulli is set to 1, the sample is just exponential
+            if np.random.choice([0, 1], p=[1 - bernoulli, bernoulli]):
+                return np.random.exponential(scale=1 / exponential)
+            return math.inf
+
+        if self.type == "defense":
+            # Defenses have no ttc
+            return 0
+
+        distribution = self.ttc.get('name')
+        s = math.nan
+        if distribution == "EasyAndCertain":
+            s = sample(exponential=1)
+        elif distribution == "EasyAndUncertain":
+            s = sample(exponential=1, bernoulli=0.5)
+        elif distribution == "HardAndCertain":
+            s = sample(exponential=0.1)
+        elif distribution == "HardAndUncertain":
+            s = sample(exponential=0.1, bernoulli=0.5)
+        elif distribution == "VeryHardAndCertain":
+            s = sample(exponential=0.01)
+        elif distribution == "VeryHardAndUncertain":
+            s = sample(exponential=0.01, bernoulli=0.5)
+        elif distribution == "Exponential":
+            scale = float(self.ttc['arguments'][0])
+            s = sample(exponential=scale)
+        else:
+            raise ValueError(f"Unknown TTC distribution: {distribution}")
+
+        return s
+
+    def ttc_expected_value(self) -> float:
+        """Returns the expected value of the ttc distribution for a node.
+
+        TTC Distributions in MAL:
+        https://mal-lang.org/mal-langspec/apidocs/org.mal_lang.langspec/org/mal_lang/langspec/ttc/TtcDistribution.html
+        """
+
+        def expected_value(exponential: float, bernoulli=1.0):
+            """Compute expected value for given distributions.
+
+            If bernoulli distribution is 0, the expected value is infinite.
+            Otherwise, the expected value is the expected value of the
+            exponential distribution divided by the probability of the
+            bernoulli distribution.
+            """
+            if bernoulli == 0:
+                # If Bernoulli always blocks, expectation is infinite
+                return math.inf
+
+            # Conditional expectation
+            return (1 / exponential) / bernoulli
+
+        if self.type == "defense":
+            # Defenses have no ttc
+            return 0
+
+        distribution = self.ttc["name"]
+        e = math.nan
+        if distribution == "EasyAndCertain":
+            e = expected_value(exponential=1.0)
+        elif distribution == "EasyAndUncertain":
+            e = expected_value(exponential=1.0, bernoulli=0.5)
+        elif distribution == "HardAndCertain":
+            e = expected_value(exponential=0.1)
+        elif distribution == "HardAndUncertain":
+            e = expected_value(exponential=0.1, bernoulli=0.5)
+        elif distribution == "VeryHardAndCertain":
+            e = expected_value(exponential=0.01)
+        elif distribution == "VeryHardAndUncertain":
+            e = expected_value(exponential=0.01, bernoulli=0.5)
+        elif distribution == "Exponential":
+            scale = float(self.ttc["arguments"][0])
+            e = expected_value(exponential=scale)
+        else:
+            raise ValueError(f"Unknown TTC distribution: {distribution}")
+        return e
 
     @property
     def full_name(self) -> str:
