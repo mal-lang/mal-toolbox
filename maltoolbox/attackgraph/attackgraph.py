@@ -191,6 +191,7 @@ class AttackGraph():
                 lg_attack_step = lg_attack_step,
                 node_id = node_dict['id'],
                 model_asset = node_asset,
+                ttc_dist = node_dict['ttc'],
                 existence_status = node_dict.get('existence_status', None)
             )
             ag_node.tags = set(node_dict.get('tags', []))
@@ -468,7 +469,21 @@ class AttackGraph():
                 existence_status = None
                 node_name = asset.name + ':' + attack_step.name
 
+                ttc_dist = attack_step.ttc
                 match (attack_step.type):
+                    case 'defense':
+                        # Set the TTC probability for defenses
+                        defense_value = float(asset.defenses[attack_step.name])
+                        ttc_dist = {
+                            'arguments': [defense_value],
+                            'name': 'Bernoulli',
+                            'type': 'function'
+                        }
+                        logger.debug(
+                            'Setting defense \"%s\" to "%s".',
+                            node_name, defense_value
+                        )
+
                     case 'exist' | 'notExist':
                         # Resolve step expression associated with
                         # (non-)existence attack steps.
@@ -498,6 +513,7 @@ class AttackGraph():
                 ag_node = self.add_node(
                     lg_attack_step = attack_step,
                     model_asset = asset,
+                    ttc_dist = ttc_dist,
                     existence_status = existence_status
                 )
                 attack_step_nodes.append(ag_node)
@@ -587,6 +603,7 @@ class AttackGraph():
             lg_attack_step: LanguageGraphAttackStep,
             node_id: Optional[int] = None,
             model_asset: Optional[ModelAsset] = None,
+            ttc_dist: Optional[dict] = None,
             existence_status: Optional[bool] = None
         ) -> AttackGraphNode:
         """Create and add a node to the graph
@@ -603,9 +620,10 @@ class AttackGraph():
                               only be ommitted if the model which was used to
                               generate the attack graph is not available when
                               loading an attack graph from a file.
-        defese_status       - the defense status of the node. Only, relevant
-                              for defense type nodes. A value between 0.0 and
-                              1.0 is expected.
+        ttc_dist            - the ttc distribution to assign to the node. This
+                              is relevant for when we want to override the ttc
+                              distribution as it is defined in the language.
+                              Frequently used for defenses.
         existence_status    - the existence status of the node. Only, relevant
                               for exist and notExist type nodes.
 
@@ -630,6 +648,7 @@ class AttackGraph():
             node_id = node_id,
             lg_attack_step = lg_attack_step,
             model_asset = model_asset,
+            ttc_dist = ttc_dist,
             existence_status = existence_status
         )
 

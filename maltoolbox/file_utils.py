@@ -1,4 +1,4 @@
-"""Utily functions for file handling"""
+"""Utilty functions for file handling"""
 
 import json
 import yaml
