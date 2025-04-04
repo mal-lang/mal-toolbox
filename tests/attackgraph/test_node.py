@@ -62,14 +62,12 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
 
     attack_graph.add_attacker(attacker)
 
-    node6.compromise(attacker)
-    assert node6.compromised_by == {attacker}
+    node6.compromised_by.add(attacker)
     assert node6.is_compromised()
     assert node6.is_compromised_by(attacker)
 
     # Make sure uncompromise will remove the attacker
-    node6.undo_compromise(attacker)
-    assert node6.compromised_by == set()
+    node6.compromised_by.remove(attacker)
     assert not node6.is_compromised()
 
     # Node 3 is disabled defense
