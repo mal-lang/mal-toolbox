@@ -46,21 +46,25 @@ def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
 
     attacker.compromise(node1)
     assert attacker.reached_attack_steps == {node1}
+    assert attacker.reached_attack_steps_list == [node1]
     assert not attacker.entry_points
 
     assert node1.compromised_by == {attacker}
 
     attacker.compromise(node1) # Compromise same node again not a problem
     assert attacker.reached_attack_steps == {node1}
+    assert attacker.reached_attack_steps_list == [node1]
     assert node1.compromised_by == {attacker}
 
     attacker.compromise(node2)
     assert attacker.reached_attack_steps == {node2, node1}
+    assert attacker.reached_attack_steps_list == [node1, node2]
     assert node1.compromised_by == {attacker}
     assert node2.compromised_by == {attacker}
 
     attacker.undo_compromise(node1)
     # Make sure attacker/node  was removed
     assert attacker.reached_attack_steps == {node2}
+    assert attacker.reached_attack_steps_list == [node2]
     assert node1.compromised_by == set()
     assert node2.compromised_by == {attacker}
