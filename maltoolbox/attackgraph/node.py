@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Any, Optional
     from . import Attacker
-    from ..language import LanguageGraphAttackStep, Detector
+    from ..language import LanguageGraphAttackStep
     from ..model import ModelAsset
 
 class AttackGraphNode:
