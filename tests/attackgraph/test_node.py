@@ -1,6 +1,5 @@
 """Unit tests for AttackGraphNode functionality"""
 
-from maltoolbox.model import Model
 from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
