@@ -6,8 +6,6 @@ from __future__ import annotations
 import copy
 from functools import cached_property
 from typing import TYPE_CHECKING
-import numpy as np
-import math
 
 if TYPE_CHECKING:
     from typing import Any, Optional
