@@ -26,7 +26,7 @@ def test_attacker_to_dict(dummy_lang_graph: LanguageGraph):
     }
 
 def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
-    """Attack a node and see expected behavior"""
+    """Compromise/uncompromise a node and see expected behavior"""
 
     dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyOrAttackStep']
@@ -35,6 +35,10 @@ def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
     node1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
+    node2 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+
     attacker = Attacker("Test Attacker")
     assert not attacker.entry_points
     attack_graph = AttackGraph(dummy_lang_graph)
@@ -50,28 +54,13 @@ def test_attacker_compromise(dummy_lang_graph: LanguageGraph):
     assert attacker.reached_attack_steps == {node1}
     assert node1.compromised_by == {attacker}
 
-def test_attacker_undo_compromise(dummy_lang_graph: LanguageGraph):
-    """Make sure undo compromise removes attacker/node"""
-
-    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyOrAttackStep']
-    attack_graph = AttackGraph(dummy_lang_graph)
-
-    node1 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    attacker = Attacker("attacker1")
-    attack_graph = AttackGraph(dummy_lang_graph)
-    attack_graph.add_attacker(attacker)
-
-    attacker.compromise(node1)
-    assert attacker.reached_attack_steps == {node1}
+    attacker.compromise(node2)
+    assert attacker.reached_attack_steps == {node2, node1}
     assert node1.compromised_by == {attacker}
-    attacker.compromise(node1) # Compromise same node again not a problem
-    assert attacker.reached_attack_steps == {node1}
-    assert node1.compromised_by == {attacker}
+    assert node2.compromised_by == {attacker}
 
     attacker.undo_compromise(node1)
     # Make sure attacker/node  was removed
-    assert attacker.reached_attack_steps == set()
+    assert attacker.reached_attack_steps == {node2}
     assert node1.compromised_by == set()
+    assert node2.compromised_by == {attacker}
