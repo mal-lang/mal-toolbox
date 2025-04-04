@@ -1,9 +1,6 @@
 docopt
 PyYAML
 
-# ttc calculations / math
-numpy
-
 #maltoolbox.ingestors:
 py2neo
 

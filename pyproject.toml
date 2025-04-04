@@ -17,7 +17,6 @@ dependencies = [
   "antlr4-python3-runtime",
   "docopt",
   "PyYAML",
-  "numpy",
 ]
 license = {text = "Apache Software License"}
 keywords = ["mal"]
