@@ -4,7 +4,7 @@ import pytest
 
 from maltoolbox.model import Model
 from maltoolbox.attackgraph.attackgraph import AttackGraph
-from maltoolbox.probs_utils import calculate_ttc, TTCCalculation
+from maltoolbox.probs_utils import calculate_prob, ProbCalculationMethod
 
 def test_probs_utils(model: Model):
     """Test TTC calculation for nodes"""
@@ -24,8 +24,8 @@ def test_probs_utils(model: Model):
 
     for node in attack_graph.nodes.values():
         #TODO: Actually check some of the results
-        calculate_ttc(node.ttc, TTCCalculation.SAMPLE)
+        calculate_prob(node.ttc, ProbCalculationMethod.SAMPLE)
 
     for node in attack_graph.nodes.values():
         #TODO: Actually check some of the results
-        calculate_ttc(node.ttc, TTCCalculation.EXPECTED)
+        calculate_prob(node.ttc, ProbCalculationMethod.EXPECTED)

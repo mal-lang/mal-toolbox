@@ -7,22 +7,22 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
-class TTCCalculation(Enum):
+class ProbCalculationMethod(Enum):
     SAMPLE = 1
     EXPECTED = 2
 
-def sample_ttc(probs_dict):
-    """Calculate the sampled value from a ttc distribution function
+def sample_prob(probs_dict):
+    """Calculate the sampled value from a probability distribution function
     Arguments:
     probs_dict      - a dictionary containing the probability distribution
-                      function that is part of a TTC
+                      function
 
     Return:
     The float value obtained from calculating the sampled value corresponding
     to the function provided.
     """
     if probs_dict['type'] != 'function':
-        raise ValueError('Sample TTC function requires a function '
+        raise ValueError('Sample probability method requires a function '
             f'probability distribution, but got "{probs_dict["type"]}"')
 
     match(probs_dict['name']):
@@ -67,19 +67,20 @@ def sample_ttc(probs_dict):
                 f'function encountered {probs_dict["name"]}!')
 
 
-def expected_ttc(probs_dict):
-    """Calculate the expected value from a ttc distribution function
+def expected_prob(probs_dict):
+    """Calculate the expected value from a probability distribution function
     Arguments:
     probs_dict      - a dictionary containing the probability distribution
-                      function that is part of a TTC
+                      function
 
     Return:
     The float value obtained from calculating the expected value corresponding
     to the function provided.
     """
     if probs_dict['type'] != 'function':
-        raise ValueError('Expected value TTC function requires a function '
-            f'probability distribution, but got "{probs_dict["type"]}"')
+        raise ValueError('Expected value probability method requires a '
+            'function probability distribution, but got '
+            f'"{probs_dict["type"]}"')
 
     match(probs_dict['name']):
         case 'Bernoulli':
@@ -122,16 +123,16 @@ def expected_ttc(probs_dict):
                 f'function encountered {probs_dict["name"]}!')
 
 
-def calculate_ttc(probs_dict: dict, method: TTCCalculation) -> float:
-    """Calculate the value from a ttc distribution
+def calculate_prob(probs_dict: dict, method: ProbCalculationMethod) -> float:
+    """Calculate the value from a probability distribution
     Arguments:
     probs_dict      - a dictionary containing the probability distribution
-                      corresponding to the TTC
-    method          - the method to use in calculating the TTC
+                      function
+    method          - the method to use in calculating the probability
                       values(currently supporting sampled or expected values)
 
     Return:
-    The float value obtained from calculating the TTC probability distribution.
+    The float value obtained from calculating the probability distribution.
 
     TTC Distributions in MAL:
     https://mal-lang.org/mal-langspec/apidocs/org.mal_lang.langspec/org/mal_lang/langspec/ttc/TtcDistribution.html
@@ -142,8 +143,8 @@ def calculate_ttc(probs_dict: dict, method: TTCCalculation) -> float:
     match(probs_dict['type']):
         case 'addition' | 'subtraction' | 'multiplication' | \
                 'division' | 'exponentiation':
-            lv = calculate_ttc(probs_dict['lhs'], method)
-            rv = calculate_ttc(probs_dict['rhs'], method)
+            lv = calculate_prob(probs_dict['lhs'], method)
+            rv = calculate_prob(probs_dict['rhs'], method)
             match(probs_dict['type']):
                 case 'addition':
                     return lv + rv
@@ -161,12 +162,12 @@ def calculate_ttc(probs_dict: dict, method: TTCCalculation) -> float:
 
         case 'function':
             match(method):
-                case TTCCalculation.SAMPLE:
-                    return sample_ttc(probs_dict)
-                case TTCCalculation.EXPECTED:
-                    return expected_ttc(probs_dict)
+                case ProbCalculationMethod.SAMPLE:
+                    return sample_prob(probs_dict)
+                case ProbCalculationMethod.EXPECTED:
+                    return expected_prob(probs_dict)
                 case _:
-                    raise ValueError('Unknown TTC Calculation method '
+                    raise ValueError('Unknown Probability Calculation method '
                     f'encountered {method}!')
 
         case _:

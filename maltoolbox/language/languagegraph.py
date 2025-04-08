@@ -654,7 +654,8 @@ class LanguageGraph():
     """Graph representation of a MAL language"""
     def __init__(self, lang: Optional[dict] = None):
         self.assets: dict = {}
-        self.load_predefined_ttcs()
+        self.predef_ttcs = load_dict_from_yaml_file(
+            'maltoolbox/language/predefined_ttcs.yml')
         if lang is not None:
             self._lang_spec: dict = lang
             self.metadata = {
@@ -695,11 +696,6 @@ class LanguageGraph():
             langspec = archive.read('langspec.json')
             return LanguageGraph(json.loads(langspec))
 
-
-    def load_predefined_ttcs(self):
-        """Load the predefined ttcs into a dictionary"""
-        self.predef_ttcs = load_dict_from_yaml_file(
-            'maltoolbox/language/predefined_ttcs.yml')
 
     def replace_if_predef_ttc(self, ttc_entry: dict) -> dict:
         """
