@@ -139,28 +139,6 @@ class AttackGraphNode:
         return attacker in self.compromised_by
 
 
-    def compromise(self, attacker: Attacker) -> None:
-        """
-        Have the attacker given as a parameter compromise this node.
-
-        Arguments:
-        attacker    - the attacker that will compromise the node
-        """
-        attacker.compromise(self)
-
-
-    def undo_compromise(self, attacker: Attacker) -> None:
-        """
-        Remove the attacker given as a parameter from the list of attackers
-        that have compromised this node.
-
-        Arguments:
-        attacker    - the attacker that we wish to remove from the compromised
-                      list.
-        """
-        attacker.undo_compromise(self)
-
-
     def is_enabled_defense(self) -> bool:
         """
         Return True if this node is a defense node and it is enabled and not
