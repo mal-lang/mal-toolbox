@@ -467,7 +467,8 @@ class Model():
                 for asset_name, entry_points_dict in \
                         attackers_info[attacker_id]['entry_points'].items():
                     target_asset = model.get_asset_by_id(
-                        entry_points_dict['asset_id'])
+                        int(entry_points_dict['asset_id'])
+                    )
                     if target_asset is None:
                         raise LookupError(
                             'Asset "%s"(%d) is not part of model "%s".' % (
