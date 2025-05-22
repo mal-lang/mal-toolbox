@@ -148,3 +148,7 @@ def test_attackstep_override():
 # one another.
 # def test_mallib_mal():
 #     LanguageGraph(MalCompiler().compile('tests/testdata/mallib_test.mal'))
+
+def test_probability_distributions():
+    lg = LanguageGraph(MalCompiler().compile('tests/testdata/prob_dists.mal'))
+    lg.save_to_file('logs/prob_dists_lg.yml')
