@@ -18,6 +18,7 @@ def test_traversability_traversable(dummy_lang_graph):
     """Make sure traversability works as expected"""
     attack_graph = AttackGraph(dummy_lang_graph)
     attacker = Attacker('Attacker1')
+    attack_graph.add_attacker(attacker)
 
     # Viable and-node where all necessary parents are compromised
     viable_and_node = add_viable_and_node(attack_graph)
@@ -38,6 +39,7 @@ def test_traversability_not_traversable(dummy_lang_graph):
     """Make sure nodes that shouldn't be traversable aren't"""
     attack_graph = AttackGraph(dummy_lang_graph)
     attacker = Attacker('Attacker1')
+    attack_graph.add_attacker(attacker)
 
     # Viable and-node where not all necessary parents are compromised
     # -> not traversable
