@@ -101,7 +101,6 @@ def dummy_lang_graph(corelang_lang_graph):
 @pytest.fixture
 def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
     """Fixture that generates an example attack graph
-       with unattached attacker
 
     Uses coreLang specification and model with two applications
     with an association and an attacker to create and return
