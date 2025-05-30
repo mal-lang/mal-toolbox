@@ -1386,22 +1386,22 @@ class LanguageGraph():
 
             associations = self._get_associations_for_asset_type(asset.name)
             for association in associations:
-                left_asset = self.assets[association['leftAsset']]
-                if not left_asset:
-                    msg = 'Left asset "%s" for association "%s" not found!'
-                    logger.error(
-                        msg, association["leftAsset"], association["name"])
-                    raise LanguageGraphAssociationError(
-                        msg % (association["leftAsset"], association["name"]))
+                left_asset_name = association['leftAsset']
+                right_asset_name = association['rightAsset']
 
-                right_asset = self.assets[association['rightAsset']]
-                if not right_asset:
-                    msg = 'Right asset "%s" for association "%s" not found!'
-                    logger.error(
-                        msg, association["rightAsset"], association["name"])
+                if left_asset_name not in self.assets:
                     raise LanguageGraphAssociationError(
-                        msg % (association["rightAsset"], association["name"])
+                        f'Left asset "{left_asset_name}" for '
+                        f'association "{association["name"]}" not found!'
                     )
+                if right_asset_name not in self.assets:
+                    raise LanguageGraphAssociationError(
+                        f'Right asset "{right_asset_name}" for '
+                        f'association "{association["name"]}" not found!'
+                    )
+
+                left_asset = self.assets[left_asset_name]
+                right_asset = self.assets[right_asset_name]
 
                 assoc_node = LanguageGraphAssociation(
                     name = association['name'],
@@ -1409,18 +1409,21 @@ class LanguageGraph():
                         left_asset,
                         association['leftField'],
                         association['leftMultiplicity']['min'],
-                        association['leftMultiplicity']['max']),
+                        association['leftMultiplicity']['max']
+                    ),
                     right_field = LanguageGraphAssociationField(
                         right_asset,
                         association['rightField'],
                         association['rightMultiplicity']['min'],
-                        association['rightMultiplicity']['max']),
+                        association['rightMultiplicity']['max']
+                    ),
                     info = association['meta']
                 )
 
                 # Add the association to the left and right asset
-                self._link_association_to_assets(assoc_node,
-                    left_asset, right_asset)
+                self._link_association_to_assets(
+                    assoc_node, left_asset, right_asset
+                )
 
         # Set the variables
         for asset in self.assets.values():
@@ -1564,28 +1567,20 @@ class LanguageGraph():
                         target_attack_step_name]
 
                     # Link to the children target attack steps
-                    if target_attack_step.full_name in attack_step.children:
-                        attack_step.children[target_attack_step.full_name].\
-                            append((target_attack_step, expr_chain))
-                    else:
-                        attack_step.children[target_attack_step.full_name] = \
-                            [(target_attack_step, expr_chain)]
+                    attack_step.children.setdefault(target_attack_step.full_name, [])
+                    attack_step.children[target_attack_step.full_name].append(
+                        (target_attack_step, expr_chain)
+                    )
+
                     # Reverse the children associations chains to get the
                     # parents associations chain.
-                    if attack_step.full_name in target_attack_step.parents:
-                        target_attack_step.parents[attack_step.full_name].\
-                            append((attack_step,
-                            self.reverse_expr_chain(expr_chain,
-                                None)))
-                    else:
-                        target_attack_step.parents[attack_step.full_name] = \
-                            [(attack_step,
-                            self.reverse_expr_chain(expr_chain,
-                                None))]
+                    target_attack_step.parents.setdefault(attack_step.full_name, [])
+                    target_attack_step.parents[attack_step.full_name].append(
+                        (attack_step, self.reverse_expr_chain(expr_chain, None))
+                    )
 
                 # Evaluate the requirements of exist and notExist attack steps
-                if attack_step.type == 'exist' or \
-                        attack_step.type == 'notExist':
+                if attack_step.type in ('exist', 'notExist'):
                     step_expressions = \
                         attack_step._attributes['requires']['stepExpressions'] \
                             if attack_step._attributes['requires'] else []
@@ -1747,5 +1742,3 @@ class LanguageGraph():
 
         self.assets = {}
         self._generate_graph()
-
-
