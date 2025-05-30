@@ -663,7 +663,7 @@ class ExpressionsChain:
 class LanguageGraph():
     """Graph representation of a MAL language"""
     def __init__(self, lang: Optional[dict] = None):
-        self.assets: dict = {}
+        self.assets: dict[str, LanguageGraphAsset] = {}
         if lang is not None:
             self._lang_spec: dict = lang
             self.metadata = {
@@ -718,10 +718,12 @@ class LanguageGraph():
 
         return serialized_graph
 
-    def _link_association_to_assets(cls,
-            assoc: LanguageGraphAssociation,
-            left_asset: LanguageGraphAsset,
-            right_asset: LanguageGraphAsset):
+    @staticmethod
+    def _link_association_to_assets(
+        assoc: LanguageGraphAssociation,
+        left_asset: LanguageGraphAsset,
+        right_asset: LanguageGraphAsset
+    ):
         left_asset.own_associations[assoc.right_field.fieldname] = assoc
         right_asset.own_associations[assoc.left_field.fieldname] = assoc
 
@@ -965,7 +967,6 @@ class LanguageGraph():
             )
 
 
-
     def save_language_specification_to_json(self, filename: str) -> None:
         """
         Save a MAL language specification dictionary to a JSON file
@@ -980,10 +981,14 @@ class LanguageGraph():
 
 
     def process_step_expression(self,
-            target_asset,
-            expr_chain,
+            target_asset: LanguageGraphAsset,
+            expr_chain: Optional[ExpressionsChain],
             step_expression: dict
-        ) -> tuple:
+        ) -> tuple[
+                Optional[LanguageGraphAsset],
+                Optional[ExpressionsChain],
+                Optional[str]
+            ]:
         """
         Recursively process an attack step expression.
 
@@ -1428,7 +1433,6 @@ class LanguageGraph():
                     )
                 self._resolve_variable(asset, variable['name'])
 
-
         # Generate all of the attack step nodes of the language graph.
         for asset in self.assets.values():
             logger.debug(
@@ -1459,8 +1463,8 @@ class LanguageGraph():
                 asset.attack_steps[attack_step_attribs['name']] = \
                     attack_step_node
 
-                for detector in attack_step_attribs.get("detectors",
-                                                        {}).values():
+                detectors: dict = attack_step_attribs.get("detectors", {})
+                for detector in detectors.values():
                     attack_step_node.detectors[detector["name"]] = Detector(
                         context=Context(
                             {
