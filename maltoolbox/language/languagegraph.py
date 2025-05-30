@@ -605,9 +605,10 @@ class ExpressionsChain:
                 if association is None:
                     msg = 'Failed to find association "%s" with '\
                         'fieldname "%s"'
-                    logger.error(msg % (assoc_name, fieldname))
-                    raise LanguageGraphException(msg % (assoc_name,
-                        fieldname))
+                    logger.error(msg, assoc_name, fieldname)
+                    raise LanguageGraphException(
+                        msg % (assoc_name, fieldname)
+                    )
 
                 new_expr_chain = ExpressionsChain(
                     type = 'field',
@@ -637,7 +638,7 @@ class ExpressionsChain:
                     subtype_asset = lang_graph.assets[subtype_name]
                 else:
                     msg = 'Failed to find subtype %s'
-                    logger.error(msg % subtype_name)
+                    logger.error(msg, subtype_name)
                     raise LanguageGraphException(msg % subtype_name)
 
                 new_expr_chain = ExpressionsChain(
@@ -650,8 +651,9 @@ class ExpressionsChain:
             case _:
                 msg = 'Unknown expressions chain type %s!'
                 logger.error(msg, serialized_expr_chain['type'])
-                raise LanguageGraphAssociationError(msg %
-                    serialized_expr_chain['type'])
+                raise LanguageGraphAssociationError(
+                    msg % serialized_expr_chain['type']
+                )
 
 
     def __repr__(self) -> str:
@@ -1154,7 +1156,7 @@ class LanguageGraph():
                     subtype_asset = self.assets[subtype_name]
                 else:
                     msg = 'Failed to find subtype %s'
-                    logger.error(msg % subtype_name)
+                    logger.error(msg, subtype_name)
                     raise LanguageGraphException(msg % subtype_name)
 
                 if not subtype_asset.is_subasset_of(result_target_asset):
