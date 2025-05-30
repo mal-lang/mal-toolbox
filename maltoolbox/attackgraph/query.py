@@ -157,8 +157,7 @@ def calculate_attack_surface(
         for child in attack_step.children:
             if skip_compromised and child.is_compromised_by(attacker):
                 continue
-            if is_node_traversable_by_attacker(child, attacker) and \
-                    child not in attack_surface:
+            if is_node_traversable_by_attacker(child, attacker):
                 logger.debug(
                     'Add node "%s"(%d) to the attack surface of '
                     'Attacker "%s"(%d).',
