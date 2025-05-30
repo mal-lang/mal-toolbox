@@ -49,6 +49,7 @@ class Detector:
 
 
 class Context(dict):
+    """TODO: What is a context?"""
     def __init__(self, context) -> None:
         super().__init__(context)
         self._context_dict = context
@@ -66,6 +67,7 @@ class Context(dict):
 
 @dataclass
 class LanguageGraphAsset:
+    """An asset type as defined in the MAL language"""
     name: str
     own_associations: dict[str, LanguageGraphAssociation] = \
         field(default_factory = dict)
@@ -249,6 +251,9 @@ class LanguageGraphAssociationField:
 
 @dataclass
 class LanguageGraphAssociation:
+    """
+    An association type between asset types as defined in the MAL language
+    """
     name: str
     left_field: LanguageGraphAssociationField
     right_field: LanguageGraphAssociationField
@@ -363,6 +368,9 @@ class LanguageGraphAssociation:
 
 @dataclass
 class LanguageGraphAttackStep:
+    """
+    An attack step belonging to an asset type in the MAL language
+    """
     name: str
     type: str
     asset: LanguageGraphAsset
@@ -450,6 +458,7 @@ class LanguageGraphAttackStep:
 
 
 class ExpressionsChain:
+    """TODO: What is an expressions chain?"""
     def __init__(self,
             type: str,
             left_link: Optional[ExpressionsChain] = None,
@@ -561,7 +570,6 @@ class ExpressionsChain:
             msg = 'Missing expressions chain type!'
             logger.error(msg)
             raise LanguageGraphAssociationError(msg)
-            return None
 
         expr_chain_type = serialized_expr_chain['type']
         match (expr_chain_type):
@@ -1444,6 +1452,7 @@ class LanguageGraph():
                     info = attack_step_attribs['meta'],
                     tags = set(attack_step_attribs['tags'])
                 )
+                # TODO: _attributes is protected, should not be accessed.
                 attack_step_node._attributes = attack_step_attribs
                 asset.attack_steps[attack_step_attribs['name']] = \
                     attack_step_node
@@ -1585,6 +1594,7 @@ class LanguageGraph():
                             )
                         )
 
+                    # TODO: attack step does not have own_requires defined in constructor
                     attack_step.own_requires = []
                     for step_expression in step_expressions:
                         _, \
@@ -1597,17 +1607,17 @@ class LanguageGraph():
                             )
                         attack_step.own_requires.append(result_expr_chain)
 
-    def _get_attacks_for_asset_type(self, asset_type: str) -> dict:
+    def _get_attacks_for_asset_type(self, asset_type: str) -> dict[str, dict]:
         """
-        Get all Attack Steps for a specific Class
+        Get all Attack Steps for a specific asset type.
 
         Arguments:
-        asset_type      - a string representing the class for which we want to
-                          list the possible attack steps
+        asset_type      - the name of the asset type we want to
+                          list the possible attack steps for
 
         Return:
-        A dictionary representing the set of possible attacks for the
-        specified class. Each key in the dictionary is an attack name and is
+        A dictionary containing the possible attacks for the
+        specified asset type. Each key in the dictionary is an attack name
         associated with a dictionary containing other characteristics of the
         attack such as type of attack, TTC distribution, child attack steps
         and other information
@@ -1634,20 +1644,18 @@ class LanguageGraph():
 
         return attack_steps
 
-    def _get_associations_for_asset_type(self, asset_type: str) -> list:
+    def _get_associations_for_asset_type(self, asset_type: str) -> list[dict]:
         """
-        Get all Associations for a specific Class
+        Get all associations for a specific asset type.
 
         Arguments:
-        asset_type      - a string representing the class for which we want to
+        asset_type      - the name of the asset type for which we want to
                           list the associations
 
         Return:
-        A dictionary representing the set of associations for the specified
-        class. Each key in the dictionary is an attack name and is associated
-        with a dictionary containing other characteristics of the attack such
-        as type of attack, TTC distribution, child attack steps and other
-        information
+        A list of dicts, where each dict represents an associations
+        for the specified asset type. Each dictionary contains
+        name and meta information about the association.
         """
         logger.debug(
             'Get associations for %s asset from '
@@ -1668,25 +1676,25 @@ class LanguageGraph():
             if assoc['leftAsset'] == asset_type or \
                 assoc['rightAsset'] == asset_type)
         assoc = next(assoc_iter, None)
-        while (assoc):
+        while assoc:
             associations.append(assoc)
             assoc = next(assoc_iter, None)
 
         return associations
 
     def _get_variables_for_asset_type(
-            self, asset_type: str) -> dict:
+            self, asset_type: str) -> list[dict]:
         """
-        Get a variables for a specific asset type by name.
+        Get variables for a specific asset type.
         Note: Variables are the ones specified in MAL through `let` statements
 
         Arguments:
-        asset_type      - a string representing the type of asset which
+        asset_type      - a string representing the asset type which
                           contains the variables
 
         Return:
-        A dictionary representing the step expressions for the variables
-            belonging to the asset.
+        A list of dicts representing the step expressions for the variables
+        belonging to the asset.
         """
 
         asset_dict = next((asset for asset in self._lang_spec['assets'] \
