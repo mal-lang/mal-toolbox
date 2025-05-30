@@ -380,6 +380,7 @@ class LanguageGraphAttackStep:
     parents: dict = field(default_factory = dict)
     info: dict = field(default_factory = dict)
     inherits: Optional[LanguageGraphAttackStep] = None
+    own_requires: list[ExpressionsChain] = []
     tags: set = field(default_factory = set)
     _attributes: Optional[dict] = None
     detectors: dict = field(default_factory = lambda: {})
@@ -937,7 +938,8 @@ class LanguageGraph():
                                 expr_chain_dict,
                                 lang_graph
                             )
-                            attack_step.own_requires.append(expr_chain)
+                            if expr_chain:
+                                attack_step.own_requires.append(expr_chain)
 
         return lang_graph
 
@@ -1043,6 +1045,13 @@ class LanguageGraph():
                         step_expression['rhs']
                     )
 
+                assert lh_target_asset, (
+                    f"No lh target in step expression {step_expression}"
+                )
+                assert rh_target_asset, (
+                    f"No rh target in step expression {step_expression}"
+                )
+
                 if not lh_target_asset.get_all_common_superassets(
                         rh_target_asset):
                     logger.error(
@@ -1067,6 +1076,9 @@ class LanguageGraph():
                 var_name = step_expression['name']
                 var_target_asset, var_expr_chain = self._resolve_variable(
                     target_asset, var_name)
+                # TODO: What happens here? We instantly override the variables.
+                #       also: the return type of get_variable can be None, this needs to be
+                #       handled.
                 var_target_asset, var_expr_chain = \
                     target_asset.get_variable(var_name)
                 if var_expr_chain is not None:
@@ -1148,14 +1160,13 @@ class LanguageGraph():
                 # component of the step expression and changes the target
                 # asset to the subasset.
                 subtype_name = step_expression['subType']
-                result_target_asset, \
-                result_expr_chain, \
-                attack_step = \
+                result_target_asset, result_expr_chain, attack_step = (
                     self.process_step_expression(
                         target_asset,
                         expr_chain,
                         step_expression['stepExpression']
                     )
+                )
 
                 if subtype_name in self.assets:
                     subtype_asset = self.assets[subtype_name]
@@ -1164,6 +1175,7 @@ class LanguageGraph():
                     logger.error(msg, subtype_name)
                     raise LanguageGraphException(msg % subtype_name)
 
+                # TODO: result_target_asset could be None
                 if not subtype_asset.is_subasset_of(result_target_asset):
                     logger.error(
                         'Found subtype "%s" which does not extend "%s", '
@@ -1192,9 +1204,7 @@ class LanguageGraph():
                         expr_chain,
                         step_expression['lhs']
                     )
-                (rh_target_asset,
-                    rh_expr_chain,
-                    rh_attack_step_name) = \
+                (rh_target_asset, rh_expr_chain, rh_attack_step_name) = \
                     self.process_step_expression(
                         lh_target_asset,
                         None,
@@ -1598,14 +1608,13 @@ class LanguageGraph():
                     # TODO: attack step does not have own_requires defined in constructor
                     attack_step.own_requires = []
                     for step_expression in step_expressions:
-                        _, \
-                        result_expr_chain, \
-                        _ = \
+                        _, result_expr_chain, _ = \
                             self.process_step_expression(
                                 attack_step.asset,
                                 None,
                                 step_expression
                             )
+                        # TODO: result_expr_chain can be None
                         attack_step.own_requires.append(result_expr_chain)
 
     def _get_attacks_for_asset_type(self, asset_type: str) -> dict[str, dict]:
