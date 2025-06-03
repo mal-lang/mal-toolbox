@@ -1,0 +1,59 @@
+EasyAndUncertain:
+  arguments:
+  - 0.5
+  name: Bernoulli
+  type: function
+HardAndUncertain:
+  lhs:
+    arguments:
+    - 0.1
+    name: Exponential
+    type: function
+  rhs:
+    arguments:
+    - 0.5
+    name: Bernoulli
+    type: function
+  type: multiplication
+VeryHardAndUncertain:
+  lhs:
+    arguments:
+    - 0.01
+    name: Exponential
+    type: function
+  rhs:
+    arguments:
+    - 0.5
+    name: Bernoulli
+    type: function
+  type: multiplication
+EasyAndCertain:
+  arguments:
+  - 1
+  name: Exponential
+  type: function
+HardAndCertain:
+  arguments:
+  - 0.1
+  name: Exponential
+  type: function
+VeryHardAndCertain:
+  arguments:
+  - 0.01
+  name: Exponential
+  type: function
+Enabled:
+  arguments:
+  - 1.0
+  name: Bernoulli
+  type: function
+Instant:
+  arguments:
+  - 1.0
+  name: Bernoulli
+  type: function
+Disabled:
+  arguments:
+  - 0.0
+  name: Bernoulli
+  type: function
