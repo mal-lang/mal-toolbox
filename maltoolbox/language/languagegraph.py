@@ -963,6 +963,251 @@ class LanguageGraph():
         with open(filename, 'w', encoding='utf-8') as file:
             json.dump(self._lang_spec, file, indent=4)
 
+    def process_attack_step_expression(
+        self,
+        target_asset: LanguageGraphAsset,
+        step_expression: dict[str, Any]
+    ):
+        """
+        The attack step expression just adds the name of the attack
+        step. All other step expressions only modify the target
+        asset and parent associations chain.
+        """
+        return (
+            target_asset,
+            None,
+            step_expression['name']
+        )
+
+    def process_set_operation_step_expression(
+        self,
+        target_asset: LanguageGraphAsset,
+        expr_chain: Optional[ExpressionsChain],
+        step_expression: dict[str, Any]
+    ):
+        """
+        The set operators are used to combine the left hand and right
+        hand targets accordingly.
+        """
+
+        lh_target_asset, lh_expr_chain, _ = self.process_step_expression(
+            target_asset,
+            expr_chain,
+            step_expression['lhs']
+        )
+        rh_target_asset, rh_expr_chain, _ = self.process_step_expression(
+            target_asset,
+            expr_chain,
+            step_expression['rhs']
+        )
+
+        assert lh_target_asset, (
+            f"No lh target in step expression {step_expression}"
+        )
+        assert rh_target_asset, (
+            f"No rh target in step expression {step_expression}"
+        )
+
+        if not lh_target_asset.get_all_common_superassets(rh_target_asset):
+            raise ValueError(
+                "Set operation attempted between targets that do not share "
+                f"any common superassets: {lh_target_asset.name} "
+                f"and {rh_target_asset.name}!"
+            )
+
+        new_expr_chain = ExpressionsChain(
+            type = step_expression['type'],
+            left_link = lh_expr_chain,
+            right_link = rh_expr_chain
+        )
+        return (
+            lh_target_asset,
+            new_expr_chain,
+            None
+        )
+
+    def process_variable_step_expression(
+        self,
+        target_asset: LanguageGraphAsset,
+        step_expression: dict[str, Any]
+    ):
+
+        var_name = step_expression['name']
+        var_target_asset, var_expr_chain = (
+            self._resolve_variable(target_asset, var_name)
+        )
+
+        if var_expr_chain is None:
+            raise LookupError(
+                f'Failed to find variable "{step_expression["name"]}" '
+                f'for {target_asset.name}',
+            )
+
+        return (
+            var_target_asset,
+            var_expr_chain,
+            None
+        )
+
+    def process_field_step_expression(
+        self,
+        target_asset: LanguageGraphAsset,
+        step_expression: dict[str, Any]
+    ):
+        """
+        Change the target asset from the current one to the associated
+        asset given the specified field name and add the parent
+        fieldname and association to the parent associations chain.
+        """
+
+        if target_asset is None:
+            raise ValueError(
+                f'Missing target asset for field "{fieldname}"!'
+            )
+
+        fieldname = step_expression['name']
+        new_target_asset = None
+        for association in target_asset.associations.values():
+            if (association.left_field.fieldname == fieldname and \
+                target_asset.is_subasset_of(
+                    association.right_field.asset)):
+                new_target_asset = association.left_field.asset
+
+            if (association.right_field.fieldname == fieldname and \
+                target_asset.is_subasset_of(
+                    association.left_field.asset)):
+                new_target_asset = association.right_field.asset
+
+            if new_target_asset:
+                new_expr_chain = ExpressionsChain(
+                    type = 'field',
+                    fieldname = fieldname,
+                    association = association
+                )
+                return (
+                    new_target_asset,
+                    new_expr_chain,
+                    None
+                )
+
+        raise LookupError(
+            f'Failed to find field {fieldname} on asset {target_asset.name}!',
+        )
+
+    def process_transitive_step_expression(
+        self,
+        target_asset: LanguageGraphAsset,
+        expr_chain: Optional[ExpressionsChain],
+        step_expression: dict[str, Any]
+    ):
+        """
+        Create a transitive tuple entry that applies to the next
+        component of the step expression.
+        """
+        result_target_asset, result_expr_chain, attack_step = (
+            self.process_step_expression(
+                target_asset,
+                expr_chain,
+                step_expression['stepExpression']
+            )
+        )
+        new_expr_chain = ExpressionsChain(
+            type = 'transitive',
+            sub_link = result_expr_chain
+        )
+        return (
+            result_target_asset,
+            new_expr_chain,
+            attack_step
+        )
+
+    def process_subType_step_expression(
+        self,
+        target_asset: LanguageGraphAsset,
+        expr_chain: Optional[ExpressionsChain],
+        step_expression: dict[str, Any]
+    ):
+        """
+        Create a subType tuple entry that applies to the next
+        component of the step expression and changes the target
+        asset to the subasset.
+        """
+
+        subtype_name = step_expression['subType']
+        result_target_asset, result_expr_chain, attack_step = (
+            self.process_step_expression(
+                target_asset,
+                expr_chain,
+                step_expression['stepExpression']
+            )
+        )
+
+        if subtype_name not in self.assets:
+            raise LanguageGraphException(
+                f'Failed to find subtype {subtype_name}'
+            )
+
+        subtype_asset = self.assets[subtype_name]
+
+        if result_target_asset is None:
+            raise LookupError("Nonexisting asset for subtype")
+
+        if not subtype_asset.is_subasset_of(result_target_asset):
+            raise ValueError(
+                f'Found subtype {subtype_name} which does not extend '
+                f'{result_target_asset.name}, subtype cannot be resolved.'
+            )
+
+        new_expr_chain = ExpressionsChain(
+            type = 'subType',
+            sub_link = result_expr_chain,
+            subtype = subtype_asset
+        )
+        return (
+            subtype_asset,
+            new_expr_chain,
+            attack_step
+        )
+
+    def process_collect_step_expression(
+        self,
+        target_asset: LanguageGraphAsset,
+        expr_chain: Optional[ExpressionsChain],
+        step_expression: dict[str, Any]
+    ):
+        """
+        Apply the right hand step expression to left hand step
+        expression target asset and parent associations chain.
+        """
+        lh_target_asset, lh_expr_chain, _ = self.process_step_expression(
+            target_asset, expr_chain, step_expression['lhs']
+        )
+
+        if lh_target_asset is None:
+            raise ValueError(
+                'No left hand asset in collect expression '
+                f'{step_expression["lhs"]}'
+            )
+
+        rh_target_asset, rh_expr_chain, rh_attack_step_name = (
+            self.process_step_expression(
+                lh_target_asset, None, step_expression['rhs']
+            )
+        )
+
+        new_expr_chain = lh_expr_chain
+        if rh_expr_chain:
+            new_expr_chain = ExpressionsChain(
+                type = 'collect',
+                left_link = lh_expr_chain,
+                right_link = rh_expr_chain
+            )
+
+        return (
+            rh_target_asset,
+            new_expr_chain,
+            rh_attack_step_name
+        )
 
     def process_step_expression(self,
             target_asset: LanguageGraphAsset,
@@ -1001,213 +1246,46 @@ class LanguageGraph():
                 json.dumps(step_expression, indent = 2)
             )
 
+        result: tuple[
+            Optional[LanguageGraphAsset],
+            Optional[ExpressionsChain],
+            Optional[str]
+        ] = (None, None, None)
+
         match (step_expression['type']):
             case 'attackStep':
-                # The attack step expression just adds the name of the attack
-                # step. All other step expressions only modify the target
-                # asset and parent associations chain.
-                return (
-                    target_asset,
-                    None,
-                    step_expression['name']
+                result = self.process_attack_step_expression(
+                    target_asset, step_expression
                 )
-
             case 'union' | 'intersection' | 'difference':
-                # The set operators are used to combine the left hand and right
-                # hand targets accordingly.
-                lh_target_asset, lh_expr_chain, _ = self.process_step_expression(
-                    target_asset,
-                    expr_chain,
-                    step_expression['lhs']
+                result = self.process_set_operation_step_expression(
+                    target_asset, expr_chain, step_expression
                 )
-                rh_target_asset, rh_expr_chain, _ = \
-                    self.process_step_expression(
-                        target_asset,
-                        expr_chain,
-                        step_expression['rhs']
-                    )
-
-                assert lh_target_asset, (
-                    f"No lh target in step expression {step_expression}"
-                )
-                assert rh_target_asset, (
-                    f"No rh target in step expression {step_expression}"
-                )
-
-                if not lh_target_asset.get_all_common_superassets(
-                        rh_target_asset):
-                    logger.error(
-                        "Set operation attempted between targets that"
-                        " do not share any common superassets: %s and %s!",
-                        lh_target_asset.name, rh_target_asset.name
-                    )
-                    return (None, None, None)
-
-                new_expr_chain = ExpressionsChain(
-                    type = step_expression['type'],
-                    left_link = lh_expr_chain,
-                    right_link = rh_expr_chain
-                )
-                return (
-                    lh_target_asset,
-                    new_expr_chain,
-                    None
-                )
-
             case 'variable':
-                var_name = step_expression['name']
-                var_target_asset, var_expr_chain = self._resolve_variable(
-                    target_asset, var_name)
-                if var_expr_chain is not None:
-                    return (
-                        var_target_asset,
-                        var_expr_chain,
-                        None
-                    )
-                else:
-                    logger.error(
-                        'Failed to find variable \"%s\" for %s',
-                        step_expression["name"], target_asset.name
-                    )
-                    return (None, None, None)
-
+                result = self.process_variable_step_expression(
+                    target_asset, step_expression
+                )
             case 'field':
-                # Change the target asset from the current one to the associated
-                # asset given the specified field name and add the parent
-                # fieldname and association to the parent associations chain.
-                fieldname = step_expression['name']
-                if not target_asset:
-                    logger.error(
-                        'Missing target asset for field "%s"!', fieldname
-                    )
-                    return (None, None, None)
-
-                new_target_asset = None
-                for association in target_asset.associations.values():
-                    if (association.left_field.fieldname == fieldname and \
-                        target_asset.is_subasset_of(
-                            association.right_field.asset)):
-                        new_target_asset = association.left_field.asset
-
-                    if (association.right_field.fieldname == fieldname and \
-                        target_asset.is_subasset_of(
-                            association.left_field.asset)):
-                        new_target_asset = association.right_field.asset
-
-                    if new_target_asset:
-                        new_expr_chain = ExpressionsChain(
-                            type = 'field',
-                            fieldname = fieldname,
-                            association = association
-                        )
-                        return (
-                            new_target_asset,
-                            new_expr_chain,
-                            None
-                        )
-                logger.error(
-                    'Failed to find field "%s" on asset "%s"!',
-                    fieldname, target_asset.name
+                result = self.process_field_step_expression(
+                    target_asset, step_expression
                 )
-                return (None, None, None)
-
             case 'transitive':
-                # Create a transitive tuple entry that applies to the next
-                # component of the step expression.
-                result_target_asset, \
-                result_expr_chain, \
-                attack_step = \
-                    self.process_step_expression(
-                        target_asset,
-                        expr_chain,
-                        step_expression['stepExpression']
-                    )
-                new_expr_chain = ExpressionsChain(
-                    type = 'transitive',
-                    sub_link = result_expr_chain
+                result = self.process_transitive_step_expression(
+                    target_asset, expr_chain, step_expression
                 )
-                return (
-                    result_target_asset,
-                    new_expr_chain,
-                    attack_step
-                )
-
             case 'subType':
-                # Create a subType tuple entry that applies to the next
-                # component of the step expression and changes the target
-                # asset to the subasset.
-                subtype_name = step_expression['subType']
-                result_target_asset, result_expr_chain, attack_step = (
-                    self.process_step_expression(
-                        target_asset,
-                        expr_chain,
-                        step_expression['stepExpression']
-                    )
+                result = self.process_subType_step_expression(
+                    target_asset, expr_chain, step_expression
                 )
-
-                if subtype_name in self.assets:
-                    subtype_asset = self.assets[subtype_name]
-                else:
-                    msg = 'Failed to find subtype %s'
-                    logger.error(msg, subtype_name)
-                    raise LanguageGraphException(msg % subtype_name)
-
-                # TODO: result_target_asset could be None
-                if not subtype_asset.is_subasset_of(result_target_asset):
-                    logger.error(
-                        'Found subtype "%s" which does not extend "%s", '
-                        'therefore the subtype cannot be resolved.',
-                        subtype_name, result_target_asset.name
-                    )
-                    return (None, None, None)
-
-                new_expr_chain = ExpressionsChain(
-                    type = 'subType',
-                    sub_link = result_expr_chain,
-                    subtype = subtype_asset
-                )
-                return (
-                    subtype_asset,
-                    new_expr_chain,
-                    attack_step
-                )
-
             case 'collect':
-                # Apply the right hand step expression to left hand step
-                # expression target asset and parent associations chain.
-                (lh_target_asset, lh_expr_chain, _) = \
-                    self.process_step_expression(
-                        target_asset,
-                        expr_chain,
-                        step_expression['lhs']
-                    )
-                (rh_target_asset, rh_expr_chain, rh_attack_step_name) = \
-                    self.process_step_expression(
-                        lh_target_asset,
-                        None,
-                        step_expression['rhs']
-                    )
-                if rh_expr_chain:
-                    new_expr_chain = ExpressionsChain(
-                        type = 'collect',
-                        left_link = lh_expr_chain,
-                        right_link = rh_expr_chain
-                    )
-                else:
-                    new_expr_chain = lh_expr_chain
-
-                return (
-                    rh_target_asset,
-                    new_expr_chain,
-                    rh_attack_step_name
+                result = self.process_collect_step_expression(
+                    target_asset, expr_chain, step_expression
                 )
-
             case _:
-                logger.error(
-                    'Unknown attack step type: "%s"', step_expression["type"]
+                raise LookupError(
+                    f'Unknown attack step type: "{step_expression["type"]}"'
                 )
-                return (None, None, None)
-
+        return result
 
     def reverse_expr_chain(
             self,
