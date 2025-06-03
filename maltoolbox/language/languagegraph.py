@@ -129,7 +129,7 @@ class LanguageGraphAsset:
         False otherwise.
         """
         current_asset: Optional[LanguageGraphAsset] = self
-        while (current_asset):
+        while current_asset:
             if current_asset == target_asset:
                 return True
             current_asset = current_asset.own_super_asset
@@ -166,7 +166,7 @@ class LanguageGraphAsset:
         """
         current_asset: Optional[LanguageGraphAsset] = self
         superassets = []
-        while (current_asset):
+        while current_asset:
             superassets.append(current_asset)
             current_asset = current_asset.own_super_asset
         return superassets
@@ -204,27 +204,6 @@ class LanguageGraphAsset:
         if self.own_super_asset:
             all_vars |= self.own_super_asset.variables
         return all_vars
-
-
-    def get_variable(
-        self,
-        var_name: str,
-        ) -> Optional[tuple]:
-        """
-        Return a variable matching the given name if the asset or any of its
-        super assets has its definition.
-
-        Return:
-        A tuple containing the target asset and expressions chain to it if the
-        variable was defined.
-        None otherwise.
-        """
-        current_asset: Optional[LanguageGraphAsset] = self
-        while (current_asset):
-            if var_name in current_asset.own_variables:
-                return current_asset.own_variables[var_name]
-            current_asset = current_asset.own_super_asset
-        return None
 
 
     def get_all_common_superassets(
@@ -282,9 +261,11 @@ class LanguageGraphAssociation:
 
 
     def __repr__(self) -> str:
-        return (f'LanguageGraphAssociation(name: "{self.name}", '
+        return (
+            f'LanguageGraphAssociation(name: "{self.name}", '
             f'left_field: {self.left_field}, '
-            f'right_field: {self.right_field})')
+            f'right_field: {self.right_field})'
+        )
 
 
     @property
@@ -298,7 +279,7 @@ class LanguageGraphAssociation:
             self.name,\
             self.left_field.fieldname,\
             self.right_field.fieldname
-            )
+        )
         return full_name
 
 
@@ -380,7 +361,7 @@ class LanguageGraphAttackStep:
     parents: dict = field(default_factory = dict)
     info: dict = field(default_factory = dict)
     inherits: Optional[LanguageGraphAttackStep] = None
-    own_requires: list[ExpressionsChain] = []
+    own_requires: list[ExpressionsChain] = field(default_factory=list)
     tags: set = field(default_factory = set)
     _attributes: Optional[dict] = None
     detectors: dict = field(default_factory = lambda: {})
@@ -1076,11 +1057,6 @@ class LanguageGraph():
                 var_name = step_expression['name']
                 var_target_asset, var_expr_chain = self._resolve_variable(
                     target_asset, var_name)
-                # TODO: What happens here? We instantly override the variables.
-                #       also: the return type of get_variable can be None, this needs to be
-                #       handled.
-                var_target_asset, var_expr_chain = \
-                    target_asset.get_variable(var_name)
                 if var_expr_chain is not None:
                     return (
                         var_target_asset,
@@ -1325,7 +1301,7 @@ class LanguageGraph():
                     logger.error(msg, expr_chain.type)
                     raise LanguageGraphAssociationError(msg % expr_chain.type)
 
-    def _resolve_variable(self, asset, var_name) -> tuple:
+    def _resolve_variable(self, asset: LanguageGraphAsset, var_name) -> tuple:
         """
         Resolve a variable for a specific asset by variable name.
 
