@@ -24,7 +24,11 @@ class Attacker:
         self.name = name
         self.id = attacker_id
         self.entry_points = entry_points or set()
+
+        # Set and list structure of the same data, using the first if
+        # performance matters, the latter if order matters.
         self.reached_attack_steps: set[AttackGraphNode] = set()
+        self.reached_attack_steps_list: list[AttackGraphNode] = []
         for node in reached_attack_steps or {}:
             self.compromise(node)
 
@@ -39,7 +43,7 @@ class Attacker:
         for entry_point in self.entry_points:
             attacker_dict['entry_points'][entry_point.id] = \
                 entry_point.full_name
-        for attack_step in self.reached_attack_steps:
+        for attack_step in self.reached_attack_steps_list:
             attacker_dict['reached_attack_steps'][attack_step.id] = \
                 attack_step.full_name
 
@@ -76,6 +80,7 @@ class Attacker:
 
         node.compromised_by.add(self)
         self.reached_attack_steps.add(node)
+        self.reached_attack_steps_list.append(node)
 
     def undo_compromise(self, node: AttackGraphNode) -> None:
         """
@@ -107,3 +112,4 @@ class Attacker:
 
         node.compromised_by.remove(self)
         self.reached_attack_steps.remove(node)
+        self.reached_attack_steps_list.remove(node)
