@@ -1403,35 +1403,75 @@ class LanguageGraph():
             return (target_asset, expr_chain)
         return asset.variables[var_name]
 
+    def _create_associations_for_assets(
+            self,
+            lang_spec: dict[str, Any],
+            assets: dict[str, LanguageGraphAsset]
+        ) -> None:
+        """ Link associations to assets based on the language specification.
+        Arguments:
+        lang_spec   - the language specification dictionary
+        assets      - a dictionary of LanguageGraphAsset objects
+                      indexed by their names
+        """
 
-    def _generate_graph(self) -> None:
-        """
-        Generate language graph starting from the MAL language specification
-        given in the constructor.
-        """
-        # Generate all of the asset nodes of the language graph.
-        for asset_dict in self._lang_spec['assets']:
+        for association_dict in lang_spec['associations']:
             logger.debug(
-                'Create asset language graph nodes for asset %s',
-                asset_dict['name']
+                'Create association language graph nodes for association %s',
+                association_dict['name']
             )
-            asset_node = LanguageGraphAsset(
-                name = asset_dict['name'],
-                own_associations = {},
-                attack_steps = {},
-                info = asset_dict['meta'],
-                own_super_asset = None,
-                own_sub_assets = set(),
-                own_variables = {},
-                is_abstract = asset_dict['isAbstract']
-            )
-            self.assets[asset_dict['name']] = asset_node
 
-        # Link assets based on inheritance
-        for asset_dict in self._lang_spec['assets']:
-            asset = self.assets[asset_dict['name']]
+            left_asset_name = association_dict['leftAsset']
+            right_asset_name = association_dict['rightAsset']
+
+            if left_asset_name not in assets:
+                raise LanguageGraphAssociationError(
+                    f'Left asset "{left_asset_name}" for '
+                    f'association "{association_dict["name"]}" not found!'
+                )
+            if right_asset_name not in assets:
+                raise LanguageGraphAssociationError(
+                    f'Right asset "{right_asset_name}" for '
+                    f'association "{association_dict["name"]}" not found!'
+                )
+
+            left_asset = assets[left_asset_name]
+            right_asset = assets[right_asset_name]
+
+            assoc_node = LanguageGraphAssociation(
+                name = association_dict['name'],
+                left_field = LanguageGraphAssociationField(
+                    left_asset,
+                    association_dict['leftField'],
+                    association_dict['leftMultiplicity']['min'],
+                    association_dict['leftMultiplicity']['max']
+                ),
+                right_field = LanguageGraphAssociationField(
+                    right_asset,
+                    association_dict['rightField'],
+                    association_dict['rightMultiplicity']['min'],
+                    association_dict['rightMultiplicity']['max']
+                ),
+                info = association_dict['meta']
+            )
+
+            # Add the association to the left and right asset
+            self._link_association_to_assets(
+                assoc_node, left_asset, right_asset
+            )
+
+    def _link_assets(
+            self,
+            lang_spec: dict[str, Any],
+            assets: dict[str, LanguageGraphAsset]
+        ) -> None:
+        """
+        Link assets based on inheritance and associations.
+        """
+        for asset_dict in lang_spec['assets']:
+            asset = assets[asset_dict['name']]
             if asset_dict['superAsset']:
-                super_asset = self.assets[asset_dict['superAsset']]
+                super_asset = assets[asset_dict['superAsset']]
                 if not super_asset:
                     msg = 'Failed to find super asset "%s" for asset "%s"!'
                     logger.error(
@@ -1442,57 +1482,21 @@ class LanguageGraph():
                 super_asset.own_sub_assets.add(asset)
                 asset.own_super_asset = super_asset
 
-        # Generate all of the association nodes of the language graph.
-        for asset in self.assets.values():
+    def _set_variables_for_assets(
+            self, assets: dict[str, LanguageGraphAsset]
+        ) -> None:
+        """ Set the variables for each asset based on the language specification.
+        Arguments:
+        assets      - a dictionary of LanguageGraphAsset objects
+                      indexed by their names
+        """
+
+        for asset in assets.values():
             logger.debug(
-                'Create association language graph nodes for asset %s',
-                asset.name
+                'Set variables for asset %s', asset.name
             )
-
-            associations = self._get_associations_for_asset_type(asset.name)
-            for association in associations:
-                left_asset_name = association['leftAsset']
-                right_asset_name = association['rightAsset']
-
-                if left_asset_name not in self.assets:
-                    raise LanguageGraphAssociationError(
-                        f'Left asset "{left_asset_name}" for '
-                        f'association "{association["name"]}" not found!'
-                    )
-                if right_asset_name not in self.assets:
-                    raise LanguageGraphAssociationError(
-                        f'Right asset "{right_asset_name}" for '
-                        f'association "{association["name"]}" not found!'
-                    )
-
-                left_asset = self.assets[left_asset_name]
-                right_asset = self.assets[right_asset_name]
-
-                assoc_node = LanguageGraphAssociation(
-                    name = association['name'],
-                    left_field = LanguageGraphAssociationField(
-                        left_asset,
-                        association['leftField'],
-                        association['leftMultiplicity']['min'],
-                        association['leftMultiplicity']['max']
-                    ),
-                    right_field = LanguageGraphAssociationField(
-                        right_asset,
-                        association['rightField'],
-                        association['rightMultiplicity']['min'],
-                        association['rightMultiplicity']['max']
-                    ),
-                    info = association['meta']
-                )
-
-                # Add the association to the left and right asset
-                self._link_association_to_assets(
-                    assoc_node, left_asset, right_asset
-                )
-
-        # Set the variables
-        for asset in self.assets.values():
-            for variable in self._get_variables_for_asset_type(asset.name):
+            variables = self._get_variables_for_asset_type(asset.name)
+            for variable in variables:
                 if logger.isEnabledFor(logging.DEBUG):
                     # Avoid running json.dumps when not in debug
                     logger.debug(
@@ -1501,8 +1505,12 @@ class LanguageGraph():
                     )
                 self._resolve_variable(asset, variable['name'])
 
-        # Generate all of the attack step nodes of the language graph.
-        for asset in self.assets.values():
+    def _generate_attack_steps(self, assets) -> None:
+        """
+        Generate all of the attack steps for each asset type
+        based on the language specification.
+        """
+        for asset in assets.values():
             logger.debug(
                 'Create attack steps language graph nodes for asset %s',
                 asset.name
@@ -1519,8 +1527,10 @@ class LanguageGraph():
                     type = attack_step_attribs['type'],
                     asset = asset,
                     ttc = attack_step_attribs['ttc'],
-                    overrides = attack_step_attribs['reaches']['overrides'] \
-                        if attack_step_attribs['reaches'] else False,
+                    overrides = (
+                        attack_step_attribs['reaches']['overrides']
+                        if attack_step_attribs['reaches'] else False
+                    ),
                     children = {},
                     parents = {},
                     info = attack_step_attribs['meta'],
@@ -1536,7 +1546,7 @@ class LanguageGraph():
                     attack_step_node.detectors[detector["name"]] = Detector(
                         context=Context(
                             {
-                                label: self.assets[asset]
+                                label: assets[asset]
                                 for label, asset in detector["context"].items()
                             }
                         ),
@@ -1671,6 +1681,42 @@ class LanguageGraph():
                             )
                         # TODO: result_expr_chain can be None
                         attack_step.own_requires.append(result_expr_chain)
+
+    def _generate_graph(self) -> None:
+        """
+        Generate language graph starting from the MAL language specification
+        given in the constructor.
+        """
+        # Generate all of the asset nodes of the language graph.
+        self.assets = {}
+        for asset_dict in self._lang_spec['assets']:
+            logger.debug(
+                'Create asset language graph nodes for asset %s',
+                asset_dict['name']
+            )
+            asset_node = LanguageGraphAsset(
+                name = asset_dict['name'],
+                own_associations = {},
+                attack_steps = {},
+                info = asset_dict['meta'],
+                own_super_asset = None,
+                own_sub_assets = set(),
+                own_variables = {},
+                is_abstract = asset_dict['isAbstract']
+            )
+            self.assets[asset_dict['name']] = asset_node
+
+        # Link assets to each other
+        self._link_assets(self._lang_spec, self.assets)
+
+        # Add and link associations to assets
+        self._create_associations_for_assets(self._lang_spec, self.assets)
+
+        # Set the variables for each asset
+        self._set_variables_for_assets(self.assets)
+
+        # Add attack steps to the assets
+        self._generate_attack_steps(self.assets)
 
     def _get_attacks_for_asset_type(self, asset_type: str) -> dict[str, dict]:
         """
