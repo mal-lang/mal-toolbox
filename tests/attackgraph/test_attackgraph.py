@@ -74,7 +74,7 @@ def attackgraph_save_load_no_model_given(
     # Loaded graph nodes will not have 'asset' since it does not have a model.
     for loaded_node in loaded_attack_graph.nodes.values():
         if not isinstance(loaded_node.id, int):
-            raise ValueError(f'Invalid node id for loaded node.')
+            raise ValueError('Invalid node id for loaded node.')
         original_node = example_attackgraph.nodes[loaded_node.id]
 
         assert original_node, \
@@ -104,7 +104,7 @@ def attackgraph_save_load_no_model_given(
 
     for loaded_attacker in loaded_attack_graph.attackers.values():
         if not isinstance(loaded_attacker.id, int):
-            raise ValueError(f'Invalid attacker id for loaded attacker.')
+            raise ValueError('Invalid attacker id for loaded attacker.')
         original_attacker = example_attackgraph.attackers[loaded_attacker.id]
         assert original_attacker, \
             f'Failed to find original attacker for id {loaded_attacker.id}.'
@@ -181,11 +181,11 @@ def attackgraph_save_and_load_json_yml_model_given(
 
         for loaded_attacker in loaded_attackgraph.attackers.values():
             if not isinstance(loaded_attacker.id, int):
-                raise ValueError(f'Invalid attacker id for loaded attacker.')
+                raise ValueError('Invalid attacker id for loaded attacker.')
             original_attacker = example_attackgraph.attackers[
                 loaded_attacker.id]
             assert original_attacker, \
-                f'Failed to find original attacker for id ' \
+                'Failed to find original attacker for id ' \
                 '{loaded_attacker.id}.'
             loaded_attacker_dict = loaded_attacker.to_dict()
             original_attacker_dict = original_attacker.to_dict()
@@ -233,8 +233,8 @@ def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
 
     assert app1_ncu in attacker.entry_points
     assert app1_ncu in attacker.reached_attack_steps
-    assert not app1_auv in attacker.entry_points
-    assert not app1_auv in attacker.reached_attack_steps
+    assert app1_auv not in attacker.entry_points
+    assert app1_auv not in attacker.reached_attack_steps
 
     attacker.compromise(app1_auv)
     assert app1_auv in attacker.reached_attack_steps

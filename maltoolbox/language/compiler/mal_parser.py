@@ -1,8 +1,22 @@
 # mypy: ignore-errors
 # Generated from mal.g4 by ANTLR 4.13.2
 # encoding: utf-8
-from antlr4 import *
-from io import StringIO
+from antlr4 import (
+    ATN,
+    ATNDeserializer,
+    DFA,
+    NoViableAltException,
+    Parser,
+    ParserATNSimulator,
+    ParserRuleContext,
+    ParseTreeListener,
+    ParseTreeVisitor,
+    PredictionContextCache,
+    RecognitionException,
+    Token,
+    TokenStream,
+
+)
 import sys
 if sys.version_info[1] > 5:
 	from typing import TextIO

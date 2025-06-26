@@ -58,3 +58,19 @@ exclude = [
   'maltoolbox/language/compiler'
 ]
 allow_redefinition = true
+
+[tool.ruff]
+# Same as TWMN version
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+# Enable all available lints...
+preview = true
+
+ignore = [
+  "E741",   # Allow variable name I / l
+  "E743"
+]

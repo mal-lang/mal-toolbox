@@ -8,7 +8,6 @@ import json
 import sys
 import zipfile
 
-from itertools import chain
 from typing import TYPE_CHECKING
 
 from .analyzers.apriori import calculate_viability_and_necessity
@@ -301,7 +300,7 @@ class AttackGraph():
         The attack step node that matches the given full name.
         """
 
-        logger.debug(f'Looking up node with full name "%s"', full_name)
+        logger.debug('Looking up node with full name "%s"', full_name)
         return self._full_name_to_node.get(full_name)
 
     def attach_attackers(self) -> None:
@@ -728,14 +727,14 @@ class AttackGraph():
         """
         if logger.isEnabledFor(logging.DEBUG):
             # Avoid running json.dumps when not in debug
-            logger.debug(f'Remove node "%s"(%d).', node.full_name, node.id)
+            logger.debug('Remove node "%s"(%d).', node.full_name, node.id)
         for child in node.children:
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
 
         if not isinstance(node.id, int):
-            raise ValueError(f'Invalid node id.')
+            raise ValueError('Invalid node id.')
         del self.nodes[node.id]
         del self._full_name_to_node[node.full_name]
 

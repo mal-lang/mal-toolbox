@@ -1,6 +1,5 @@
 """Unit tests for AttackGraphNode functionality"""
 
-from maltoolbox.attackgraph.node import AttackGraphNode
 from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.language import LanguageGraph
@@ -17,8 +16,6 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
 
     dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyOrAttackStep']
-    dummy_and_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyAndAttackStep']
     dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyDefenseAttackStep']
     attack_graph = AttackGraph(dummy_lang_graph)

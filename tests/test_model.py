@@ -1,7 +1,7 @@
 """Unit tests for maltoolbox.model"""
 
 import pytest
-from conftest import empty_model, path_testdata
+from conftest import path_testdata
 
 from maltoolbox.model import (Model, ModelAsset,
     AttackerAttachment)
@@ -200,8 +200,9 @@ def test_model_add_asset_with_id_set(model):
 
     # Add asset with same ID as previously added asset, expect ValueError
     with pytest.raises(ValueError):
-        asset2 = model.add_asset(
-            asset_type = 'Application', asset_id = asset_id)
+        model.add_asset(
+            asset_type = 'Application', asset_id = asset_id
+        )
 
 
 def test_model_add_asset_duplicate_name(model: Model):
@@ -210,7 +211,7 @@ def test_model_add_asset_duplicate_name(model: Model):
     asset_name = "MyProgram"
 
     # Add a new asset
-    asset1 = model.add_asset(asset_type = 'Application', name = asset_name)
+    model.add_asset(asset_type = 'Application', name = asset_name)
     assert len(model.assets) == 1
     assert model.assets[0].name == asset_name
 
@@ -532,7 +533,7 @@ def test_model_asset_to_dict(model: Model):
     assert asset1_dict.get('type') == 'Application'
 
     # Default values should not be saved
-    assert asset1_dict.get('defenses', None) == None
+    assert asset1_dict.get('defenses', None) is None
 
 def test_model_asset_with_nondefault_defense_to_dict(model: Model):
     """Make sure assets are converted to dictionaries correctly"""
@@ -635,7 +636,6 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     asset1 = model.add_asset(asset_type = 'Application')
     asset1.extras = {"testing": "testing"}
     asset2 = model.add_asset(asset_type = 'Application')
-    asset3 = model.add_asset(asset_type = 'Application')
 
     # Create and add an association between asset1 and asset2
     asset1.add_associated_assets(
