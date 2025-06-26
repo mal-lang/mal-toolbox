@@ -1,7 +1,9 @@
 """Utily functions for file handling"""
 
 import json
+
 import yaml
+
 
 def save_dict_to_json_file(filename: str, serialized_object: dict) -> None:
     """Save serialized object to a json file.

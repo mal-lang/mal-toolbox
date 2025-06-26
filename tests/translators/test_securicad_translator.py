@@ -1,8 +1,6 @@
 """Unit tests for AttackGraph functionality"""
 
 
-
-
 # TODO Re-enable this when the securicad translator has been updated.
 # def test_securicad_translator(corelang_lang_graph):
 #     """Test that we can load old securiCAD models """

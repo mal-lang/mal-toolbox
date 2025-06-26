@@ -60,8 +60,7 @@ exclude = [
 allow_redefinition = true
 
 [tool.ruff]
-# Same as TWMN version
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.format]
 quote-style = "single"
@@ -69,7 +68,7 @@ quote-style = "single"
 [tool.ruff.lint]
 # Enable all available lints...
 preview = true
-
+select = ["E", "F", "I"]
 ignore = [
   "E741",   # Allow variable name I / l
   "E743"

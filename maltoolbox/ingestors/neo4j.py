@@ -9,13 +9,10 @@ from py2neo import Graph, Node, Relationship, Subgraph
 
 logger = logging.getLogger(__name__)
 
-def ingest_attack_graph(graph,
-        uri: str,
-        username: str,
-        password: str,
-        dbname: str,
-        delete: bool = False
-    ) -> None:
+
+def ingest_attack_graph(
+    graph, uri: str, username: str, password: str, dbname: str, delete: bool = False
+) -> None:
     """
     Ingest an attack graph into a neo4j database
 
@@ -39,16 +36,17 @@ def ingest_attack_graph(graph,
         node_dict = node.to_dict()
         nodes[node.id] = Node(
             node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
-            name = node_dict['name'],
-            full_name = node.full_name,
-            type = node_dict['type'],
-            ttc = str(node_dict['ttc']),
-            is_necessary = str(node.is_necessary),
-            is_viable = str(node.is_viable),
-            compromised_by = str(node_dict['compromised_by']),
-            defense_status = node_dict['defense_status'] if 'defense_status'
-                in node_dict else 'N/A')
-
+            name=node_dict['name'],
+            full_name=node.full_name,
+            type=node_dict['type'],
+            ttc=str(node_dict['ttc']),
+            is_necessary=str(node.is_necessary),
+            is_viable=str(node.is_viable),
+            compromised_by=str(node_dict['compromised_by']),
+            defense_status=node_dict['defense_status']
+            if 'defense_status' in node_dict
+            else 'N/A',
+        )
 
     for node in graph.nodes.values():
         for child in node.children:
@@ -61,18 +59,15 @@ def ingest_attack_graph(graph,
     g.commit(tx)
 
 
-def ingest_model(model,
-        uri: str,
-        username: str,
-        password: str,
-        dbname: str,
-        delete: bool = False
-    ) -> None:
+def ingest_model(
+    model, uri: str, username: str, password: str, dbname: str, delete: bool = False
+) -> None:
     """
     Ingest an instance model graph into a Neo4J database
 
     Arguments:
-    model                - the instance model dictionary as provided by the model.py module
+    model                - the instance model dictionary as provided by the
+                           model.py module
     uri                  - the URI to a running neo4j instance
     username             - the username to login on Neo4J
     password             - the password to login on Neo4J
@@ -92,7 +87,7 @@ def ingest_model(model,
             str(asset.type),
             name=str(asset.name),
             asset_id=str(asset.id),
-            type=str(asset.type)
+            type=str(asset.type),
         )
 
     for asset in model.assets.values():
@@ -100,9 +95,7 @@ def ingest_model(model,
             for other_asset in other_assets:
                 rels.append(
                     Relationship(
-                        nodes[str(asset.id)],
-                        str(fieldname),
-                        nodes[str(other_asset.id)]
+                        nodes[str(asset.id)], str(fieldname), nodes[str(other_asset.id)]
                     )
                 )
 
@@ -126,7 +119,8 @@ def ingest_model(model,
 
 #     instance_model = Model('Neo4j imported model', lang_graph)
 #     # Get all assets
-#     assets_results = g.run('MATCH (a) WHERE a.type IS NOT NULL RETURN DISTINCT a').data()
+#     assets_results = g.run('MATCH (a) WHERE a.type IS NOT NULL'
+#                            'RETURN DISTINCT a').data()
 #     for asset in assets_results:
 #         asset_data = dict(asset['a'])
 #         logger.debug(
@@ -146,7 +140,8 @@ def ingest_model(model,
 
 #     # Get all relationships
 #     assocs_results = g.run(
-#         'MATCH (a)-[r1]->(b),(a)<-[r2]-(b) WHERE a.type IS NOT NULL RETURN DISTINCT a, r1, r2, b'
+#         'MATCH (a)-[r1]->(b),(a)<-[r2]-(b) WHERE a.type IS NOT NULL'
+#         'RETURN DISTINCT a, r1, r2, b'
 #     ).data()
 
 #     for assoc in assocs_results:

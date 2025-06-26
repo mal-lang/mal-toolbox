@@ -3,15 +3,18 @@ MAL-Toolbox Attack Graph Node
 """
 
 from __future__ import annotations
+
 import copy
 from functools import cached_property
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Optional
-    from . import Attacker
+
     from ..language import LanguageGraphAttackStep
     from ..model import ModelAsset
+    from . import Attacker
+
 
 class AttackGraphNode:
     """Node part of AttackGraph"""
@@ -22,7 +25,7 @@ class AttackGraphNode:
         lg_attack_step: LanguageGraphAttackStep,
         model_asset: Optional[ModelAsset] = None,
         defense_status: Optional[float] = None,
-        existence_status: Optional[bool] = None
+        existence_status: Optional[bool] = None,
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
@@ -51,12 +54,9 @@ class AttackGraphNode:
             'lang_graph_attack_step': self.lg_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,
-            'children': {child.id: child.full_name for child in
-                self.children},
-            'parents': {parent.id: parent.full_name for parent in
-                self.parents},
-            'compromised_by': [attacker.name for attacker in \
-                self.compromised_by]
+            'children': {child.id: child.full_name for child in self.children},
+            'parents': {parent.id: parent.full_name for parent in self.parents},
+            'compromised_by': [attacker.name for attacker in self.compromised_by],
         }
 
         for detector in self.detectors.values():
@@ -78,11 +78,11 @@ class AttackGraphNode:
 
         return node_dict
 
-
     def __repr__(self) -> str:
-        return (f'AttackGraphNode(name: "{self.full_name}", id: {self.id}, '
-            f'type: {self.type})')
-
+        return (
+            f'AttackGraphNode(name: "{self.full_name}", id: {self.id}, '
+            f'type: {self.type})'
+        )
 
     def __deepcopy__(self, memo) -> AttackGraphNode:
         """Deep copy an attackgraph node
@@ -99,9 +99,9 @@ class AttackGraphNode:
             return memo[id(self)]
 
         copied_node = AttackGraphNode(
-            node_id = self.id,
-            model_asset = self.model_asset,
-            lg_attack_step = self.lg_attack_step
+            node_id=self.id,
+            model_asset=self.model_asset,
+            lg_attack_step=self.lg_attack_step,
         )
 
         copied_node.tags = copy.deepcopy(self.tags, memo)
@@ -118,14 +118,12 @@ class AttackGraphNode:
 
         return copied_node
 
-
     def is_compromised(self) -> bool:
         """
         Return True if any attackers have compromised this node.
         False, otherwise.
         """
         return len(self.compromised_by) > 0
-
 
     def is_compromised_by(self, attacker: Attacker) -> bool:
         """
@@ -138,7 +136,6 @@ class AttackGraphNode:
         """
         return attacker in self.compromised_by
 
-
     def compromise(self, attacker: Attacker) -> None:
         """
         Have the attacker given as a parameter compromise this node.
@@ -147,7 +144,6 @@ class AttackGraphNode:
         attacker    - the attacker that will compromise the node
         """
         attacker.compromise(self)
-
 
     def undo_compromise(self, attacker: Attacker) -> None:
         """
@@ -160,27 +156,28 @@ class AttackGraphNode:
         """
         attacker.undo_compromise(self)
 
-
     def is_enabled_defense(self) -> bool:
         """
         Return True if this node is a defense node and it is enabled and not
         suppressed via tags.
         False, otherwise.
         """
-        return self.type == 'defense' and \
-            'suppress' not in self.tags and \
-            self.defense_status == 1.0
-
+        return (
+            self.type == 'defense'
+            and 'suppress' not in self.tags
+            and self.defense_status == 1.0
+        )
 
     def is_available_defense(self) -> bool:
         """
         Return True if this node is a defense node and it is not fully enabled
         and not suppressed via tags. False otherwise.
         """
-        return self.type == 'defense' and \
-            'suppress' not in self.tags and \
-            self.defense_status != 1.0
-
+        return (
+            self.type == 'defense'
+            and 'suppress' not in self.tags
+            and self.defense_status != 1.0
+        )
 
     @property
     def full_name(self) -> str:
@@ -194,7 +191,6 @@ class AttackGraphNode:
         else:
             full_name = str(self.id) + ':' + self.name
         return full_name
-
 
     @cached_property
     def info(self) -> dict[str, str]:

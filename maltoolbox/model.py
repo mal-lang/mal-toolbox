@@ -3,23 +3,24 @@ MAL-Toolbox Model Module
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import json
 import logging
-from typing import TYPE_CHECKING
 import math
-
-from .file_utils import (
-    load_dict_from_json_file,
-    load_dict_from_yaml_file,
-    save_dict_to_file
-)
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from . import __version__
 from .exceptions import ModelException
+from .file_utils import (
+    load_dict_from_json_file,
+    load_dict_from_yaml_file,
+    save_dict_to_file,
+)
 
 if TYPE_CHECKING:
     from typing import Any, Optional
+
     from .language import (
         LanguageGraph,
         LanguageGraphAsset,
@@ -27,19 +28,18 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class AttackerAttachment:
     """Used to attach attackers to attack step entry points of assets"""
+
     id: Optional[int] = None
     name: Optional[str] = None
-    entry_points: list[tuple[ModelAsset, list[str]]] = \
-        field(default_factory=lambda: [])
-
+    entry_points: list[tuple[ModelAsset, list[str]]] = field(default_factory=lambda: [])
 
     def get_entry_point_tuple(
-            self,
-            asset: ModelAsset
-        ) -> Optional[tuple[ModelAsset, list[str]]]:
+        self, asset: ModelAsset
+    ) -> Optional[tuple[ModelAsset, list[str]]]:
         """Return an entry point tuple of an AttackerAttachment matching the
         asset provided.
 
@@ -53,12 +53,11 @@ class AttackerAttachment:
         attachemnt.
         None, otherwise.
         """
-        return next((ep_tuple for ep_tuple in self.entry_points
-                                 if ep_tuple[0] == asset), None)
+        return next(
+            (ep_tuple for ep_tuple in self.entry_points if ep_tuple[0] == asset), None
+        )
 
-
-    def add_entry_point(
-            self, asset: ModelAsset, attackstep_name: str):
+    def add_entry_point(self, asset: ModelAsset, attackstep_name: str):
         """Add an entry point to an AttackerAttachment
 
         self.entry_points contain tuples, first element of each tuple
@@ -93,9 +92,7 @@ class AttackerAttachment:
             # point
             self.entry_points.append((asset, [attackstep_name]))
 
-
-    def remove_entry_point(
-            self, asset: ModelAsset, attackstep_name: str):
+    def remove_entry_point(self, asset: ModelAsset, attackstep_name: str):
         """Remove an entry point from an AttackerAttachment if it exists
 
         Arguments:
@@ -130,38 +127,33 @@ class AttackerAttachment:
             )
 
 
-class Model():
+class Model:
     """An implementation of a MAL language model containing assets"""
+
     next_id: int = 0
 
     def __repr__(self) -> str:
         return f'Model(name: "{self.name}", language: {self.lang_graph})'
 
-
     def __init__(
-            self,
-            name: str,
-            lang_graph: LanguageGraph,
-            mt_version: str = __version__
-        ):
-
+        self, name: str, lang_graph: LanguageGraph, mt_version: str = __version__
+    ):
         self.name = name
         self.assets: dict[int, ModelAsset] = {}
-        self._name_to_asset:dict[str, ModelAsset] = {} # optimization
+        self._name_to_asset: dict[str, ModelAsset] = {}  # optimization
         self.attackers: list[AttackerAttachment] = []
         self.lang_graph = lang_graph
         self.maltoolbox_version: str = mt_version
 
-
     def add_asset(
-            self,
-            asset_type: str,
-            name: Optional[str] = None,
-            asset_id: Optional[int] = None,
-            defenses: Optional[dict[str, float]] = None,
-            extras: Optional[dict] = None,
-            allow_duplicate_names: bool = True
-        ) -> ModelAsset:
+        self,
+        asset_type: str,
+        name: Optional[str] = None,
+        asset_id: Optional[int] = None,
+        defenses: Optional[dict[str, float]] = None,
+        extras: Optional[dict] = None,
+        allow_duplicate_names: bool = True,
+    ) -> ModelAsset:
         """
         Create an asset based on the provided parameters and add it to the
         model.
@@ -207,25 +199,22 @@ class Model():
         lg_asset = self.lang_graph.assets[asset_type]
 
         asset = ModelAsset(
-            name = name,
-            asset_id = asset_id,
-            lg_asset = lg_asset,
-            defenses = defenses,
-            extras = extras)
-
-        logger.debug(
-            'Add "%s"(%d) to model "%s".', name, asset_id, self.name
+            name=name,
+            asset_id=asset_id,
+            lg_asset=lg_asset,
+            defenses=defenses,
+            extras=extras,
         )
+
+        logger.debug('Add "%s"(%d) to model "%s".', name, asset_id, self.name)
         self.assets[asset_id] = asset
         self._name_to_asset[name] = asset
 
         return asset
 
-
     def remove_attacker(self, attacker: AttackerAttachment) -> None:
         """Remove attacker"""
         self.attackers.remove(attacker)
-
 
     def remove_asset(self, asset: ModelAsset) -> None:
         """Remove an asset from the model.
@@ -235,8 +224,7 @@ class Model():
         """
 
         logger.debug(
-            'Remove "%s"(%d) from model "%s".',
-            asset.name, asset.id, self.name
+            'Remove "%s"(%d) from model "%s".', asset.name, asset.id, self.name
         )
         if asset.id not in self.assets:
             raise LookupError(
@@ -260,12 +248,9 @@ class Model():
         del self.assets[asset.id]
         del self._name_to_asset[asset.name]
 
-
     def add_attacker(
-            self,
-            attacker: AttackerAttachment,
-            attacker_id: Optional[int] = None
-        ) -> None:
+        self, attacker: AttackerAttachment, attacker_id: Optional[int] = None
+    ) -> None:
         """Add an attacker to the model.
 
         Arguments:
@@ -283,10 +268,7 @@ class Model():
             attacker.name = 'Attacker:' + str(attacker.id)
         self.attackers.append(attacker)
 
-
-    def get_asset_by_id(
-            self, asset_id: int
-        ) -> Optional[ModelAsset]:
+    def get_asset_by_id(self, asset_id: int) -> Optional[ModelAsset]:
         """
         Find an asset in the model based on its id.
 
@@ -296,16 +278,10 @@ class Model():
         Return:
         An asset matching the id if it exists in the model.
         """
-        logger.debug(
-            'Get asset with id %d from model "%s".',
-            asset_id, self.name
-        )
+        logger.debug('Get asset with id %d from model "%s".', asset_id, self.name)
         return self.assets.get(asset_id, None)
 
-
-    def get_asset_by_name(
-            self, asset_name: str
-        ) -> Optional[ModelAsset]:
+    def get_asset_by_name(self, asset_name: str) -> Optional[ModelAsset]:
         """
         Find an asset in the model based on its name.
 
@@ -315,16 +291,10 @@ class Model():
         Return:
         An asset matching the name if it exists in the model.
         """
-        logger.debug(
-            'Get asset with name "%s" from model "%s".',
-            asset_name, self.name
-        )
+        logger.debug('Get asset with name "%s" from model "%s".', asset_name, self.name)
         return self._name_to_asset.get(asset_name, None)
 
-
-    def get_attacker_by_id(
-            self, attacker_id: int
-        ) -> Optional[AttackerAttachment]:
+    def get_attacker_by_id(self, attacker_id: int) -> Optional[AttackerAttachment]:
         """
         Find an attacker in the model based on its id.
 
@@ -334,19 +304,15 @@ class Model():
         Return:
         An attacker matching the id if it exists in the model.
         """
-        logger.debug(
-            'Get attacker with id %d from model "%s".',
-            attacker_id, self.name
-        )
+        logger.debug('Get attacker with id %d from model "%s".', attacker_id, self.name)
         return next(
-                (attacker for attacker in self.attackers
-                if attacker.id == attacker_id), None
-            )
-
+            (attacker for attacker in self.attackers if attacker.id == attacker_id),
+            None,
+        )
 
     def attacker_to_dict(
-            self, attacker: AttackerAttachment
-        ) -> tuple[Optional[int], dict]:
+        self, attacker: AttackerAttachment
+    ) -> tuple[Optional[int], dict]:
         """Get dictionary representation of the attacker.
 
         Arguments:
@@ -358,29 +324,24 @@ class Model():
             'name': attacker.name,
             'entry_points': {},
         }
-        for (asset, attack_steps) in attacker.entry_points:
+        for asset, attack_steps in attacker.entry_points:
             attacker_dict['entry_points'][asset.name] = {
                 'asset_id': asset.id,
-                'attack_steps' : attack_steps
+                'attack_steps': attack_steps,
             }
         return (attacker.id, attacker_dict)
-
 
     def _to_dict(self) -> dict:
         """Get dictionary representation of the model."""
         logger.debug('Translating model to dict.')
-        contents: dict[str, Any] = {
-            'metadata': {},
-            'assets': {},
-            'attackers' : {}
-        }
+        contents: dict[str, Any] = {'metadata': {}, 'assets': {}, 'attackers': {}}
         contents['metadata'] = {
             'name': self.name,
             'langVersion': self.lang_graph.metadata['version'],
             'langID': self.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
             'MAL-Toolbox Version': __version__,
-            'info': 'Created by the mal-toolbox model python module.'
+            'info': 'Created by the mal-toolbox model python module.',
         }
 
         logger.debug('Translating assets to dictionary.')
@@ -393,19 +354,17 @@ class Model():
             contents['attackers'][attacker_id] = attacker_dict
         return contents
 
-
     def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
         logger.debug('Save instance model to file "%s".', filename)
         return save_dict_to_file(filename, self._to_dict())
-
 
     @classmethod
     def _from_dict(
         cls,
         serialized_object: dict,
         lang_graph: LanguageGraph,
-        ) -> Model:
+    ) -> Model:
         """Create a model from dict representation
 
         Arguments:
@@ -413,40 +372,40 @@ class Model():
         lang_graph -
         """
 
-        maltoolbox_version = serialized_object['metadata']['MAL Toolbox Version'] \
-            if 'MAL Toolbox Version' in serialized_object['metadata'] \
+        maltoolbox_version = (
+            serialized_object['metadata']['MAL Toolbox Version']
+            if 'MAL Toolbox Version' in serialized_object['metadata']
             else __version__
+        )
         model = Model(
             serialized_object['metadata']['name'],
             lang_graph,
-            mt_version = maltoolbox_version)
+            mt_version=maltoolbox_version,
+        )
 
         # Reconstruct the assets
         for asset_id, asset_dict in serialized_object['assets'].items():
-
             if logger.isEnabledFor(logging.DEBUG):
                 # Avoid running json.dumps when not in debug
-                logger.debug(
-                    "Loading asset:\n%s", json.dumps(asset_dict, indent=2)
-                )
+                logger.debug('Loading asset:\n%s', json.dumps(asset_dict, indent=2))
 
             # Allow defining an asset via type only.
             asset_dict = (
                 asset_dict
                 if isinstance(asset_dict, dict)
-                else {
-                    'type': asset_dict,
-                    'name': f"{asset_dict}:{asset_id}"
-                }
+                else {'type': asset_dict, 'name': f'{asset_dict}:{asset_id}'}
             )
 
             model.add_asset(
-                asset_type = asset_dict['type'],
-                name = asset_dict['name'],
-                defenses = {defense: float(value) for defense, value in \
-                    asset_dict.get('defenses', {}).items()},
-                extras = asset_dict.get('extras', {}),
-                asset_id = int(asset_id))
+                asset_type=asset_dict['type'],
+                name=asset_dict['name'],
+                defenses={
+                    defense: float(value)
+                    for defense, value in asset_dict.get('defenses', {}).items()
+                },
+                extras=asset_dict.get('extras', {}),
+                asset_id=int(asset_id),
+            )
 
         # Reconstruct the association links
         for asset_id, asset_dict in serialized_object['assets'].items():
@@ -455,43 +414,40 @@ class Model():
             for fieldname, assoc_assets in assoc_assets_dict:
                 asset.add_associated_assets(
                     fieldname,
-                    {model.assets[int(assoc_asset_id)]
-                        for assoc_asset_id in assoc_assets}
+                    {
+                        model.assets[int(assoc_asset_id)]
+                        for assoc_asset_id in assoc_assets
+                    },
                 )
 
         # Reconstruct the attackers
         if 'attackers' in serialized_object:
             attackers_info = serialized_object['attackers']
             for attacker_id in attackers_info:
-                attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
-                for asset_name, entry_points_dict in \
-                        attackers_info[attacker_id]['entry_points'].items():
+                attacker = AttackerAttachment(name=attackers_info[attacker_id]['name'])
+                for asset_name, entry_points_dict in attackers_info[attacker_id][
+                    'entry_points'
+                ].items():
                     target_asset = model.get_asset_by_id(
                         int(entry_points_dict['asset_id'])
                     )
                     if target_asset is None:
                         raise LookupError(
-                            'Asset "%s"(%d) is not part of model "%s".' % (
-                                asset_name,
-                                entry_points_dict['asset_id'],
-                                model.name)
+                            'Asset "%s"(%d) is not part of model "%s".'
+                            % (asset_name, entry_points_dict['asset_id'], model.name)
                         )
                     attacker.entry_points.append(
-                            (
-                                target_asset,
-                                entry_points_dict['attack_steps']
-                            )
-                        )
-                model.add_attacker(attacker, attacker_id = int(attacker_id))
+                        (target_asset, entry_points_dict['attack_steps'])
+                    )
+                model.add_attacker(attacker, attacker_id=int(attacker_id))
         return model
-
 
     @classmethod
     def load_from_file(
         cls,
         filename: str,
         lang_graph: LanguageGraph,
-        ) -> Model:
+    ) -> Model:
         """Create from json or yaml file depending on file extension"""
         logger.debug('Load instance model from file "%s".', filename)
         serialized_model = None
@@ -505,7 +461,7 @@ class Model():
             return cls._from_dict(serialized_model, lang_graph)
         except Exception as e:
             raise ModelException(
-                "Could not load model. It might be of an older version. "
+                'Could not load model. It might be of an older version. '
                 "Try to upgrade it with 'maltoolbox upgrade-model'"
             ) from e
 
@@ -517,9 +473,8 @@ class ModelAsset:
         asset_id: int,
         lg_asset: LanguageGraphAsset,
         defenses: Optional[dict[str, float]] = None,
-        extras: Optional[dict] = None
+        extras: Optional[dict] = None,
     ):
-
         self.name: str = name
         self._id: int = asset_id
         self.lg_asset: LanguageGraphAsset = lg_asset
@@ -531,35 +486,36 @@ class ModelAsset:
 
         for step in self.lg_asset.attack_steps.values():
             if step.type == 'defense' and step.name not in self.defenses:
-                self.defenses[step.name] = 1.0 if step.ttc and \
-                    step.ttc['name'] == 'Enabled' else 0.0
-
+                self.defenses[step.name] = (
+                    1.0 if step.ttc and step.ttc['name'] == 'Enabled' else 0.0
+                )
 
     def _to_dict(self):
         """Get dictionary representation of the asset."""
 
-        logger.debug(
-            'Translating "%s"(%d) to dictionary.', self.name, self.id)
+        logger.debug('Translating "%s"(%d) to dictionary.', self.name, self.id)
 
         asset_dict: dict[str, Any] = {
             'name': self.name,
             'type': self.type,
             'defenses': {},
-            'associated_assets': {}
+            'associated_assets': {},
         }
 
         # Only add non-default values for defenses to improve legibility of
         # the model format
         for defense, defense_value in self.defenses.items():
             lg_step = self.lg_asset.attack_steps[defense]
-            default_defval = 1.0 if lg_step.ttc and \
-                    lg_step.ttc['name'] == 'Enabled' else 0.0
+            default_defval = (
+                1.0 if lg_step.ttc and lg_step.ttc['name'] == 'Enabled' else 0.0
+            )
             if defense_value != default_defval:
                 asset_dict['defenses'][defense] = defense_value
 
         for fieldname, assets in self.associated_assets.items():
-            asset_dict['associated_assets'][fieldname] = {asset.id: asset.name
-                for asset in assets}
+            asset_dict['associated_assets'][fieldname] = {
+                asset.id: asset.name for asset in assets
+            }
 
         if len(asset_dict['defenses']) == 0:
             # Do not include an empty defenses dictionary
@@ -571,15 +527,12 @@ class ModelAsset:
 
         return {self.id: asset_dict}
 
-
     def __repr__(self):
-        return (f'ModelAsset(name: "{self.name}", id: {self.id}, '
-            f'type: {self.type})')
-
+        return f'ModelAsset(name: "{self.name}", id: {self.id}, ' f'type: {self.type})'
 
     def validate_associated_assets(
-            self, fieldname: str, assets_to_add: set[ModelAsset]
-        ):
+        self, fieldname: str, assets_to_add: set[ModelAsset]
+    ):
         """
         Validate an association we want to add (through `fieldname`)
         is valid with the assets given in param `assets_to_add`:
@@ -599,8 +552,8 @@ class ModelAsset:
             accepted_fieldnames = list(self.lg_asset.associations.keys())
             raise LookupError(
                 f"Fieldname '{fieldname}' is not an accepted association "
-                f"fieldname from asset type {self.lg_asset.name}. "
-                f"Did you mean one of {accepted_fieldnames}?"
+                f'fieldname from asset type {self.lg_asset.name}. '
+                f'Did you mean one of {accepted_fieldnames}?'
             )
 
         lg_assoc = self.lg_asset.associations[fieldname]
@@ -614,7 +567,7 @@ class ModelAsset:
                     f"'{asset_to_add.type}' can not be added to association "
                     f"'{self.name}.{fieldname}'. Expected type of "
                     f"'{fieldname}' is {assoc_field.asset.name}."
-            )
+                )
 
         # Validate that there will not be too many assets in field
         assets_in_field_before = self.associated_assets.get(fieldname, set())
@@ -623,8 +576,8 @@ class ModelAsset:
 
         if len(assets_in_field_after) > max_assets_in_field:
             raise ValueError(
-                f"You can have maximum {assoc_field.maximum} "
-                f"assets for association field {fieldname}"
+                f'You can have maximum {assoc_field.maximum} '
+                f'assets for association field {fieldname}'
             )
 
     def add_associated_assets(self, fieldname: str, assets: set[ModelAsset]):
@@ -642,19 +595,14 @@ class ModelAsset:
             asset.validate_associated_assets(other_fieldname, {self})
 
         # Add the associated assets to this asset's dictionary
-        self._associated_assets.setdefault(
-            fieldname, set()
-        ).update(assets)
+        self._associated_assets.setdefault(fieldname, set()).update(assets)
 
         # Add this asset to the associated assets' corresponding dictionaries
         for asset in assets:
-            asset._associated_assets.setdefault(
-                other_fieldname, set()
-            ).add(self)
+            asset._associated_assets.setdefault(other_fieldname, set()).add(self)
 
-    def remove_associated_assets(
-            self, fieldname: str, assets: set[ModelAsset]):
-        """ Remove the assets provided as a parameter from the set of
+    def remove_associated_assets(self, fieldname: str, assets: set[ModelAsset]):
+        """Remove the assets provided as a parameter from the set of
         associated assets dictionary entry corresponding to the fieldname
         parameter.
         """
@@ -671,11 +619,9 @@ class ModelAsset:
         if len(self._associated_assets[fieldname]) == 0:
             del self._associated_assets[fieldname]
 
-
     @property
     def associated_assets(self):
         return self._associated_assets
-
 
     @property
     def id(self):

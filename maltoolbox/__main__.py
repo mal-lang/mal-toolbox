@@ -23,24 +23,22 @@ Notes:
       defined in the default.conf file.
 """
 
-import logging
 import json
+import logging
+
 import docopt
 
 from . import log_configs, neo4j_configs
 from .attackgraph import create_attack_graph
-from .language.compiler import MalCompiler
 from .ingestors import neo4j
+from .language.compiler import MalCompiler
 from .language.languagegraph import LanguageGraph
 from .translators.updater import load_model_from_older_version
 
 logger = logging.getLogger(__name__)
 
-def generate_attack_graph(
-        model_file: str,
-        lang_file: str,
-        send_to_neo4j: bool
-    ) -> None:
+
+def generate_attack_graph(model_file: str, lang_file: str, send_to_neo4j: bool) -> None:
     """Create an attack graph and optionally send to neo4j
 
     Args:
@@ -50,9 +48,7 @@ def generate_attack_graph(
     """
     attack_graph = create_attack_graph(lang_file, model_file)
     if log_configs['attackgraph_file']:
-        attack_graph.save_to_file(
-            log_configs['attackgraph_file']
-        )
+        attack_graph.save_to_file(log_configs['attackgraph_file'])
 
     if send_to_neo4j:
         logger.debug('Ingest model graph into Neo4J database.')
@@ -62,7 +58,7 @@ def generate_attack_graph(
             neo4j_configs['username'],
             neo4j_configs['password'],
             neo4j_configs['dbname'],
-            delete=True
+            delete=True,
         )
         logger.debug('Ingest attack graph into Neo4J database.')
         neo4j.ingest_attack_graph(
@@ -71,14 +67,14 @@ def generate_attack_graph(
             neo4j_configs['username'],
             neo4j_configs['password'],
             neo4j_configs['dbname'],
-            delete=False
+            delete=False,
         )
 
 
 def compile(lang_file: str, output_file: str) -> None:
     """Compile language and dump into output file"""
     compiler = MalCompiler()
-    with open(output_file, "w") as f:
+    with open(output_file, 'w') as f:
         json.dump(compiler.compile(lang_file), f, indent=2)
 
 
@@ -100,13 +96,10 @@ def main():
             args['<model_file>'], args['<lang_file>'], args['--neo4j']
         )
     elif args['compile']:
-        compile(
-            args['<lang_file>'], args['<output_file>']
-        )
+        compile(args['<lang_file>'], args['<output_file>'])
     elif args['upgrade-model']:
-        upgrade_model(
-            args['<model_file>'], args['<lang_file>'], args['<output_file>']
-        )
+        upgrade_model(args['<model_file>'], args['<lang_file>'], args['<output_file>'])
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

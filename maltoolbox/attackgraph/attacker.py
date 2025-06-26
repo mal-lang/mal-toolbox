@@ -3,23 +3,23 @@ MAL-Toolbox Attack Graph Attacker Class
 """
 
 from __future__ import annotations
-import logging
 
-from typing import Optional
-from typing import TYPE_CHECKING
+import logging
+from typing import TYPE_CHECKING, Optional
+
 if TYPE_CHECKING:
     from .attackgraph import AttackGraphNode
 
 logger = logging.getLogger(__name__)
 
-class Attacker:
 
+class Attacker:
     def __init__(
         self,
         name: str,
         entry_points: Optional[set[AttackGraphNode]] = None,
         reached_attack_steps: Optional[set[AttackGraphNode]] = None,
-        attacker_id: Optional[int] = None
+        attacker_id: Optional[int] = None,
     ):
         self.name = name
         self.id = attacker_id
@@ -33,15 +33,15 @@ class Attacker:
             'id': self.id,
             'name': self.name,
             'entry_points': {},
-            'reached_attack_steps': {}
+            'reached_attack_steps': {},
         }
 
         for entry_point in self.entry_points:
-            attacker_dict['entry_points'][entry_point.id] = \
-                entry_point.full_name
+            attacker_dict['entry_points'][entry_point.id] = entry_point.full_name
         for attack_step in self.reached_attack_steps:
-            attacker_dict['reached_attack_steps'][attack_step.id] = \
+            attacker_dict['reached_attack_steps'][attack_step.id] = (
                 attack_step.full_name
+            )
 
         return attacker_dict
 
@@ -61,16 +61,15 @@ class Attacker:
             self.name,
             self.id,
             node.full_name,
-            node.id
+            node.id,
         )
         if node.is_compromised_by(self):
             logger.info(
-                'Attacker "%s"(%d) already compromised node "%s"(%d). '
-                'Do nothing.',
+                'Attacker "%s"(%d) already compromised node "%s"(%d). ' 'Do nothing.',
                 self.name,
                 self.id,
                 node.full_name,
-                node.id
+                node.id,
             )
             return
 
@@ -87,21 +86,19 @@ class Attacker:
         """
 
         logger.debug(
-            'Removing attacker "%s"(%d) from compromised_by '
-            'list of node "%s"(%d).',
+            'Removing attacker "%s"(%d) from compromised_by ' 'list of node "%s"(%d).',
             self.name,
             self.id,
             node.full_name,
-            node.id
+            node.id,
         )
         if not node.is_compromised_by(self):
             logger.info(
-                'Attacker "%s"(%d) had not compromised node "%s"(%d).'
-                ' Do nothing.',
+                'Attacker "%s"(%d) had not compromised node "%s"(%d).' ' Do nothing.',
                 self.name,
                 self.id,
                 node.full_name,
-                node.id
+                node.id,
             )
             return
 

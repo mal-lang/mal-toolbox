@@ -12,12 +12,12 @@ from .languagegraph import (
 )
 
 __all__ = [
-    "Context",
-    "Detector",
-    "ExpressionsChain",
-    "LanguageGraph",
-    "LanguageGraphAsset",
-    "LanguageGraphAssociation",
-    "LanguageGraphAttackStep",
-    "disaggregate_attack_step_full_name"
+    'Context',
+    'Detector',
+    'ExpressionsChain',
+    'LanguageGraph',
+    'LanguageGraphAsset',
+    'LanguageGraphAssociation',
+    'LanguageGraphAttackStep',
+    'disaggregate_attack_step_full_name',
 ]

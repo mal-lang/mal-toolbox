@@ -1,14 +1,15 @@
 """Tests for analyzers"""
 
+from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.attackgraph.analyzers import apriori
 from maltoolbox.attackgraph.analyzers.apriori import (
     propagate_viability_from_unviable_node,
     prune_unviable_and_unnecessary_nodes,
 )
 from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph import AttackGraph
-from maltoolbox.attackgraph.analyzers import apriori
 
 # Tests
+
 
 def test_viability_viable_nodes(dummy_lang_graph):
     """Make sure expected viable nodes are actually viable"""
@@ -176,13 +177,11 @@ def test_necessity_necessary(dummy_lang_graph):
 
 
 def test_analyzers_apriori_prune_unviable_and_unnecessary_nodes(
-        example_attackgraph: AttackGraph
-    ):
-
+    example_attackgraph: AttackGraph,
+):
     # Pick out an or node and make it non-necessary
     node_to_make_non_necessary = next(
-        node for node in example_attackgraph.nodes.values()
-        if node.type == 'or'
+        node for node in example_attackgraph.nodes.values() if node.type == 'or'
     )
 
     node_to_make_non_necessary.is_necessary = False
@@ -192,7 +191,9 @@ def test_analyzers_apriori_prune_unviable_and_unnecessary_nodes(
     assert node_to_make_non_necessary.id not in example_attackgraph.nodes
 
 
-def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_graph: LanguageGraph):
+def test_analyzers_apriori_propagate_viability_from_unviable_node(
+    dummy_lang_graph: LanguageGraph,
+):
     r"""Create a graph from nodes
 
             node1
@@ -202,31 +203,21 @@ def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_gra
     node4  node5    node6
     """
 
-    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyOrAttackStep']
-    dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyDefenseAttackStep']
+    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].attack_steps[
+        'DummyOrAttackStep'
+    ]
+    dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].attack_steps[
+        'DummyDefenseAttackStep'
+    ]
     attack_graph = AttackGraph(dummy_lang_graph)
 
     # Create a graph of nodes according to above diagram
-    node1 = attack_graph.add_node(
-        lg_attack_step = dummy_defense_attack_step
-    )
-    node2 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    node3 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    node4 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    node5 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    node6 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
+    node1 = attack_graph.add_node(lg_attack_step=dummy_defense_attack_step)
+    node2 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node3 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node4 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node5 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node6 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
 
     node1.children = {node2, node3}
     node2.children = {node4, node5}
@@ -242,6 +233,10 @@ def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_gra
     unviable_nodes = propagate_viability_from_unviable_node(node1)
     unviable_node_names = {node.name for node in unviable_nodes}
     expected_unviable_node_names = {
-        node2.name, node3.name, node4.name, node5.name, node6.name
+        node2.name,
+        node3.name,
+        node4.name,
+        node5.name,
+        node6.name,
     }
     assert unviable_node_names == expected_unviable_node_names

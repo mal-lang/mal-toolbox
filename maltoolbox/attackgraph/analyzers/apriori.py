@@ -12,14 +12,16 @@ Currently these are:
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+
 import logging
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..attackgraph import AttackGraph
     from ..node import AttackGraphNode
 
 logger = logging.getLogger(__name__)
+
 
 def propagate_viability_from_node(node: AttackGraphNode) -> None:
     """
@@ -29,7 +31,9 @@ def propagate_viability_from_node(node: AttackGraphNode) -> None:
     """
     logger.debug(
         'Propagate viability from "%s"(%d) with viability status %s.',
-        node.full_name, node.id, node.is_viable
+        node.full_name,
+        node.id,
+        node.is_viable,
     )
     for child in node.children:
         original_value = child.is_viable
@@ -52,12 +56,17 @@ def propagate_necessity_from_node(node: AttackGraphNode) -> None:
     """
     logger.debug(
         'Propagate necessity from "%s"(%d) with necessity status %s.',
-        node.full_name, node.id, node.is_necessary
+        node.full_name,
+        node.id,
+        node.is_necessary,
     )
 
     for child in node.children:
-        if child.ttc and child.ttc.get('name', None) not in ['Enabled',
-                'Disabled', 'Instant']:
+        if child.ttc and child.ttc.get('name', None) not in [
+            'Enabled',
+            'Disabled',
+            'Instant',
+        ]:
             # Do not propagate unnecessary state from nodes that have a TTC
             # probability distribution associated with them.
             # TODO: Evaluate this more carefully, how do we want to have TTCs
@@ -84,19 +93,21 @@ def evaluate_viability(node: AttackGraphNode) -> None:
     Arguments:
     graph       - the node to evaluate viability for.
     """
-    match (node.type):
+    match node.type:
         case 'exist':
-            assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.full_name}.'
+            assert isinstance(
+                node.existence_status, bool
+            ), f'Existence status not defined for {node.full_name}.'
             node.is_viable = node.existence_status
         case 'notExist':
-            assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.full_name}.'
+            assert isinstance(
+                node.existence_status, bool
+            ), f'Existence status not defined for {node.full_name}.'
             node.is_viable = not node.existence_status
         case 'defense':
-            assert node.defense_status is not None and \
-                   0.0 <= node.defense_status <= 1.0, \
-                f'{node.full_name} defense status invalid: {node.defense_status}.'
+            assert (
+                node.defense_status is not None and 0.0 <= node.defense_status <= 1.0
+            ), f'{node.full_name} defense status invalid: {node.defense_status}.'
             node.is_viable = node.defense_status != 1.0
         case 'or':
             node.is_viable = False
@@ -107,8 +118,10 @@ def evaluate_viability(node: AttackGraphNode) -> None:
             for parent in node.parents:
                 node.is_viable = node.is_viable and parent.is_viable
         case _:
-            msg = ('Evaluate viability was provided node "%s"(%d) which '
-                   'is of unknown type "%s"')
+            msg = (
+                'Evaluate viability was provided node "%s"(%d) which '
+                'is of unknown type "%s"'
+            )
             logger.error(msg, node.full_name, node.id, node.type)
             raise ValueError(msg % (node.full_name, node.id, node.type))
 
@@ -118,19 +131,21 @@ def evaluate_necessity(node: AttackGraphNode) -> None:
     Arguments:
     graph       - the node to evaluate necessity for.
     """
-    match (node.type):
+    match node.type:
         case 'exist':
-            assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.full_name}.'
+            assert isinstance(
+                node.existence_status, bool
+            ), f'Existence status not defined for {node.full_name}.'
             node.is_necessary = not node.existence_status
         case 'notExist':
-            assert isinstance(node.existence_status, bool), \
-                f'Existence status not defined for {node.full_name}.'
+            assert isinstance(
+                node.existence_status, bool
+            ), f'Existence status not defined for {node.full_name}.'
             node.is_necessary = bool(node.existence_status)
         case 'defense':
-            assert node.defense_status is not None and \
-                   0.0 <= node.defense_status <= 1.0, \
-                f'{node.full_name} defense status invalid: {node.defense_status}.'
+            assert (
+                node.defense_status is not None and 0.0 <= node.defense_status <= 1.0
+            ), f'{node.full_name} defense status invalid: {node.defense_status}.'
             node.is_necessary = node.defense_status != 0.0
         case 'or':
             node.is_necessary = True
@@ -141,8 +156,10 @@ def evaluate_necessity(node: AttackGraphNode) -> None:
             for parent in node.parents:
                 node.is_necessary = node.is_necessary or parent.is_necessary
         case _:
-            msg = ('Evaluate necessity was provided node "%s"(%d) which '
-                   'is of unknown type "%s"')
+            msg = (
+                'Evaluate necessity was provided node "%s"(%d) which '
+                'is of unknown type "%s"'
+            )
             logger.error(msg, node.full_name, node.id, node.type)
             raise ValueError(msg % (node.full_name, node.id, node.type))
 
@@ -177,13 +194,11 @@ def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
     graph       - the attack graph for which we wish to remove the
                   the nodes which are not viable or necessary.
     """
-    logger.debug(
-        'Prune unviable and unnecessary nodes from the attack graph.')
+    logger.debug('Prune unviable and unnecessary nodes from the attack graph.')
 
     nodes_to_remove = set()
     for node in graph.nodes.values():
-        if node.type in ('or', 'and') and \
-            (not node.is_viable or not node.is_necessary):
+        if node.type in ('or', 'and') and (not node.is_viable or not node.is_necessary):
             nodes_to_remove.add(node)
 
     # Do the removal separatly so we don't remove
@@ -193,8 +208,8 @@ def prune_unviable_and_unnecessary_nodes(graph: AttackGraph) -> None:
 
 
 def propagate_viability_from_unviable_node(
-        unviable_node: AttackGraphNode,
-    ) -> set[AttackGraphNode]:
+    unviable_node: AttackGraphNode,
+) -> set[AttackGraphNode]:
     """
     Update viability of nodes affected by newly enabled defense
     `unviable_node` in the graph and return any attack steps
@@ -214,14 +229,12 @@ def propagate_viability_from_unviable_node(
     attack_steps_made_unviable = set()
 
     logger.debug(
-        'Update viability for node "%s"(%d)',
-        unviable_node.full_name,
-        unviable_node.id
+        'Update viability for node "%s"(%d)', unviable_node.full_name, unviable_node.id
     )
 
     assert not unviable_node.is_viable, (
-        "propagate_viability_from_unviable_node should not be called"
-       f" on viable node {unviable_node.full_name}"
+        'propagate_viability_from_unviable_node should not be called'
+        f' on viable node {unviable_node.full_name}'
     )
 
     if unviable_node.type in ('and', 'or'):
@@ -237,7 +250,6 @@ def propagate_viability_from_unviable_node(
             child.is_viable = False
 
         if child.is_viable != original_value:
-            attack_steps_made_unviable |= \
-                propagate_viability_from_unviable_node(child)
+            attack_steps_made_unviable |= propagate_viability_from_unviable_node(child)
 
     return attack_steps_made_unviable

@@ -4,6 +4,7 @@ from maltoolbox.attackgraph.attacker import Attacker
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.language import LanguageGraph
 
+
 def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
     r"""Create a graph from nodes
 
@@ -14,33 +15,23 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
     node4  node5    node6
     """
 
-    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyOrAttackStep']
-    dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyDefenseAttackStep']
+    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].attack_steps[
+        'DummyOrAttackStep'
+    ]
+    dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].attack_steps[
+        'DummyDefenseAttackStep'
+    ]
     attack_graph = AttackGraph(dummy_lang_graph)
 
     # Create a graph of nodes according to above diagram
-    node1 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    node2 = attack_graph.add_node(
-        lg_attack_step = dummy_defense_attack_step
-    )
+    node1 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node2 = attack_graph.add_node(lg_attack_step=dummy_defense_attack_step)
     node2.defense_status = 1.0
-    node3 = attack_graph.add_node(
-        lg_attack_step = dummy_defense_attack_step
-    )
+    node3 = attack_graph.add_node(lg_attack_step=dummy_defense_attack_step)
     node3.defense_status = 0.0
-    node4 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    node5 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
-    node6 = attack_graph.add_node(
-        lg_attack_step = dummy_or_attack_step
-    )
+    node4 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node5 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
+    node6 = attack_graph.add_node(lg_attack_step=dummy_or_attack_step)
 
     node1.children = {node2, node3}
     node2.children = {node4, node5}
@@ -53,8 +44,8 @@ def test_attackgraphnode(dummy_lang_graph: LanguageGraph):
 
     # Make sure compromised node has attacker added to it
     attacker = Attacker(
-        name = "Test Attacker",
-        entry_points = {node1},
+        name='Test Attacker',
+        entry_points={node1},
     )
 
     attack_graph.add_attacker(attacker)
