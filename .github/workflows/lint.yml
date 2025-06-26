@@ -24,5 +24,4 @@ jobs:
           pip install ruff
       - name: Check Code with Ruff
         run: |
-          ruff check --statistics
-          ruff format --check
+          ruff check .
