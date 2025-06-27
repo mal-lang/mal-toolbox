@@ -1,7 +1,8 @@
 """Tests for analyzers"""
 
 from maltoolbox.attackgraph.analyzers.apriori import (
-    propagate_viability_from_unviable_node,
+    propagate_viability_from_node,
+    propagate_necessity_from_node,
     prune_unviable_and_unnecessary_nodes,
 )
 from maltoolbox.language import LanguageGraph
@@ -192,56 +193,127 @@ def test_analyzers_apriori_prune_unviable_and_unnecessary_nodes(
     assert node_to_make_non_necessary.id not in example_attackgraph.nodes
 
 
-def test_analyzers_apriori_propagate_viability_from_unviable_node(dummy_lang_graph: LanguageGraph):
+def test_analyzers_apriori_propagate_viability(dummy_lang_graph: LanguageGraph):
     r"""Create a graph from nodes
 
-            node1
-            /    \
-        node2    node3
-        /   \   /    \
-    node4  node5    node6
     """
 
     dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
         attack_steps['DummyOrAttackStep']
-    dummy_defense_attack_step = dummy_lang_graph.assets['DummyAsset'].\
-        attack_steps['DummyDefenseAttackStep']
+    dummy_and_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyAndAttackStep']
     attack_graph = AttackGraph(dummy_lang_graph)
 
     # Create a graph of nodes according to above diagram
-    node1 = attack_graph.add_node(
-        lg_attack_step = dummy_defense_attack_step
-    )
-    node2 = attack_graph.add_node(
+    vp1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    node3 = attack_graph.add_node(
+    vp2 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    node4 = attack_graph.add_node(
+    uvp1 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    node5 = attack_graph.add_node(
+    uvp1.is_viable = False
+    uvp2 = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
     )
-    node6 = attack_graph.add_node(
+    uvp2.is_viable = False
+
+    or_1vp = attack_graph.add_node(
         lg_attack_step = dummy_or_attack_step
+    )
+    or_2uvp = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    and_1uvp = attack_graph.add_node(
+        lg_attack_step = dummy_and_attack_step
+    )
+    and_2vp = attack_graph.add_node(
+        lg_attack_step = dummy_and_attack_step
     )
 
-    node1.children = {node2, node3}
-    node2.children = {node4, node5}
-    node3.children = {node5, node6}
+    or_1vp.parents = {vp1, uvp1}
+    or_2uvp.parents = {uvp1, uvp2}
+    and_1uvp.parents = {vp1, uvp1}
+    and_2vp.parents = {vp1, vp2}
 
-    node2.parents = {node1}
-    node4.parents = {node2}
-    node5.parents = {node2, node3}
-    node6.parents = {node3}
 
-    node1.defense_status = 1.0
-    node1.is_viable = False
-    unviable_nodes = propagate_viability_from_unviable_node(node1)
-    unviable_node_names = {node.name for node in unviable_nodes}
-    expected_unviable_node_names = {
-        node2.name, node3.name, node4.name, node5.name, node6.name
-    }
-    assert unviable_node_names == expected_unviable_node_names
+    vp1.children = {or_1vp, and_1uvp, and_2vp}
+    vp2.children = {and_2vp}
+    uvp1.children = {or_1vp, or_2uvp, and_1uvp}
+    uvp2.children = {or_2uvp}
+
+    changed_nodes = set()
+    for parent in [vp1, vp2, uvp1, uvp2]:
+        changed_nodes |= propagate_viability_from_node(parent)
+
+    assert changed_nodes == {or_2uvp, and_1uvp}
+
+    for node in [vp1, vp2, or_1vp, and_2vp]:
+        assert node.is_viable
+
+    for node in [uvp1, uvp2, or_2uvp, and_1uvp]:
+        assert not node.is_viable
+
+def test_analyzers_apriori_propagate_necessity(dummy_lang_graph: LanguageGraph):
+    r"""Create a graph from nodes
+
+    """
+
+    dummy_or_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyOrAttackStep']
+    dummy_and_attack_step = dummy_lang_graph.assets['DummyAsset'].\
+        attack_steps['DummyAndAttackStep']
+    attack_graph = AttackGraph(dummy_lang_graph)
+
+    # Create a graph of nodes according to above diagram
+    np1 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    np2 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    unp1 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    unp1.is_necessary = False
+    unp2 = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    unp2.is_necessary = False
+
+    or_1unp = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    or_2np = attack_graph.add_node(
+        lg_attack_step = dummy_or_attack_step
+    )
+    and_1np = attack_graph.add_node(
+        lg_attack_step = dummy_and_attack_step
+    )
+    and_2unp = attack_graph.add_node(
+        lg_attack_step = dummy_and_attack_step
+    )
+
+    or_1unp.parents = {np1, unp1}
+    or_2np.parents = {np1, np2}
+    and_1np.parents = {np1, unp1}
+    and_2unp.parents = {unp1, unp2}
+
+
+    np1.children = {or_1unp, or_2np, and_1np}
+    np2.children = {or_2np}
+    unp1.children = {or_1unp, and_1np, and_2unp}
+    unp2.children = {and_2unp}
+
+    changed_nodes = set()
+    for parent in [np1, np2, unp1, unp2]:
+        changed_nodes |= propagate_necessity_from_node(parent)
+    assert changed_nodes == {or_1unp, and_2unp}
+
+    for node in [np1, np2, or_2np, and_1np]:
+        assert node.is_necessary
+
+    for node in [unp1, unp2, or_1unp, and_2unp]:
+        assert not node.is_necessary
