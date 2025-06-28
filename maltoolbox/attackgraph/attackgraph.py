@@ -342,7 +342,7 @@ class AttackGraph():
                         continue
                     attacker.compromise(ag_node)
 
-            attacker.entry_points = set(attacker.reached_attack_steps)
+            attacker.entry_points = attacker.reached_attack_steps.copy()
 
     def _follow_expr_chain(
             self,
@@ -807,8 +807,10 @@ class AttackGraph():
                 attacker.name, attacker.id
             )
 
-        # Copy set - we can not remove elements from a set we are looping over
-        nodes_to_uncompromise = set(attacker.reached_attack_steps)
+        # Copy list - we can not remove elements from a list we are looping
+        # over. Using list version of reached_attack_steps, instead of the set,
+        # due to slightly better copying performance (no hashes to calculate).
+        nodes_to_uncompromise = set(attacker.reached_attack_steps_list)
         for node in nodes_to_uncompromise:
             attacker.undo_compromise(node)
 
