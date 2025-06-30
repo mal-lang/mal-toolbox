@@ -42,16 +42,12 @@ def propagate_viability_from_node(node: AttackGraphNode) -> set[AttackGraphNode]
     for child in node.children:
         original_value = child.is_viable
         if child.type == 'or':
-            child.is_viable = node.is_viable
-            parents = child.parents.copy()
-            while not child.is_viable and parents:
-                child.is_viable = parents.pop().is_viable
+            child.is_viable = any(
+                parent.is_viable for parent in child.parents)
 
         elif child.type == 'and':
-            child.is_viable = node.is_viable
-            parents = child.parents.copy()
-            while child.is_viable and parents:
-                child.is_viable = parents.pop().is_viable
+            child.is_viable = all(
+                parent.is_viable for parent in child.parents)
 
         if child.is_viable != original_value:
             changed_nodes |= ({child} |
@@ -81,16 +77,12 @@ def propagate_necessity_from_node(node: AttackGraphNode) -> set[AttackGraphNode]
     for child in node.children:
         original_value = child.is_necessary
         if child.type == 'or':
-            child.is_necessary = node.is_necessary
-            parents = child.parents.copy()
-            while child.is_necessary and parents:
-                child.is_necessary = parents.pop().is_necessary
+            child.is_necessary = all(
+                parent.is_necessary for parent in child.parents)
 
         elif child.type == 'and':
-            child.is_necessary = node.is_necessary
-            parents = child.parents.copy()
-            while not child.is_necessary and parents:
-                child.is_necessary = parents.pop().is_necessary
+            child.is_necessary = any(
+                parent.is_necessary for parent in child.parents)
 
         if child.is_necessary != original_value:
             changed_nodes |= ({child} |
