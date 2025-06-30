@@ -82,7 +82,7 @@ def convert_model_dict_from_version_0_0(model_dict: dict) -> dict:
 
     # Meta data and attackers did not change
     new_model_dict['metadata'] = model_dict['metadata']
-    new_model_dict['attackers'] = model_dict['attackers']
+    new_model_dict['attackers'] = model_dict.get('attackers', {})
 
     new_model_dict['assets'] = {}
 
