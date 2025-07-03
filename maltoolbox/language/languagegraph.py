@@ -49,7 +49,7 @@ class Detector:
 
 
 class Context(dict):
-    """TODO: What is a context?"""
+    """Context is part of detectors to provide meta data about attackers"""
     def __init__(self, context) -> None:
         super().__init__(context)
         self._context_dict = context
@@ -222,6 +222,7 @@ class LanguageGraphAsset:
 
 @dataclass
 class LanguageGraphAssociationField:
+    """A field in an association"""
     asset: LanguageGraphAsset
     fieldname: str
     minimum: int
