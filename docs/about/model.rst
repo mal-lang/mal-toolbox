@@ -71,3 +71,55 @@ Without existing model instance file:
 
 For more info on how to use MAL Toolbox,
 `Read the tutorial docs <https://github.com/mal-lang/mal-toolbox-tutorial/blob/main/res/mal-toolbox/model-generators/model_generator.py>`_.
+
+The instance model file
+""""""""""""""""""""""""
+
+The model file contains `metadata`, `assets`, and optionally `attackers`.
+It is NOT suggested to add attackers to model files since this will be deprecated.
+
+- `metadata` is to keep track on the version of toolbox and the language was used.
+
+- `assets` contain all the assets in your instance model.
+
+- `attackers` contain attackers entrypoints (If you plan to run simulations, please use the scenario file
+instead of the model file to define entrypoints)
+
+
+.. code-block:: yml
+    metadata:
+    MAL-Toolbox Version: 0.3.11
+    info: Created by the mal-toolbox model python module.
+    langID: org.mal-lang.tyrLang
+    langVersion: 0.0.8
+    malVersion: 0.1.0-SNAPSHOT
+    name: Demo Model
+
+    assets:
+    0:
+        associated_assets:
+        vulnerabilities:
+            1: SW Vuln - ap01
+        name: ap01
+        type: Application
+
+    attackers: {}
+
+
+Change defense status
+''''''''''''''''''''''
+
+To change defenses `enabled`-status in the model file, use the  `defenses` keyword of model assets:
+
+Example:
+
+.. code-block:: yml
+    assets:
+    0:
+        associated_assets:
+        vulnerabilities:
+            1: SW Vuln - ap01
+        defenses:
+            notPresent: 1.0     # Will enable defense 'notPresent'
+        name: ap01
+        type: Application
