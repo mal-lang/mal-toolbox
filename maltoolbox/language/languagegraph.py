@@ -440,7 +440,10 @@ class LanguageGraphAttackStep:
 
 
 class ExpressionsChain:
-    """TODO: What is an expressions chain?"""
+    """
+    A series of linked step expressions that specify the association path and
+    operations to take to reach the child/parent attack step.
+    """
     def __init__(self,
             type: str,
             left_link: Optional[ExpressionsChain] = None,
@@ -1679,7 +1682,10 @@ class LanguageGraph():
                                 None,
                                 step_expression
                             )
-                        # TODO: result_expr_chain can be None
+                        if result_expr_chain is None:
+                            raise LanguageGraphException('Failed to find '
+                            'existence step requirement for step '
+                            f'expression:\n%s' % step_expression)
                         attack_step.own_requires.append(result_expr_chain)
 
     def _generate_graph(self) -> None:
