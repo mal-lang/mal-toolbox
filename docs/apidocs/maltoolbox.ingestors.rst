@@ -6,10 +6,3 @@ maltoolbox.ingestors package
    :undoc-members:
    :show-inheritance:
 
-Submodules
-----------
-
-.. toctree::
-   :maxdepth: 4
-
-   maltoolbox.ingestors.neo4j

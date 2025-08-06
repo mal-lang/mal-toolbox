@@ -47,7 +47,6 @@ config: dict[str, Any] = {
         "model_file": "logs/model.yml",
         "langspec_file": "logs/langspec_file.yml",
     },
-    "neo4j": {"uri": None, "username": None, "password": None, "dbname": None},
 }
 
 config_file = os.getenv("MALTOOLBOX_CONFIG", "maltoolbox.yml")
@@ -56,8 +55,7 @@ if os.path.exists(config_file):
     with open(config_file) as f:
         config |= yaml.safe_load(f)
 
-log_configs, neo4j_configs = config.values()
-
+log_configs = config['logging']
 os.makedirs(os.path.dirname(log_configs["log_file"]), exist_ok=True)
 
 formatter = logging.Formatter(
