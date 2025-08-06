@@ -9,7 +9,6 @@ from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.attackgraph import (
     AttackGraph,
     AttackGraphNode,
-    Attacker,
     create_attack_graph
 )
 from maltoolbox.model import Model
@@ -36,10 +35,9 @@ def test_attackgraph_init(corelang_lang_graph, model):
         )
         assert _generate_graph.call_count == 0
 
-def attackgraph_save_load_no_model_given(
+def test_attackgraph_save_load_no_model_given(
         example_attackgraph: AttackGraph,
-        corelang_lang_graph: LanguageGraph,
-        attach_attackers: bool
+        corelang_lang_graph: LanguageGraph
     ):
     """Save AttackGraph to a file and load it
     Note: Will create file in /tmp"""
@@ -47,9 +45,6 @@ def attackgraph_save_load_no_model_given(
     reward = 1
     node_with_reward_before = example_attackgraph.nodes[0]
     node_with_reward_before.extras['reward'] = reward
-
-    if attach_attackers:
-        example_attackgraph.attach_attackers()
 
     # Save the example attack graph to /tmp
     example_graph_path = "/tmp/example_graph.yml"
@@ -102,53 +97,13 @@ def attackgraph_save_load_no_model_given(
         # Make sure nodes are the same (except for the excluded keys)
         assert loaded_node_dict == original_node_dict
 
-    for loaded_attacker in loaded_attack_graph.attackers.values():
-        if not isinstance(loaded_attacker.id, int):
-            raise ValueError(f'Invalid attacker id for loaded attacker.')
-        original_attacker = example_attackgraph.attackers[loaded_attacker.id]
-        assert original_attacker, \
-            f'Failed to find original attacker for id {loaded_attacker.id}.'
-        loaded_attacker_dict = loaded_attacker.to_dict()
-        original_attacker_dict = original_attacker.to_dict()
-        for step in original_attacker_dict['entry_points']:
-            attack_step_name = original_attacker_dict['entry_points'][step]
-            attack_step_name = str(step) + ':' + \
-                attack_step_name.split(':')[-1]
-            original_attacker_dict['entry_points'][step] = attack_step_name
-        for step in original_attacker_dict['reached_attack_steps']:
-            attack_step_name = \
-                original_attacker_dict['reached_attack_steps'][step]
-            attack_step_name = str(step) + ':' + \
-                attack_step_name.split(':')[-1]
-            original_attacker_dict['reached_attack_steps'][step] = \
-                attack_step_name
-        assert loaded_attacker_dict == original_attacker_dict
-
-def test_attackgraph_save_load_no_model_given_without_attackers(
+def test_attackgraph_save_and_load_json_yml_model_given(
         example_attackgraph: AttackGraph,
         corelang_lang_graph: LanguageGraph
-    ):
-    attackgraph_save_load_no_model_given(example_attackgraph,
-        corelang_lang_graph, False)
-
-def test_attackgraph_save_load_no_model_given_with_attackers(
-        example_attackgraph: AttackGraph,
-        corelang_lang_graph: LanguageGraph
-    ):
-    attackgraph_save_load_no_model_given(example_attackgraph,
-        corelang_lang_graph, True)
-
-def attackgraph_save_and_load_json_yml_model_given(
-        example_attackgraph: AttackGraph,
-        corelang_lang_graph: LanguageGraph,
-        attach_attackers: bool
     ):
     """Try to save and load attack graph from json and yml with model given,
     and make sure the dict represenation is the same (except for reward field)
     """
-
-    if attach_attackers:
-        example_attackgraph.attach_attackers()
 
     for attackgraph_path in ("/tmp/attackgraph.yml", "/tmp/attackgraph.json"):
         example_attackgraph.save_to_file(attackgraph_path)
@@ -179,79 +134,12 @@ def attackgraph_save_and_load_json_yml_model_given(
             assert loaded_attackgraph.nodes[node.id] == node
             assert loaded_attackgraph.get_node_by_full_name(node.full_name) == node
 
-        for loaded_attacker in loaded_attackgraph.attackers.values():
-            if not isinstance(loaded_attacker.id, int):
-                raise ValueError(f'Invalid attacker id for loaded attacker.')
-            original_attacker = example_attackgraph.attackers[
-                loaded_attacker.id]
-            assert original_attacker, \
-                f'Failed to find original attacker for id ' \
-                '{loaded_attacker.id}.'
-            loaded_attacker_dict = loaded_attacker.to_dict()
-            original_attacker_dict = original_attacker.to_dict()
-            assert loaded_attacker_dict == original_attacker_dict
-
-def test_attackgraph_save_and_load_json_yml_model_given_without_attackers(
-        example_attackgraph: AttackGraph,
-        corelang_lang_graph: LanguageGraph
-    ):
-        attackgraph_save_and_load_json_yml_model_given(
-            example_attackgraph,
-            corelang_lang_graph,
-            False
-        )
-
-def test_attackgraph_save_and_load_json_yml_model_given_with_attackers(
-        example_attackgraph: AttackGraph,
-        corelang_lang_graph: LanguageGraph
-    ):
-        attackgraph_save_and_load_json_yml_model_given(
-            example_attackgraph,
-            corelang_lang_graph,
-            True
-        )
-
-def test_attackgraph_attach_attackers(example_attackgraph: AttackGraph):
-    """Make sure attackers are properly attached to graph"""
-
-    app1_ncu = example_attackgraph.get_node_by_full_name(
-        'Application 1:networkConnectUninspected'
-    )
-    app1_auv = example_attackgraph.get_node_by_full_name(
-        'Application 1:attemptUseVulnerability'
-    )
-
-    assert app1_ncu
-    assert app1_auv
-
-    assert not example_attackgraph.attackers
-
-    example_attackgraph.attach_attackers()
-
-    assert len(example_attackgraph.attackers) == 1
-    attacker = example_attackgraph.attackers[0]
-
-    assert app1_ncu in attacker.entry_points
-    assert app1_ncu in attacker.reached_attack_steps
-    assert not app1_auv in attacker.entry_points
-    assert not app1_auv in attacker.reached_attack_steps
-
-    attacker.compromise(app1_auv)
-    assert app1_auv in attacker.reached_attack_steps
-    assert app1_auv not in attacker.entry_points
-
-
-    for node in attacker.reached_attack_steps:
-        # Make sure the Attacker is present on the nodes they have compromised
-        assert attacker in node.compromised_by
-
 def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     """Make sure the graph is correctly generated from model and lang"""
     # TODO: Add test cases with defense steps
 
     # Empty the attack graph
     example_attackgraph.nodes = {}
-    example_attackgraph.attackers = {}
 
     # Generate the attack graph again
     example_attackgraph._generate_graph()
@@ -380,25 +268,20 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
 def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
     """
     Try to deepcopy an attackgraph object. The nodes of the attack graph
-    and attackers should be duplicated into new objects, while references to
-    the instance model should remain the same.
+    should be duplicated into new objects, while references to the instance
+    model should remain the same.
     """
-    example_attackgraph.attach_attackers()
     copied_attackgraph: AttackGraph = copy.deepcopy(example_attackgraph)
 
     assert copied_attackgraph != example_attackgraph
     assert copied_attackgraph._to_dict() == example_attackgraph._to_dict()
 
     assert copied_attackgraph.next_node_id == example_attackgraph.next_node_id
-    assert copied_attackgraph.next_attacker_id == example_attackgraph.next_attacker_id
 
     assert len(copied_attackgraph.nodes) == len(example_attackgraph.nodes)
 
     assert list(copied_attackgraph.nodes.keys()) \
         == list(example_attackgraph.nodes.keys())
-
-    assert list(copied_attackgraph.attackers.keys()) \
-        == list(example_attackgraph.attackers.keys())
 
     assert list(copied_attackgraph._full_name_to_node.keys()) \
         == list(example_attackgraph._full_name_to_node.keys())
@@ -421,10 +304,6 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
         same_node = copied_attackgraph.nodes[node.id]
         assert id(same_node) == id(node)
 
-        for attacker in node.compromised_by:
-            assert id(attacker) == id(copied_attackgraph.attackers[0])
-            original_node.compromised_by
-
     # Make sure parents and children are same as those in the copied attack graph
     for node in copied_attackgraph.nodes.values():
         for parent in node.parents:
@@ -436,66 +315,10 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
             attack_graph_child = copied_attackgraph.nodes[child.id]
             assert id(attack_graph_child) == id(child)
 
-    assert len(copied_attackgraph.attackers) \
-        == len(example_attackgraph.attackers)
-    assert id(copied_attackgraph.attackers) \
-        != id(example_attackgraph.attackers)
-
-    for attacker in copied_attackgraph.attackers.values():
-
-        for entry_point in attacker.entry_points:
-            assert entry_point.id
-            entry_point_in_attack_graph = copied_attackgraph.nodes[entry_point.id]
-            assert entry_point_in_attack_graph
-            assert entry_point == entry_point_in_attack_graph
-            assert id(entry_point) == id(entry_point_in_attack_graph)
-
-        assert attacker.id is not None
-        original_attacker = example_attackgraph.attackers[attacker.id]
-        assert original_attacker
-        assert id(original_attacker) != id(attacker)
-        assert original_attacker.to_dict() == attacker.to_dict()
-
-
-def test_attackgraph_deepcopy_attackers(example_attackgraph: AttackGraph):
-    """
-    Make sure attackers entry points and reached steps are copied correctly
-    """
-    example_attackgraph.attach_attackers()
-
-    original_attacker = example_attackgraph.attackers[0]
-    for reached in original_attacker.reached_attack_steps:
-        assert reached.id
-        node = example_attackgraph.nodes[reached.id]
-        assert node
-        assert id(node) == id(reached)
-
-    for entrypoint in original_attacker.entry_points:
-        assert entrypoint.id
-        node = example_attackgraph.nodes[entrypoint.id]
-        assert node
-        assert id(node) == id(entrypoint)
-
-    copied_attackgraph = copy.deepcopy(example_attackgraph)
-    copied_attacker = copied_attackgraph.attackers[0]
-    for reached in copied_attacker.reached_attack_steps:
-        assert reached.id
-        node = copied_attackgraph.nodes[reached.id]
-        assert node
-        assert id(node) == id(reached)
-
-    for entrypoint in copied_attacker.entry_points:
-        assert entrypoint.id
-        node = copied_attackgraph.nodes[entrypoint.id]
-        assert node
-        assert id(node) == id(entrypoint)
-
-
 def test_deepcopy_memo_test(example_attackgraph: AttackGraph):
     """
     Make sure memo is filled up with expected number of objects
     """
-    example_attackgraph.attach_attackers()
     memo: dict = {}
 
     # Deep copy nodes
@@ -504,13 +327,6 @@ def test_deepcopy_memo_test(example_attackgraph: AttackGraph):
     # Make sure memo contains all of the nodes
     memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
     assert len(copied_nodes) == len(memo_nodes) == len(example_attackgraph.nodes)
-
-    # Deep copy attackers
-    copied_attackers = copy.deepcopy(example_attackgraph.attackers, memo)
-
-    # Make sure memo stored all of the attackers
-    memo_attackers = [o for o in memo.values() if isinstance(o, Attacker)]
-    assert len(copied_attackers) == len(memo_attackers) == len(example_attackgraph.attackers)
 
     # Make sure memo didn't store any new nodes
     memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
@@ -895,9 +711,3 @@ def tests_create_ag_from_model():
     check_parent_child_relationship(
         created_ag, 'Network:3:access', ['Host:0:connect', 'Host:1:connect'])
 
-
-def test_attackgraph_remove_attacker(example_attackgraph: AttackGraph):
-    example_attackgraph.attach_attackers()
-    attackers = list(example_attackgraph.attackers.values())
-    for attacker in attackers:
-        example_attackgraph.remove_attacker(attacker)
