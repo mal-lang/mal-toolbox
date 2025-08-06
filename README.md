@@ -26,13 +26,7 @@ With a MAL language a Model (a MAL instance model) can be created either
 from a model file or empty.
 
 The model class will store all of the relevant information to the MAL
-instance model, most importantly the assets and associations that make it up.
-
-Assets and associations are objects of classes created using the language
-classes factory submodule in runtime. It also allows for `Attacker` objects
-to be created and associated with attack steps on assets in the model.
-The most relevant methods of the Model are the ones used to add different
-elements to the model, `add_asset`, `add_association`, and `add_attacker`.
+instance model, most importantly the assets and their associations.
 
 Model objects can be used to generate attack graphs with the AttackGraph module.
 
@@ -48,11 +42,6 @@ children and parents which allow for easy reference to the other attack step
 nodes related and the asset field which will contain the object in the model
 instance to which this attack step belongs to, if this information is
 available.
-
-If it is relevant the `attach_attackers` function can be called on the
-resulting attack graph with the instance model given as a parameter in order
-to create attack step nodes that represent the entry points of the attackers
-and attach them to the attack steps specified in the instance model.
 
 ## Ingestors Module
 

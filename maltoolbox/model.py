@@ -27,108 +27,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-@dataclass
-class AttackerAttachment:
-    """Used to attach attackers to attack step entry points of assets"""
-    id: Optional[int] = None
-    name: Optional[str] = None
-    entry_points: list[tuple[ModelAsset, list[str]]] = \
-        field(default_factory=lambda: [])
-
-
-    def get_entry_point_tuple(
-            self,
-            asset: ModelAsset
-        ) -> Optional[tuple[ModelAsset, list[str]]]:
-        """Return an entry point tuple of an AttackerAttachment matching the
-        asset provided.
-
-
-        Arguments:
-        asset           - the asset to add entry point to
-
-        Return:
-        The entry point tuple containing the asset and the list of attack
-        steps if the asset has any entry points defined for this attacker
-        attachemnt.
-        None, otherwise.
-        """
-        return next((ep_tuple for ep_tuple in self.entry_points
-                                 if ep_tuple[0] == asset), None)
-
-
-    def add_entry_point(
-            self, asset: ModelAsset, attackstep_name: str):
-        """Add an entry point to an AttackerAttachment
-
-        self.entry_points contain tuples, first element of each tuple
-        is an asset, second element is a list of attack step names that
-        are entry points for the attacker.
-
-        Arguments:
-        asset           - the asset to add the entry point to
-        attackstep_name - the name of the attack step to add as an entry point
-        """
-
-        logger.debug(
-            f'Add entry point "{attackstep_name}" on asset "{asset.name}" '
-            f'to AttackerAttachment "{self.name}".'
-        )
-
-        # Get the entry point tuple for the asset if it already exists
-        entry_point_tuple = self.get_entry_point_tuple(asset)
-
-        if entry_point_tuple:
-            if attackstep_name not in entry_point_tuple[1]:
-                # If it exists and does not already have the attack step,
-                # add it
-                entry_point_tuple[1].append(attackstep_name)
-            else:
-                logger.info(
-                    f'Entry point "{attackstep_name}" on asset "{asset.name}"'
-                    f' already existed for AttackerAttachment "{self.name}".'
-                )
-        else:
-            # Otherwise, create the entry point tuple and the initial entry
-            # point
-            self.entry_points.append((asset, [attackstep_name]))
-
-
-    def remove_entry_point(
-            self, asset: ModelAsset, attackstep_name: str):
-        """Remove an entry point from an AttackerAttachment if it exists
-
-        Arguments:
-        asset           - the asset to remove the entry point from
-        """
-
-        logger.debug(
-            f'Remove entry point "{attackstep_name}" on asset "{asset.name}" '
-            f'from AttackerAttachment "{self.name}".'
-        )
-
-        # Get the entry point tuple for the asset if it exists
-        entry_point_tuple = self.get_entry_point_tuple(asset)
-
-        if entry_point_tuple:
-            if attackstep_name in entry_point_tuple[1]:
-                # If it exists and not already has the attack step, add it
-                entry_point_tuple[1].remove(attackstep_name)
-            else:
-                logger.warning(
-                    f'Failed to find entry point "{attackstep_name}" on '
-                    f'asset "{asset.name}" for AttackerAttachment '
-                    f'"{self.name}". Nothing to remove.'
-                )
-
-            if not entry_point_tuple[1]:
-                self.entry_points.remove(entry_point_tuple)
-        else:
-            logger.warning(
-                f'Failed to find entry points on asset "{asset.name}" '
-                f'for AttackerAttachment "{self.name}". Nothing to remove.'
-            )
-
 
 class Model():
     """An implementation of a MAL language model containing assets"""
@@ -148,7 +46,6 @@ class Model():
         self.name = name
         self.assets: dict[int, ModelAsset] = {}
         self._name_to_asset:dict[str, ModelAsset] = {} # optimization
-        self.attackers: list[AttackerAttachment] = []
         self.lang_graph = lang_graph
         self.maltoolbox_version: str = mt_version
 
@@ -222,11 +119,6 @@ class Model():
         return asset
 
 
-    def remove_attacker(self, attacker: AttackerAttachment) -> None:
-        """Remove attacker"""
-        self.attackers.remove(attacker)
-
-
     def remove_asset(self, asset: ModelAsset) -> None:
         """Remove an asset from the model.
 
@@ -251,37 +143,8 @@ class Model():
         for fieldname, assoc_assets in associated_fieldnames.items():
             asset.remove_associated_assets(fieldname, assoc_assets)
 
-        # Also remove all of the entry points
-        for attacker in self.attackers:
-            entry_point_tuple = attacker.get_entry_point_tuple(asset)
-            if entry_point_tuple:
-                attacker.entry_points.remove(entry_point_tuple)
-
         del self.assets[asset.id]
         del self._name_to_asset[asset.name]
-
-
-    def add_attacker(
-            self,
-            attacker: AttackerAttachment,
-            attacker_id: Optional[int] = None
-        ) -> None:
-        """Add an attacker to the model.
-
-        Arguments:
-        attacker        - the attacker to add
-        attacker_id     - optional id for the attacker
-        """
-
-        if attacker_id is not None:
-            attacker.id = attacker_id
-        else:
-            attacker.id = self.next_id
-        self.next_id = max(attacker.id + 1, self.next_id)
-
-        if not hasattr(attacker, 'name') or not attacker.name:
-            attacker.name = 'Attacker:' + str(attacker.id)
-        self.attackers.append(attacker)
 
 
     def get_asset_by_id(
@@ -322,57 +185,12 @@ class Model():
         return self._name_to_asset.get(asset_name, None)
 
 
-    def get_attacker_by_id(
-            self, attacker_id: int
-        ) -> Optional[AttackerAttachment]:
-        """
-        Find an attacker in the model based on its id.
-
-        Arguments:
-        attacker_id     - the id of the attacker we are looking for
-
-        Return:
-        An attacker matching the id if it exists in the model.
-        """
-        logger.debug(
-            'Get attacker with id %d from model "%s".',
-            attacker_id, self.name
-        )
-        return next(
-                (attacker for attacker in self.attackers
-                if attacker.id == attacker_id), None
-            )
-
-
-    def attacker_to_dict(
-            self, attacker: AttackerAttachment
-        ) -> tuple[Optional[int], dict]:
-        """Get dictionary representation of the attacker.
-
-        Arguments:
-        attacker    - attacker to get dictionary representation of
-        """
-
-        logger.debug('Translating %s to dictionary.', attacker.name)
-        attacker_dict: dict[str, Any] = {
-            'name': attacker.name,
-            'entry_points': {},
-        }
-        for (asset, attack_steps) in attacker.entry_points:
-            attacker_dict['entry_points'][asset.name] = {
-                'asset_id': asset.id,
-                'attack_steps' : attack_steps
-            }
-        return (attacker.id, attacker_dict)
-
-
     def _to_dict(self) -> dict:
         """Get dictionary representation of the model."""
         logger.debug('Translating model to dict.')
         contents: dict[str, Any] = {
             'metadata': {},
             'assets': {},
-            'attackers' : {}
         }
         contents['metadata'] = {
             'name': self.name,
@@ -387,10 +205,6 @@ class Model():
         for asset in self.assets.values():
             contents['assets'].update(asset._to_dict())
 
-        logger.debug('Translating attackers to dictionary.')
-        for attacker in self.attackers:
-            (attacker_id, attacker_dict) = self.attacker_to_dict(attacker)
-            contents['attackers'][attacker_id] = attacker_dict
         return contents
 
 
@@ -459,30 +273,13 @@ class Model():
                         for assoc_asset_id in assoc_assets}
                 )
 
-        # Reconstruct the attackers
+        # Attackers no longer part of mal-toolbox
         if 'attackers' in serialized_object:
-            attackers_info = serialized_object['attackers']
-            for attacker_id in attackers_info:
-                attacker = AttackerAttachment(name = attackers_info[attacker_id]['name'])
-                for asset_name, entry_points_dict in \
-                        attackers_info[attacker_id]['entry_points'].items():
-                    target_asset = model.get_asset_by_id(
-                        int(entry_points_dict['asset_id'])
-                    )
-                    if target_asset is None:
-                        raise LookupError(
-                            'Asset "%s"(%d) is not part of model "%s".' % (
-                                asset_name,
-                                entry_points_dict['asset_id'],
-                                model.name)
-                        )
-                    attacker.entry_points.append(
-                            (
-                                target_asset,
-                                entry_points_dict['attack_steps']
-                            )
-                        )
-                model.add_attacker(attacker, attacker_id = int(attacker_id))
+            msg = ("Defining attackers in a model file is deprecated,"
+                   " use mal-simulator for attacker simulations.")
+            print(msg)
+            logger.warning(msg)
+
         return model
 
 
