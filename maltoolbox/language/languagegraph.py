@@ -364,7 +364,6 @@ class LanguageGraphAttackStep:
     inherits: Optional[LanguageGraphAttackStep] = None
     own_requires: list[ExpressionsChain] = field(default_factory=list)
     tags: set = field(default_factory = set)
-    _attributes: Optional[dict] = None
     detectors: dict = field(default_factory = lambda: {})
 
 
@@ -1510,6 +1509,7 @@ class LanguageGraph():
         Generate all of the attack steps for each asset type
         based on the language specification.
         """
+        langspec_dict = {}
         for asset in assets.values():
             logger.debug(
                 'Create attack steps language graph nodes for asset %s',
@@ -1536,9 +1536,9 @@ class LanguageGraph():
                     info = attack_step_attribs['meta'],
                     tags = set(attack_step_attribs['tags'])
                 )
-                # TODO: _attributes is protected, should not be accessed.
-                attack_step_node._attributes = attack_step_attribs
-                asset.attack_steps[attack_step_attribs['name']] = \
+                langspec_dict[attack_step_node.full_name] = \
+                    attack_step_attribs
+                asset.attack_steps[attack_step_node.name] = \
                     attack_step_node
 
                 detectors: dict = attack_step_attribs.get("detectors", {})
@@ -1601,13 +1601,15 @@ class LanguageGraph():
                     attack_step.name
                 )
 
-                if attack_step._attributes is None:
+                if attack_step.full_name not in langspec_dict:
                     # This is simply an empty inherited attack step
                     continue
 
-                step_expressions = \
-                    attack_step._attributes['reaches']['stepExpressions'] if \
-                        attack_step._attributes['reaches'] else []
+                langspec_entry = langspec_dict[attack_step.full_name]
+                step_expressions = (
+                    langspec_entry['reaches']['stepExpressions']
+                    if langspec_entry['reaches'] else []
+                )
 
                 for step_expression in step_expressions:
                     # Resolve each of the attack step expressions listed for
@@ -1656,22 +1658,20 @@ class LanguageGraph():
 
                 # Evaluate the requirements of exist and notExist attack steps
                 if attack_step.type in ('exist', 'notExist'):
-                    step_expressions = \
-                        attack_step._attributes['requires']['stepExpressions'] \
-                            if attack_step._attributes['requires'] else []
+                    step_expressions = (
+                        langspec_entry['requires']['stepExpressions']
+                        if langspec_entry['requires'] else []
+                    )
                     if not step_expressions:
-                        msg = 'Failed to find requirements for attack step' \
-                        ' "%s" of type "%s":\n%s'
                         raise LanguageGraphStepExpressionError(
-                            msg % (
+                            'Failed to find requirements for attack step'
+                            ' "%s" of type "%s":\n%s' % (
                                 attack_step.name,
                                 attack_step.type,
-                                json.dumps(attack_step._attributes, indent = 2)
+                                json.dumps(langspec_entry, indent = 2)
                             )
                         )
 
-                    # TODO: attack step does not have own_requires defined in constructor
-                    attack_step.own_requires = []
                     for step_expression in step_expressions:
                         _, result_expr_chain, _ = \
                             self.process_step_expression(
