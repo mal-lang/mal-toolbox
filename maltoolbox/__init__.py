@@ -45,7 +45,8 @@ config: dict[str, Any] = {
         "log_file": "logs/log.txt",
         "attackgraph_file": "logs/attackgraph.yml",
         "model_file": "logs/model.yml",
-        "langspec_file": "logs/langspec_file.yml",
+        "langspec_file": "logs/langspec_file.json",
+        "langgraph_file": "logs/langgraph.yml",
     },
 }
 
