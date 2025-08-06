@@ -190,7 +190,9 @@ class LanguageGraphAsset:
 
 
     @property
-    def variables(self) -> dict[str, ExpressionsChain]:
+    def variables(
+            self
+        ) -> dict[str, tuple[LanguageGraphAsset, ExpressionsChain]]:
         """
         Return a list of all of the variables that belong to this asset
         directly or indirectly via inheritance.
@@ -969,7 +971,11 @@ class LanguageGraph():
         self,
         target_asset: LanguageGraphAsset,
         step_expression: dict[str, Any]
-    ):
+    ) -> tuple[
+                LanguageGraphAsset,
+                None,
+                str
+            ]:
         """
         The attack step expression just adds the name of the attack
         step. All other step expressions only modify the target
@@ -986,7 +992,11 @@ class LanguageGraph():
         target_asset: LanguageGraphAsset,
         expr_chain: Optional[ExpressionsChain],
         step_expression: dict[str, Any]
-    ):
+    ) -> tuple[
+            LanguageGraphAsset,
+            ExpressionsChain,
+            None
+        ]:
         """
         The set operators are used to combine the left hand and right
         hand targets accordingly.
@@ -1032,7 +1042,11 @@ class LanguageGraph():
         self,
         target_asset: LanguageGraphAsset,
         step_expression: dict[str, Any]
-    ):
+    ) -> tuple[
+            LanguageGraphAsset,
+            ExpressionsChain,
+            None
+        ]:
 
         var_name = step_expression['name']
         var_target_asset, var_expr_chain = (
@@ -1055,19 +1069,24 @@ class LanguageGraph():
         self,
         target_asset: LanguageGraphAsset,
         step_expression: dict[str, Any]
-    ):
+    ) -> tuple[
+            LanguageGraphAsset,
+            ExpressionsChain,
+            None
+        ]:
         """
         Change the target asset from the current one to the associated
         asset given the specified field name and add the parent
         fieldname and association to the parent associations chain.
         """
 
+        fieldname = step_expression['name']
+
         if target_asset is None:
             raise ValueError(
                 f'Missing target asset for field "{fieldname}"!'
             )
 
-        fieldname = step_expression['name']
         new_target_asset = None
         for association in target_asset.associations.values():
             if (association.left_field.fieldname == fieldname and \
@@ -1101,12 +1120,16 @@ class LanguageGraph():
         target_asset: LanguageGraphAsset,
         expr_chain: Optional[ExpressionsChain],
         step_expression: dict[str, Any]
-    ):
+    ) -> tuple[
+            LanguageGraphAsset,
+            ExpressionsChain,
+            None
+        ]:
         """
         Create a transitive tuple entry that applies to the next
         component of the step expression.
         """
-        result_target_asset, result_expr_chain, attack_step = (
+        result_target_asset, result_expr_chain, _ = (
             self.process_step_expression(
                 target_asset,
                 expr_chain,
@@ -1120,7 +1143,7 @@ class LanguageGraph():
         return (
             result_target_asset,
             new_expr_chain,
-            attack_step
+            None
         )
 
     def process_subType_step_expression(
@@ -1128,7 +1151,11 @@ class LanguageGraph():
         target_asset: LanguageGraphAsset,
         expr_chain: Optional[ExpressionsChain],
         step_expression: dict[str, Any]
-    ):
+    ) -> tuple[
+            LanguageGraphAsset,
+            ExpressionsChain,
+            None
+        ]:
         """
         Create a subType tuple entry that applies to the next
         component of the step expression and changes the target
@@ -1136,7 +1163,7 @@ class LanguageGraph():
         """
 
         subtype_name = step_expression['subType']
-        result_target_asset, result_expr_chain, attack_step = (
+        result_target_asset, result_expr_chain, _ = (
             self.process_step_expression(
                 target_asset,
                 expr_chain,
@@ -1168,7 +1195,7 @@ class LanguageGraph():
         return (
             subtype_asset,
             new_expr_chain,
-            attack_step
+            None
         )
 
     def process_collect_step_expression(
@@ -1176,7 +1203,11 @@ class LanguageGraph():
         target_asset: LanguageGraphAsset,
         expr_chain: Optional[ExpressionsChain],
         step_expression: dict[str, Any]
-    ):
+    ) -> tuple[
+            LanguageGraphAsset,
+            Optional[ExpressionsChain],
+            Optional[str]
+        ]:
         """
         Apply the right hand step expression to left hand step
         expression target asset and parent associations chain.
@@ -1216,7 +1247,7 @@ class LanguageGraph():
             expr_chain: Optional[ExpressionsChain],
             step_expression: dict
         ) -> tuple[
-                Optional[LanguageGraphAsset],
+                LanguageGraphAsset,
                 Optional[ExpressionsChain],
                 Optional[str]
             ]:
@@ -1249,10 +1280,10 @@ class LanguageGraph():
             )
 
         result: tuple[
-            Optional[LanguageGraphAsset],
+            LanguageGraphAsset,
             Optional[ExpressionsChain],
             Optional[str]
-        ] = (None, None, None)
+        ]
 
         match (step_expression['type']):
             case 'attackStep':
