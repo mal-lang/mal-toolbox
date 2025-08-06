@@ -54,7 +54,12 @@ def create_attack_graph(
         lang_graph = LanguageGraph.from_mal_spec(lang_file)
 
     if log_configs['langspec_file']:
-        lang_graph.save_to_file(log_configs['langspec_file'])
+        lang_graph.save_language_specification_to_json(
+            log_configs['langspec_file']
+        )
+
+    if log_configs['langgraph_file']:
+        lang_graph.save_to_file(log_configs['langgraph_file'])
 
     instance_model = Model.load_from_file(model_file, lang_graph)
 
