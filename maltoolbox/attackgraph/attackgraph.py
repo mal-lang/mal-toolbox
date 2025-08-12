@@ -55,12 +55,12 @@ def create_attack_graph(
     else:
         raise TypeError("`lang` must be either string or LanguageGraph")
 
-    if log_configs['langspec_file']:
+    if 'langspec_file' in log_configs:
         lang_graph.save_language_specification_to_json(
             log_configs['langspec_file']
         )
 
-    if log_configs['langgraph_file']:
+    if 'langgraph_file' in log_configs:
         lang_graph.save_to_file(log_configs['langgraph_file'])
 
     # Load model
