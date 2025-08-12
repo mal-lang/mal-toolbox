@@ -12,7 +12,6 @@ description = "A collection of tools used to create MAL models and attack graphs
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "py2neo>=2021.2.3",
   "antlr4-tools",
   "antlr4-python3-runtime",
   "docopt",
