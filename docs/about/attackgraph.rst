@@ -3,7 +3,7 @@ AttackGraph
 
 From a Model it is possible to create an :class:`maltoolbox.attackgraph.AttackGraph`.
 
-The point of the AttackGraph is to give an abstraction that shows each step an Attacker can take, analyze
+The point of the AttackGraph is to give an abstraction that shows each step an attacker can take, analyze
 paths for an attacker and run simulations.
 
 While a Model consists of assets and associations, an AttackGraph instead contains :class:`maltoolbox.attackgraph.AttackGraphNode`.

@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 
 from typing import Optional
 
-from ..model import AttackerAttachment, Model
+from ..model import Model
 from ..language import LanguageGraph
 
 logger = logging.getLogger(__name__)
