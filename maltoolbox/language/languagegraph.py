@@ -26,6 +26,83 @@ from ..exceptions import (
 
 logger = logging.getLogger(__name__)
 
+predef_ttcs: dict[str, dict] = {
+    'EasyAndUncertain':
+    {
+        'arguments': [0.5],
+        'name': 'Bernoulli',
+        'type': 'function'
+    },
+    'HardAndUncertain':
+    {
+        'lhs':
+        {
+            'arguments': [0.1],
+            'name': 'Exponential',
+            'type': 'function'
+        },
+        'rhs':
+        {
+            'arguments': [0.5],
+            'name': 'Bernoulli',
+            'type': 'function'
+        },
+        'type': 'multiplication'
+    },
+    'VeryHardAndUncertain':
+    {
+        'lhs':
+        {
+            'arguments': [0.01],
+            'name': 'Exponential',
+            'type': 'function'
+        },
+        'rhs':
+        {
+            'arguments': [0.5],
+            'name': 'Bernoulli',
+            'type': 'function'
+        },
+        'type': 'multiplication'
+    },
+    'EasyAndCertain':
+    {
+        'arguments': [1.0],
+        'name': 'Exponential',
+        'type': 'function'
+    },
+    'HardAndCertain':
+    {
+        'arguments': [0.1],
+        'name': 'Exponential',
+        'type': 'function'
+    },
+    'VeryHardAndCertain':
+    {
+        'arguments': [0.01],
+        'name': 'Exponential',
+        'type': 'function'
+    },
+    'Enabled':
+    {
+        'arguments': [1.0],
+        'name': 'Bernoulli',
+        'type': 'function'
+    },
+    'Instant':
+    {
+        'arguments': [1.0],
+        'name': 'Bernoulli',
+        'type': 'function'
+    },
+    'Disabled':
+    {
+        'arguments': [1.0],
+        'name': 'Bernoulli',
+        'type': 'function'
+    },
+}
+
 
 def disaggregate_attack_step_full_name(
         attack_step_full_name: str) -> list[str]:
@@ -651,6 +728,7 @@ class LanguageGraph():
     """Graph representation of a MAL language"""
     def __init__(self, lang: Optional[dict] = None):
         self.assets: dict[str, LanguageGraphAsset] = {}
+        self.predef_ttcs: dict[str, dict] = predef_ttcs
         if lang is not None:
             self._lang_spec: dict = lang
             self.metadata = {
@@ -690,6 +768,33 @@ class LanguageGraph():
         with zipfile.ZipFile(mar_archive, 'r') as archive:
             langspec = archive.read('langspec.json')
             return LanguageGraph(json.loads(langspec))
+
+
+    def replace_if_predef_ttc(
+        self,
+        ttc_entry: Optional[dict]
+    ) -> dict:
+        """
+        If the TTC provided is a predefined name replace it with the
+        probability distribution it corresponds to. Otherwise, simply return
+        the TTC distribution provided as is.
+
+        Arguments:
+        ttc_entry   - the TTC entry to check for predefined names
+
+        Returns:
+        If the TTC entry provided contained a predefined name the TTC
+        probability distrubtion corresponding to it. Otherwise, the TTC
+        distribution provided as a parameter as is.
+        """
+        if ttc_entry is None:
+            return {}
+
+        ttc = self.predef_ttcs.get(str(ttc_entry.get('name')))
+        if ttc is not None:
+            return ttc
+        else:
+            return ttc_entry
 
 
     def _to_dict(self):
@@ -835,11 +940,13 @@ class LanguageGraph():
                 asset_dict['name']
             )
             for attack_step_dict in asset_dict['attack_steps'].values():
+                ttc = lang_graph.replace_if_predef_ttc(
+                    attack_step_dict['ttc'])
                 attack_step_node = LanguageGraphAttackStep(
                     name = attack_step_dict['name'],
                     type = attack_step_dict['type'],
                     asset = asset,
-                    ttc = attack_step_dict['ttc'],
+                    ttc = ttc,
                     overrides = attack_step_dict['overrides'],
                     children = {},
                     parents = {},
@@ -1556,11 +1663,12 @@ class LanguageGraph():
                     attack_step_attribs['name']
                 )
 
+                ttc = self.replace_if_predef_ttc(attack_step_attribs['ttc'])
                 attack_step_node = LanguageGraphAttackStep(
                     name = attack_step_attribs['name'],
                     type = attack_step_attribs['type'],
                     asset = asset,
-                    ttc = attack_step_attribs['ttc'],
+                    ttc = ttc,
                     overrides = (
                         attack_step_attribs['reaches']['overrides']
                         if attack_step_attribs['reaches'] else False

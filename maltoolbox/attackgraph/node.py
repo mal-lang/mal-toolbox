@@ -20,12 +20,13 @@ class AttackGraphNode:
         node_id: int,
         lg_attack_step: LanguageGraphAttackStep,
         model_asset: Optional[ModelAsset] = None,
+        ttc_dist: Optional[dict] = None,
         existence_status: Optional[bool] = None
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
         self.type = lg_attack_step.type
-        self.ttc = lg_attack_step.ttc
+        self.ttc = ttc_dist if ttc_dist is not None else lg_attack_step.ttc
         self.tags = lg_attack_step.tags
         self.detectors = lg_attack_step.detectors
 
