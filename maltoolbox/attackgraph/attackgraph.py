@@ -469,7 +469,7 @@ class AttackGraph():
                 existence_status = None
                 node_name = asset.name + ':' + attack_step.name
 
-                ttc_dist = attack_step.ttc
+                ttc_dist = copy.deepcopy(attack_step.ttc)
                 match (attack_step.type):
                     case 'defense':
                         # Set the TTC probability for defenses
