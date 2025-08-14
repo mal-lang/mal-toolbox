@@ -97,7 +97,7 @@ predef_ttcs: dict[str, dict] = {
     },
     'Disabled':
     {
-        'arguments': [1.0],
+        'arguments': [0.0],
         'name': 'Bernoulli',
         'type': 'function'
     },
