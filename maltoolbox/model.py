@@ -339,8 +339,6 @@ class ModelAsset:
             'associated_assets': {}
         }
 
-        # Only add non-default values for defenses to improve legibility of
-        # the model format
         for defense, defense_value in self.defenses.items():
             asset_dict['defenses'][defense] = defense_value
 

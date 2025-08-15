@@ -108,22 +108,22 @@ def get_ttc_distribution(
         defense_default_ttc = None,
         attack_default_ttc = None
     ) -> Optional[dict]:
-    """
-    If the TTC provided is a predefined name replace it with the
-    probability distribution it corresponds to. Otherwise, simply return
-    the TTC distribution provided as is.
+    """Convert step TTC to a TTC distribution if needed
+
+    - If no TTC is set, set return default TTC.
+    - If the TTC provided is a predefined name replace it with the
+    probability distribution it corresponds to.
+    - Otherwise return the TTC distribution as is.
 
     Arguments:
-    ttc_entry   - the TTC entry to check for predefined names
+    step_dict   - A dict with the attack step data
+    defense_default_ttc - the value to give a defense ttc if none is set
+    attack_default_ttc - the value to give an attack ttc if none is set
 
     Returns:
-    If the TTC entry provided contained a predefined name the TTC
-    probability distrubtion corresponding to it. Otherwise, the TTC
-    distribution provided as a parameter as is.
+    A dict with the steps TTC distribution, or None if the step is not
+    a defense or attack step
     """
-
-    # step_ttc can be either: None, predefined distribution or explicit
-    # distribution. The goal is to return explicit distribution for all steps
 
     if defense_default_ttc is None:
         defense_default_ttc = predef_ttcs['Disabled'].copy()
