@@ -483,7 +483,7 @@ class LanguageGraphAttackStep:
     name: str
     type: str
     asset: LanguageGraphAsset
-    ttc: dict = field(default_factory = dict)
+    ttc: Optional[dict] = field(default_factory = dict)
     overrides: bool = False
     children: dict = field(default_factory = dict)
     parents: dict = field(default_factory = dict)
