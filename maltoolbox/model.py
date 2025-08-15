@@ -326,12 +326,6 @@ class ModelAsset:
         self._associated_assets: dict[str, set[ModelAsset]] = {}
         self.attack_step_nodes: list = []
 
-        for step in self.lg_asset.attack_steps.values():
-            if step.type == 'defense' and step.name not in self.defenses:
-                self.defenses[step.name] = 1.0 if step.ttc and \
-                    step.ttc['name'] == 'Enabled' else 0.0
-
-
     def _to_dict(self):
         """Get dictionary representation of the asset."""
 
@@ -348,11 +342,7 @@ class ModelAsset:
         # Only add non-default values for defenses to improve legibility of
         # the model format
         for defense, defense_value in self.defenses.items():
-            lg_step = self.lg_asset.attack_steps[defense]
-            default_defval = 1.0 if lg_step.ttc and \
-                    lg_step.ttc['name'] == 'Enabled' else 0.0
-            if defense_value != default_defval:
-                asset_dict['defenses'][defense] = defense_value
+            asset_dict['defenses'][defense] = defense_value
 
         for fieldname, assets in self.associated_assets.items():
             asset_dict['associated_assets'][fieldname] = {asset.id: asset.name

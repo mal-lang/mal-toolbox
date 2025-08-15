@@ -103,6 +103,54 @@ predef_ttcs: dict[str, dict] = {
     },
 }
 
+def get_ttc_distribution(
+        step_dict: dict,
+        defense_default_ttc = None,
+        attack_default_ttc = None
+    ) -> Optional[dict]:
+    """
+    If the TTC provided is a predefined name replace it with the
+    probability distribution it corresponds to. Otherwise, simply return
+    the TTC distribution provided as is.
+
+    Arguments:
+    ttc_entry   - the TTC entry to check for predefined names
+
+    Returns:
+    If the TTC entry provided contained a predefined name the TTC
+    probability distrubtion corresponding to it. Otherwise, the TTC
+    distribution provided as a parameter as is.
+    """
+
+    # step_ttc can be either: None, predefined distribution or explicit
+    # distribution. The goal is to return explicit distribution for all steps
+
+    if defense_default_ttc is None:
+        defense_default_ttc = predef_ttcs['Disabled']
+    if attack_default_ttc is None:
+        attack_default_ttc = predef_ttcs['Instant']
+
+    step_ttc = step_dict['ttc']
+
+    if step_dict['type'] == 'defense':
+        if step_ttc is None:
+            # No step ttc set in language for defense
+            step_ttc = defense_default_ttc
+    elif step_dict['type'] in ('or', 'and'):
+        if step_ttc is None:
+            # No step ttc set in language for attack
+            step_ttc = attack_default_ttc
+    else:
+        # No TTC for other step types
+        return None
+
+    if 'name' in step_ttc and step_ttc['name'] in predef_ttcs:
+        # Predefined step ttc set in language, fetch from dict
+        step_ttc = predef_ttcs[step_ttc['name']]
+
+    return step_ttc
+
+
 
 def disaggregate_attack_step_full_name(
         attack_step_full_name: str) -> list[str]:
@@ -728,7 +776,6 @@ class LanguageGraph():
     """Graph representation of a MAL language"""
     def __init__(self, lang: Optional[dict] = None):
         self.assets: dict[str, LanguageGraphAsset] = {}
-        self.predef_ttcs: dict[str, dict] = predef_ttcs
         if lang is not None:
             self._lang_spec: dict = lang
             self.metadata = {
@@ -768,34 +815,6 @@ class LanguageGraph():
         with zipfile.ZipFile(mar_archive, 'r') as archive:
             langspec = archive.read('langspec.json')
             return LanguageGraph(json.loads(langspec))
-
-
-    def replace_if_predef_ttc(
-        self,
-        ttc_entry: Optional[dict]
-    ) -> dict:
-        """
-        If the TTC provided is a predefined name replace it with the
-        probability distribution it corresponds to. Otherwise, simply return
-        the TTC distribution provided as is.
-
-        Arguments:
-        ttc_entry   - the TTC entry to check for predefined names
-
-        Returns:
-        If the TTC entry provided contained a predefined name the TTC
-        probability distrubtion corresponding to it. Otherwise, the TTC
-        distribution provided as a parameter as is.
-        """
-        if ttc_entry is None:
-            return {}
-
-        ttc = self.predef_ttcs.get(str(ttc_entry.get('name')))
-        if ttc is not None:
-            return ttc
-        else:
-            return ttc_entry
-
 
     def _to_dict(self):
         """Converts LanguageGraph into a dict"""
@@ -940,13 +959,11 @@ class LanguageGraph():
                 asset_dict['name']
             )
             for attack_step_dict in asset_dict['attack_steps'].values():
-                ttc = lang_graph.replace_if_predef_ttc(
-                    attack_step_dict['ttc'])
                 attack_step_node = LanguageGraphAttackStep(
                     name = attack_step_dict['name'],
                     type = attack_step_dict['type'],
                     asset = asset,
-                    ttc = ttc,
+                    ttc = get_ttc_distribution(attack_step_dict),
                     overrides = attack_step_dict['overrides'],
                     children = {},
                     parents = {},
@@ -1663,12 +1680,11 @@ class LanguageGraph():
                     attack_step_attribs['name']
                 )
 
-                ttc = self.replace_if_predef_ttc(attack_step_attribs['ttc'])
                 attack_step_node = LanguageGraphAttackStep(
                     name = attack_step_attribs['name'],
                     type = attack_step_attribs['type'],
                     asset = asset,
-                    ttc = ttc,
+                    ttc = get_ttc_distribution(attack_step_attribs),
                     overrides = (
                         attack_step_attribs['reaches']['overrides']
                         if attack_step_attribs['reaches'] else False

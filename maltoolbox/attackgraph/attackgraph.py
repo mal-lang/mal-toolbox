@@ -473,16 +473,20 @@ class AttackGraph():
                 match (attack_step.type):
                     case 'defense':
                         # Set the TTC probability for defenses
-                        defense_value = float(asset.defenses[attack_step.name])
-                        ttc_dist = {
-                            'arguments': [defense_value],
-                            'name': 'Bernoulli',
-                            'type': 'function'
-                        }
-                        logger.debug(
-                            'Setting defense \"%s\" to "%s".',
-                            node_name, defense_value
-                        )
+                        # that were explicitly set in model
+                        if attack_step.name in asset.defenses:
+                            defense_value = float(
+                                asset.defenses[attack_step.name]
+                            )
+                            ttc_dist = {
+                                'arguments': [defense_value],
+                                'name': 'Bernoulli',
+                                'type': 'function'
+                            }
+                            logger.debug(
+                                'Setting defense \"%s\" to "%s".',
+                                node_name, defense_value
+                            )
 
                     case 'exist' | 'notExist':
                         # Resolve step expression associated with
