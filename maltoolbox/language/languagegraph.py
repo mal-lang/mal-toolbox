@@ -126,9 +126,9 @@ def get_ttc_distribution(
     # distribution. The goal is to return explicit distribution for all steps
 
     if defense_default_ttc is None:
-        defense_default_ttc = predef_ttcs['Disabled']
+        defense_default_ttc = predef_ttcs['Disabled'].copy()
     if attack_default_ttc is None:
-        attack_default_ttc = predef_ttcs['Instant']
+        attack_default_ttc = predef_ttcs['Instant'].copy()
 
     step_ttc = step_dict['ttc']
 
@@ -146,7 +146,7 @@ def get_ttc_distribution(
 
     if 'name' in step_ttc and step_ttc['name'] in predef_ttcs:
         # Predefined step ttc set in language, fetch from dict
-        step_ttc = predef_ttcs[step_ttc['name']]
+        step_ttc = predef_ttcs[step_ttc['name']].copy()
 
     return step_ttc
 
