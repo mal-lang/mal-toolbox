@@ -60,13 +60,26 @@ pip install mal-toolbox
 
 ## Configuration
 You can use a `maltoolbox.yml` file in the current working directory to
-configure the toolbox. Alternatively, you can use the `MALTOOLBOX_CONFIG`
-environment variable to set a custom config file location:
+configure the toolbox.
 
-"""bash
+The config should look like this:
+```yml
+logging:
+  log_level: INFO
+  log_file: "logs/log.txt"
+  attackgraph_file: "logs/attackgraph.json"
+  model_file: "logs/model.yml"
+  langspec_file: "logs/langspec_file.yml"
+  langgraph_file: "logs/langspec_file.yml"
+```
+
+Alternatively, you can use the `MALTOOLBOX_CONFIG`
+environment variable to set a custom config file location.
+
+```bash
 # in your shell, e.g. bash do:
 export MALTOOLBOX_CONFIG=path/to/yml/config/file
-"""
+```
 
 The default configuration can be found here:
 
