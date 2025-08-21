@@ -490,7 +490,7 @@ class LanguageGraphAttackStep:
     info: dict = field(default_factory = dict)
     inherits: Optional[LanguageGraphAttackStep] = None
     own_requires: list[ExpressionsChain] = field(default_factory=list)
-    tags: set = field(default_factory = set)
+    tags: list = field(default_factory = list)
     detectors: dict = field(default_factory = lambda: {})
 
 
@@ -968,7 +968,7 @@ class LanguageGraph():
                     children = {},
                     parents = {},
                     info = attack_step_dict['info'],
-                    tags = set(attack_step_dict['tags'])
+                    tags = list(attack_step_dict['tags'])
                 )
                 asset.attack_steps[attack_step_dict['name']] = \
                     attack_step_node
@@ -1692,7 +1692,7 @@ class LanguageGraph():
                     children = {},
                     parents = {},
                     info = attack_step_attribs['meta'],
-                    tags = set(attack_step_attribs['tags'])
+                    tags = list(attack_step_attribs['tags'])
                 )
                 langspec_dict[attack_step_node.full_name] = \
                     attack_step_attribs
@@ -1735,7 +1735,7 @@ class LanguageGraph():
                                 children = {},
                                 parents = {},
                                 info = attack_step.info,
-                                tags = set(attack_step.tags)
+                                tags = list(attack_step.tags)
                             )
                             attack_step_node.inherits = attack_step
                             asset.attack_steps[attack_step.name] = attack_step_node
@@ -1743,12 +1743,9 @@ class LanguageGraph():
                             # The inherited attack step was already overridden.
                             continue
                         else:
-                            asset.attack_steps[attack_step.name].inherits = \
-                                attack_step
-                            asset.attack_steps[attack_step.name].tags |= \
-                                attack_step.tags
-                            asset.attack_steps[attack_step.name].info |= \
-                                attack_step.info
+                            asset.attack_steps[attack_step.name].inherits = attack_step
+                            asset.attack_steps[attack_step.name].tags += attack_step.tags
+                            asset.attack_steps[attack_step.name].info |= attack_step.info
 
         # Then, link all of the attack step nodes according to their
         # associations.
