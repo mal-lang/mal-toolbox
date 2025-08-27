@@ -92,7 +92,7 @@ def test_attackstep_override():
     assert 'target3' in assetC1.attack_steps
     assert 'target4' in assetC1.attack_steps
     c1_attackstep = assetC1.attack_steps['attackstep']
-    assert c1_attackstep.children == {}
+    assert c1_attackstep.own_children == {}
 
     assert 'attackstep' in assetC2.attack_steps
     assert 'target1' in assetC2.attack_steps
@@ -101,7 +101,7 @@ def test_attackstep_override():
     assert 'target4' in assetC2.attack_steps
     c2_attackstep = assetC2.attack_steps['attackstep']
     assert c2_attackstep.inherits == c1_attackstep
-    assert c2_attackstep.children == {}
+    assert c2_attackstep.own_children == {}
 
     assert 'attackstep' in assetC3.attack_steps
     assert 'target1' in assetC3.attack_steps
@@ -114,10 +114,10 @@ def test_attackstep_override():
     c3_target2 = assetC3.attack_steps['target2']
     c3_target3 = assetC3.attack_steps['target3']
     c3_target4 = assetC3.attack_steps['target4']
-    assert c3_target1.full_name in c3_attackstep.children
-    assert c3_target2.full_name not in c3_attackstep.children
-    assert c3_target3.full_name not in c3_attackstep.children
-    assert c3_target4.full_name not in c3_attackstep.children
+    assert c3_target1.full_name in c3_attackstep.own_children
+    assert c3_target2.full_name not in c3_attackstep.own_children
+    assert c3_target3.full_name not in c3_attackstep.own_children
+    assert c3_target4.full_name not in c3_attackstep.own_children
 
     assert 'attackstep' in assetC4.attack_steps
     assert 'target1' in assetC4.attack_steps
@@ -126,7 +126,7 @@ def test_attackstep_override():
     assert 'target4' in assetC4.attack_steps
     c4_attackstep = assetC4.attack_steps['attackstep']
     assert c4_attackstep.inherits == c3_attackstep
-    assert c4_attackstep.children == {}
+    assert c4_attackstep.own_children == {}
 
     assert 'attackstep' in assetC4.attack_steps
     assert 'target1' in assetC4.attack_steps
@@ -139,10 +139,10 @@ def test_attackstep_override():
     fc_target2 = assetFC.attack_steps['target2']
     fc_target3 = assetFC.attack_steps['target3']
     fc_target4 = assetFC.attack_steps['target4']
-    assert fc_target1.full_name in fc_attackstep.children
-    assert fc_target2.full_name in fc_attackstep.children
-    assert fc_target3.full_name in fc_attackstep.children
-    assert fc_target4.full_name in fc_attackstep.children
+    assert fc_target1.full_name in fc_attackstep.own_children
+    assert fc_target2.full_name in fc_attackstep.own_children
+    assert fc_target3.full_name in fc_attackstep.own_children
+    assert fc_target4.full_name in fc_attackstep.own_children
 
 # TODO: Re-enable this test once the compiler and language are compatible with
 # one another.

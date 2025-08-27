@@ -485,8 +485,8 @@ class LanguageGraphAttackStep:
     asset: LanguageGraphAsset
     ttc: Optional[dict] = field(default_factory = dict)
     overrides: bool = False
-    children: dict = field(default_factory = dict)
-    parents: dict = field(default_factory = dict)
+    own_children: dict = field(default_factory = dict)
+    own_parents: dict = field(default_factory = dict)
     info: dict = field(default_factory = dict)
     inherits: Optional[LanguageGraphAttackStep] = None
     own_requires: list[ExpressionsChain] = field(default_factory=list)
@@ -497,6 +497,21 @@ class LanguageGraphAttackStep:
     def __hash__(self):
         return hash(self.full_name)
 
+    @property
+    def children(self) -> dict:
+        if self.overrides:
+            return self.own_children
+
+        inherited_children = {}
+        if self.inherits:
+            inherited_children |= self.inherits.children
+        inherited_children |= self.own_children
+
+        return inherited_children
+
+    @property
+    def parents(self) -> dict:
+        return {}
 
     @property
     def full_name(self) -> str:
@@ -514,8 +529,8 @@ class LanguageGraphAttackStep:
             'type': self.type,
             'asset': self.asset.name,
             'ttc': self.ttc,
-            'children': {},
-            'parents': {},
+            'own_children': {},
+            'own_parents': {},
             'info': self.info,
             'overrides': self.overrides,
             'inherits': self.inherits.full_name if self.inherits else None,
@@ -524,25 +539,23 @@ class LanguageGraphAttackStep:
             self.detectors.items()},
         }
 
-        for child in self.children:
-            node_dict['children'][child] = []
-            for (_, expr_chain) in self.children[child]:
+        for child_name, expr_chains in self.own_children.items():
+            node_dict['own_children'][child_name] = []
+            for (_, expr_chain) in expr_chains:
                 if expr_chain:
-                    node_dict['children'][child].append(
-                        expr_chain.to_dict())
+                    node_dict['own_children'][child_name].append(expr_chain.to_dict())
                 else:
-                    node_dict['children'][child].append(None)
+                    node_dict['own_children'][child_name].append(None)
 
-        for parent in self.parents:
-            node_dict['parents'][parent] = []
-            for (_, expr_chain) in self.parents[parent]:
+        for parent, expr_chains in self.own_children.items():
+            node_dict['own_parents'][parent] = []
+            for (_, expr_chain) in expr_chains:
                 if expr_chain:
-                    node_dict['parents'][parent].append(
-                        expr_chain.to_dict())
+                    node_dict['own_parents'][parent].append(expr_chain.to_dict())
                 else:
-                    node_dict['parents'][parent].append(None)
+                    node_dict['own_parents'][parent].append(None)
 
-        if hasattr(self, 'own_requires'):
+        if self.own_requires:
             node_dict['requires'] = []
             for requirement in self.own_requires:
                 node_dict['requires'].append(requirement.to_dict())
@@ -965,8 +978,8 @@ class LanguageGraph():
                     asset = asset,
                     ttc = get_ttc_distribution(attack_step_dict),
                     overrides = attack_step_dict['overrides'],
-                    children = {},
-                    parents = {},
+                    own_children = {},
+                    own_parents = {},
                     info = attack_step_dict['info'],
                     tags = list(attack_step_dict['tags'])
                 )
@@ -995,7 +1008,7 @@ class LanguageGraph():
             asset = lang_graph.assets[asset_dict['name']]
             for attack_step_dict in asset_dict['attack_steps'].values():
                 attack_step = asset.attack_steps[attack_step_dict['name']]
-                for child_target in attack_step_dict['children'].items():
+                for child_target in attack_step_dict['own_children'].items():
                     target_full_attack_step_name = child_target[0]
                     expr_chains = child_target[1]
                     target_asset_name, target_attack_step_name = \
@@ -1009,33 +1022,33 @@ class LanguageGraph():
                             expr_chain_dict,
                             lang_graph
                         )
-                        if target_attack_step.full_name in attack_step.children:
-                            attack_step.children[target_attack_step.full_name].\
+                        if target_attack_step.full_name in attack_step.own_children:
+                            attack_step.own_children[target_attack_step.full_name].\
                                 append((target_attack_step, expr_chain))
                         else:
-                            attack_step.children[target_attack_step.full_name] = \
+                            attack_step.own_children[target_attack_step.full_name] = \
                                 [(target_attack_step, expr_chain)]
 
-                for parent_target in attack_step_dict['parents'].items():
+                for parent_target in attack_step_dict['own_parents'].items():
                     target_full_attack_step_name = parent_target[0]
                     expr_chains = parent_target[1]
                     target_asset_name, target_attack_step_name = \
                         disaggregate_attack_step_full_name(
                             target_full_attack_step_name)
                     target_asset = lang_graph.assets[target_asset_name]
-                    target_attack_step = target_asset.attack_steps[
-                        target_attack_step_name]
+                    target_attack_step = target_asset.attack_steps[target_attack_step_name]
                     for expr_chain_dict in expr_chains:
                         expr_chain = ExpressionsChain._from_dict(
-                            expr_chain_dict,
-                            lang_graph
+                            expr_chain_dict, lang_graph
                         )
-                        if target_attack_step.full_name in attack_step.parents:
-                            attack_step.parents[target_attack_step.full_name].\
-                                append((target_attack_step, expr_chain))
+                        if target_attack_step.full_name in attack_step.own_parents:
+                            attack_step.own_parents[target_attack_step.full_name].append(
+                                (target_attack_step, expr_chain)
+                            )
                         else:
-                            attack_step.parents[target_attack_step.full_name] = \
-                                [(target_attack_step, expr_chain)]
+                            attack_step.own_parents[target_attack_step.full_name] = [
+                                (target_attack_step, expr_chain)
+                            ]
 
                 # Recreate the requirements of exist and notExist attack steps
                 if attack_step.type == 'exist' or \
@@ -1689,8 +1702,8 @@ class LanguageGraph():
                         attack_step_attribs['reaches']['overrides']
                         if attack_step_attribs['reaches'] else False
                     ),
-                    children = {},
-                    parents = {},
+                    own_children = {},
+                    own_parents = {},
                     info = attack_step_attribs['meta'],
                     tags = list(attack_step_attribs['tags'])
                 )
@@ -1732,8 +1745,8 @@ class LanguageGraph():
                                 asset = asset,
                                 ttc = attack_step.ttc,
                                 overrides = False,
-                                children = {},
-                                parents = {},
+                                own_children = {},
+                                own_parents = {},
                                 info = attack_step.info,
                                 tags = list(attack_step.tags)
                             )
@@ -1799,15 +1812,15 @@ class LanguageGraph():
                         target_attack_step_name]
 
                     # Link to the children target attack steps
-                    attack_step.children.setdefault(target_attack_step.full_name, [])
-                    attack_step.children[target_attack_step.full_name].append(
+                    attack_step.own_children.setdefault(target_attack_step.full_name, [])
+                    attack_step.own_children[target_attack_step.full_name].append(
                         (target_attack_step, expr_chain)
                     )
 
                     # Reverse the children associations chains to get the
                     # parents associations chain.
-                    target_attack_step.parents.setdefault(attack_step.full_name, [])
-                    target_attack_step.parents[attack_step.full_name].append(
+                    target_attack_step.own_parents.setdefault(attack_step.full_name, [])
+                    target_attack_step.own_parents[attack_step.full_name].append(
                         (attack_step, self.reverse_expr_chain(expr_chain, None))
                     )
 
