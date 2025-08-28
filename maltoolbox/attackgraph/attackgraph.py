@@ -89,7 +89,7 @@ def create_attack_graph(
 
 class AttackGraph():
     """Graph representation of attack steps"""
-    def __init__(self, lang_graph, model: Optional[Model] = None):
+    def __init__(self, lang_graph: LanguageGraph, model: Optional[Model] = None):
         self.nodes: dict[int, AttackGraphNode] = {}
         # Dictionaries used in optimization to get nodes by id or full name
         # faster
@@ -535,15 +535,15 @@ class AttackGraph():
             if not ag_node.model_asset:
                 raise AttackGraphException('Attack graph node is missing '
                     'asset link')
-            lang_graph_asset = self.lang_graph.assets[
-                ag_node.model_asset.type]
 
-            lang_graph_attack_step = lang_graph_asset.attack_steps[
-                ag_node.name]
+            lang_graph_asset = self.lang_graph.assets[ag_node.model_asset.type]
+            lang_graph_attack_step: Optional[LanguageGraphAttackStep] = (
+                lang_graph_asset.attack_steps[ag_node.name]
+            )
 
             while lang_graph_attack_step:
-                for child in lang_graph_attack_step.children.values():
-                    for target_attack_step, expr_chain in child:
+                for target_attack_step, expr_chains in lang_graph_attack_step.children.items():
+                    for expr_chain in expr_chains:
                         target_assets = self._follow_expr_chain(
                             self.model,
                             set([ag_node.model_asset]),

@@ -1,0 +1,24 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+    asset AA {
+      | s1
+        -> c_of_A.s2
+    }
+
+    asset BB extends AA {
+      | s1
+        +> c_of_B.s2
+    }
+
+    asset CC {
+      | s2
+    }
+}
+
+associations {
+  AA [a] * <-- Assoc1 --> * [c_of_A] CC
+  BB [b] * <-- Assoc2 --> * [c_of_B] CC
+}
