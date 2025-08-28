@@ -11,6 +11,9 @@ category Test{
       | target3
 
       | target4
+
+      | attack_step_with_child
+        -> target1
     }
 
     asset Child1 extends EmptyParent {

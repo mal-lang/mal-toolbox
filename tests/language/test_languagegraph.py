@@ -63,6 +63,25 @@ def test_interleaved_vars():
 def test_inherited_vars():
     LanguageGraph(MalCompiler().compile('tests/testdata/inherited_vars.mal'))
 
+def test_attackstep_inherit():
+    lang_spec = MalCompiler().compile(
+        'tests/testdata/attackstep_inherit.mal'
+    )
+    lang_graph = LanguageGraph(lang_spec)
+
+    BB_s1 = lang_graph.assets['BB'].attack_steps['s1']
+    CC_s2 = lang_graph.assets['CC'].attack_steps['s2']
+
+    assert CC_s2 in BB_s1.children
+    assert len(BB_s1.own_children) == 1
+    assert len(BB_s1.children) == 1
+
+    chains_to_cc_s2 = BB_s1.children[CC_s2]
+    assert len(chains_to_cc_s2) == 2
+    assert chains_to_cc_s2[0].fieldname == "c_of_B"
+    assert chains_to_cc_s2[1].fieldname == "c_of_A"
+
+
 def test_attackstep_override():
     test_lang_graph = LanguageGraph(MalCompiler().compile(
         'tests/testdata/attackstep_override.mal'))
@@ -81,19 +100,28 @@ def test_attackstep_override():
     assetC4 = test_lang_graph.assets['Child4']
     assetFC = test_lang_graph.assets['FinalChild']
 
+    EP_target1 = assetEP.attack_steps['target1']
     assert 'target1' in assetEP.attack_steps
     assert 'target2' in assetEP.attack_steps
     assert 'target3' in assetEP.attack_steps
     assert 'target4' in assetEP.attack_steps
 
+    assert 'attack_step_with_child' in assetC1.attack_steps
     assert 'attackstep' in assetC1.attack_steps
     assert 'target1' in assetC1.attack_steps
     assert 'target2' in assetC1.attack_steps
     assert 'target3' in assetC1.attack_steps
     assert 'target4' in assetC1.attack_steps
     c1_attackstep = assetC1.attack_steps['attackstep']
+    assert c1_attackstep.own_children == {}
     assert c1_attackstep.children == {}
 
+    # attack_step_with_child is defined in parent with target1 as child
+    c1_parent_attackstep = assetC1.attack_steps['attack_step_with_child']
+    assert c1_parent_attackstep.own_children == {}
+    assert c1_parent_attackstep.children.keys() == {EP_target1}
+
+    assert 'attack_step_with_child' in assetC2.attack_steps
     assert 'attackstep' in assetC2.attack_steps
     assert 'target1' in assetC2.attack_steps
     assert 'target2' in assetC2.attack_steps
@@ -101,8 +129,14 @@ def test_attackstep_override():
     assert 'target4' in assetC2.attack_steps
     c2_attackstep = assetC2.attack_steps['attackstep']
     assert c2_attackstep.inherits == c1_attackstep
-    assert c2_attackstep.children == {}
+    assert c2_attackstep.own_children == {}
 
+    # attack_step_with_child is defined in grandparent with target1 as child
+    c2_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
+    assert c2_parent_attackstep.own_children == {}
+    assert c2_parent_attackstep.children.keys() == {EP_target1}
+
+    assert 'attack_step_with_child' in assetC3.attack_steps
     assert 'attackstep' in assetC3.attack_steps
     assert 'target1' in assetC3.attack_steps
     assert 'target2' in assetC3.attack_steps
@@ -114,11 +148,17 @@ def test_attackstep_override():
     c3_target2 = assetC3.attack_steps['target2']
     c3_target3 = assetC3.attack_steps['target3']
     c3_target4 = assetC3.attack_steps['target4']
-    assert c3_target1.full_name in c3_attackstep.children
-    assert c3_target2.full_name not in c3_attackstep.children
-    assert c3_target3.full_name not in c3_attackstep.children
-    assert c3_target4.full_name not in c3_attackstep.children
+    assert c3_target1 in c3_attackstep.own_children
+    assert c3_target2 not in c3_attackstep.own_children
+    assert c3_target3 not in c3_attackstep.own_children
+    assert c3_target4 not in c3_attackstep.own_children
 
+    # attack_step_with_child is defined in grandparent with target1 as child
+    c3_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
+    assert c3_parent_attackstep.own_children == {}
+    assert c3_parent_attackstep.children.keys() == {EP_target1}
+
+    assert 'attack_step_with_child' in assetC4.attack_steps
     assert 'attackstep' in assetC4.attack_steps
     assert 'target1' in assetC4.attack_steps
     assert 'target2' in assetC4.attack_steps
@@ -126,8 +166,14 @@ def test_attackstep_override():
     assert 'target4' in assetC4.attack_steps
     c4_attackstep = assetC4.attack_steps['attackstep']
     assert c4_attackstep.inherits == c3_attackstep
-    assert c4_attackstep.children == {}
+    assert c4_attackstep.own_children == {}
 
+    # attack_step_with_child is defined in grandparent with target1 as child
+    c4_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
+    assert c4_parent_attackstep.own_children == {}
+    assert c4_parent_attackstep.children.keys() == {EP_target1}
+
+    assert 'attack_step_with_child' in assetC4.attack_steps
     assert 'attackstep' in assetC4.attack_steps
     assert 'target1' in assetC4.attack_steps
     assert 'target2' in assetC4.attack_steps
@@ -139,10 +185,10 @@ def test_attackstep_override():
     fc_target2 = assetFC.attack_steps['target2']
     fc_target3 = assetFC.attack_steps['target3']
     fc_target4 = assetFC.attack_steps['target4']
-    assert fc_target1.full_name in fc_attackstep.children
-    assert fc_target2.full_name in fc_attackstep.children
-    assert fc_target3.full_name in fc_attackstep.children
-    assert fc_target4.full_name in fc_attackstep.children
+    assert fc_target1 in fc_attackstep.own_children
+    assert fc_target2 in fc_attackstep.own_children
+    assert fc_target3 in fc_attackstep.own_children
+    assert fc_target4 in fc_attackstep.own_children
 
 # TODO: Re-enable this test once the compiler and language are compatible with
 # one another.
