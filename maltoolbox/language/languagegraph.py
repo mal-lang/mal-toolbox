@@ -485,8 +485,15 @@ class LanguageGraphAttackStep:
     asset: LanguageGraphAsset
     ttc: Optional[dict] = field(default_factory = dict)
     overrides: bool = False
-    own_children: dict = field(default_factory = dict)
-    own_parents: dict = field(default_factory = dict)
+
+    own_children: dict[
+        str, list[tuple[LanguageGraphAttackStep, Optional[ExpressionsChain]]]
+    ] = field(default_factory = dict)
+
+    own_parents: dict[
+        str, list[tuple[LanguageGraphAttackStep, Optional[ExpressionsChain]]]
+    ] = field(default_factory = dict)
+
     info: dict = field(default_factory = dict)
     inherits: Optional[LanguageGraphAttackStep] = None
     own_requires: list[ExpressionsChain] = field(default_factory=list)
@@ -498,20 +505,33 @@ class LanguageGraphAttackStep:
         return hash(self.full_name)
 
     @property
-    def children(self) -> dict:
+    def children(self) -> dict[
+            str,
+            list[tuple[LanguageGraphAttackStep, Optional[ExpressionsChain]]]
+        ]:
+        """
+        Get all (both own and inherited) children of a LanguageGraphAttackStep
+        """
+
         if self.overrides:
+            # Override overrides the children
             return self.own_children
 
-        inherited_children = {}
+        inherited_children: dict[
+            str,
+            list[tuple[LanguageGraphAttackStep, Optional[ExpressionsChain]]]
+        ] = {}
+
         if self.inherits:
             inherited_children |= self.inherits.children
         inherited_children |= self.own_children
-
         return inherited_children
 
     @property
-    def parents(self) -> dict:
-        return {}
+    def parents(self) -> None:
+        raise NotImplementedError(
+            "Can not fetch parents of a LanguageGraphAttackStep"
+        )
 
     @property
     def full_name(self) -> str:
