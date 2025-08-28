@@ -86,6 +86,7 @@ def test_attackstep_override():
     assert 'target3' in assetEP.attack_steps
     assert 'target4' in assetEP.attack_steps
 
+    assert 'attack_step_with_child' in assetC1.attack_steps
     assert 'attackstep' in assetC1.attack_steps
     assert 'target1' in assetC1.attack_steps
     assert 'target2' in assetC1.attack_steps
@@ -93,7 +94,14 @@ def test_attackstep_override():
     assert 'target4' in assetC1.attack_steps
     c1_attackstep = assetC1.attack_steps['attackstep']
     assert c1_attackstep.own_children == {}
+    assert c1_attackstep.children == {}
 
+    # attack_step_with_child is defined in parent with target1 as child
+    c1_parent_attackstep = assetC1.attack_steps['attack_step_with_child']
+    assert c1_parent_attackstep.own_children == {}
+    assert c1_parent_attackstep.children.keys() == {'EmptyParent:target1'}
+
+    assert 'attack_step_with_child' in assetC2.attack_steps
     assert 'attackstep' in assetC2.attack_steps
     assert 'target1' in assetC2.attack_steps
     assert 'target2' in assetC2.attack_steps
@@ -103,6 +111,12 @@ def test_attackstep_override():
     assert c2_attackstep.inherits == c1_attackstep
     assert c2_attackstep.own_children == {}
 
+    # attack_step_with_child is defined in grandparent with target1 as child
+    c2_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
+    assert c2_parent_attackstep.own_children == {}
+    assert c2_parent_attackstep.children.keys() == {'EmptyParent:target1'}
+
+    assert 'attack_step_with_child' in assetC3.attack_steps
     assert 'attackstep' in assetC3.attack_steps
     assert 'target1' in assetC3.attack_steps
     assert 'target2' in assetC3.attack_steps
@@ -119,6 +133,12 @@ def test_attackstep_override():
     assert c3_target3.full_name not in c3_attackstep.own_children
     assert c3_target4.full_name not in c3_attackstep.own_children
 
+    # attack_step_with_child is defined in grandparent with target1 as child
+    c3_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
+    assert c3_parent_attackstep.own_children == {}
+    assert c3_parent_attackstep.children.keys() == {'EmptyParent:target1'}
+
+    assert 'attack_step_with_child' in assetC4.attack_steps
     assert 'attackstep' in assetC4.attack_steps
     assert 'target1' in assetC4.attack_steps
     assert 'target2' in assetC4.attack_steps
@@ -128,6 +148,12 @@ def test_attackstep_override():
     assert c4_attackstep.inherits == c3_attackstep
     assert c4_attackstep.own_children == {}
 
+    # attack_step_with_child is defined in grandparent with target1 as child
+    c4_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
+    assert c4_parent_attackstep.own_children == {}
+    assert c4_parent_attackstep.children.keys() == {'EmptyParent:target1'}
+
+    assert 'attack_step_with_child' in assetC4.attack_steps
     assert 'attackstep' in assetC4.attack_steps
     assert 'target1' in assetC4.attack_steps
     assert 'target2' in assetC4.attack_steps
