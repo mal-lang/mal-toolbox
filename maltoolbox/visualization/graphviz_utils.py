@@ -40,7 +40,7 @@ def render_model(model: Model):
     dot = graphviz.Digraph(model.name)
 
     # Create nodes
-    asset_type_colors = {}
+    asset_type_colors: dict[str, str] = {}
     for asset in model.assets.values():
         bg_color = asset_type_colors.get(asset.lg_asset.name)
         if not bg_color:
@@ -68,8 +68,9 @@ def render_attack_graph(attack_graph: AttackGraph):
     dot.graph_attr['ratio'] = 'compress'
 
     # Create nodes
-    asset_colors = {}
+    asset_colors: dict[str, str] = {}
     for node in attack_graph.nodes.values():
+        assert node.model_asset, "Node needs model"
         bg_color = asset_colors.get(node.model_asset.name)
         if not bg_color:
             bg_color = random.choice(graphviz_bright_colors)
