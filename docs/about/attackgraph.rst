@@ -68,3 +68,33 @@ Analyzers
 """""""""
  
 :mod:`maltoolbox.attackgraph.analyzers` contains analyzers for the attackgraph used to calculate viability and necessity.
+
+
+Pattern matching
+""""""""""""""""
+ 
+:mod:`maltoolbox.patternfinder.attack_graph_patterns` contains a regex-like feature to search for patterns in an attack graph.
+
+Example:
+
+.. code-block:: python
+
+    attack_graph: AttackGraph
+
+    # Create the search pattern to find paths from Node1 to any node
+    pattern = SearchPattern(
+        [
+            SearchCondition(
+                lambda node: node.name == "Node1"
+            ),
+            SearchCondition(
+                SearchCondition.ANY
+            ),
+            SearchCondition(
+                lambda node: node.name == "Node4"
+            )
+        ]
+    )
+
+    # Returns a list of node paths that match
+    paths = pattern.find_matches(attack_graph)

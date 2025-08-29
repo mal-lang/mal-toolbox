@@ -35,15 +35,6 @@ def corelang_lang_graph():
     mar_file_path = path_testdata("org.mal-lang.coreLang-1.0.0.mar")
     return LanguageGraph.from_mar_archive(mar_file_path)
 
-## Fixtures (can be ingested into tests)
-
-@pytest.fixture
-def corelang_spec():
-    """Fixture that returns the coreLang language specification as dict"""
-    mar_file_path = path_testdata("org.mal-lang.coreLang-1.0.0.mar")
-    return specification.load_language_specification_from_mar(mar_file_path)
-
-
 @pytest.fixture
 def model(corelang_lang_graph):
     """Fixture that generates a model for tests
