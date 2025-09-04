@@ -1,6 +1,6 @@
 [project]
 name = "mal-toolbox"
-version = "1.0.2"
+version = "1.0.3"
 authors = [
   { name="Andrei Buhaiu", email="buhaiu@kth.se" },
   { name="Joakim Loxdal", email="loxdal@kth.se" },
