@@ -26,131 +26,6 @@ from ..exceptions import (
 
 logger = logging.getLogger(__name__)
 
-predef_ttcs: dict[str, dict] = {
-    'EasyAndUncertain':
-    {
-        'arguments': [0.5],
-        'name': 'Bernoulli',
-        'type': 'function'
-    },
-    'HardAndUncertain':
-    {
-        'lhs':
-        {
-            'arguments': [0.1],
-            'name': 'Exponential',
-            'type': 'function'
-        },
-        'rhs':
-        {
-            'arguments': [0.5],
-            'name': 'Bernoulli',
-            'type': 'function'
-        },
-        'type': 'multiplication'
-    },
-    'VeryHardAndUncertain':
-    {
-        'lhs':
-        {
-            'arguments': [0.01],
-            'name': 'Exponential',
-            'type': 'function'
-        },
-        'rhs':
-        {
-            'arguments': [0.5],
-            'name': 'Bernoulli',
-            'type': 'function'
-        },
-        'type': 'multiplication'
-    },
-    'EasyAndCertain':
-    {
-        'arguments': [1.0],
-        'name': 'Exponential',
-        'type': 'function'
-    },
-    'HardAndCertain':
-    {
-        'arguments': [0.1],
-        'name': 'Exponential',
-        'type': 'function'
-    },
-    'VeryHardAndCertain':
-    {
-        'arguments': [0.01],
-        'name': 'Exponential',
-        'type': 'function'
-    },
-    'Enabled':
-    {
-        'arguments': [1.0],
-        'name': 'Bernoulli',
-        'type': 'function'
-    },
-    'Instant':
-    {
-        'arguments': [1.0],
-        'name': 'Bernoulli',
-        'type': 'function'
-    },
-    'Disabled':
-    {
-        'arguments': [0.0],
-        'name': 'Bernoulli',
-        'type': 'function'
-    },
-}
-
-def get_ttc_distribution(
-        step_dict: dict,
-        defense_default_ttc = None,
-        attack_default_ttc = None
-    ) -> Optional[dict]:
-    """Convert step TTC to a TTC distribution if needed
-
-    - If no TTC is set, set return default TTC.
-    - If the TTC provided is a predefined name replace it with the
-    probability distribution it corresponds to.
-    - Otherwise return the TTC distribution as is.
-
-    Arguments:
-    step_dict   - A dict with the attack step data
-    defense_default_ttc - the value to give a defense ttc if none is set
-    attack_default_ttc - the value to give an attack ttc if none is set
-
-    Returns:
-    A dict with the steps TTC distribution, or None if the step is not
-    a defense or attack step
-    """
-
-    if defense_default_ttc is None:
-        defense_default_ttc = predef_ttcs['Disabled'].copy()
-    if attack_default_ttc is None:
-        attack_default_ttc = predef_ttcs['Instant'].copy()
-
-    step_ttc = step_dict['ttc']
-
-    if step_dict['type'] == 'defense':
-        if step_ttc is None:
-            # No step ttc set in language for defense
-            step_ttc = defense_default_ttc
-    elif step_dict['type'] in ('or', 'and'):
-        if step_ttc is None:
-            # No step ttc set in language for attack
-            step_ttc = attack_default_ttc
-    else:
-        # No TTC for other step types
-        return None
-
-    if 'name' in step_ttc and step_ttc['name'] in predef_ttcs:
-        # Predefined step ttc set in language, fetch from dict
-        step_ttc = predef_ttcs[step_ttc['name']].copy()
-
-    return step_ttc
-
-
 
 def disaggregate_attack_step_full_name(
         attack_step_full_name: str) -> list[str]:
@@ -998,7 +873,7 @@ class LanguageGraph():
                     name = attack_step_dict['name'],
                     type = attack_step_dict['type'],
                     asset = asset,
-                    ttc = get_ttc_distribution(attack_step_dict),
+                    ttc = attack_step_dict['ttc'],
                     overrides = attack_step_dict['overrides'],
                     own_children = {},
                     own_parents = {},
@@ -1716,7 +1591,7 @@ class LanguageGraph():
                     name = attack_step_attribs['name'],
                     type = attack_step_attribs['type'],
                     asset = asset,
-                    ttc = get_ttc_distribution(attack_step_attribs),
+                    ttc = attack_step_attribs['ttc'],
                     overrides = (
                         attack_step_attribs['reaches']['overrides']
                         if attack_step_attribs['reaches'] else False
