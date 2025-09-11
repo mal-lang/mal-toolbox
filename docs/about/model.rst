@@ -88,7 +88,7 @@ instead of the model file to define entrypoints)
 
 .. code-block:: yml
     metadata:
-    MAL-Toolbox Version: 1.0.3
+    MAL-Toolbox Version: 1.0.4
     info: Created by the mal-toolbox model python module.
     langID: org.mal-lang.tyrLang
     langVersion: 0.0.8
