@@ -35,6 +35,11 @@ classifiers = [
 "Bug Tracker" = "https://github.com/mal-lang/mal-toolbox/issues"
 "Repository" = "https://github.com/mal-lang/mal-toolbox"
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
 [project.scripts]
 "maltoolbox" = "maltoolbox.__main__:main"
 
