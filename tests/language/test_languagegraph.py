@@ -1,9 +1,6 @@
 """Tests for the LanguageGraph"""
 
-import pytest
 from conftest import path_testdata
-
-from maltoolbox.language import LanguageGraph
 
 from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language import LanguageGraph
