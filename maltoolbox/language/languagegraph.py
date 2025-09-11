@@ -739,6 +739,13 @@ class LanguageGraph():
 
         return serialized_graph
 
+    @property
+    def associations(self) -> list[LanguageGraphAssociation]:
+        """
+        Return all associations in the language graph.
+        """
+        return [assoc for asset in self.assets.values() for assoc in asset.associations.values()]
+
     @staticmethod
     def _link_association_to_assets(
         assoc: LanguageGraphAssociation,
