@@ -6,7 +6,8 @@ authors = [
   { name="Joakim Loxdal", email="loxdal@kth.se" },
   { name="Nikolaos Kakouros", email="nkak@kth.se" },
   { name="Jakob Nyberg", email="jaknyb@kth.se" },
-  { name="Giuseppe Nebbione", email="nebbione@kth.se" }
+  { name="Giuseppe Nebbione", email="nebbione@kth.se" },
+  { name="Sandor Berglund", email="sandor@kth.se" }
 ]
 description = "A collection of tools used to create MAL models and attack graphs."
 readme = "README.md"
