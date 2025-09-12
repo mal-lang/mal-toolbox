@@ -231,7 +231,7 @@ class LanguageGraphAssociationField:
     maximum: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class LanguageGraphAssociation:
     """
     An association type between asset types as defined in the MAL language
