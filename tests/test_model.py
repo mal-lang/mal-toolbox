@@ -125,6 +125,12 @@ def test_model_add_associated_asset(model: Model):
     assert 'hostApp' in asset2.associated_assets
     assert asset1 in asset2.associated_assets['hostApp']
 
+    associations_in_common = asset1.associations_with(asset2)
+    assert associations_in_common
+
+    for assoc in associations_in_common:
+        assert asset1.has_association_with(asset2, assoc.name)
+
 
 def test_model_add_appexecution_association_two_assets(model: Model):
     """coreLang specifies that AppExecution only can have one 'left' asset"""
