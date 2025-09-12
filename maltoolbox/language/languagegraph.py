@@ -10,7 +10,7 @@ import zipfile
 
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from maltoolbox.file_utils import (
     load_dict_from_yaml_file, load_dict_from_json_file,
@@ -356,7 +356,7 @@ class LanguageGraphAttackStep:
     An attack step belonging to an asset type in the MAL language
     """
     name: str
-    type: str
+    type: Literal["or", "and", "defense", "exist", "notExist"]
     asset: LanguageGraphAsset
     ttc: Optional[dict] = field(default_factory = dict)
     overrides: bool = False
