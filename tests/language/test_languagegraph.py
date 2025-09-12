@@ -74,8 +74,16 @@ def test_associations():
     lang_graph = LanguageGraph(
         MalCompiler().compile('tests/testdata/association_lang.mal')
     )
-    assert lang_graph.associations
-    breakpoint()
+    assert {a.name for a in lang_graph.associations} == {
+        'AssocAC',
+        'AssocAB',
+        'AssocBC',
+        'AssocBB',
+        'AssocCC',
+        'AssocCB',
+        'AssocDC',
+        'AssocDB',
+    }
 
 
 def test_attackstep_inherit():
