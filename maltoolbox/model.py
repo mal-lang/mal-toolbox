@@ -362,10 +362,10 @@ class ModelAsset:
             f'type: {self.type})')
 
     def associations_with(
-            self, b: ModelAsset
-        ) -> list[LanguageGraphAssociation]:
+        self, b: ModelAsset
+    ) -> set[LanguageGraphAssociation]:
         """Returns all associations from self to `b`"""
-        assocs_in_common = []
+        assocs_in_common = set()
         for assoc in self.lg_asset.associations.values():
             assets_to_left = self.associated_assets.get(
                 assoc.left_field.fieldname, set()
@@ -374,7 +374,7 @@ class ModelAsset:
                 assoc.right_field.fieldname, set()
             )
             if b in assets_to_left or b in assets_to_right:
-                assocs_in_common.append(assoc)
+                assocs_in_common.add(assoc)
 
         return assocs_in_common
 
