@@ -222,7 +222,7 @@ class LanguageGraphAsset:
         return self_superassets.intersection(other_superassets)
 
 
-@dataclass
+@dataclass(frozen=True)
 class LanguageGraphAssociationField:
     """A field in an association"""
     asset: LanguageGraphAsset
@@ -231,7 +231,7 @@ class LanguageGraphAssociationField:
     maximum: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class LanguageGraphAssociation:
     """
     An association type between asset types as defined in the MAL language
@@ -239,7 +239,7 @@ class LanguageGraphAssociation:
     name: str
     left_field: LanguageGraphAssociationField
     right_field: LanguageGraphAssociationField
-    info: dict = field(default_factory = dict)
+    info: dict = field(default_factory = dict, compare=False)
 
     def to_dict(self) -> dict:
         """Convert LanguageGraphAssociation to dictionary"""

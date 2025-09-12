@@ -20,6 +20,12 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
 
     assert new_lang_graph._to_dict() == corelang_lang_graph._to_dict()
 
+    # Also make sure associations are hashable
+    assocs = set()
+    for asset in new_lang_graph.assets.values():
+        for assoc in asset.associations.values():
+            assocs.add(assoc)
+
 # TODO: Replace this with a dedicated test that just checks for union for
 # assets with the same super asset
 def test_corelang_with_union_different_assets_same_super_asset():
