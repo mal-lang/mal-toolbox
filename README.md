@@ -3,7 +3,7 @@
 MAL Toolbox is a collection of python modules to help developers create and work with
 MAL ([Meta Attack Language](https://mal-lang.org/)) models and attack graphs.
 
-Attack graphs can be used to run simulations (see MAL Simulator) or analysis.
+Attack graphs can be used to run simulations in [MAL Simulator](https://github.com/mal-lang/mal-simulator) or run your own custom analysis on.
 
 [Documentation](https://mal-lang.org/mal-toolbox/index.html)(Work in progress)
 
