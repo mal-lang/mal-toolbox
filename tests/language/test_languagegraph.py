@@ -69,6 +69,23 @@ def test_inherited_vars():
     LanguageGraph(MalCompiler().compile("tests/testdata/inherited_vars.mal"))
 
 
+
+def test_associations():
+    lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/association_lang.mal')
+    )
+    assert {a.name for a in lang_graph.associations} == {
+        'AssocAC',
+        'AssocAB',
+        'AssocBC',
+        'AssocBB',
+        'AssocCC',
+        'AssocCB',
+        'AssocDC',
+        'AssocDB',
+    }
+
+
 def test_attackstep_inherit():
     lang_spec = MalCompiler().compile("tests/testdata/attackstep_inherit.mal")
     lang_graph = LanguageGraph(lang_spec)
