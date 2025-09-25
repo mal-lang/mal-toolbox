@@ -35,6 +35,31 @@ def test_attackgraph_init(corelang_lang_graph, model):
         )
         assert _generate_graph.call_count == 0
 
+def test_load_attack_graph(corelang_lang_graph: LanguageGraph):
+    """Make sure we can load attack graphs"""
+    json_ag = path_testdata("attackgraph.json")
+    yml_ag = path_testdata("attackgraph.yml")
+
+    loaded_json_ag = AttackGraph.load_from_file(json_ag, corelang_lang_graph)
+    loaded_yml_ag = AttackGraph.load_from_file(yml_ag, corelang_lang_graph)
+    assert loaded_json_ag._to_dict() == loaded_yml_ag._to_dict()
+
+    for step in loaded_json_ag.nodes.values():
+        # Make sure exist status gets correct type
+        if step.type == 'exist':
+            assert (
+                step.existence_status is None
+                or isinstance(step.existence_status, bool)
+            )
+
+    for step in loaded_yml_ag.nodes.values():
+        # Make sure exist status gets correct type
+        if step.type == 'exist':
+            assert (
+                step.existence_status is None
+                or isinstance(step.existence_status, bool)
+            )
+
 def test_attackgraph_save_load_no_model_given(
         example_attackgraph: AttackGraph,
         corelang_lang_graph: LanguageGraph
