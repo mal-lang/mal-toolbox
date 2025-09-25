@@ -56,7 +56,7 @@ class AttackGraphNode:
         if self.model_asset is not None:
             node_dict['asset'] = str(self.model_asset.name)
         if self.existence_status is not None:
-            node_dict['existence_status'] = str(self.existence_status)
+            node_dict['existence_status'] = self.existence_status
         if self.tags:
             node_dict['tags'] = list(self.tags)
         if self.extras:
