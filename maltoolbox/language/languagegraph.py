@@ -231,7 +231,7 @@ class LanguageGraphAssociationField:
     maximum: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class LanguageGraphAssociation:
     """
     An association type between asset types as defined in the MAL language
@@ -738,6 +738,13 @@ class LanguageGraph():
             serialized_graph[asset.name] = asset.to_dict()
 
         return serialized_graph
+
+    @property
+    def associations(self) -> set[LanguageGraphAssociation]:
+        """
+        Return all associations in the language graph.
+        """
+        return {assoc for asset in self.assets.values() for assoc in asset.associations.values()}
 
     @staticmethod
     def _link_association_to_assets(
