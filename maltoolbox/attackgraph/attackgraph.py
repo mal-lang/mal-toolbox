@@ -192,7 +192,10 @@ class AttackGraph():
                 node_id = node_dict['id'],
                 model_asset = node_asset,
                 ttc_dist = node_dict['ttc'],
-                existence_status = node_dict.get('existence_status', None)
+                existence_status = (
+                    bool(node_dict['existence_status'])
+                    if 'existence_status' in node_dict else None
+                )
             )
             ag_node.tags = list(node_dict.get('tags', []))
             ag_node.extras = node_dict.get('extras', {})
