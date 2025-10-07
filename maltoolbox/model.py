@@ -184,8 +184,11 @@ class Model():
         )
         return self._name_to_asset.get(asset_name, None)
 
-
     def _to_dict(self) -> dict:
+        """Backwards compatible"""
+        return self.to_dict()
+
+    def to_dict(self) -> dict:
         """Get dictionary representation of the model."""
         logger.debug('Translating model to dict.')
         contents: dict[str, Any] = {
