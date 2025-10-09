@@ -48,6 +48,7 @@ config: dict[str, Any] = {
         "langspec_file": "logs/langspec_file.json",
         "langgraph_file": "logs/langgraph.yml",
     },
+    "neo4j": {"uri": None, "username": None, "password": None, "dbname": None},
 }
 
 config_file = os.getenv("MALTOOLBOX_CONFIG", "maltoolbox.yml")
@@ -58,6 +59,8 @@ if os.path.exists(config_file):
 
 log_configs = config['logging']
 os.makedirs(os.path.dirname(log_configs["log_file"]), exist_ok=True)
+
+neo4j_configs = config['logging']
 
 formatter = logging.Formatter(
     "%(asctime)s %(name)-12s %(levelname)-8s %(message)s", datefmt="%m-%d %H:%M"
