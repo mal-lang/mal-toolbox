@@ -101,6 +101,12 @@ class Model():
                         ' and we do not allow duplicates.'
                     )
 
+        if asset_type not in self.lang_graph.assets:
+            raise ValueError(
+                f'Asset type "{asset_type}" does not exist in language, '
+                'must be one of:\n -' +
+                '\n -'.join(self.lang_graph.assets.keys())
+            )
         lg_asset = self.lang_graph.assets[asset_type]
 
         asset = ModelAsset(
@@ -448,6 +454,20 @@ class ModelAsset:
         Add the assets provided as a parameter to the set of associated
         assets dictionary entry corresponding to the given fieldname.
         """
+
+        if fieldname not in self.lg_asset.associations:
+            if assets:
+                to_asset_type = next(iter(assets)).lg_asset
+                possible_associations = self.lg_asset.associations_to(to_asset_type)
+            else:
+                to_asset_type = None
+                possible_associations = self.lg_asset.associations
+            raise ValueError(
+                f'Association fieldname "{fieldname}" does not exist from '
+                f'<{self.lg_asset.name}> to <{to_asset_type.name if to_asset_type else "Any"}>'
+                ', must be one of:\n -' +
+                '\n -'.join([a for a in possible_associations])
+            )
 
         lg_assoc = self.lg_asset.associations[fieldname]
         other_fieldname = lg_assoc.get_opposite_fieldname(fieldname)

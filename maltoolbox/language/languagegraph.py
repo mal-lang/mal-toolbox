@@ -171,6 +171,18 @@ class LanguageGraphAsset:
             current_asset = current_asset.own_super_asset
         return superassets
 
+    def associations_to(
+        self, asset_type: LanguageGraphAsset
+    ) -> dict[str, LanguageGraphAssociation]:
+        """
+        Return dict of association types that go from self
+        to given `asset_type`
+        """
+        associations_to_asset_type = {}
+        for fieldname, association in self.associations.items():
+            if association in asset_type.associations.values():
+                associations_to_asset_type[fieldname] = association
+        return associations_to_asset_type
 
     @cached_property
     def associations(self) -> dict[str, LanguageGraphAssociation]:

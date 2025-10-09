@@ -167,7 +167,7 @@ def test_model_add_association_nonexisting_fieldname(model: Model):
     data = model.add_asset(asset_type = 'Data')
 
     # Try create an association between asset1 and data
-    with pytest.raises(LookupError):
+    with pytest.raises(ValueError):
         # will raise error because fieldname does not exist
         asset1.add_associated_assets(
             fieldname = 'unknownFieldName', assets = {data}
