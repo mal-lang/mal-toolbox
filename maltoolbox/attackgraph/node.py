@@ -122,7 +122,6 @@ class AttackGraphNode:
             full_name = self.model_asset.name + ':' + self.name
         else:
             # Fallback: use ID
-            breakpoint()
             full_name = str(self.id) + ':' + self.name
         return full_name
 
