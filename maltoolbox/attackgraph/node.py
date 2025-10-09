@@ -21,7 +21,8 @@ class AttackGraphNode:
         lg_attack_step: LanguageGraphAttackStep,
         model_asset: Optional[ModelAsset] = None,
         ttc_dist: Optional[dict] = None,
-        existence_status: Optional[bool] = None
+        existence_status: Optional[bool] = None,
+        full_name: Optional[str] = None
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
@@ -30,6 +31,7 @@ class AttackGraphNode:
         self.tags = lg_attack_step.tags
         self.detectors = lg_attack_step.detectors
 
+        self._full_name = full_name
         self.id = node_id
         self.model_asset = model_asset
         self.existence_status = existence_status
@@ -45,10 +47,12 @@ class AttackGraphNode:
             'lang_graph_attack_step': self.lg_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,
-            'children': {child.id: child.full_name for child in
-                self.children},
-            'parents': {parent.id: parent.full_name for parent in
-                self.parents},
+            'children': {
+                child.id: child.full_name for child in self.children
+            },
+            'parents': {
+                parent.id: parent.full_name for parent in self.parents
+            },
         }
 
         for detector in self.detectors.values():
@@ -105,13 +109,20 @@ class AttackGraphNode:
     @property
     def full_name(self) -> str:
         """
-        Return the full name of the attack step. This is a combination of the
-        asset name to which the attack step belongs and attack step name
-        itself.
+        Return the full name of the attack step. This is normally a
+        combination of the asset name to which the attack step
+        belongs and attack step name itself, but can also be
+        explicitly set or a combination of the step id and step name.
         """
-        if self.model_asset:
+        if self._full_name:
+            # Explicitly set
+            return self._full_name
+        elif self.model_asset:
+            # Inherited from model asset
             full_name = self.model_asset.name + ':' + self.name
         else:
+            # Fallback: use ID
+            breakpoint()
             full_name = str(self.id) + ':' + self.name
         return full_name
 

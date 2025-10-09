@@ -76,8 +76,9 @@ def test_attackgraph_save_load_no_model_given(
     example_attackgraph.save_to_file(example_graph_path)
 
     # Load the attack graph
-    loaded_attack_graph = AttackGraph.load_from_file(example_graph_path,
-        corelang_lang_graph)
+    loaded_attack_graph = AttackGraph.load_from_file(
+        example_graph_path, corelang_lang_graph
+    )
     assert node_with_reward_before.id is not None
     node_with_reward_after = loaded_attack_graph.nodes[
         node_with_reward_before.id
@@ -107,14 +108,10 @@ def test_attackgraph_save_load_no_model_given(
             child_node = example_attackgraph.nodes[child]
             assert child_node, \
                 f'Failed to find child node for id {child}.'
-            original_node_dict['children'][child] = str(child_node.id) + \
-                ":" + child_node.name
         for parent in original_node_dict['parents']:
             parent_node = example_attackgraph.nodes[parent]
             assert parent_node, \
                 f'Failed to find parent node for id {parent}.'
-            original_node_dict['parents'][parent] = str(parent_node.id) + \
-                ":" + parent_node.name
 
         # Remove key that is not expected to match.
         del original_node_dict['asset']
