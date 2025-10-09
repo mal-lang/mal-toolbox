@@ -71,6 +71,11 @@ logging:
   model_file: "logs/model.yml"
   langspec_file: "logs/langspec_file.yml"
   langgraph_file: "logs/langspec_file.yml"
+neo4j:
+  uri: None
+  username: None
+  password: None
+  dbname: None
 ```
 
 Alternatively, you can use the `MALTOOLBOX_CONFIG`
