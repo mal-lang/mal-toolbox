@@ -167,10 +167,10 @@ class AttackGraph():
 
         attack_graph = AttackGraph(lang_graph)
         attack_graph.model = model
-        serialized_attack_steps = serialized_object['attack_steps']
+        serialized_attack_steps: dict[str, dict] = serialized_object['attack_steps']
 
         # Create all of the nodes in the imported attack graph.
-        for node_dict in serialized_attack_steps.values():
+        for node_full_name, node_dict in serialized_attack_steps.items():
 
             # Recreate asset links if model is available.
             node_asset = None
@@ -195,7 +195,10 @@ class AttackGraph():
                 existence_status = (
                     bool(node_dict['existence_status'])
                     if 'existence_status' in node_dict else None
-                )
+                ),
+                # Give explicit full name if model is missing, otherwise
+                # it will generate automatically in node.full_name
+                full_name=node_full_name if not model else None
             )
             ag_node.tags = list(node_dict.get('tags', []))
             ag_node.extras = node_dict.get('extras', {})
@@ -611,7 +614,8 @@ class AttackGraph():
             node_id: Optional[int] = None,
             model_asset: Optional[ModelAsset] = None,
             ttc_dist: Optional[dict] = None,
-            existence_status: Optional[bool] = None
+            existence_status: Optional[bool] = None,
+            full_name: Optional[str] = None
         ) -> AttackGraphNode:
         """Create and add a node to the graph
         Arguments:
@@ -656,7 +660,8 @@ class AttackGraph():
             lg_attack_step = lg_attack_step,
             model_asset = model_asset,
             ttc_dist = ttc_dist,
-            existence_status = existence_status
+            existence_status = existence_status,
+            full_name = full_name
         )
 
         self.nodes[node_id] = node
