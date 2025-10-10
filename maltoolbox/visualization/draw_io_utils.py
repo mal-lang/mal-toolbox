@@ -34,6 +34,7 @@ def create_drawio_file_with_images(
     show_edge_labels=True,
     line_thickness=2,
     coordinate_scale=0.75,
+    output_filename=None
 ):
     """
     Create a draw.io file with all model assets as boxes using their actual positions and images
@@ -50,7 +51,9 @@ def create_drawio_file_with_images(
         # Give assets positions if not already set
         position_assets(model)
 
-    output_filename = (model.name or "model_assets_with_images") + ".drawio"
+    output_filename = output_filename or (
+        (model.name or "model_assets_with_images") + ".drawio"
+    )
 
     # Use the type2iconURL mapping for image URLs
     type_images = type2iconURL
