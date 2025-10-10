@@ -36,6 +36,6 @@ def position_assets(model: Model):
 
     for asset in model.assets.values():
         if asset not in visited:
-            component = []
+            component: list[tuple] = []
             traverse(asset, 0, 0, component)
             assign_positions(component)

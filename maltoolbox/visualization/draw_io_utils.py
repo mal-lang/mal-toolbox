@@ -308,7 +308,7 @@ def create_drawio_file_with_images(
     print(f"Diagram bounds: x={min_x:.0f} to {max_x:.0f}, y={min_y:.0f} to {max_y:.0f}")
 
     # Print asset summary
-    type_counts = {}
+    type_counts: dict[str, int] = {}
     for asset in assets:
         type_counts[asset.type] = type_counts.get(asset.type, 0) + 1
 
