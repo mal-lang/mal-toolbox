@@ -733,3 +733,21 @@ def tests_create_ag_from_model():
     check_parent_child_relationship(
         created_ag, 'Network:3:access', ['Host:0:connect', 'Host:1:connect'])
 
+def tests_create_ag_step_lists():
+    """We have a predefined model in trainingLang with these associations:
+
+    User:3 --- Host:0 --- Network:3 --- Host:1
+                 |
+                 |
+               Data:2
+    """
+
+    mar = path_testdata('org.mal-lang.trainingLang-1.0.0.mar')
+    model = path_testdata('simple_traininglang_model.yml')
+    created_ag = create_attack_graph(mar, model)
+
+    # Make sure all nodes were stored in correct list
+    defenses = [n for n in created_ag.nodes.values() if n.type == 'defense']
+    attacks = [n for n in created_ag.nodes.values() if n.type in ('or', 'and')]
+    assert defenses == created_ag.defense_steps
+    assert attacks == created_ag.attack_steps
