@@ -91,6 +91,9 @@ class AttackGraph():
     """Graph representation of attack steps"""
     def __init__(self, lang_graph: LanguageGraph, model: Optional[Model] = None):
         self.nodes: dict[int, AttackGraphNode] = {}
+        self.attack_steps: set[AttackGraphNode] = set()
+        self.defense_steps: set[AttackGraphNode] = set()
+
         # Dictionaries used in optimization to get nodes by id or full name
         # faster
         self._full_name_to_node: dict[str, AttackGraphNode] = {}
@@ -665,6 +668,14 @@ class AttackGraph():
         )
 
         self.nodes[node_id] = node
+
+        # Add to different sets depending on types
+        # Useful but not vital for functionality
+        if node.type in ('or', 'and'):
+            self.attack_steps.add(node)
+        if node.type == 'defense':
+            self.defense_steps.add(node)
+
         self._full_name_to_node[node.full_name] = node
 
         return node
