@@ -1,7 +1,7 @@
 """Tests for networkx conversion"""
 
 from maltoolbox.attackgraph import AttackGraph
-from maltoolbox.visualization.networkx import attack_graph_to_nx, model_to_nx
+from maltoolbox.translators import attack_graph_to_nx, model_to_nx
 from maltoolbox.model import Model
 import networkx as nx
 
