@@ -6,7 +6,7 @@ from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 from maltoolbox.model import Model
 
 
-def attack_graph_to_digraph(nodes: AttackGraph | Iterable[AttackGraphNode]) -> nx.DiGraph:
+def attack_graph_to_nx(nodes: AttackGraph | Iterable[AttackGraphNode]) -> nx.DiGraph:
     if isinstance(nodes, AttackGraph):
         nodes = list(nodes.nodes.values())
     G = nx.DiGraph()
@@ -22,7 +22,7 @@ def attack_graph_to_digraph(nodes: AttackGraph | Iterable[AttackGraphNode]) -> n
     return G
 
 
-def model_to_graph(model: Model) -> nx.Graph:
+def model_to_nx(model: Model) -> nx.Graph:
     G = nx.Graph()
 
     for id, asset in model.assets.items():

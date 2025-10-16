@@ -1,7 +1,7 @@
 """Tests for networkx conversion"""
 
 from maltoolbox.attackgraph import AttackGraph
-from maltoolbox.visualization.networkx import attack_graph_to_digraph, model_to_graph
+from maltoolbox.visualization.networkx import attack_graph_to_nx, model_to_nx
 from maltoolbox.model import Model
 import networkx as nx
 
@@ -18,7 +18,7 @@ def test_attackgraph_to_nx(example_attackgraph: AttackGraph):
         return len(edges)
 
     no_edges = number_of_edges(example_attackgraph)
-    G = attack_graph_to_digraph(example_attackgraph)
+    G = attack_graph_to_nx(example_attackgraph)
 
     assert isinstance(G, nx.DiGraph)
     assert len(G.nodes) == len(example_attackgraph.nodes)
@@ -51,7 +51,7 @@ def test_model_to_nx(example_model: Model):
         return len(edges)
 
     no_edges = number_of_edges(example_model)
-    G = model_to_graph(example_model)
+    G = model_to_nx(example_model)
     assert isinstance(G, nx.Graph)
     assert len(G.nodes) == len(example_model.assets)
     assert number_of_edges(example_model) == no_edges
