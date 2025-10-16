@@ -8,7 +8,6 @@ import json
 import sys
 import zipfile
 
-from itertools import chain
 from typing import TYPE_CHECKING
 
 from .node import AttackGraphNode
@@ -112,21 +111,19 @@ class AttackGraph():
         """Convert AttackGraph to dict"""
         serialized_attack_steps = {}
         for ag_node in self.nodes.values():
-            serialized_attack_steps[ag_node.full_name] =\
-                ag_node.to_dict()
+            serialized_attack_steps[ag_node.full_name] = ag_node.to_dict()
         return {
             'attack_steps': serialized_attack_steps
         }
 
     def __deepcopy__(self, memo):
-
+        """Custom deepcopy implementation for attack graph"""
         # Check if the object is already in the memo dictionary
         if id(self) in memo:
             return memo[id(self)]
 
         copied_attackgraph = AttackGraph(self.lang_graph)
         copied_attackgraph.model = self.model
-
         copied_attackgraph.nodes = {}
 
         # Deep copy nodes
@@ -157,11 +154,11 @@ class AttackGraph():
 
     @classmethod
     def _from_dict(
-            cls,
-            serialized_object: dict,
-            lang_graph: LanguageGraph,
-            model: Optional[Model]=None
-        ) -> AttackGraph:
+        cls,
+        serialized_object: dict,
+        lang_graph: LanguageGraph,
+        model: Optional[Model]=None
+    ) -> AttackGraph:
         """Create AttackGraph from dict
         Args:
         serialized_object   - AttackGraph in dict format
@@ -180,16 +177,21 @@ class AttackGraph():
             if model and 'asset' in node_dict:
                 node_asset = model.get_asset_by_name(node_dict['asset'])
                 if node_asset is None:
-                    msg = ('Failed to find asset with name "%s"'
-                            ' when loading from attack graph dict')
+                    msg = (
+                        'Failed to find asset with name "%s"'
+                        ' when loading from attack graph dict'
+                    )
                     logger.error(msg, node_dict["asset"])
                     raise LookupError(msg % node_dict["asset"])
 
-            lg_asset_name, lg_attack_step_name = \
+            lg_asset_name, lg_attack_step_name = (
                 disaggregate_attack_step_full_name(
-                    node_dict['lang_graph_attack_step'])
-            lg_attack_step = lang_graph.assets[lg_asset_name].\
-                attack_steps[lg_attack_step_name]
+                    node_dict['lang_graph_attack_step']
+                )
+            )
+            lg_attack_step = (
+                lang_graph.assets[lg_asset_name].attack_steps[lg_attack_step_name]
+            )
             ag_node = attack_graph.add_node(
                 lg_attack_step = lg_attack_step,
                 node_id = node_dict['id'],
@@ -284,12 +286,155 @@ class AttackGraph():
         logger.debug(f'Looking up node with full name "%s"', full_name)
         return self._full_name_to_node.get(full_name)
 
+    def _follow_field_expr_chain(
+        self,
+        target_assets: set[ModelAsset],
+        expr_chain: ExpressionsChain
+    ):
+        # Change the target assets from the current ones to the
+        # associated assets given the specified field name.
+        if not expr_chain.fieldname:
+            raise LanguageGraphException(
+                '"field" step expression chain is missing fieldname.'
+            )
+        new_target_assets: set[ModelAsset] = set()
+        new_target_assets.update(
+            *(
+                asset.associated_assets.get(expr_chain.fieldname, set())
+                for asset in target_assets
+            )
+        )
+        return new_target_assets
+
+    def _follow_transitive_expr_chain(
+        self,
+        model: Model,
+        target_assets: set[ModelAsset],
+        expr_chain: ExpressionsChain
+    ):
+        if not expr_chain.sub_link:
+            raise LanguageGraphException(
+                '"transitive" step expression chain is missing sub link.'
+            )
+
+        new_assets = target_assets
+        while new_assets := self._follow_expr_chain(
+            model, new_assets, expr_chain.sub_link
+        ):
+            new_assets = new_assets.difference(target_assets)
+            if not new_assets:
+                break
+            target_assets.update(new_assets)
+        return target_assets
+    
+    def _follow_subtype_expr_chain(
+        self,
+        model: Model,
+        target_assets: set[ModelAsset],
+        expr_chain: ExpressionsChain
+    ):
+        if not expr_chain.sub_link:
+            raise LanguageGraphException(
+                '"subType" step expression chain is missing sub link.'
+            )
+        new_target_assets = set()
+        new_target_assets.update(
+            self._follow_expr_chain(
+                model, target_assets, expr_chain.sub_link
+            )
+        )
+        selected_new_target_assets = set()
+        for asset in new_target_assets:
+            lang_graph_asset = self.lang_graph.assets[asset.type]
+            if not lang_graph_asset:
+                raise LookupError(
+                    f'Failed to find asset "{asset.type}" in the '
+                    'language graph.'
+                )
+            lang_graph_subtype_asset = expr_chain.subtype
+            if not lang_graph_subtype_asset:
+                raise LookupError(
+                    'Failed to find asset "{expr_chain.subtype}" in '
+                    'the language graph.'
+                )
+            if lang_graph_asset.is_subasset_of(lang_graph_subtype_asset):
+                selected_new_target_assets.add(asset)
+
+        return selected_new_target_assets
+
+
+    def _follow_union_intersection_difference_expr_chain(
+        self,
+        model: Model,
+        target_assets: set[ModelAsset],
+        expr_chain: ExpressionsChain
+    ) -> set[Any]:
+        # The set operators are used to combine the left hand and
+        # right hand targets accordingly.
+        if not expr_chain.left_link:
+            raise LanguageGraphException(
+                '"%s" step expression chain is missing the left link.',
+                expr_chain.type
+            )
+        if not expr_chain.right_link:
+            raise LanguageGraphException(
+                '"%s" step expression chain is missing the right link.',
+                expr_chain.type
+            )
+        lh_targets = self._follow_expr_chain(
+            model, target_assets, expr_chain.left_link
+        )
+        rh_targets = self._follow_expr_chain(
+            model, target_assets, expr_chain.right_link
+        )
+
+        if expr_chain.type == 'union':
+            # Once the assets become hashable set operations should be
+            # used instead.
+            return lh_targets.union(rh_targets)
+
+        if expr_chain.type == 'intersection':
+            return lh_targets.intersection(rh_targets)
+
+        if expr_chain.type == 'difference':
+            return lh_targets.difference(rh_targets)
+
+        raise ValueError("Expr chain must be of type union, intersectin or difference")
+
+    def _follow_collect_expr_chain(
+        self,
+        model: Model,
+        target_assets: set[ModelAsset],
+        expr_chain: ExpressionsChain
+    ) -> set[Any]:
+        if not expr_chain.left_link:
+            raise LanguageGraphException(
+                '"collect" step expression chain missing the left link.'
+            )
+        if not expr_chain.right_link:
+            raise LanguageGraphException(
+                '"collect" step expression chain missing the right link.'
+            )
+        lh_targets = self._follow_expr_chain(
+            model,
+            target_assets,
+            expr_chain.left_link
+        )
+        rh_targets = set()
+        for lh_target in lh_targets:
+            rh_targets |= self._follow_expr_chain(
+                model,
+                {lh_target},
+                expr_chain.right_link
+            )
+        return rh_targets
+
     def _follow_expr_chain(
-            self,
-            model: Model,
-            target_assets: set[ModelAsset],
-            expr_chain: Optional[ExpressionsChain]
-        ) -> set[Any]:
+        self,
+        model: Model,
+        target_assets: set[ModelAsset],
+        expr_chain: Optional[ExpressionsChain]
+    ) -> set[Any]:
         """
         Recursively follow a language graph expressions chain on an instance
         model.
@@ -320,123 +465,21 @@ class AttackGraph():
 
         match (expr_chain.type):
             case 'union' | 'intersection' | 'difference':
-                # The set operators are used to combine the left hand and
-                # right hand targets accordingly.
-                if not expr_chain.left_link:
-                    raise LanguageGraphException('"%s" step expression chain'
-                        ' is missing the left link.' % expr_chain.type)
-                if not expr_chain.right_link:
-                    raise LanguageGraphException('"%s" step expression chain'
-                        ' is missing the right link.' % expr_chain.type)
-                lh_targets = self._follow_expr_chain(
-                    model,
-                    target_assets,
-                    expr_chain.left_link
+                return self._follow_union_intersection_difference_expr_chain(
+                    model, target_assets, expr_chain
                 )
-                rh_targets = self._follow_expr_chain(
-                    model,
-                    target_assets,
-                    expr_chain.right_link
-                )
-
-                match (expr_chain.type):
-                    # Once the assets become hashable set operations should be
-                    # used instead.
-                    case 'union':
-                        new_target_assets = lh_targets.union(rh_targets)
-
-                    case 'intersection':
-                        new_target_assets = lh_targets.intersection(rh_targets)
-
-                    case 'difference':
-                        new_target_assets = lh_targets.difference(rh_targets)
-
-                return new_target_assets
 
             case 'field':
-                # Change the target assets from the current ones to the
-                # associated assets given the specified field name.
-                if not expr_chain.fieldname:
-                    raise LanguageGraphException('"field" step expression '
-                        'chain is missing fieldname.')
-                new_target_assets = set()
-                new_target_assets.update(
-                    *(
-                        asset.associated_assets.get(
-                            expr_chain.fieldname, set()
-                        ) for asset in target_assets
-                      )
-                )
-                return new_target_assets
+                return self._follow_field_expr_chain(target_assets, expr_chain)
 
             case 'transitive':
-                if not expr_chain.sub_link:
-                    raise LanguageGraphException('"transitive" step '
-                        'expression chain is missing sub link.')
-
-                new_assets = target_assets
-
-                while new_assets := self._follow_expr_chain(
-                    model, new_assets, expr_chain.sub_link
-                ):
-                    if not (new_assets := new_assets.difference(target_assets)):
-                        break
-
-                    target_assets.update(new_assets)
-
-                return target_assets
+                return self._follow_transitive_expr_chain(model, target_assets, expr_chain)
 
             case 'subType':
-                if not expr_chain.sub_link:
-                    raise LanguageGraphException('"subType" step '
-                        'expression chain is missing sub link.')
-                new_target_assets = set()
-                new_target_assets.update(
-                    self._follow_expr_chain(
-                        model, target_assets, expr_chain.sub_link
-                    )
-                )
-
-                selected_new_target_assets = set()
-                for asset in new_target_assets:
-                    lang_graph_asset = self.lang_graph.assets[asset.type]
-                    if not lang_graph_asset:
-                        raise LookupError(
-                            f'Failed to find asset \"{asset.type}\" in the '
-                            'language graph.'
-                        )
-                    lang_graph_subtype_asset = expr_chain.subtype
-                    if not lang_graph_subtype_asset:
-                        raise LookupError(
-                            'Failed to find asset "%s" in the '
-                            'language graph.' % expr_chain.subtype
-                        )
-                    if lang_graph_asset.is_subasset_of(
-                            lang_graph_subtype_asset):
-                        selected_new_target_assets.add(asset)
-
-                return selected_new_target_assets
+                return self._follow_subtype_expr_chain(model, target_assets, expr_chain)
 
             case 'collect':
-                if not expr_chain.left_link:
-                    raise LanguageGraphException('"collect" step expression chain'
-                        ' is missing the left link.')
-                if not expr_chain.right_link:
-                    raise LanguageGraphException('"collect" step expression chain'
-                        ' is missing the right link.')
-                lh_targets = self._follow_expr_chain(
-                    model,
-                    target_assets,
-                    expr_chain.left_link
-                )
-                rh_targets = set()
-                for lh_target in lh_targets:
-                    rh_targets |= self._follow_expr_chain(
-                        model,
-                        {lh_target},
-                        expr_chain.right_link
-                    )
-                return rh_targets
+                return self._follow_collect_expr_chain(model, target_assets, expr_chain)
 
             case _:
                 msg = 'Unknown attack expressions chain type: %s'
@@ -447,7 +490,6 @@ class AttackGraph():
                 raise AttackGraphStepExpressionError(
                     msg % expr_chain.type
                 )
-                return None
 
     def _generate_graph(self) -> None:
         """
@@ -462,22 +504,15 @@ class AttackGraph():
 
         # First, generate all of the nodes of the attack graph.
         for asset in self.model.assets.values():
-
-            logger.debug(
-                'Generating attack steps for asset %s which is of class %s.',
-                asset.name, asset.type
-            )
-
             attack_step_nodes = []
 
             for attack_step in asset.lg_asset.attack_steps.values():
                 logger.debug(
-                    'Generating attack step node for %s.', attack_step.name
+                    'Generating attack step node %s for asset %s (%s).',
+                    attack_step.name, asset.name, asset.type
                 )
-
                 existence_status = None
                 node_name = asset.name + ':' + attack_step.name
-
                 ttc_dist = copy.deepcopy(attack_step.ttc)
                 match (attack_step.type):
                     case 'defense':
@@ -503,10 +538,8 @@ class AttackGraph():
                         existence_status = False
                         for requirement in attack_step.requires:
                             target_assets = self._follow_expr_chain(
-                                    self.model,
-                                    set([asset]),
-                                    requirement
-                                )
+                                self.model, set([asset]), requirement
+                            )
                             # If the step expression resolution yielded
                             # the target assets then the required assets
                             # exist in the model.
@@ -516,13 +549,10 @@ class AttackGraph():
 
                         logger.debug(
                             'Setting the existence status of \"%s\" to '
-                            '%s.',
-                            node_name, existence_status
+                            '%s.', node_name, existence_status
                         )
 
-                    case _:
-                        pass
-
+                # Create the node
                 ag_node = self.add_node(
                     lg_attack_step = attack_step,
                     model_asset = asset,
@@ -530,20 +560,19 @@ class AttackGraph():
                     existence_status = existence_status
                 )
                 attack_step_nodes.append(ag_node)
-
             asset.attack_step_nodes = attack_step_nodes
 
         # Then, link all of the nodes according to their associations.
         for ag_node in self.nodes.values():
             logger.debug(
                 'Determining children for attack step "%s"(%d)',
-                ag_node.full_name,
-                ag_node.id
+                ag_node.full_name, ag_node.id
             )
 
             if not ag_node.model_asset:
-                raise AttackGraphException('Attack graph node is missing '
-                    'asset link')
+                raise AttackGraphException(
+                    'Attack graph node is missing asset link'
+                )
 
             lang_graph_asset = self.lang_graph.assets[ag_node.model_asset.type]
             lang_graph_attack_step: Optional[LanguageGraphAttackStep] = (
@@ -551,20 +580,22 @@ class AttackGraph():
             )
 
             while lang_graph_attack_step:
+
                 for target_attack_step, expr_chains in lang_graph_attack_step.children.items():
                     for expr_chain in expr_chains:
                         target_assets = self._follow_expr_chain(
-                            self.model,
-                            set([ag_node.model_asset]),
-                            expr_chain
+                            self.model, set([ag_node.model_asset]), expr_chain
                         )
 
                         for target_asset in target_assets:
+
                             if target_asset is not None:
-                                target_node_full_name = target_asset.name + \
-                                    ':' + target_attack_step.name
+                                target_node_full_name = (
+                                    target_asset.name + ':' + target_attack_step.name
+                                )
                                 target_node = self.get_node_by_full_name(
-                                    target_node_full_name)
+                                    target_node_full_name
+                                )
                                 if target_node is None:
                                     msg = ('Failed to find target node '
                                            '"%s" to link with for attack '
@@ -586,17 +617,16 @@ class AttackGraph():
                                 assert ag_node.id is not None
                                 assert target_node.id is not None
 
-                                logger.debug('Linking attack step "%s"(%d) '
-                                    'to attack step "%s"(%d)' %
-                                    (
-                                        ag_node.full_name,
-                                        ag_node.id,
-                                        target_node.full_name,
-                                        target_node.id
-                                    )
+                                logger.debug(
+                                    'Linking attack step "%s"(%d) to attack step "%s"(%d)',
+                                    ag_node.full_name,
+                                    ag_node.id,
+                                    target_node.full_name,
+                                    target_node.id
                                 )
                                 ag_node.children.add(target_node)
                                 target_node.parents.add(ag_node)
+
                 if lang_graph_attack_step.overrides:
                     break
                 lang_graph_attack_step = lang_graph_attack_step.inherits
@@ -612,14 +642,14 @@ class AttackGraph():
         self._generate_graph()
 
     def add_node(
-            self,
-            lg_attack_step: LanguageGraphAttackStep,
-            node_id: Optional[int] = None,
-            model_asset: Optional[ModelAsset] = None,
-            ttc_dist: Optional[dict] = None,
-            existence_status: Optional[bool] = None,
-            full_name: Optional[str] = None
-        ) -> AttackGraphNode:
+        self,
+        lg_attack_step: LanguageGraphAttackStep,
+        node_id: Optional[int] = None,
+        model_asset: Optional[ModelAsset] = None,
+        ttc_dist: Optional[dict] = None,
+        existence_status: Optional[bool] = None,
+        full_name: Optional[str] = None
+    ) -> AttackGraphNode:
         """Create and add a node to the graph
         Arguments:
         lg_attack_step      - the language graph attack step that corresponds
