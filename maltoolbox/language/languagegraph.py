@@ -28,7 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 def disaggregate_attack_step_full_name(
-        attack_step_full_name: str) -> list[str]:
+    attack_step_full_name: str
+) -> list[str]:
+    """From an attack step full name, get (asset_name, attack_step_name)"""
     return attack_step_full_name.split(':')
 
 
@@ -912,7 +914,8 @@ class LanguageGraph():
                         attack_step_dict['name']]
                     ancestor_asset_name, ancestor_attack_step_name = \
                         disaggregate_attack_step_full_name(
-                            attack_step_dict['inherits'])
+                            attack_step_dict['inherits']
+                        )
                     ancestor_asset = lang_graph.assets[ancestor_asset_name]
                     ancestor_attack_step = ancestor_asset.attack_steps[\
                         ancestor_attack_step_name]
