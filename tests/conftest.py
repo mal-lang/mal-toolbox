@@ -116,3 +116,18 @@ def example_attackgraph(corelang_lang_graph: LanguageGraph, model: Model):
         lang_graph=corelang_lang_graph,
         model=model
     )
+
+@pytest.fixture
+def example_model(corelang_lang_graph: LanguageGraph):
+    """Fixture that generates an example model
+
+    Uses coreLang specification to create and return a Model object
+    with two applications with an association
+    """
+
+    model = Model(name='Example Model', lang_graph=corelang_lang_graph)
+    app1 = model.add_asset(asset_type='Application', name='Application 1')
+    app2 = model.add_asset(asset_type='Application', name='Application 2')
+    app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
+
+    return model

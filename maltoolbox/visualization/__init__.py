@@ -7,5 +7,5 @@ __all__ = [
     'render_model',
     'ingest_attack_graph_neo4j',
     'ingest_model_neo4j',
-    'create_drawio_file_with_images'
+    'create_drawio_file_with_images',
 ]

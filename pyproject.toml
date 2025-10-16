@@ -18,7 +18,8 @@ dependencies = [
   "antlr4-python3-runtime",
   "docopt",
   "PyYAML",
-  "py2neo"
+  "py2neo",
+  "networkx"
 ]
 license = {text = "Apache Software License"}
 keywords = ["mal"]
