@@ -491,6 +491,57 @@ class AttackGraph():
                     msg % expr_chain.type
                 )
 
+    def _get_existance_status(
+        self,
+        model: Model,
+        asset: ModelAsset,
+        attack_step: LanguageGraphAttackStep
+    ) -> Optional[bool]:
+        """Get existance status of a step"""
+
+        if attack_step.type not in ('exist', 'notExist'):
+            # No existence status for other type of steps
+            return None
+
+        existence_status = False
+        for requirement in attack_step.requires:
+            target_assets = self._follow_expr_chain(
+                model, set([asset]), requirement
+            )
+            # If the step expression resolution yielded
+            # the target assets then the required assets
+            # exist in the model.
+            if target_assets:
+                existence_status = True
+                break
+
+        return existence_status
+
+    def _get_ttc_dist(
+        self,
+        asset: ModelAsset,
+        attack_step: LanguageGraphAttackStep
+    ):
+        """
+        Get step ttc distribution based on language
+        and possibly overriding defense status
+        """
+        ttc_dist = copy.deepcopy(attack_step.ttc)
+        if attack_step.type ==  'defense':
+            if attack_step.name in asset.defenses:
+                # If defense status was set in model, set ttc accordingly
+                defense_value = float(asset.defenses[attack_step.name])
+                ttc_dist = {
+                    'arguments': [defense_value],
+                    'name': 'Bernoulli',
+                    'type': 'function'
+                }
+                logger.debug(
+                    'Setting defense \"%s\" to "%s".',
+                    asset.name + ":" + attack_step.name, defense_value
+                )
+        return ttc_dist
+
     def _generate_graph(self) -> None:
         """
         Generate the attack graph based on the original model instance and the
@@ -505,59 +556,19 @@ class AttackGraph():
         # First, generate all of the nodes of the attack graph.
         for asset in self.model.assets.values():
             attack_step_nodes = []
-
             for attack_step in asset.lg_asset.attack_steps.values():
                 logger.debug(
                     'Generating attack step node %s for asset %s (%s).',
                     attack_step.name, asset.name, asset.type
                 )
-                existence_status = None
-                node_name = asset.name + ':' + attack_step.name
-                ttc_dist = copy.deepcopy(attack_step.ttc)
-                match (attack_step.type):
-                    case 'defense':
-                        # Set the TTC probability for defenses
-                        # that were explicitly set in model
-                        if attack_step.name in asset.defenses:
-                            defense_value = float(
-                                asset.defenses[attack_step.name]
-                            )
-                            ttc_dist = {
-                                'arguments': [defense_value],
-                                'name': 'Bernoulli',
-                                'type': 'function'
-                            }
-                            logger.debug(
-                                'Setting defense \"%s\" to "%s".',
-                                node_name, defense_value
-                            )
-
-                    case 'exist' | 'notExist':
-                        # Resolve step expression associated with
-                        # (non-)existence attack steps.
-                        existence_status = False
-                        for requirement in attack_step.requires:
-                            target_assets = self._follow_expr_chain(
-                                self.model, set([asset]), requirement
-                            )
-                            # If the step expression resolution yielded
-                            # the target assets then the required assets
-                            # exist in the model.
-                            if target_assets:
-                                existence_status = True
-                                break
-
-                        logger.debug(
-                            'Setting the existence status of \"%s\" to '
-                            '%s.', node_name, existence_status
-                        )
-
                 # Create the node
                 ag_node = self.add_node(
                     lg_attack_step = attack_step,
                     model_asset = asset,
-                    ttc_dist = ttc_dist,
-                    existence_status = existence_status
+                    ttc_dist = self._get_ttc_dist(asset, attack_step),
+                    existence_status = self._get_existance_status(
+                        self.model, asset, attack_step
+                    )
                 )
                 attack_step_nodes.append(ag_node)
             asset.attack_step_nodes = attack_step_nodes
@@ -574,62 +585,46 @@ class AttackGraph():
                     'Attack graph node is missing asset link'
                 )
 
-            lang_graph_asset = self.lang_graph.assets[ag_node.model_asset.type]
-            lang_graph_attack_step: Optional[LanguageGraphAttackStep] = (
-                lang_graph_asset.attack_steps[ag_node.name]
+            lg_asset = self.lang_graph.assets[ag_node.model_asset.type]
+            lg_attack_step: Optional[LanguageGraphAttackStep] = (
+                lg_asset.attack_steps[ag_node.name]
             )
 
-            while lang_graph_attack_step:
+            while lg_attack_step:
+                # Find children for the attack graph node using the language
+                children_types = lg_attack_step.children.items()
+                for child_attack_step_type, expr_chains in children_types:
 
-                for target_attack_step, expr_chains in lang_graph_attack_step.children.items():
                     for expr_chain in expr_chains:
                         target_assets = self._follow_expr_chain(
                             self.model, set([ag_node.model_asset]), expr_chain
                         )
 
                         for target_asset in target_assets:
-
                             if target_asset is not None:
                                 target_node_full_name = (
-                                    target_asset.name + ':' + target_attack_step.name
+                                    target_asset.name + ':' + child_attack_step_type.name
                                 )
                                 target_node = self.get_node_by_full_name(
                                     target_node_full_name
                                 )
                                 if target_node is None:
-                                    msg = ('Failed to find target node '
-                                           '"%s" to link with for attack '
-                                           'step "%s"(%d)!')
-                                    logger.error(
-                                        msg,
-                                        target_node_full_name,
-                                        ag_node.full_name,
-                                        ag_node.id
-                                    )
                                     raise AttackGraphStepExpressionError(
-                                        msg % (
-                                            target_node_full_name,
-                                            ag_node.full_name,
-                                            ag_node.id
-                                        )
+                                        'Failed to find target node '
+                                        '"{target_node_full_name}" to link with for attack '
+                                        'step "{ag_node.full_name}"({ag_node.id})!'
                                     )
-
-                                assert ag_node.id is not None
-                                assert target_node.id is not None
-
                                 logger.debug(
                                     'Linking attack step "%s"(%d) to attack step "%s"(%d)',
-                                    ag_node.full_name,
-                                    ag_node.id,
-                                    target_node.full_name,
-                                    target_node.id
+                                    ag_node.full_name, ag_node.id,
+                                    target_node.full_name, target_node.id
                                 )
                                 ag_node.children.add(target_node)
                                 target_node.parents.add(ag_node)
 
-                if lang_graph_attack_step.overrides:
+                if lg_attack_step.overrides:
                     break
-                lang_graph_attack_step = lang_graph_attack_step.inherits
+                lg_attack_step = lg_attack_step.inherits
 
 
     def regenerate_graph(self) -> None:
