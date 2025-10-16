@@ -2,7 +2,6 @@ name: MyPy maltoolbox
 on: [push]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -17,8 +16,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r tests/requirements.txt
+          pip install .
       - name: Type checking with MyPy
         run: |
-          pip install mypy
+          pip install mypy types-PyYAML
           mypy maltoolbox tests --ignore-missing-imports
