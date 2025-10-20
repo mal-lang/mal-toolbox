@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.model import Model
 
 from gexfpy import stringify
 from gexfpy import (
@@ -110,6 +111,99 @@ def attack_graph_to_gexf(
         nodes=Nodes(node=node_list, count=len(node_list)),
         edges=Edges(edge=edge_list, count=len(edge_list)),
         defaultedgetype=DefaultedgetypeType.DIRECTED,
+        idtype=IdtypeType.INTEGER,
+        mode=ModeType.STATIC,
+    )
+
+    return Gexf(graph=graph)
+
+
+def model_to_gexf(
+    model: Model,
+    color_map: dict[str, Color] | dict[int, Color] = {},
+    edge_thickness: Thickness = Thickness(value=8.0),
+    edge_shape: EdgeShapeContent = EdgeShapeContent(value=EdgeShapeType.SOLID),
+) -> Gexf:
+    """Export a model to GEXF format"""
+
+    node_list: list[Node] = []
+    edge_list: list[Edge] = []
+
+    # Create nodes for each asset
+    for asset_id, asset in model.assets.items():
+        node_list.append(
+            Node(
+                id=asset_id,
+                label=asset.name,
+                attvalues=Attvalues(
+                    [
+                        Attvalue(
+                            for_value="type",
+                            value=asset.type,
+                        ),
+                        Attvalue(
+                            for_value="name",
+                            value=asset.name,
+                        ),
+                    ]
+                    + [
+                        Attvalue(
+                            for_value=defense_name,
+                            value=str(defense_value),
+                        )
+                        for defense_name, defense_value in asset.defenses.items()
+                    ]
+                ),
+                color=[color_map.get(asset_id, Color(r=0, g=0, b=0, a=0.5))],
+                shape=[NodeShapeContent(value=NodeShapeType.SQUARE)],
+            )
+        )
+
+        # Create edges for associations
+        for fieldname, associated_assets in asset.associated_assets.items():
+            for associated_asset in associated_assets:
+                edge_list.append(
+                    Edge(
+                        source=asset_id,
+                        target=associated_asset.id,
+                        thickness=[edge_thickness],
+                        shape=[edge_shape],
+                        label=fieldname,
+                    )
+                )
+
+    graph = Graph(
+        attributes=Attributes(
+            attribute=[
+                Attribute(
+                    default=[model.name],
+                    id=0,
+                    title="model_name",
+                    type=AttrtypeType.STRING,
+                ),
+                Attribute(
+                    default=[model.maltoolbox_version],
+                    id=1,
+                    title="maltoolbox_version",
+                    type=AttrtypeType.STRING,
+                ),
+                Attribute(
+                    default=[model.lang_graph.metadata["version"]],
+                    id=2,
+                    title="lang_version",
+                    type=AttrtypeType.STRING,
+                ),
+                Attribute(
+                    default=[model.lang_graph.metadata["id"]],
+                    id=3,
+                    title="lang_id",
+                    type=AttrtypeType.STRING,
+                ),
+            ]
+        ),
+        nodes=Nodes(node=node_list, count=len(node_list)),
+        edges=Edges(edge=edge_list, count=len(edge_list)),
+        defaultedgetype=DefaultedgetypeType.UNDIRECTED,
         idtype=IdtypeType.INTEGER,
         mode=ModeType.STATIC,
     )
