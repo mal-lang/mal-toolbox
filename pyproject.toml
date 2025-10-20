@@ -19,7 +19,8 @@ dependencies = [
   "docopt",
   "PyYAML",
   "py2neo",
-  "networkx"
+  "networkx",
+  "gexfpy"
 ]
 license = {text = "Apache Software License"}
 keywords = ["mal"]
