@@ -284,7 +284,7 @@ class AttackGraph():
         The attack step node that matches the given full name.
         """
 
-        logger.debug(f'Looking up node with full name "%s"', full_name)
+        logger.debug('Looking up node with full name "%s"', full_name)
         return self._full_name_to_node.get(full_name)
 
     def _follow_field_expr_chain(

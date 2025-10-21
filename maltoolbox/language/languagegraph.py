@@ -1762,9 +1762,10 @@ class LanguageGraph():
                                 step_expression
                             )
                         if result_expr_chain is None:
-                            raise LanguageGraphException('Failed to find '
-                            'existence step requirement for step '
-                            f'expression:\n%s' % step_expression)
+                            raise LanguageGraphException(
+                                'Failed to find existence step requirement for'
+                                f'step expression:\n{step_expression}'
+                            )
                         attack_step.own_requires.append(result_expr_chain)
 
     def _generate_graph(self) -> None:

@@ -8,8 +8,8 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
-    from ..language import LanguageGraphAttackStep, Detector
+    from typing import Optional
+    from ..language import LanguageGraphAttackStep
     from ..model import ModelAsset
 
 class AttackGraphNode:

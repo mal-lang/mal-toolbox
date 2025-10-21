@@ -39,7 +39,8 @@ class SearchCondition:
     """A condition that has to be true for a node to match"""
 
     # Predefined search conditions
-    ANY = lambda _: True
+    @staticmethod
+    def ANY(_): return True
 
     # `matches` should be a lambda that takes node as input and returns bool
     # If lamdba returns True for a node, the node matches

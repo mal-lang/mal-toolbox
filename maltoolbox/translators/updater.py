@@ -1,6 +1,5 @@
 import logging
 
-import logging
 from ..model import Model
 from ..language import LanguageGraph
 from ..file_utils import load_dict_from_json_file, load_dict_from_yaml_file
@@ -117,10 +116,6 @@ def convert_model_dict_from_version_0_0(model_dict: dict) -> dict:
 
     # Add new assoc dict to new model dict
     new_model_dict['associations'] = new_assoc_list
-
-    # Reconstruct the attackers
-    if 'attackers' in model_dict:
-        attackers_info = model_dict['attackers']
 
     return new_model_dict
 
