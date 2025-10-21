@@ -1,8 +1,9 @@
 import random
+
 import graphviz
 
-from ..model import Model
 from ..attackgraph import AttackGraph
+from ..model import Model
 
 graphviz_bright_colors = [
     "aliceblue", "antiquewhite", "antiquewhite1", "antiquewhite2", "azure", "azure1", "azure2",
@@ -60,11 +61,12 @@ def render_model(model: Model):
                 )
     dot.render(directory='.', view=True)
 
+
 def render_attack_graph(attack_graph: AttackGraph):
     """Render attack graph graphviz, create pdf and open it"""
     assert attack_graph.model, "Attack graph needs a model"
     dot = graphviz.Graph(attack_graph.model.name)
-    dot.graph_attr['nodesep'] = '3.0' # Node separation
+    dot.graph_attr['nodesep'] = '3.0'  # Node separation
     dot.graph_attr['ratio'] = 'compress'
 
     # Create nodes

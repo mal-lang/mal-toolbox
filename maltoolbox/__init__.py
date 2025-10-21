@@ -1,4 +1,3 @@
-# -*- encoding: utf-8 -*-
 # MAL Toolbox v1.1.1
 # Copyright 2025, Andrei Buhaiu.
 #
@@ -16,8 +15,7 @@
 #
 
 
-"""
-MAL-Toolbox Framework
+"""MAL-Toolbox Framework
 """
 
 __title__ = "maltoolbox"
@@ -34,10 +32,11 @@ __docformat__ = "restructuredtext en"
 
 __all__ = ()
 
-import os
-import yaml
 import logging
+import os
 from typing import Any
+
+import yaml
 
 config: dict[str, Any] = {
     "logging": {

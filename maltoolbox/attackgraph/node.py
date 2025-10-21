@@ -1,16 +1,17 @@
-"""
-MAL-Toolbox Attack Graph Node
+"""MAL-Toolbox Attack Graph Node
 """
 
 from __future__ import annotations
+
 import copy
 from functools import cached_property
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any, Optional
-    from ..language import LanguageGraphAttackStep, Detector
+
+    from ..language import LanguageGraphAttackStep
     from ..model import ModelAsset
+
 
 class AttackGraphNode:
     """Node part of AttackGraph"""
@@ -19,10 +20,10 @@ class AttackGraphNode:
         self,
         node_id: int,
         lg_attack_step: LanguageGraphAttackStep,
-        model_asset: Optional[ModelAsset] = None,
-        ttc_dist: Optional[dict] = None,
-        existence_status: Optional[bool] = None,
-        full_name: Optional[str] = None
+        model_asset: ModelAsset | None = None,
+        ttc_dist: dict | None = None,
+        existence_status: bool | None = None,
+        full_name: str | None = None
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
@@ -68,11 +69,9 @@ class AttackGraphNode:
 
         return node_dict
 
-
     def __repr__(self) -> str:
         return (f'AttackGraphNode(name: "{self.full_name}", id: {self.id}, '
             f'type: {self.type})')
-
 
     def __deepcopy__(self, memo) -> AttackGraphNode:
         """Deep copy an attackgraph node
@@ -83,15 +82,14 @@ class AttackGraphNode:
         should be recreated when deepcopying the attack graph itself.
 
         """
-
         # Check if the object is already in the memo dictionary
         if id(self) in memo:
             return memo[id(self)]
 
         copied_node = AttackGraphNode(
-            node_id = self.id,
-            model_asset = self.model_asset,
-            lg_attack_step = self.lg_attack_step
+            node_id=self.id,
+            model_asset=self.model_asset,
+            lg_attack_step=self.lg_attack_step
         )
 
         copied_node.tags = copy.deepcopy(self.tags, memo)
@@ -105,11 +103,9 @@ class AttackGraphNode:
 
         return copied_node
 
-
     @property
     def full_name(self) -> str:
-        """
-        Return the full name of the attack step. This is normally a
+        """Return the full name of the attack step. This is normally a
         combination of the asset name to which the attack step
         belongs and attack step name itself, but can also be
         explicitly set or a combination of the step id and step name.
@@ -117,14 +113,13 @@ class AttackGraphNode:
         if self._full_name:
             # Explicitly set
             return self._full_name
-        elif self.model_asset:
+        if self.model_asset:
             # Inherited from model asset
             full_name = self.model_asset.name + ':' + self.name
         else:
             # Fallback: use ID
             full_name = str(self.id) + ':' + self.name
         return full_name
-
 
     @cached_property
     def info(self) -> dict[str, str]:

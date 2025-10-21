@@ -3,7 +3,7 @@ import sys
 from collections.abc import MutableMapping, MutableSequence
 from pathlib import Path
 
-from antlr4 import FileStream, CommonTokenStream, ParseTreeVisitor
+from antlr4 import CommonTokenStream, FileStream, ParseTreeVisitor
 from antlr4.error.ErrorListener import ConsoleErrorListener
 
 from .mal_lexer import malLexer
@@ -16,7 +16,7 @@ from .mal_parser import malParser
 
 def patched_antrl_syntax_error(self, recognizer, offendingSymbol, line, column, msg, e):
     file = patched_antrl_syntax_error.file
-    print(f"{file}:{str(line)}:{str(column)}: {msg}", file=sys.stderr)
+    print(f"{file}:{line!s}:{column!s}: {msg}", file=sys.stderr)
 
 
 ConsoleErrorListener.syntaxError = patched_antrl_syntax_error
@@ -88,9 +88,9 @@ class MalCompiler(ParseTreeVisitor):
                     included_file = self.compile(value)
                     for k, v in langspec.items():
                         if isinstance(v, MutableMapping):
-                            langspec[k].update(included_file.get(k, {}))
+                            v.update(included_file.get(k, {}))
                         if isinstance(v, MutableSequence) and k in included_file:
-                            langspec[k].extend(included_file[k])
+                            v.extend(included_file[k])
 
         for key in ("categories", "assets", "associations"):
             unique = []

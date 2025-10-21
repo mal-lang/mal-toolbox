@@ -1,7 +1,9 @@
 from __future__ import annotations
-from typing import Iterable
+
+from collections.abc import Iterable
 
 import networkx as nx
+
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 from maltoolbox.model import Model
 
@@ -35,6 +37,6 @@ def model_to_nx(model: Model) -> nx.Graph:
     for id, asset in model.assets.items():
         for fieldname, associated_assets in asset.associated_assets.items():
             for associated_asset in associated_assets:
-                G.add_edge(id, associated_asset.id, **{"name": asset.lg_asset.associations[fieldname].name})
+                G.add_edge(id, associated_asset.id, name=asset.lg_asset.associations[fieldname].name)
 
     return G

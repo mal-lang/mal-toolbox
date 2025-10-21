@@ -1,24 +1,24 @@
-"""
-MAL-Toolbox Neo4j Ingestor Module
+"""MAL-Toolbox Neo4j Ingestor Module
 """
 # mypy: ignore-errors
 
 import logging
-
 from typing import Any
+
 from py2neo import Graph, Node, Relationship, Subgraph
 
 logger = logging.getLogger(__name__)
+
 
 def ingest_attack_graph_neo4j(
         graph,
         neo4j_config: dict[str, Any],
         delete: bool = True
     ) -> None:
-    """
-    Ingest an attack graph into a neo4j database
+    """Ingest an attack graph into a neo4j database
 
     Arguments:
+    ---------
     graph                - the attackgraph provided by the atkgraph.py module.
     uri                  - the URI to a running neo4j instance
     username             - the username to login on Neo4J
@@ -26,8 +26,8 @@ def ingest_attack_graph_neo4j(
     dbname               - the selected database
     delete               - if True, the previous content of the database is deleted
                            before ingesting the new attack graph
-    """
 
+    """
     uri = neo4j_config.get('uri')
     username = neo4j_config.get('username')
     password = neo4j_config.get('password')
@@ -43,12 +43,11 @@ def ingest_attack_graph_neo4j(
         node_dict = node.to_dict()
         nodes[node.id] = Node(
             node_dict['asset'] if 'asset' in node_dict else node_dict['id'],
-            name = node_dict['name'],
-            full_name = node.full_name,
-            type = node_dict['type'],
-            ttc = str(node_dict['ttc']),
+            name=node_dict['name'],
+            full_name=node.full_name,
+            type=node_dict['type'],
+            ttc=str(node_dict['ttc']),
         )
-
 
     for node in graph.nodes.values():
         for child in node.children:
@@ -66,10 +65,10 @@ def ingest_model_neo4j(
         neo4j_config: dict[str, Any],
         delete: bool = True
     ) -> None:
-    """
-    Ingest an instance model graph into a Neo4J database
+    """Ingest an instance model graph into a Neo4J database
 
     Arguments:
+    ---------
     model                - the instance model dictionary as provided by the model.py module
     uri                  - the URI to a running neo4j instance
     username             - the username to login on Neo4J
@@ -77,8 +76,8 @@ def ingest_model_neo4j(
     dbname               - the selected database
     delete               - if True, the previous content of the database is deleted
                            before ingesting the new attack graph
-    """
 
+    """
     uri = neo4j_config.get('uri')
     username = neo4j_config.get('username')
     password = neo4j_config.get('password')

@@ -1,14 +1,13 @@
 from maltoolbox.model import Model
 
+
 def position_assets(model: Model):
-    """
-    Assigns (x, y) positions to assets in a graph where relations are stored
+    """Assigns (x, y) positions to assets in a graph where relations are stored
     in asset.associated_assets[relation_name] = [related_assets...].
     Positions are stored in asset.extras['position'] = {'x': ..., 'y': ...}.
     Layout is computed by traversing connected components.
     Adds uniform padding between assets.
     """
-
     visited = set()
     x_spacing = 200
     y_spacing = 200

@@ -1,20 +1,20 @@
 """Tests for networkx conversion"""
 
-from maltoolbox.attackgraph import AttackGraph
-from maltoolbox.translators import attack_graph_to_nx, model_to_nx
-from maltoolbox.model import Model
 import networkx as nx
+
+from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.model import Model
+from maltoolbox.translators import attack_graph_to_nx, model_to_nx
+
 
 def test_attackgraph_to_nx(example_attackgraph: AttackGraph):
     """Test conversion of attack graph to networkx digraph"""
 
     def number_of_edges(attack_graph: AttackGraph) -> int:
-        edges = set()
+        edges: set[tuple[int, int]] = set()
         for node in attack_graph.nodes.values():
-            for child in node.children:
-                edges.add((node.id, child.id))
-            for parent in node.parents:
-                edges.add((parent.id, node.id))
+            edges.update((node.id, child.id) for child in node.children)
+            edges.update((parent.id, node.id) for parent in node.parents)
         return len(edges)
 
     no_edges = number_of_edges(example_attackgraph)
@@ -39,15 +39,15 @@ def test_attackgraph_to_nx(example_attackgraph: AttackGraph):
         for parent in node.parents:
             assert G.has_edge(parent.id, node.id)
 
+
 def test_model_to_nx(example_model: Model):
     """Test conversion of model to networkx digraph"""
 
     def number_of_edges(model: Model) -> int:
-        edges = set()
+        edges: set[tuple[int, int]] = set()
         for asset in model.assets.values():
             for _fieldname, associated_assets in asset.associated_assets.items():
-                for associated_asset in associated_assets:
-                    edges.add((asset.id, associated_asset.id))
+                edges.update((asset.id, associated_asset.id) for associated_asset in associated_assets)
         return len(edges)
 
     no_edges = number_of_edges(example_model)
@@ -67,4 +67,3 @@ def test_model_to_nx(example_model: Model):
                 for associated_asset in associated_assets:
                     assert G.has_edge(asset.id, associated_asset.id)
                     assert G.get_edge_data(asset.id, associated_asset.id)['name'] == asset.lg_asset.associations[fieldname].name
-

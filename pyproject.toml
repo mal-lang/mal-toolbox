@@ -66,3 +66,42 @@ exclude = [
   'maltoolbox/language/compiler'
 ]
 allow_redefinition = true
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+# Allow unused variables only if they're named `_`.
+dummy-variable-rgx = "^_$"
+
+# Try to fix all that it can
+fixable = ["ALL"]
+
+# Override certain rules based on file path
+[tool.ruff.lint.per-file-ignores]
+# Test files
+"**/tests/*" = [
+    "PLR2004", # Allow magic value comparisons
+    "S101",    # Allow `assert` statements
+    "S311",    # Allow use of the `random` module (no need for cryptographic security)
+]
+"maltoolbox/language/compiler/*.py" = [
+    "F405", # Allow defined from star import
+    "F403", # Allow star import
+    "E741", # Allow ambiguous variable name
+    "E743", # Allow ambiguous variable name
+]
+# Don't require superfluous parentheses in pytest fixures.
+# See https://github.com/astral-sh/ruff/pull/12106 for discussion.
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = true
+known-first-party = ["maltoolbox"]
+
+# Unless this is explicitly set, Ruff won't check for long lines in docstrings.
+# Thus, set this to the same ass Ruff's default length (88).
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 88

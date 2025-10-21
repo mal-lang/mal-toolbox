@@ -1,14 +1,12 @@
 """Tests for attack graph pattern matching"""
 
 import math
+
 import pytest
 
-from maltoolbox.model import Model
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
-
-from maltoolbox.patternfinder.attackgraph_patterns import (
-    SearchPattern, SearchCondition
-)
+from maltoolbox.model import Model
+from maltoolbox.patternfinder.attackgraph_patterns import SearchCondition, SearchPattern
 
 
 @pytest.fixture
@@ -19,7 +17,6 @@ def example_attackgraph(corelang_lang_graph, model: Model):
     with an association and an attacker to create and return
     an AttackGraph object
     """
-
     # Create 2 assets
     app1 = model.add_asset("Application", "Application 1")
     app2 = model.add_asset("Application", "Application 2")
@@ -55,13 +52,13 @@ def test_attackgraph_find_pattern_example_graph(example_attackgraph):
 def test_attackgraph_find_multiple(dummy_lang_graph):
     """Create a simple AttackGraph, find pattern with more than one match
     
-                            Node1
-                          /       \
+               Node1
+             /       \
                       Node2       Node3
-                      /            /   \
+         /            /   \
                    Node4        Node5  Node6
-                    /
-                 Node7
+       /
+    Node7
     """
     attack_graph = AttackGraph(
         dummy_lang_graph, Model("hej", dummy_lang_graph)
@@ -104,8 +101,8 @@ def test_attackgraph_find_multiple(dummy_lang_graph):
                 lambda node: node.id == 1
             ),
             SearchCondition(
-                SearchCondition.ANY, # Match any node
-                max_repeated=math.inf # Any number of times
+                SearchCondition.ANY,  # Match any node
+                max_repeated=math.inf  # Any number of times
             ),
             SearchCondition(
                 lambda node: node.id in (6, 7)
@@ -123,12 +120,12 @@ def test_attackgraph_find_multiple(dummy_lang_graph):
 
 def test_attackgraph_find_multiple_same_subpath(dummy_lang_graph):
     """Create a simple AttackGraph, find paths which match pattern
-       where several matching paths share same subpath in the graph
+    where several matching paths share same subpath in the graph
     
-                            Node1
-                          /       \
+                         Node1
+                       /       \
                       Node2       Node3
-                       /             \
+                    /             \
                    Node4             Node5
     """
     attack_graph = AttackGraph(None)
@@ -185,13 +182,13 @@ def test_attackgraph_find_multiple_same_subpath(dummy_lang_graph):
 
 def test_attackgraph_two_same_start_end_node(dummy_lang_graph):
     """Create a simple AttackGraph, find paths which match pattern
-       where both matching paths start and end att the same node
+    where both matching paths start and end att the same node
     
-                            Node1
-                          /       \
+                         Node1
+                       /       \
                       Node2       Node3
-                          \        /
-                             Node4
+                       \\        /
+                          Node4
     """
     attack_graph = AttackGraph(None)
 

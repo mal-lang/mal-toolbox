@@ -1,6 +1,7 @@
-from maltoolbox.translators.updater import load_model_from_older_version
 from maltoolbox.language import LanguageGraph
 from maltoolbox.model import Model
+from maltoolbox.translators.updater import load_model_from_older_version
+
 
 def test_converts_from_0_0(corelang_lang_graph: LanguageGraph):
 
@@ -34,8 +35,8 @@ def test_converts_from_0_1(corelang_lang_graph: LanguageGraph):
 
 def test_converts_from_0_2(corelang_lang_graph: LanguageGraph):
     """Load the older_version_example_model.json from testdata, and check if
-    its version is correct"""
-
+    its version is correct
+    """
     old_model_file = 'tests/testdata/simple_example_model_0.2.0.yml'
     new_model_file = 'tests/testdata/simple_example_model.yml'
 
