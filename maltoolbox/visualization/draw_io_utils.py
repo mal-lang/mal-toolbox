@@ -1,7 +1,7 @@
 """DrawIO exporter made by Sandor"""
+import math
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-import math
 
 from maltoolbox.model import Model
 
@@ -29,6 +29,7 @@ type2iconURL = {
     "HardwareVulnerability": "https://uxwing.com/wp-content/themes/uxwing/download/crime-security-military-law/shield-sedo-line-icon.png",
 }
 
+
 def create_drawio_file_with_images(
     model: Model,
     show_edge_labels=True,
@@ -36,17 +37,17 @@ def create_drawio_file_with_images(
     coordinate_scale=0.75,
     output_filename=None
 ):
-    """
-    Create a draw.io file with all model assets as boxes using their actual positions and images
+    """Create a draw.io file with all model assets as boxes using their actual positions and images
 
     Args:
+    ----
         model: The model containing assets and associations
         output_filename: Name of the output draw.io file
         show_edge_labels: If True, show association type as text on edges. If False, edges will have no labels.
         line_thickness: Thickness of the edges in pixels (default: 2)
         coordinate_scale: Scale factor for model coordinates (default: 1.0, use 0.5 for half size, 2.0 for double size)
-    """
 
+    """
     if not all(a.extras.get('position') for a in model.assets.values()):
         # Give assets positions if not already set
         position_assets(model)

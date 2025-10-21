@@ -1,21 +1,20 @@
 import logging
 
-from ..model import Model
-from ..language import LanguageGraph
 from ..file_utils import load_dict_from_json_file, load_dict_from_yaml_file
+from ..language import LanguageGraph
+from ..model import Model
 
 logger = logging.getLogger(__name__)
+
 
 def load_model_from_older_version(
         filename: str, lang_graph: LanguageGraph,
     ) -> Model:
-
-    """ Load an older Model file
+    """Load an older Model file
 
     Load an older model from given `filename` (yml/json)
     convert the model to the new format and return a Model object. 
     """
-
     model_dict = load_model_dict_from_file(filename)
 
     # Get the version of the model, default to 0.0
@@ -50,7 +49,6 @@ def load_model_dict_from_file(
     filename: str,
     ) -> dict:
     """Load a json or yaml file to dict"""
-
     model_dict = {}
     if filename.endswith('.yml') or filename.endswith('.yaml'):
         model_dict = load_dict_from_yaml_file(filename)
@@ -64,16 +62,17 @@ def load_model_dict_from_file(
 
 
 def convert_model_dict_from_version_0_0(model_dict: dict) -> dict:
-    """
-    Convert model dict version 0.0 to 0.1
+    """Convert model dict version 0.0 to 0.1
 
     Arguments:
+    ---------
     model_dict  - the dictionary containing the serialized model
 
     Returns:
+    -------
     A dictionary containing the version 0.1 equivalent serialized model
-    """
 
+    """
     new_model_dict = {}
 
     # Meta data and attackers did not change
@@ -121,16 +120,17 @@ def convert_model_dict_from_version_0_0(model_dict: dict) -> dict:
 
 
 def convert_model_dict_from_version_0_1(model_dict: dict) -> dict:
-    """
-    Convert model dict version 0.1 to 0.2
+    """Convert model dict version 0.1 to 0.2
 
     Arguments:
+    ---------
     model_dict  - the dictionary containing the serialized model
 
     Returns:
+    -------
     A dictionary containing the version 0.2 equivalent serialized model
-    """
 
+    """
     new_model_dict = {}
 
     # Meta data and assets format did not change from version 0.1
@@ -168,14 +168,14 @@ def convert_model_dict_from_version_0_1(model_dict: dict) -> dict:
     new_attackers_dict: dict[int, dict] = {}
     attackers_dict: dict = model_dict.get('attackers', {})
     for attacker_id, attacker_dict in attackers_dict.items():
-        attacker_id = int(attacker_id) # JSON compatibility
+        attacker_id = int(attacker_id)  # JSON compatibility
         new_attackers_dict[attacker_id] = {}
         new_attackers_dict[attacker_id]['name'] = attacker_dict['name']
         new_entry_points_dict = {}
 
         entry_points_dict = attacker_dict['entry_points']
         for asset_id, attack_steps in entry_points_dict.items():
-                asset_id = int(asset_id) # JSON compatibility
+                asset_id = int(asset_id)  # JSON compatibility
                 asset_name = new_assets_dict[asset_id]['name']
                 new_entry_points_dict[asset_name] = {
                     'asset_id': asset_id,
@@ -190,16 +190,17 @@ def convert_model_dict_from_version_0_1(model_dict: dict) -> dict:
 
 
 def convert_model_dict_from_version_0_2(model_dict: dict) -> dict:
-    """
-    Convert model dict version 0.2 to 0.3
+    """Convert model dict version 0.2 to 0.3
 
     Arguments:
+    ---------
     model_dict  - the dictionary containing the serialized model
 
     Returns:
+    -------
     A dictionary containing the version 0.3 equivalent serialized model
-    """
 
+    """
     new_model_dict = {}
 
     # Meta data and assets format did not change from version 0.1

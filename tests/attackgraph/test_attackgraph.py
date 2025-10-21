@@ -4,19 +4,15 @@ import copy
 from unittest.mock import patch
 
 from conftest import path_testdata
+
+from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
 from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
-from maltoolbox.attackgraph import (
-    AttackGraph,
-    AttackGraphNode,
-    create_attack_graph
-)
 from maltoolbox.model import Model
 
 
 def test_attackgraph_init(corelang_lang_graph, model):
     """Test init with different params given"""
-
     # _generate_graph is called when langspec and model is given to init
     with patch("maltoolbox.attackgraph.AttackGraph._generate_graph")\
          as _generate_graph:
@@ -34,6 +30,7 @@ def test_attackgraph_init(corelang_lang_graph, model):
             model=None
         )
         assert _generate_graph.call_count == 0
+
 
 def test_load_attack_graph(corelang_lang_graph: LanguageGraph):
     """Make sure we can load attack graphs"""
@@ -60,13 +57,14 @@ def test_load_attack_graph(corelang_lang_graph: LanguageGraph):
                 or isinstance(step.existence_status, bool)
             )
 
+
 def test_attackgraph_save_load_no_model_given(
         example_attackgraph: AttackGraph,
         corelang_lang_graph: LanguageGraph
     ):
     """Save AttackGraph to a file and load it
-    Note: Will create file in /tmp"""
-
+    Note: Will create file in /tmp
+    """
     reward = 1
     node_with_reward_before = example_attackgraph.nodes[0]
     node_with_reward_before.extras['reward'] = reward
@@ -95,7 +93,7 @@ def test_attackgraph_save_load_no_model_given(
     # Loaded graph nodes will not have 'asset' since it does not have a model.
     for loaded_node in loaded_attack_graph.nodes.values():
         if not isinstance(loaded_node.id, int):
-            raise ValueError(f'Invalid node id for loaded node.')
+            raise ValueError('Invalid node id for loaded node.')
         original_node = example_attackgraph.nodes[loaded_node.id]
 
         assert original_node, \
@@ -119,6 +117,7 @@ def test_attackgraph_save_load_no_model_given(
         # Make sure nodes are the same (except for the excluded keys)
         assert loaded_node_dict == original_node_dict
 
+
 def test_attackgraph_save_and_load_json_yml_model_given(
         example_attackgraph: AttackGraph,
         corelang_lang_graph: LanguageGraph
@@ -126,7 +125,6 @@ def test_attackgraph_save_and_load_json_yml_model_given(
     """Try to save and load attack graph from json and yml with model given,
     and make sure the dict represenation is the same (except for reward field)
     """
-
     for attackgraph_path in ("/tmp/attackgraph.yml", "/tmp/attackgraph.json"):
         example_attackgraph.save_to_file(attackgraph_path)
         loaded_attackgraph = AttackGraph.load_from_file(
@@ -156,6 +154,7 @@ def test_attackgraph_save_and_load_json_yml_model_given(
             assert loaded_attackgraph.nodes[node.id] == node
             assert loaded_attackgraph.get_node_by_full_name(node.full_name) == node
 
+
 def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     """Make sure the graph is correctly generated from model and lang"""
     # TODO: Add test cases with defense steps
@@ -182,15 +181,15 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
 
 def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     """Looking at corelang .mal file, make sure the resulting
-    AttackGraph contains expected nodes"""
-
+    AttackGraph contains expected nodes
+    """
     # Create 2 assets
-    app1 = model.add_asset(asset_type = 'Application')
-    app2 = model.add_asset(asset_type = 'Application')
+    app1 = model.add_asset(asset_type='Application')
+    app2 = model.add_asset(asset_type='Application')
 
     # Create association between app1 and app2
-    app1.add_associated_assets(fieldname='appExecutedApps', assets = {app2})
-    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model = model)
+    app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
+    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model=model)
 
     # These are all attack 71 steps and defenses for Application asset in MAL
     expected_node_names_application = {
@@ -288,8 +287,7 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
 
 
 def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
-    """
-    Try to deepcopy an attackgraph object. The nodes of the attack graph
+    """Try to deepcopy an attackgraph object. The nodes of the attack graph
     should be duplicated into new objects, while references to the instance
     model should remain the same.
     """
@@ -337,9 +335,9 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
             attack_graph_child = copied_attackgraph.nodes[child.id]
             assert id(attack_graph_child) == id(child)
 
+
 def test_deepcopy_memo_test(example_attackgraph: AttackGraph):
-    """
-    Make sure memo is filled up with expected number of objects
+    """Make sure memo is filled up with expected number of objects
     """
     memo: dict = {}
 
@@ -354,6 +352,7 @@ def test_deepcopy_memo_test(example_attackgraph: AttackGraph):
     memo_nodes = [o for o in memo.values() if isinstance(o, AttackGraphNode)]
     assert len(memo_nodes) == len(example_attackgraph.nodes)
 
+
 def test_attackgraph_subtype():
 
     test_lang_graph = LanguageGraph(MalCompiler().compile(
@@ -361,16 +360,16 @@ def test_attackgraph_subtype():
     test_model = Model('Test Model', test_lang_graph)
     # Create assets
     baseasset1 = test_model.add_asset(
-        name = 'BaseAsset 1',
-        asset_type = 'BaseAsset')
+        name='BaseAsset 1',
+        asset_type='BaseAsset')
 
     subasset1 = test_model.add_asset(
-        name = 'SubAsset 1',
-        asset_type = 'SubAsset')
+        name='SubAsset 1',
+        asset_type='SubAsset')
 
     otherasset1 = test_model.add_asset(
-        name = 'OtherAsset 1',
-        asset_type = 'OtherAsset')
+        name='OtherAsset 1',
+        asset_type='OtherAsset')
 
     # Create association between subasset1 and otherasset1
     subasset1.add_associated_assets('field2', {otherasset1})
@@ -399,6 +398,7 @@ def test_attackgraph_subtype():
     assert sa_1_base_step2 in oa_1_other_step1.children
     assert sa_1_subasset_step1 in oa_1_other_step1.children
 
+
 def test_attackgraph_setops():
 
     test_lang_graph = LanguageGraph(MalCompiler().compile(
@@ -407,17 +407,17 @@ def test_attackgraph_setops():
 
     # Create assets
     set_ops_a1 = test_model.add_asset(
-        asset_type = 'SO_A',
-        name = 'SO_A 1')
+        asset_type='SO_A',
+        name='SO_A 1')
     set_ops_b1 = test_model.add_asset(
-        asset_type = 'SO_B',
-        name = 'SO_B 1')
+        asset_type='SO_B',
+        name='SO_B 1')
     set_ops_b2 = test_model.add_asset(
-        asset_type = 'SO_B',
-        name = 'SO_B 2')
+        asset_type='SO_B',
+        name='SO_B 2')
     set_ops_b3 = test_model.add_asset(
-        asset_type = 'SO_B',
-        name = 'SO_B 3')
+        asset_type='SO_B',
+        name='SO_B 3')
 
     # Create association
     set_ops_a1.add_associated_assets('fieldB1', {set_ops_b1, set_ops_b2})
@@ -460,6 +460,7 @@ def test_attackgraph_setops():
     assert assetB3_intersectStep not in assetA1_origStep.children
     assert assetB3_diffStep not in assetA1_origStep.children
 
+
 def test_attackgraph_setops_adv():
 
     test_lang_graph = LanguageGraph(MalCompiler().compile(
@@ -468,23 +469,23 @@ def test_attackgraph_setops_adv():
 
     # Create assets
     set_ops_a1 = test_model.add_asset(
-        asset_type = 'SOA_A',
-        name = 'SOA_A 1')
+        asset_type='SOA_A',
+        name='SOA_A 1')
     set_ops_a2 = test_model.add_asset(
-        asset_type = 'SOA_A',
-        name = 'SOA_A 2')
+        asset_type='SOA_A',
+        name='SOA_A 2')
     set_ops_a3 = test_model.add_asset(
-        asset_type = 'SOA_A',
-        name = 'SOA_A 3')
+        asset_type='SOA_A',
+        name='SOA_A 3')
     set_ops_b1 = test_model.add_asset(
-        asset_type = 'SOA_B',
-        name = 'SOA_B 1')
+        asset_type='SOA_B',
+        name='SOA_B 1')
     set_ops_b2 = test_model.add_asset(
-        asset_type = 'SOA_B',
-        name = 'SOA_B 2')
+        asset_type='SOA_B',
+        name='SOA_B 2')
     set_ops_b3 = test_model.add_asset(
-        asset_type = 'SOA_B',
-        name = 'SOA_B 3')
+        asset_type='SOA_B',
+        name='SOA_B 3')
 
     # Create association
     set_ops_a2.add_associated_assets('fieldB1', {set_ops_b1, set_ops_b2})
@@ -515,29 +516,30 @@ def test_attackgraph_setops_adv():
     assert assetB2_intersectStep in assetA1_origOuterStep.children
     assert assetB3_intersectStep not in assetA1_origOuterStep.children
 
+
 def test_attackgraph_transitive():
     test_lang_graph = LanguageGraph(MalCompiler().compile(
         'tests/testdata/transitive.mal'))
     test_model = Model('Test Model', test_lang_graph)
 
     asset1 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 1')
+        asset_type='TestAsset',
+        name='TestAsset 1')
     asset2 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 2')
+        asset_type='TestAsset',
+        name='TestAsset 2')
     asset3 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 3')
+        asset_type='TestAsset',
+        name='TestAsset 3')
     asset4 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 4')
+        asset_type='TestAsset',
+        name='TestAsset 4')
     asset5 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 5')
+        asset_type='TestAsset',
+        name='TestAsset 5')
     asset6 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 6')
+        asset_type='TestAsset',
+        name='TestAsset 6')
 
     asset1.add_associated_assets('field2', {asset2})
     asset2.add_associated_assets('field2', {asset3})
@@ -616,17 +618,17 @@ def test_attackgraph_transitive_advanced():
     test_model = Model('Test Model', test_lang_graph)
 
     asset1 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 1')
+        asset_type='TestAsset',
+        name='TestAsset 1')
     asset2 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 2')
+        asset_type='TestAsset',
+        name='TestAsset 2')
     asset3 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 3')
+        asset_type='TestAsset',
+        name='TestAsset 3')
     asset4 = test_model.add_asset(
-        asset_type = 'TestAsset',
-        name = 'TestAsset 4')
+        asset_type='TestAsset',
+        name='TestAsset 4')
 
     asset1.add_associated_assets('fieldA2', {asset2, asset3})
     asset1.add_associated_assets('fieldB2', {asset3, asset4})
@@ -733,6 +735,7 @@ def tests_create_ag_from_model():
     check_parent_child_relationship(
         created_ag, 'Network:3:access', ['Host:0:connect', 'Host:1:connect'])
 
+
 def tests_create_ag_step_lists():
     """We have a predefined model in trainingLang with these associations:
 
@@ -741,7 +744,6 @@ def tests_create_ag_step_lists():
                  |
                Data:2
     """
-
     mar = path_testdata('org.mal-lang.trainingLang-1.0.0.mar')
     model = path_testdata('simple_traininglang_model.yml')
     created_ag = create_attack_graph(mar, model)

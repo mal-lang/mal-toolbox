@@ -2,14 +2,15 @@
 
 from conftest import path_testdata
 
-from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language import LanguageGraph
+from maltoolbox.language.compiler import MalCompiler
 
 
 def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
     """Test to see if saving and loading a language graph to a file produces
     the same language graph. We have to use the json format to save and load
-    because YAML reorders the keys in alphabetical order."""
+    because YAML reorders the keys in alphabetical order.
+    """
     graph_path = "/tmp/langgraph.json"
     corelang_lang_graph.save_to_file(graph_path)
 
@@ -20,8 +21,7 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
     # Also make sure associations are hashable
     assocs = set()
     for asset in new_lang_graph.assets.values():
-        for assoc in asset.associations.values():
-            assocs.add(assoc)
+        assocs.update(asset.associations.values())
 
 
 # TODO: Replace this with a dedicated test that just checks for union for
@@ -32,7 +32,6 @@ def test_corelang_with_union_different_assets_same_super_asset():
     Identity and Group, which should be allowed, since they
     share the same super asset.
     """
-
     mar_file_path = path_testdata("corelang-union-common-ancestor.mar")
 
     # Make sure that it can generate
@@ -44,7 +43,6 @@ def test_interleaved_vars():
     variables from each other, A2 contains B1 and B2 contains A1) were
     resolved correct.
     """
-
     test_lang_graph = LanguageGraph(MalCompiler().compile("tests/testdata/interleaved_vars.mal"))
     assert "AssetA" in test_lang_graph.assets
     assert "AssetB" in test_lang_graph.assets
@@ -67,7 +65,6 @@ def test_interleaved_vars():
 
 def test_inherited_vars():
     LanguageGraph(MalCompiler().compile("tests/testdata/inherited_vars.mal"))
-
 
 
 def test_associations():
