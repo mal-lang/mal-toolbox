@@ -11,7 +11,7 @@ def test_attackgraph_to_nx(example_attackgraph: AttackGraph):
     """Test conversion of attack graph to networkx digraph"""
 
     def number_of_edges(attack_graph: AttackGraph) -> int:
-        edges = set()
+        edges: set[tuple[int, int]] = set()
         for node in attack_graph.nodes.values():
             edges.update((node.id, child.id) for child in node.children)
             edges.update((parent.id, node.id) for parent in node.parents)
@@ -44,7 +44,7 @@ def test_model_to_nx(example_model: Model):
     """Test conversion of model to networkx digraph"""
 
     def number_of_edges(model: Model) -> int:
-        edges = set()
+        edges: set[tuple[int, int]] = set()
         for asset in model.assets.values():
             for _fieldname, associated_assets in asset.associated_assets.items():
                 edges.update((asset.id, associated_asset.id) for associated_asset in associated_assets)

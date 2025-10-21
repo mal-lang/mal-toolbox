@@ -2,7 +2,7 @@
 
 from conftest import path_testdata
 
-from maltoolbox.language import LanguageGraph
+from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
 from maltoolbox.language.compiler import MalCompiler
 
 
@@ -19,7 +19,7 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
     assert new_lang_graph._to_dict() == corelang_lang_graph._to_dict()
 
     # Also make sure associations are hashable
-    assocs = set()
+    assocs: set[LanguageGraphAssociation] = set()
     for asset in new_lang_graph.assets.values():
         assocs.update(asset.associations.values())
 

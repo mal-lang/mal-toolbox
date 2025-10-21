@@ -148,8 +148,19 @@ attack_graph = AttackGraph(lang_graph, model)
 ```
 
 
+## Contributing
+
+# CI Pipeline
+
+Checks are made with:
+
+- `mypy`
+- `ruff`
+- `pytest`
+
+Make sure pipeline passes before PR is marked "Ready for review".
+
 # Tests
 There are unit tests inside of ./tests.
-Before running the tests, make sure to install the requirements in ./tests/requirements.txt with `python -m pip install -r ./tests/requirements.txt`.
 
 To run all tests, use the `pytest` command. To run just a specific file or test function use `pytest tests/<filename>` or `pytest -k <function_name>`.

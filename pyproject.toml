@@ -67,10 +67,6 @@ exclude = [
 ]
 allow_redefinition = true
 
-[tool.ruff]
-# Same as TWMN version
-target-version = "py310"
-
 [tool.ruff.format]
 quote-style = "single"
 
