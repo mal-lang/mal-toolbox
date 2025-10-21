@@ -92,20 +92,21 @@ class AttackGraph():
         self.nodes: dict[int, AttackGraphNode] = {}
         self.attack_steps: list[AttackGraphNode] = []
         self.defense_steps: list[AttackGraphNode] = []
-
-        # Dictionaries used in optimization to get nodes by id or full name
-        # faster
-        self._full_name_to_node: dict[str, AttackGraphNode] = {}
-
         self.model = model
         self.lang_graph = lang_graph
         self.next_node_id = 0
+
+        # Dictionary used in optimization to get nodes by full name faster
+        self._full_name_to_node: dict[str, AttackGraphNode] = {}
+
         if self.model is not None:
-            self._generate_graph()
+            self._generate_graph(self.model)
 
     def __repr__(self) -> str:
-        return (f'AttackGraph(Number of nodes: {len(self.nodes)}, '
-            f'model: {self.model}, language: {self.lang_graph}')
+        return (
+            f'AttackGraph(Number of nodes: {len(self.nodes)}, '
+            f'model: {self.model}, language: {self.lang_graph}'
+        )
 
     def _to_dict(self) -> dict:
         """Convert AttackGraph to dict"""
@@ -287,9 +288,7 @@ class AttackGraph():
         return self._full_name_to_node.get(full_name)
 
     def _follow_field_expr_chain(
-        self,
-        target_assets: set[ModelAsset],
-        expr_chain: ExpressionsChain
+        self, target_assets: set[ModelAsset], expr_chain: ExpressionsChain
     ):
         # Change the target assets from the current ones to the
         # associated assets given the specified field name.
@@ -542,19 +541,17 @@ class AttackGraph():
                 )
         return ttc_dist
 
-    def _generate_graph(self) -> None:
+    def _generate_graph(self, model: Model) -> None:
         """
         Generate the attack graph based on the original model instance and the
         MAL language specification provided at initialization.
         """
 
-        if not self.model:
-            msg = "Can not generate AttackGraph without model"
-            logger.error(msg)
-            raise AttackGraphException(msg)
+        self.nodes = {}
+        self._full_name_to_node = {}
 
         # First, generate all of the nodes of the attack graph.
-        for asset in self.model.assets.values():
+        for asset in model.assets.values():
             attack_step_nodes = []
             for attack_step in asset.lg_asset.attack_steps.values():
                 logger.debug(
@@ -567,7 +564,7 @@ class AttackGraph():
                     model_asset = asset,
                     ttc_dist = self._get_ttc_dist(asset, attack_step),
                     existence_status = self._get_existance_status(
-                        self.model, asset, attack_step
+                        model, asset, attack_step
                     )
                 )
                 attack_step_nodes.append(ag_node)
@@ -597,7 +594,7 @@ class AttackGraph():
 
                     for expr_chain in expr_chains:
                         target_assets = self._follow_expr_chain(
-                            self.model, set([ag_node.model_asset]), expr_chain
+                            model, set([ag_node.model_asset]), expr_chain
                         )
 
                         for target_asset in target_assets:
@@ -626,15 +623,14 @@ class AttackGraph():
                     break
                 lg_attack_step = lg_attack_step.inherits
 
-
     def regenerate_graph(self) -> None:
         """
         Regenerate the attack graph based on the original model instance and
         the MAL language specification provided at initialization.
         """
-
         self.nodes = {}
-        self._generate_graph()
+        assert self.model, "Model required to generate graph"
+        self._generate_graph(self.model)
 
     def add_node(
         self,
@@ -674,14 +670,10 @@ class AttackGraph():
             raise ValueError(f'Node index {node_id} already in use.')
         self.next_node_id = max(node_id + 1, self.next_node_id)
 
-        if logger.isEnabledFor(logging.DEBUG):
-            # Avoid running json.dumps when not in debug
-            logger.debug('Create and add to attackgraph node of type "%s" '
-                'with id:%d.\n' % (
-                    lg_attack_step.full_name,
-                    node_id
-                ))
-
+        logger.debug(
+            'Create and add to attackgraph node of type "%s" with id:%d.\n',
+            lg_attack_step.full_name, node_id
+        )
 
         node = AttackGraphNode(
             node_id = node_id,
@@ -692,8 +684,6 @@ class AttackGraph():
             full_name = full_name
         )
 
-        self.nodes[node_id] = node
-
         # Add to different lists depending on types
         # Useful but not vital for functionality
         if node.type in ('or', 'and'):
@@ -701,6 +691,7 @@ class AttackGraph():
         if node.type == 'defense':
             self.defense_steps.append(node)
 
+        self.nodes[node_id] = node
         self._full_name_to_node[node.full_name] = node
 
         return node
@@ -710,15 +701,15 @@ class AttackGraph():
         Arguments:
         node    - the node we wish to remove from the attack graph
         """
-        if logger.isEnabledFor(logging.DEBUG):
-            # Avoid running json.dumps when not in debug
-            logger.debug(f'Remove node "%s"(%d).', node.full_name, node.id)
+        logger.debug(
+            'Remove node "%s"(%d).', node.full_name, node.id
+        )
         for child in node.children:
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
 
         if not isinstance(node.id, int):
-            raise ValueError(f'Invalid node id.')
+            raise ValueError('Invalid node id.')
         del self.nodes[node.id]
         del self._full_name_to_node[node.full_name]

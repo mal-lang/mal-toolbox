@@ -164,7 +164,7 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     example_attackgraph.nodes = {}
 
     # Generate the attack graph again
-    example_attackgraph._generate_graph()
+    example_attackgraph.regenerate_graph()
 
     # Calculate how many nodes we should expect
     num_assets_attack_steps = 0
