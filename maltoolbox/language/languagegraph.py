@@ -34,7 +34,7 @@ def disaggregate_attack_step_full_name(
     return attack_step_full_name.split(':')
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Detector:
     name: str | None
     context: Context
@@ -235,7 +235,7 @@ class LanguageGraphAsset:
         return self_superassets.intersection(other_superassets)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=True)
 class LanguageGraphAssociationField:
     """A field in an association"""
 
