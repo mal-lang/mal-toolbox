@@ -12,7 +12,7 @@ def attack_graph_to_nx(nodes: AttackGraph | Iterable[AttackGraphNode]) -> nx.DiG
     """Convert an attack graph to a networkx DiGraph"""
     if isinstance(nodes, AttackGraph):
         nodes = list(nodes.nodes.values())
-    G = nx.DiGraph()
+    G: nx.DiGraph = nx.DiGraph()
 
     for node in nodes:
         G.add_node(node.id, **node.to_dict())
@@ -27,7 +27,7 @@ def attack_graph_to_nx(nodes: AttackGraph | Iterable[AttackGraphNode]) -> nx.DiG
 
 def model_to_nx(model: Model) -> nx.Graph:
     """Convert a MAL Model to a networkx GRaph"""
-    G = nx.Graph()
+    G: nx.Graph = nx.Graph()
 
     for id, asset in model.assets.items():
         asset_dict = asset._to_dict()[id]

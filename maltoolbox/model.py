@@ -330,7 +330,7 @@ class ModelAsset:
         self._associated_assets: dict[str, set[ModelAsset]] = {}
         self.attack_step_nodes: list = []
 
-    def _to_dict(self):
+    def _to_dict(self) -> dict[int, dict[str, Any]]:
         """Get dictionary representation of the asset."""
         logger.debug(
             'Translating "%s"(%d) to dictionary.', self.name, self.id)
