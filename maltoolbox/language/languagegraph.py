@@ -1507,24 +1507,31 @@ class LanguageGraph:
 
         for asset in assets.values():
             logger.debug('Create attack steps language graph nodes for asset %s', asset.name)
-            for step in self._get_attacks_for_asset_type(asset.name).values():
-                logger.debug('Create attack step language graph nodes for %s', step['name'])
-                node = LanguageGraphAttackStep(
-                    name=step['name'],
-                    type=step['type'],
-                    asset=asset,
-                    ttc=step['ttc'],
-                    overrides=step['reaches']['overrides'] if step['reaches'] else False,
-                    own_children={}, own_parents={},
-                    info=step['meta'],
-                    tags=list(step['tags'])
+            for step_dict in self._get_attacks_for_asset_type(asset.name).values():
+                logger.debug(
+                    'Create attack step language graph nodes for %s', step_dict['name']
                 )
-                langspec_dict[node.full_name] = step
+                node = LanguageGraphAttackStep(
+                    name=step_dict['name'],
+                    type=step_dict['type'],
+                    asset=asset,
+                    ttc=step_dict['ttc'],
+                    overrides=(
+                        step_dict['reaches']['overrides']
+                        if step_dict['reaches'] else False
+                    ),
+                    own_children={}, own_parents={},
+                    info=step_dict['meta'],
+                    tags=list(step_dict['tags'])
+                )
+                langspec_dict[node.full_name] = step_dict
                 asset.attack_steps[node.name] = node
 
-                for det in step.get('detectors', {}).values():
+                for det in step_dict.get('detectors', {}).values():
                     node.detectors[det['name']] = Detector(
-                        context=Context({lbl: assets[a] for lbl, a in det['context'].items()}),
+                        context=Context(
+                            {lbl: assets[a] for lbl, a in det['context'].items()}
+                        ),
                         name=det.get('name'),
                         type=det.get('type'),
                         tprate=det.get('tprate'),
