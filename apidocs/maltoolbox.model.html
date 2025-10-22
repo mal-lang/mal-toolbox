@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>maltoolbox.model module &mdash; MAL Toolbox  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="maltoolbox.wrappers module" href="maltoolbox.wrappers.html" />
+    <link rel="prev" title="maltoolbox.file_utils module" href="maltoolbox.file_utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            MAL Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../about.html">About MAL Toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="maltoolbox.html">API documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="maltoolbox.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="maltoolbox.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="maltoolbox.exceptions.html">maltoolbox.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="maltoolbox.file_utils.html">maltoolbox.file_utils module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">maltoolbox.model module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#maltoolbox.model.Model"><code class="docutils literal notranslate"><span class="pre">Model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#maltoolbox.model.ModelAsset"><code class="docutils literal notranslate"><span class="pre">ModelAsset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="maltoolbox.wrappers.html">maltoolbox.wrappers module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MAL Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="maltoolbox.html">maltoolbox package</a></li>
+      <li class="breadcrumb-item active">maltoolbox.model module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/apidocs/maltoolbox.model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-maltoolbox.model">
+<span id="maltoolbox-model-module"></span><h1>maltoolbox.model module<a class="headerlink" href="#module-maltoolbox.model" title="Link to this heading"></a></h1>
+<p>MAL-Toolbox Model Module</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="maltoolbox.model.Model">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maltoolbox.model.</span></span><span class="sig-name descname"><span class="pre">Model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang_graph</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LanguageGraph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mt_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'1.1.1'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An implementation of a MAL language model containing assets</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.add_asset">
+<span class="sig-name descname"><span class="pre">add_asset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">asset_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asset_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defenses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_duplicate_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model.add_asset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model.add_asset" title="Link to this definition"></a></dt>
+<dd><p>Create an asset based on the provided parameters and add it to the
+model.</p>
+<section id="arguments">
+<h2>Arguments:<a class="headerlink" href="#arguments" title="Link to this heading"></a></h2>
+<p>asset_type              - string containing the asset type name
+name                    - string containing the asset name. If not</p>
+<blockquote>
+<div><p>provided the concatenated asset type and id
+will be used as a name.</p>
+</div></blockquote>
+<dl class="simple">
+<dt>asset_id                - id to assign to this asset, usually from an</dt><dd><p>instance model file. If not provided the id
+will be set to the next highest id
+available.</p>
+</dd>
+</dl>
+<p>defeses                 - dictionary of defense values
+extras                  - dictionary of extras
+allow_duplicate_name    - allow duplicate names to be used. If allowed</p>
+<blockquote>
+<div><p>and a duplicate is encountered the name will
+be appended with the id.</p>
+</div></blockquote>
+</section>
+<section id="return">
+<h2>Return:<a class="headerlink" href="#return" title="Link to this heading"></a></h2>
+<p>The newly created asset.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.get_asset_by_id">
+<span class="sig-name descname"><span class="pre">get_asset_by_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">asset_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model.get_asset_by_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model.get_asset_by_id" title="Link to this definition"></a></dt>
+<dd><p>Find an asset in the model based on its id.</p>
+<section id="id1">
+<h2>Arguments:<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>asset_id        - the id of the asset we are looking for</p>
+</section>
+<section id="id2">
+<h2>Return:<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<p>An asset matching the id if it exists in the model.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.get_asset_by_name">
+<span class="sig-name descname"><span class="pre">get_asset_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">asset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model.get_asset_by_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model.get_asset_by_name" title="Link to this definition"></a></dt>
+<dd><p>Find an asset in the model based on its name.</p>
+<section id="id3">
+<h2>Arguments:<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>asset_name        - the name of the asset we are looking for</p>
+</section>
+<section id="id4">
+<h2>Return:<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<p>An asset matching the name if it exists in the model.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.load_from_file">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lang_graph</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LanguageGraph</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#maltoolbox.model.Model" title="maltoolbox.model.Model"><span class="pre">Model</span></a></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model.load_from_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model.load_from_file" title="Link to this definition"></a></dt>
+<dd><p>Create from json or yaml file depending on file extension</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.next_id">
+<span class="sig-name descname"><span class="pre">next_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#maltoolbox.model.Model.next_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.remove_asset">
+<span class="sig-name descname"><span class="pre">remove_asset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">asset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model.remove_asset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model.remove_asset" title="Link to this definition"></a></dt>
+<dd><p>Remove an asset from the model.</p>
+<section id="id5">
+<h2>Arguments:<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<p>asset     - the asset to remove</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.save_to_file">
+<span class="sig-name descname"><span class="pre">save_to_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model.save_to_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model.save_to_file" title="Link to this definition"></a></dt>
+<dd><p>Save to json/yml depending on extension</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.Model.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#Model.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.Model.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Get dictionary representation of the model.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">maltoolbox.model.</span></span><span class="sig-name descname"><span class="pre">ModelAsset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asset_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lg_asset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LanguageGraphAsset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defenses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extras</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/maltoolbox/model.html#ModelAsset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.ModelAsset" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset.add_associated_assets">
+<span class="sig-name descname"><span class="pre">add_associated_assets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fieldname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/maltoolbox/model.html#ModelAsset.add_associated_assets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.ModelAsset.add_associated_assets" title="Link to this definition"></a></dt>
+<dd><p>Add the assets provided as a parameter to the set of associated
+assets dictionary entry corresponding to the given fieldname.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset.associated_assets">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">associated_assets</span></span><a class="headerlink" href="#maltoolbox.model.ModelAsset.associated_assets" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset.associations_with">
+<span class="sig-name descname"><span class="pre">associations_with</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">LanguageGraphAssociation</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#ModelAsset.associations_with"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.ModelAsset.associations_with" title="Link to this definition"></a></dt>
+<dd><p>Returns all associations from self to <cite>b</cite></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset.has_association_with">
+<span class="sig-name descname"><span class="pre">has_association_with</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">assoc_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/maltoolbox/model.html#ModelAsset.has_association_with"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.ModelAsset.has_association_with" title="Link to this definition"></a></dt>
+<dd><p>Returns True if association <cite>assoc_name</cite> exists between self and <cite>b</cite></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset.id">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">id</span></span><a class="headerlink" href="#maltoolbox.model.ModelAsset.id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset.remove_associated_assets">
+<span class="sig-name descname"><span class="pre">remove_associated_assets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fieldname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/maltoolbox/model.html#ModelAsset.remove_associated_assets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.ModelAsset.remove_associated_assets" title="Link to this definition"></a></dt>
+<dd><p>Remove the assets provided as a parameter from the set of
+associated assets dictionary entry corresponding to the fieldname
+parameter.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="maltoolbox.model.ModelAsset.validate_associated_assets">
+<span class="sig-name descname"><span class="pre">validate_associated_assets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fieldname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assets_to_add</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">set</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#maltoolbox.model.ModelAsset" title="maltoolbox.model.ModelAsset"><span class="pre">ModelAsset</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/maltoolbox/model.html#ModelAsset.validate_associated_assets"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#maltoolbox.model.ModelAsset.validate_associated_assets" title="Link to this definition"></a></dt>
+<dd><p>Validate an association we want to add (through <cite>fieldname</cite>)
+is valid with the assets given in param <cite>assets_to_add</cite>:
+- fieldname is valid for the asset type of this ModelAsset
+- type of <cite>assets_to_add</cite> is valid for the association
+- no more assets than ‘field.maximum’ are added to the field</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>LookupError - fieldname can not be found for this ModelAsset</strong> – </p></li>
+<li><p><strong>ValueError - there will be too many assets in the field</strong> – if we add this association</p></li>
+<li><p><strong>TypeError - if the asset type</strong><strong> of </strong><strong>assets_to_add is not valid</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="maltoolbox.file_utils.html" class="btn btn-neutral float-left" title="maltoolbox.file_utils module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="maltoolbox.wrappers.html" class="btn btn-neutral float-right" title="maltoolbox.wrappers module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Andrei Buhaiu, Giuseppe Nebbione, Nikolaos Kakouros, Jakob Nyberg, Joakim Loxdal.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

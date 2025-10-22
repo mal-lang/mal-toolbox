@@ -1,0 +1,651 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>maltoolbox.model &mdash; MAL Toolbox  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            MAL Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About MAL Toolbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../apidocs/maltoolbox.html">API documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">MAL Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">maltoolbox.model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for maltoolbox.model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;MAL-Toolbox Model Module</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">__version__</span>
+<span class="kn">from</span> <span class="nn">.exceptions</span> <span class="kn">import</span> <span class="n">ModelException</span>
+<span class="kn">from</span> <span class="nn">.file_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">load_dict_from_json_file</span><span class="p">,</span>
+    <span class="n">load_dict_from_yaml_file</span><span class="p">,</span>
+    <span class="n">save_dict_to_file</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+
+    <span class="kn">from</span> <span class="nn">.language</span> <span class="kn">import</span> <span class="n">LanguageGraph</span><span class="p">,</span> <span class="n">LanguageGraphAsset</span><span class="p">,</span> <span class="n">LanguageGraphAssociation</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Model">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model">[docs]</a>
+<span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An implementation of a MAL language model containing assets&quot;&quot;&quot;</span>
+
+    <span class="n">next_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Model(name: &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot;, language: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lang_graph</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">lang_graph</span><span class="p">:</span> <span class="n">LanguageGraph</span><span class="p">,</span>
+            <span class="n">mt_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">__version__</span>
+        <span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">ModelAsset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_asset</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ModelAsset</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># optimization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lang_graph</span> <span class="o">=</span> <span class="n">lang_graph</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maltoolbox_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">mt_version</span>
+
+<div class="viewcode-block" id="Model.add_asset">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model.add_asset">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_asset</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">asset_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">asset_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">defenses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">allow_duplicate_names</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelAsset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an asset based on the provided parameters and add it to the</span>
+<span class="sd">        model.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">        ---------</span>
+<span class="sd">        asset_type              - string containing the asset type name</span>
+<span class="sd">        name                    - string containing the asset name. If not</span>
+<span class="sd">                                  provided the concatenated asset type and id</span>
+<span class="sd">                                  will be used as a name.</span>
+<span class="sd">        asset_id                - id to assign to this asset, usually from an</span>
+<span class="sd">                                  instance model file. If not provided the id</span>
+<span class="sd">                                  will be set to the next highest id</span>
+<span class="sd">                                  available.</span>
+<span class="sd">        defeses                 - dictionary of defense values</span>
+<span class="sd">        extras                  - dictionary of extras</span>
+<span class="sd">        allow_duplicate_name    - allow duplicate names to be used. If allowed</span>
+<span class="sd">                                  and a duplicate is encountered the name will</span>
+<span class="sd">                                  be appended with the id.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">        ------</span>
+<span class="sd">        The newly created asset.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Set asset ID and check for duplicates</span>
+        <span class="n">asset_id</span> <span class="o">=</span> <span class="n">asset_id</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_id</span>
+        <span class="k">if</span> <span class="n">asset_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Asset index </span><span class="si">{</span><span class="n">asset_id</span><span class="si">}</span><span class="s1"> already in use.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_id</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">asset_id</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">asset_type</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">asset_id</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_asset</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">allow_duplicate_names</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">asset_id</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Asset name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> is a duplicate&#39;</span>
+                    <span class="s1">&#39; and we do not allow duplicates.&#39;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">asset_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lang_graph</span><span class="o">.</span><span class="n">assets</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Asset type &quot;</span><span class="si">{</span><span class="n">asset_type</span><span class="si">}</span><span class="s1">&quot; does not exist in language, &#39;</span>
+                <span class="s1">&#39;must be one of:</span><span class="se">\n</span><span class="s1"> -&#39;</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1"> -&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lang_graph</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="p">)</span>
+        <span class="n">lg_asset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lang_graph</span><span class="o">.</span><span class="n">assets</span><span class="p">[</span><span class="n">asset_type</span><span class="p">]</span>
+
+        <span class="n">asset</span> <span class="o">=</span> <span class="n">ModelAsset</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">asset_id</span><span class="o">=</span><span class="n">asset_id</span><span class="p">,</span>
+            <span class="n">lg_asset</span><span class="o">=</span><span class="n">lg_asset</span><span class="p">,</span>
+            <span class="n">defenses</span><span class="o">=</span><span class="n">defenses</span><span class="p">,</span>
+            <span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Add &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">) to model &quot;</span><span class="si">%s</span><span class="s1">&quot;.&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">asset_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">[</span><span class="n">asset_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">asset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_asset</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">asset</span>
+
+        <span class="k">return</span> <span class="n">asset</span></div>
+
+
+<div class="viewcode-block" id="Model.remove_asset">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model.remove_asset">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove_asset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">asset</span><span class="p">:</span> <span class="n">ModelAsset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove an asset from the model.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">        ---------</span>
+<span class="sd">        asset     - the asset to remove</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Remove &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">) from model &quot;</span><span class="si">%s</span><span class="s1">&quot;.&#39;</span><span class="p">,</span>
+            <span class="n">asset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">asset</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">asset</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Asset &quot;</span><span class="si">{</span><span class="n">asset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot;(</span><span class="si">{</span><span class="n">asset</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">) is not part&#39;</span>
+                <span class="sa">f</span><span class="s1">&#39; of model&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot;.&#39;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># First remove all of the associated assets</span>
+        <span class="c1"># We can not remove from the dict while iterating over it</span>
+        <span class="c1"># so we first have to copy the keys and then remove those assets</span>
+        <span class="n">associated_fieldnames</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">asset</span><span class="o">.</span><span class="n">associated_assets</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">fieldname</span><span class="p">,</span> <span class="n">assoc_assets</span> <span class="ow">in</span> <span class="n">associated_fieldnames</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">asset</span><span class="o">.</span><span class="n">remove_associated_assets</span><span class="p">(</span><span class="n">fieldname</span><span class="p">,</span> <span class="n">assoc_assets</span><span class="p">)</span>
+
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="p">[</span><span class="n">asset</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_asset</span><span class="p">[</span><span class="n">asset</span><span class="o">.</span><span class="n">name</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Model.get_asset_by_id">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model.get_asset_by_id">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_asset_by_id</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">asset_id</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelAsset</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find an asset in the model based on its id.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">        ---------</span>
+<span class="sd">        asset_id        - the id of the asset we are looking for</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">        ------</span>
+<span class="sd">        An asset matching the id if it exists in the model.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Get asset with id </span><span class="si">%d</span><span class="s1"> from model &quot;</span><span class="si">%s</span><span class="s1">&quot;.&#39;</span><span class="p">,</span>
+            <span class="n">asset_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">asset_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Model.get_asset_by_name">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model.get_asset_by_name">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_asset_by_name</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">asset_name</span><span class="p">:</span> <span class="nb">str</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelAsset</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find an asset in the model based on its name.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">        ---------</span>
+<span class="sd">        asset_name        - the name of the asset we are looking for</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">        ------</span>
+<span class="sd">        An asset matching the name if it exists in the model.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Get asset with name &quot;</span><span class="si">%s</span><span class="s1">&quot; from model &quot;</span><span class="si">%s</span><span class="s1">&quot;.&#39;</span><span class="p">,</span>
+            <span class="n">asset_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name_to_asset</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">asset_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Backwards compatible&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Model.to_dict">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model.to_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get dictionary representation of the model.&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Translating model to dict.&#39;</span><span class="p">)</span>
+        <span class="n">contents</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;metadata&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;assets&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="p">}</span>
+        <span class="n">contents</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s1">&#39;langVersion&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lang_graph</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;langID&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lang_graph</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;malVersion&#39;</span><span class="p">:</span> <span class="s1">&#39;0.1.0-SNAPSHOT&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;MAL-Toolbox Version&#39;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>
+            <span class="s1">&#39;info&#39;</span><span class="p">:</span> <span class="s1">&#39;Created by the mal-toolbox model python module.&#39;</span>
+        <span class="p">}</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Translating assets to dictionary.&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">asset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">contents</span><span class="p">[</span><span class="s1">&#39;assets&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">asset</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">contents</span></div>
+
+
+<div class="viewcode-block" id="Model.save_to_file">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model.save_to_file">[docs]</a>
+    <span class="k">def</span> <span class="nf">save_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save to json/yml depending on extension&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Save instance model to file &quot;</span><span class="si">%s</span><span class="s1">&quot;.&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">save_dict_to_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">())</span></div>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_from_dict</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">serialized_object</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+        <span class="n">lang_graph</span><span class="p">:</span> <span class="n">LanguageGraph</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a model from dict representation</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">        ---------</span>
+<span class="sd">        serialized_object    - Model in dict format</span>
+<span class="sd">        lang_graph -</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">maltoolbox_version</span> <span class="o">=</span> <span class="n">serialized_object</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">][</span><span class="s1">&#39;MAL Toolbox Version&#39;</span><span class="p">]</span> \
+            <span class="k">if</span> <span class="s1">&#39;MAL Toolbox Version&#39;</span> <span class="ow">in</span> <span class="n">serialized_object</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span> \
+            <span class="k">else</span> <span class="n">__version__</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span>
+            <span class="n">serialized_object</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+            <span class="n">lang_graph</span><span class="p">,</span>
+            <span class="n">mt_version</span><span class="o">=</span><span class="n">maltoolbox_version</span><span class="p">)</span>
+
+        <span class="c1"># Reconstruct the assets</span>
+        <span class="k">for</span> <span class="n">asset_id</span><span class="p">,</span> <span class="n">asset_dict</span> <span class="ow">in</span> <span class="n">serialized_object</span><span class="p">[</span><span class="s1">&#39;assets&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+            <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">):</span>
+                <span class="c1"># Avoid running json.dumps when not in debug</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;Loading asset:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">asset_dict</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Allow defining an asset via type only.</span>
+            <span class="n">asset_dict</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">asset_dict</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">asset_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+                <span class="k">else</span> <span class="p">{</span>
+                    <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">asset_dict</span><span class="p">,</span>
+                    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">asset_dict</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">asset_id</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="n">model</span><span class="o">.</span><span class="n">add_asset</span><span class="p">(</span>
+                <span class="n">asset_type</span><span class="o">=</span><span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+                <span class="n">defenses</span><span class="o">=</span><span class="p">{</span><span class="n">defense</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">defense</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span>
+                    <span class="n">asset_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;defenses&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+                <span class="n">extras</span><span class="o">=</span><span class="n">asset_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;extras&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+                <span class="n">asset_id</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">asset_id</span><span class="p">))</span>
+
+        <span class="c1"># Reconstruct the association links</span>
+        <span class="k">for</span> <span class="n">asset_id</span><span class="p">,</span> <span class="n">asset_dict</span> <span class="ow">in</span> <span class="n">serialized_object</span><span class="p">[</span><span class="s1">&#39;assets&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">asset</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">assets</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">asset_id</span><span class="p">)]</span>
+            <span class="n">assoc_assets_dict</span> <span class="o">=</span> <span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;associated_assets&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">fieldname</span><span class="p">,</span> <span class="n">assoc_assets</span> <span class="ow">in</span> <span class="n">assoc_assets_dict</span><span class="p">:</span>
+                <span class="n">asset</span><span class="o">.</span><span class="n">add_associated_assets</span><span class="p">(</span>
+                    <span class="n">fieldname</span><span class="p">,</span>
+                    <span class="p">{</span><span class="n">model</span><span class="o">.</span><span class="n">assets</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">assoc_asset_id</span><span class="p">)]</span>
+                        <span class="k">for</span> <span class="n">assoc_asset_id</span> <span class="ow">in</span> <span class="n">assoc_assets</span><span class="p">}</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Attackers no longer part of mal-toolbox</span>
+        <span class="k">if</span> <span class="s1">&#39;attackers&#39;</span> <span class="ow">in</span> <span class="n">serialized_object</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Defining attackers in a model file is deprecated,&quot;</span>
+                   <span class="s2">&quot; use mal-simulator for attacker simulations.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">model</span>
+
+<div class="viewcode-block" id="Model.load_from_file">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.Model.load_from_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load_from_file</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">lang_graph</span><span class="p">:</span> <span class="n">LanguageGraph</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create from json or yaml file depending on file extension&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Load instance model from file &quot;</span><span class="si">%s</span><span class="s1">&quot;.&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="n">serialized_model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s1">&#39;.yml&#39;</span><span class="p">,</span> <span class="s1">&#39;.yaml&#39;</span><span class="p">)):</span>
+            <span class="n">serialized_model</span> <span class="o">=</span> <span class="n">load_dict_from_yaml_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.json&#39;</span><span class="p">):</span>
+            <span class="n">serialized_model</span> <span class="o">=</span> <span class="n">load_dict_from_json_file</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown file extension, expected json/yml/yaml&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_dict</span><span class="p">(</span><span class="n">serialized_model</span><span class="p">,</span> <span class="n">lang_graph</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ModelException</span><span class="p">(</span>
+                <span class="s2">&quot;Could not load model. It might be of an older version. &quot;</span>
+                <span class="s2">&quot;Try to upgrade it with &#39;maltoolbox upgrade-model&#39;&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ModelAsset">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.ModelAsset">[docs]</a>
+<span class="k">class</span> <span class="nc">ModelAsset</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">asset_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">lg_asset</span><span class="p">:</span> <span class="n">LanguageGraphAsset</span><span class="p">,</span>
+        <span class="n">defenses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">asset_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="p">:</span> <span class="n">LanguageGraphAsset</span> <span class="o">=</span> <span class="n">lg_asset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">defenses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">defenses</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extras</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">extras</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_associated_assets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="n">ModelAsset</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attack_step_nodes</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get dictionary representation of the asset.&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s1">&#39;Translating &quot;</span><span class="si">%s</span><span class="s1">&quot;(</span><span class="si">%d</span><span class="s1">) to dictionary.&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="n">asset_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+            <span class="s1">&#39;defenses&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;associated_assets&#39;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">defense</span><span class="p">,</span> <span class="n">defense_value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">defenses</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;defenses&#39;</span><span class="p">][</span><span class="n">defense</span><span class="p">]</span> <span class="o">=</span> <span class="n">defense_value</span>
+
+        <span class="k">for</span> <span class="n">fieldname</span><span class="p">,</span> <span class="n">assets</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">associated_assets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;associated_assets&#39;</span><span class="p">][</span><span class="n">fieldname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">asset</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">asset</span><span class="o">.</span><span class="n">name</span>
+                <span class="k">for</span> <span class="n">asset</span> <span class="ow">in</span> <span class="n">assets</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;defenses&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Do not include an empty defenses dictionary</span>
+            <span class="k">del</span> <span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;defenses&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras</span> <span class="o">!=</span> <span class="p">{}:</span>
+            <span class="c1"># Add optional metadata to dict</span>
+            <span class="n">asset_dict</span><span class="p">[</span><span class="s1">&#39;extras&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extras</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">asset_dict</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s1">&#39;ModelAsset(name: &quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&quot;, id: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s1">, &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;type: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModelAsset.associations_with">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.ModelAsset.associations_with">[docs]</a>
+    <span class="k">def</span> <span class="nf">associations_with</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">ModelAsset</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="n">LanguageGraphAssociation</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all associations from self to `b`&quot;&quot;&quot;</span>
+        <span class="n">assocs_in_common</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">assoc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">assets_to_left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">associated_assets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">assoc</span><span class="o">.</span><span class="n">left_field</span><span class="o">.</span><span class="n">fieldname</span><span class="p">,</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">assets_to_right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">associated_assets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">assoc</span><span class="o">.</span><span class="n">right_field</span><span class="o">.</span><span class="n">fieldname</span><span class="p">,</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">assets_to_left</span> <span class="ow">or</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">assets_to_right</span><span class="p">:</span>
+                <span class="n">assocs_in_common</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">assoc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">assocs_in_common</span></div>
+
+
+<div class="viewcode-block" id="ModelAsset.has_association_with">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.ModelAsset.has_association_with">[docs]</a>
+    <span class="k">def</span> <span class="nf">has_association_with</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">ModelAsset</span><span class="p">,</span> <span class="n">assoc_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns True if association `assoc_name` exists between self and `b`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">fieldname</span><span class="p">,</span> <span class="n">associated_assets</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">associated_assets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">assoc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="p">[</span><span class="n">fieldname</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">assoc</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">assoc_name</span> <span class="ow">and</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">associated_assets</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="ModelAsset.validate_associated_assets">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.ModelAsset.validate_associated_assets">[docs]</a>
+    <span class="k">def</span> <span class="nf">validate_associated_assets</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">fieldname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">assets_to_add</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">ModelAsset</span><span class="p">]</span>
+        <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an association we want to add (through `fieldname`)</span>
+<span class="sd">        is valid with the assets given in param `assets_to_add`:</span>
+<span class="sd">        - fieldname is valid for the asset type of this ModelAsset</span>
+<span class="sd">        - type of `assets_to_add` is valid for the association</span>
+<span class="sd">        - no more assets than &#39;field.maximum&#39; are added to the field</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">            LookupError - fieldname can not be found for this ModelAsset</span>
+<span class="sd">            ValueError - there will be too many assets in the field</span>
+<span class="sd">                         if we add this association</span>
+<span class="sd">            TypeError - if the asset type of `assets_to_add` is not valid</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Validate that the field name is allowed for this asset type</span>
+        <span class="k">if</span> <span class="n">fieldname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="p">:</span>
+            <span class="n">accepted_fieldnames</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Fieldname &#39;</span><span class="si">{</span><span class="n">fieldname</span><span class="si">}</span><span class="s2">&#39; is not an accepted association &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;fieldname from asset type </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Did you mean one of </span><span class="si">{</span><span class="n">accepted_fieldnames</span><span class="si">}</span><span class="s2">?&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">lg_assoc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="p">[</span><span class="n">fieldname</span><span class="p">]</span>
+        <span class="n">assoc_field</span> <span class="o">=</span> <span class="n">lg_assoc</span><span class="o">.</span><span class="n">get_field</span><span class="p">(</span><span class="n">fieldname</span><span class="p">)</span>
+
+        <span class="c1"># Validate that the asset to add association to is of correct type</span>
+        <span class="k">for</span> <span class="n">asset_to_add</span> <span class="ow">in</span> <span class="n">assets_to_add</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">asset_to_add</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">is_subasset_of</span><span class="p">(</span><span class="n">assoc_field</span><span class="o">.</span><span class="n">asset</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Asset &#39;</span><span class="si">{</span><span class="n">asset_to_add</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; of type &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">asset_to_add</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&#39; can not be added to association &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">fieldname</span><span class="si">}</span><span class="s2">&#39;. Expected type of &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">fieldname</span><span class="si">}</span><span class="s2">&#39; is </span><span class="si">{</span><span class="n">assoc_field</span><span class="o">.</span><span class="n">asset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Validate that there will not be too many assets in field</span>
+        <span class="n">assets_in_field_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">associated_assets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">fieldname</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
+        <span class="n">assets_in_field_after</span> <span class="o">=</span> <span class="n">assets_in_field_before</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">assets_to_add</span><span class="p">)</span>
+        <span class="n">max_assets_in_field</span> <span class="o">=</span> <span class="n">assoc_field</span><span class="o">.</span><span class="n">maximum</span> <span class="ow">or</span> <span class="n">math</span><span class="o">.</span><span class="n">inf</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">assets_in_field_after</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_assets_in_field</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;You can have maximum </span><span class="si">{</span><span class="n">assoc_field</span><span class="o">.</span><span class="n">maximum</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;assets for association field </span><span class="si">{</span><span class="n">fieldname</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModelAsset.add_associated_assets">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.ModelAsset.add_associated_assets">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_associated_assets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fieldname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">assets</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">ModelAsset</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add the assets provided as a parameter to the set of associated</span>
+<span class="sd">        assets dictionary entry corresponding to the given fieldname.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fieldname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">assets</span><span class="p">:</span>
+                <span class="n">to_asset_type</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">assets</span><span class="p">))</span><span class="o">.</span><span class="n">lg_asset</span>
+                <span class="n">possible_associations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations_to</span><span class="p">(</span><span class="n">to_asset_type</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">to_asset_type</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">possible_associations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Association fieldname &quot;</span><span class="si">{</span><span class="n">fieldname</span><span class="si">}</span><span class="s1">&quot; does not exist from &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">&gt; to &lt;</span><span class="si">{</span><span class="n">to_asset_type</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">to_asset_type</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;Any&quot;</span><span class="si">}</span><span class="s1">&gt;&#39;</span>
+                <span class="s1">&#39;, must be one of:</span><span class="se">\n</span><span class="s1"> -&#39;</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n</span><span class="s1"> -&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">possible_associations</span><span class="p">])</span>
+            <span class="p">)</span>
+
+        <span class="n">lg_assoc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="p">[</span><span class="n">fieldname</span><span class="p">]</span>
+        <span class="n">other_fieldname</span> <span class="o">=</span> <span class="n">lg_assoc</span><span class="o">.</span><span class="n">get_opposite_fieldname</span><span class="p">(</span><span class="n">fieldname</span><span class="p">)</span>
+
+        <span class="c1"># Validation from both sides</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_associated_assets</span><span class="p">(</span><span class="n">fieldname</span><span class="p">,</span> <span class="n">assets</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">asset</span> <span class="ow">in</span> <span class="n">assets</span><span class="p">:</span>
+            <span class="n">asset</span><span class="o">.</span><span class="n">validate_associated_assets</span><span class="p">(</span><span class="n">other_fieldname</span><span class="p">,</span> <span class="p">{</span><span class="bp">self</span><span class="p">})</span>
+
+        <span class="c1"># Add the associated assets to this asset&#39;s dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_associated_assets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+            <span class="n">fieldname</span><span class="p">,</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">assets</span><span class="p">)</span>
+
+        <span class="c1"># Add this asset to the associated assets&#39; corresponding dictionaries</span>
+        <span class="k">for</span> <span class="n">asset</span> <span class="ow">in</span> <span class="n">assets</span><span class="p">:</span>
+            <span class="n">asset</span><span class="o">.</span><span class="n">_associated_assets</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
+                <span class="n">other_fieldname</span><span class="p">,</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModelAsset.remove_associated_assets">
+<a class="viewcode-back" href="../../apidocs/maltoolbox.model.html#maltoolbox.model.ModelAsset.remove_associated_assets">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove_associated_assets</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">fieldname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">assets</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">ModelAsset</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the assets provided as a parameter from the set of</span>
+<span class="sd">        associated assets dictionary entry corresponding to the fieldname</span>
+<span class="sd">        parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Remove this asset from its associated assets&#39; dictionaries</span>
+        <span class="n">lg_assoc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lg_asset</span><span class="o">.</span><span class="n">associations</span><span class="p">[</span><span class="n">fieldname</span><span class="p">]</span>
+        <span class="n">other_fieldname</span> <span class="o">=</span> <span class="n">lg_assoc</span><span class="o">.</span><span class="n">get_opposite_fieldname</span><span class="p">(</span><span class="n">fieldname</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">asset</span> <span class="ow">in</span> <span class="n">assets</span><span class="p">:</span>
+            <span class="n">asset</span><span class="o">.</span><span class="n">_associated_assets</span><span class="p">[</span><span class="n">other_fieldname</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">asset</span><span class="o">.</span><span class="n">_associated_assets</span><span class="p">[</span><span class="n">other_fieldname</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">asset</span><span class="o">.</span><span class="n">_associated_assets</span><span class="p">[</span><span class="n">other_fieldname</span><span class="p">]</span>
+
+        <span class="c1"># Remove associated assets from this asset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_associated_assets</span><span class="p">[</span><span class="n">fieldname</span><span class="p">]</span> <span class="o">-=</span> <span class="nb">set</span><span class="p">(</span><span class="n">assets</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_associated_assets</span><span class="p">[</span><span class="n">fieldname</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_associated_assets</span><span class="p">[</span><span class="n">fieldname</span><span class="p">]</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">associated_assets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_associated_assets</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Andrei Buhaiu, Giuseppe Nebbione, Nikolaos Kakouros, Jakob Nyberg, Joakim Loxdal.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
