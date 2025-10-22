@@ -41,7 +41,7 @@ class SearchPattern:
         return matching_paths
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class SearchCondition:
     """A condition that has to be true for a node to match"""
 
