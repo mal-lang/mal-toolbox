@@ -546,84 +546,82 @@ class AttackGraph:
         return ttc_dist
 
     def _generate_graph(self, model: Model) -> None:
-        """Generate the attack graph based on the original model instance and the
-        MAL language specification provided at initialization.
-        """
+        """Generate the attack graph from model and MAL language."""
         self.nodes = {}
         self._full_name_to_node = {}
 
-        # First, generate all of the nodes of the attack graph.
+        self._create_nodes_from_model(model)
+        self._link_nodes_by_language(model)
+
+    def _create_nodes_from_model(self, model: Model) -> None:
+        """Create attack graph nodes for all model assets."""
         for asset in model.assets.values():
-            attack_step_nodes = []
+            asset.attack_step_nodes = []
             for attack_step in asset.lg_asset.attack_steps.values():
-                logger.debug(
-                    'Generating attack step node %s for asset %s (%s).',
-                    attack_step.name, asset.name, asset.type
-                )
-                # Create the node
-                ag_node = self.add_node(
+                node = self.add_node(
                     lg_attack_step=attack_step,
                     model_asset=asset,
                     ttc_dist=self._get_ttc_dist(asset, attack_step),
-                    existence_status=self._get_existance_status(
-                        model, asset, attack_step
-                    )
+                    existence_status=(
+                        self._get_existance_status(model, asset, attack_step)
+                    ),
                 )
-                attack_step_nodes.append(ag_node)
-            asset.attack_step_nodes = attack_step_nodes
+                asset.attack_step_nodes.append(node)
 
-        # Then, link all of the nodes according to their associations.
+    def _link_nodes_by_language(self, model: Model) -> None:
+        """Establish parent-child links between nodes."""
         for ag_node in self.nodes.values():
-            logger.debug(
-                'Determining children for attack step "%s"(%d)',
-                ag_node.full_name, ag_node.id
+            self._link_node_children(model, ag_node)
+
+    def _link_node_children(self, model: Model, ag_node: AttackGraphNode) -> None:
+        """Link one node to its children."""
+        if not ag_node.model_asset:
+            raise AttackGraphException('Attack graph node is missing asset link')
+
+        lg_asset = self.lang_graph.assets[ag_node.model_asset.type]
+        lg_attack_step: LanguageGraphAttackStep | None = (
+            lg_asset.attack_steps[ag_node.name]
+        )
+        while lg_attack_step:
+            for child_type, expr_chains in lg_attack_step.children.items():
+                for expr_chain in expr_chains:
+                    self._link_from_expr_chain(model, ag_node, child_type, expr_chain)
+            if lg_attack_step.overrides:
+                break
+            lg_attack_step = lg_attack_step.inherits
+
+    def _link_from_expr_chain(
+        self,
+        model: Model,
+        ag_node: AttackGraphNode,
+        child_type: LanguageGraphAttackStep,
+        expr_chain: ExpressionsChain | None,
+    ) -> None:
+        """Link a node to targets from a specific expression chain."""
+        if not ag_node.model_asset:
+            raise AttackGraphException(
+                "Need model asset connection to generate graph"
             )
 
-            if not ag_node.model_asset:
-                raise AttackGraphException(
-                    'Attack graph node is missing asset link'
+        target_assets = self._follow_expr_chain(model, {ag_node.model_asset}, expr_chain)
+        for target_asset in target_assets:
+            if not target_asset:
+                continue
+            target_node = self.get_node_by_full_name(
+                f"{target_asset.name}:{child_type.name}"
+            )
+            if not target_node:
+                raise AttackGraphStepExpressionError(
+                    f'Failed to find target node "{target_asset.name}:{child_type.name}" '
+                    f'for "{ag_node.full_name}"({ag_node.id})'
                 )
-
-            lg_asset = self.lang_graph.assets[ag_node.model_asset.type]
-            lg_attack_step: LanguageGraphAttackStep | None = (
-                lg_asset.attack_steps[ag_node.name]
+            logger.debug(
+                'Linking attack step "%s"(%d) to attack step "%s"(%d)',
+                ag_node.full_name, ag_node.id,
+                target_node.full_name, target_node.id
             )
-
-            while lg_attack_step:
-                # Find children for the attack graph node using the language
-                children_types = lg_attack_step.children.items()
-                for child_attack_step_type, expr_chains in children_types:
-
-                    for expr_chain in expr_chains:
-                        target_assets = self._follow_expr_chain(
-                            model, set([ag_node.model_asset]), expr_chain
-                        )
-
-                        for target_asset in target_assets:
-                            if target_asset is not None:
-                                target_node_full_name = (
-                                    target_asset.name + ':' + child_attack_step_type.name
-                                )
-                                target_node = self.get_node_by_full_name(
-                                    target_node_full_name
-                                )
-                                if target_node is None:
-                                    raise AttackGraphStepExpressionError(
-                                        'Failed to find target node '
-                                        '"{target_node_full_name}" to link with for attack '
-                                        'step "{ag_node.full_name}"({ag_node.id})!'
-                                    )
-                                logger.debug(
-                                    'Linking attack step "%s"(%d) to attack step "%s"(%d)',
-                                    ag_node.full_name, ag_node.id,
-                                    target_node.full_name, target_node.id
-                                )
-                                ag_node.children.add(target_node)
-                                target_node.parents.add(ag_node)
-
-                if lg_attack_step.overrides:
-                    break
-                lg_attack_step = lg_attack_step.inherits
+            ag_node.children.add(target_node)
+            target_node.parents.add(ag_node)
 
     def regenerate_graph(self) -> None:
         """Regenerate the attack graph based on the original model instance and
