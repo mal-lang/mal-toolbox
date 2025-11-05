@@ -26,6 +26,8 @@ from ..language import (
     LanguageGraphAttackStep,
     disaggregate_attack_step_full_name,
 )
+
+from ..str_utils import levenshtein_distance
 from ..model import Model
 from .node import AttackGraphNode
 
@@ -277,7 +279,7 @@ class AttackGraph:
         return cls._from_dict(serialized_attack_graph,
             lang_graph, model=model)
 
-    def get_node_by_full_name(self, full_name: str) -> AttackGraphNode | None:
+    def get_node_by_full_name(self, full_name: str) -> AttackGraphNode:
         """Return the attack node that matches the full name provided.
 
         Arguments:
@@ -291,7 +293,13 @@ class AttackGraph:
 
         """
         logger.debug('Looking up node with full name "%s"', full_name)
-        return self._full_name_to_node.get(full_name)
+        if full_name not in self._full_name_to_node:
+            similar_names = self._get_similar_full_names(full_name)
+            raise LookupError(
+                f'Could not find node with name "{full_name}". '
+                f'Did you mean: {", ".join(similar_names)}?'
+            )
+        return self._full_name_to_node[full_name]
 
     def _follow_field_expr_chain(
         self, target_assets: set[ModelAsset], expr_chain: ExpressionsChain
@@ -622,6 +630,19 @@ class AttackGraph:
             )
             ag_node.children.add(target_node)
             target_node.parents.add(ag_node)
+
+    def _get_similar_full_names(self, q: str) -> list[str]:
+        """Return a list of node full names that are similar to `q`"""
+        shortest_dist = 100
+        similar_names = []
+        for full_name in self._full_name_to_node:
+            dist = levenshtein_distance(q, full_name)
+            if dist == shortest_dist:
+                similar_names.append(full_name)
+            elif dist < shortest_dist:
+                similar_names = [full_name]
+                shortest_dist = dist
+        return similar_names
 
     def regenerate_graph(self) -> None:
         """Regenerate the attack graph based on the original model instance and
