@@ -1,6 +1,7 @@
 """Unit tests for AttackGraph functionality"""
 
 import copy
+import pickle
 from unittest.mock import patch
 
 from conftest import path_testdata
@@ -753,3 +754,26 @@ def tests_create_ag_step_lists():
     attacks = [n for n in created_ag.nodes.values() if n.type in ('or', 'and')]
     assert defenses == created_ag.defense_steps
     assert attacks == created_ag.attack_steps
+
+def test_attackgraph_pickle(corelang_lang_graph, model):
+    
+    ag = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    pickle_path = "/tmp/attackgraph.pkl"
+    with open(pickle_path, "wb") as f:
+        pickle.dump(ag, f)
+
+    with open(pickle_path, "rb") as f:
+        unpickled_ag: AttackGraph = pickle.load(f)
+
+    assert ag._to_dict() == unpickled_ag._to_dict()
+
+def test_model_pickle(example_model: Model):
+    
+    pickle_path = "/tmp/model.pkl"
+    with open(pickle_path, "wb") as f:
+        pickle.dump(example_model, f)
+
+    with open(pickle_path, "rb") as f:
+        unpickled_model: Model = pickle.load(f)
+
+    assert example_model.to_dict() == unpickled_model.to_dict()
