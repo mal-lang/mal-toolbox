@@ -1781,3 +1781,15 @@ class LanguageGraph:
         """
         self.assets = {}
         self._generate_graph()
+
+    def __getstate__(self):
+        return {"_lang_spec": self._lang_spec}
+
+    def __setstate__(self, state):
+        self._lang_spec = state["_lang_spec"]
+        self.metadata = {
+            "version": self._lang_spec["defines"]["version"],
+            "id": self._lang_spec["defines"]["id"],
+        }
+        self.regenerate_graph()
+        

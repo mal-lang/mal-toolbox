@@ -1,6 +1,7 @@
 """Tests for the LanguageGraph"""
 
 from conftest import path_testdata
+import pickle
 
 from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
 from maltoolbox.language.compiler import MalCompiler
@@ -226,3 +227,14 @@ def test_attack_step_types(corelang_lang_graph: LanguageGraph):
     for attack_step in attack_steps:
         assert attack_step.type in ["or", "and", "defense", "exist", "notExist"], (f"Attack step {attack_step.name} has type {attack_step.type}. "
             "Attack step types must be one of: or, and, defense, exist, notExist")
+
+def test_pickle_languagegraph(corelang_lang_graph: LanguageGraph):
+    """Test that we can pickle and unpickle a language graph"""
+    pickle_path = "/tmp/languagegraph.pkl"
+    with open(pickle_path, "wb") as f:
+        pickle.dump(corelang_lang_graph, f)
+
+    with open(pickle_path, "rb") as f:
+        unpickled_lg: LanguageGraph = pickle.load(f)
+
+    assert corelang_lang_graph._to_dict() == unpickled_lg._to_dict()
