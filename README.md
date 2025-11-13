@@ -164,3 +164,14 @@ Make sure pipeline passes before PR is marked "Ready for review".
 There are unit tests inside of ./tests.
 
 To run all tests, use the `pytest` command. To run just a specific file or test function use `pytest tests/<filename>` or `pytest -k <function_name>`.
+
+# Making a release
+
+1. Make a PR with one commit that updates the version number in `pyproject.toml` and `maltoolbox/__init__.py`.
+Follow [Semantic versioning](https://semver.org/).
+
+2. Get the PR reviewed and merged to `main`.
+
+3. Tag the latest commit on `main` with the new version number.
+
+4. Push the tag.
