@@ -15,11 +15,11 @@ from .file_utils import (
     load_dict_from_yaml_file,
     save_dict_to_file,
 )
-
+from .language import LanguageGraph
 if TYPE_CHECKING:
     from typing import Any
 
-    from .language import LanguageGraph, LanguageGraphAsset, LanguageGraphAssociation
+    from .language import LanguageGraphAsset, LanguageGraphAssociation
 
 logger = logging.getLogger(__name__)
 
@@ -310,6 +310,27 @@ class Model:
                 "Try to upgrade it with 'maltoolbox upgrade-model'"
             ) from e
 
+    def __getstate__(self):
+        lang_state = self.lang_graph.__getstate__()
+        state = self._to_dict()
+        return {
+            'model_state': state,
+            'lang_graph': lang_state
+        }
+    
+    def __setstate__(self, state):
+        # Restore the language graph first
+        lang_graph = LanguageGraph.__new__(LanguageGraph)
+        lang_graph.__setstate__(state['lang_graph'])
+        self.lang_graph = lang_graph
+        
+        # Restore the model state by creating a temporary model and copying attributes
+        temp_model = self._from_dict(state['model_state'], self.lang_graph)
+        self.name = temp_model.name
+        self.assets = temp_model.assets
+        self._name_to_asset = temp_model._name_to_asset
+        self.maltoolbox_version = temp_model.maltoolbox_version
+        self.next_id = temp_model.next_id
 
 class ModelAsset:
     def __init__(
