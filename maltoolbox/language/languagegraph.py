@@ -1783,13 +1783,9 @@ class LanguageGraph:
         self._generate_graph()
 
     def __getstate__(self):
-        return {"_lang_spec": self._lang_spec}
+        return self._to_dict()
 
     def __setstate__(self, state):
-        self._lang_spec = state["_lang_spec"]
-        self.metadata = {
-            "version": self._lang_spec["defines"]["version"],
-            "id": self._lang_spec["defines"]["id"],
-        }
-        self.regenerate_graph()
-        
+        temp_lang_graph = self._from_dict(state)
+        self.assets = temp_lang_graph.assets
+        self.metadata = temp_lang_graph.metadata
