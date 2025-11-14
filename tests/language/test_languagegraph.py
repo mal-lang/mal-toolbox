@@ -228,13 +228,25 @@ def test_attack_step_types(corelang_lang_graph: LanguageGraph):
         assert attack_step.type in ["or", "and", "defense", "exist", "notExist"], (f"Attack step {attack_step.name} has type {attack_step.type}. "
             "Attack step types must be one of: or, and, defense, exist, notExist")
 
+
 def test_pickle_languagegraph(corelang_lang_graph: LanguageGraph):
     """Test that we can pickle and unpickle a language graph"""
-    pickle_path = "/tmp/languagegraph.pkl"
-    with open(pickle_path, "wb") as f:
-        pickle.dump(corelang_lang_graph, f)
-
-    with open(pickle_path, "rb") as f:
-        unpickled_lg: LanguageGraph = pickle.load(f)
-
+    pickled_lg = pickle.dumps(corelang_lang_graph)
+    unpickled_lg: LanguageGraph = pickle.loads(pickled_lg)
     assert corelang_lang_graph._to_dict() == unpickled_lg._to_dict()
+
+
+def test_pickle_languagegraph_asset(corelang_lang_graph: LanguageGraph):
+    """Test that we can pickle and unpickle a language graph asset"""
+    lang_graph_asset = corelang_lang_graph.assets['Application']
+    pickled_asset = pickle.dumps(lang_graph_asset)
+    unpickled_asset = pickle.loads(pickled_asset)
+    assert lang_graph_asset.to_dict() == unpickled_asset.to_dict()
+
+
+def test_pickle_languagegraph_attack_step(corelang_lang_graph: LanguageGraph):
+    """Test that we can pickle and unpickle a language graph attack step"""
+    lang_graph_step = corelang_lang_graph.assets['Application'].attack_steps['fullAccess']
+    pickled_step = pickle.dumps(lang_graph_step)
+    ununpickled_step = pickle.loads(pickled_step)
+    assert lang_graph_step.to_dict() == ununpickled_step.to_dict()
