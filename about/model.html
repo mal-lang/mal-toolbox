@@ -1,0 +1,205 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model &mdash; MAL Toolbox  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="AttackGraph" href="attackgraph.html" />
+    <link rel="prev" title="LanguageGraph" href="languagegraph.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            MAL Toolbox
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../about.html">About MAL Toolbox</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="languagegraph.html">LanguageGraph</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#assets-and-associations">Assets and associations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load-create-a-model">Load/create a model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#with-the-mal-gui">With the MAL GUI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#in-python-code">In Python code</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#the-instance-model-file">The instance model file</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#change-defense-status">Change defense status</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="attackgraph.html">AttackGraph</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../apidocs/maltoolbox.html">API documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MAL Toolbox</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../about.html">About MAL Toolbox</a></li>
+      <li class="breadcrumb-item active">Model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/about/model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="model">
+<h1>Model<a class="headerlink" href="#model" title="Link to this heading"></a></h1>
+<p>With a MAL language (e.g. <a class="reference external" href="https://github.com/mal-lang/coreLang">coreLang</a>) defined in a .mar or .mal-file,
+a <code class="xref py py-class docutils literal notranslate"><span class="pre">maltoolbox.model.Model</span></code> can be created either from a model instance file or empty.</p>
+<section id="assets-and-associations">
+<h2>Assets and associations<a class="headerlink" href="#assets-and-associations" title="Link to this heading"></a></h2>
+<p>A model consists of assets and associations.</p>
+<ul class="simple">
+<li><p>An asset is an instance of an asset type (LanguageGraphAsset)</p></li>
+<li><p>An association is a relation between two or more assets (an instance of a LanugageGraphAssociation)</p></li>
+</ul>
+<p>The MAL language defines which assets can have an association between each other and what the ‘field names’ between them are called.</p>
+<p>Example:
+<cite>Application</cite> is an asset type defined in the MAL Language coreLang. The association <cite>AppExecution</cite> is defined in coreLang.
+It can exist between <cite>Application</cite> and <cite>Application</cite> through field names <cite>hostApp</cite> and <cite>appExecutedApps</cite>,
+this is defined in the MAL language coreLang but can look different in other MAL languages.</p>
+</section>
+<section id="load-create-a-model">
+<h2>Load/create a model<a class="headerlink" href="#load-create-a-model" title="Link to this heading"></a></h2>
+<section id="with-the-mal-gui">
+<h3>With the MAL GUI<a class="headerlink" href="#with-the-mal-gui" title="Link to this heading"></a></h3>
+<p>You can use the <a class="reference external" href="https://github.com/mal-lang/mal-gui/">MAL GUI</a> to create models.
+This is a program that lets you drag and drop assets and associations given that you have a MAL language define already.
+It will output model files.</p>
+</section>
+<section id="in-python-code">
+<h3>In Python code<a class="headerlink" href="#in-python-code" title="Link to this heading"></a></h3>
+<p>First, you have to load the MAL language:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">maltoolbox.language</span> <span class="kn">import</span> <span class="n">LanguageGraph</span>
+
+<span class="c1"># First load the language either from .mal / .mar / .yml / .json</span>
+<span class="n">lang_graph</span> <span class="o">=</span> <span class="n">LanguageGraph</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">lang_file_path</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With existing model instance file
+(<a class="reference external" href="https://github.com/mal-lang/mal-toolbox-tutorial/blob/main/res/mal-toolbox/common/simple_example_model.yml">see example</a>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">maltoolbox.model</span> <span class="kn">import</span> <span class="n">Model</span>
+
+<span class="c1"># Load the model (i.e. the simple_example_model.json, can also be .yml/yaml)</span>
+<span class="n">model_file_path</span> <span class="o">=</span> <span class="s2">&quot;example_model.yml&quot;</span>
+<span class="n">instance_model</span> <span class="o">=</span> <span class="n">Model</span><span class="o">.</span><span class="n">load_from_file</span><span class="p">(</span><span class="n">model_file_path</span><span class="p">,</span> <span class="n">lang_graph</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Without existing model instance file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">maltoolbox.model</span> <span class="kn">import</span> <span class="n">Model</span>
+
+<span class="c1"># Create an empty model</span>
+<span class="n">instance_model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="s2">&quot;Example Model&quot;</span><span class="p">,</span> <span class="n">lang_graph</span><span class="p">)</span>
+
+<span class="c1"># Create and add assets of type supported by the MAL language</span>
+<span class="n">asset1</span> <span class="o">=</span> <span class="n">instance_model</span><span class="o">.</span><span class="n">add_asset</span><span class="p">(</span><span class="s1">&#39;Application&#39;</span><span class="p">,</span> <span class="s1">&#39;Application1&#39;</span><span class="p">)</span>
+<span class="n">asset2</span> <span class="o">=</span> <span class="n">instance_model</span><span class="o">.</span><span class="n">add_asset</span><span class="p">(</span><span class="s1">&#39;Application&#39;</span><span class="p">,</span> <span class="s1">&#39;Application2&#39;</span><span class="p">)</span>
+
+<span class="c1"># Create association between the assets</span>
+<span class="n">asset1</span><span class="o">.</span><span class="n">add_associated_assets</span><span class="p">(</span><span class="s1">&#39;appExecutedApps&#39;</span><span class="p">,</span> <span class="n">asset2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more info on how to use MAL Toolbox,
+<a class="reference external" href="https://github.com/mal-lang/mal-toolbox-tutorial/blob/main/res/mal-toolbox/model-generators/model_generator.py">Read the tutorial docs</a>.</p>
+</section>
+</section>
+<section id="the-instance-model-file">
+<h2>The instance model file<a class="headerlink" href="#the-instance-model-file" title="Link to this heading"></a></h2>
+<p>The model file contains <cite>metadata</cite>, <cite>assets</cite>, and optionally <cite>attackers</cite>.
+It is NOT suggested to add attackers to model files since this will be deprecated.</p>
+<ul class="simple">
+<li><p><cite>metadata</cite> is to keep track on the version of toolbox and the language was used.</p></li>
+<li><p><cite>assets</cite> contain all the assets in your instance model.</p></li>
+<li><p><cite>attackers</cite> contain attackers entrypoints (If you plan to run simulations, please use the scenario file</p></li>
+</ul>
+<p>instead of the model file to define entrypoints)</p>
+<section id="change-defense-status">
+<h3>Change defense status<a class="headerlink" href="#change-defense-status" title="Link to this heading"></a></h3>
+<p>To change defenses <cite>enabled</cite>-status in the model file, use the  <cite>defenses</cite> keyword of model assets:</p>
+<p>Example:</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="languagegraph.html" class="btn btn-neutral float-left" title="LanguageGraph" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="attackgraph.html" class="btn btn-neutral float-right" title="AttackGraph" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Andrei Buhaiu, Giuseppe Nebbione, Nikolaos Kakouros, Jakob Nyberg, Joakim Loxdal.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
