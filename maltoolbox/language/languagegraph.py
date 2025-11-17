@@ -80,7 +80,7 @@ class LanguageGraphAsset:
         field(default_factory=dict)
     info: dict = field(default_factory=dict)
     own_super_asset: LanguageGraphAsset | None = None
-    own_sub_assets: set[LanguageGraphAsset] = field(default_factory=set)
+    own_sub_assets: list[LanguageGraphAsset] = field(default_factory=list)
     own_variables: dict = field(default_factory=dict)
     is_abstract: bool | None = None
 
@@ -115,7 +115,7 @@ class LanguageGraphAsset:
         return f'LanguageGraphAsset(name: "{self.name}")'
 
     def __hash__(self):
-        return hash(self.name)
+        return id(self)
 
     def is_subasset_of(self, target_asset: LanguageGraphAsset) -> bool:
         """Check if an asset extends the target asset through inheritance.
@@ -383,7 +383,7 @@ class LanguageGraphAttackStep:
     detectors: dict = field(default_factory=dict)
 
     def __hash__(self):
-        return hash(self.full_name)
+        return id(self)
 
     @property
     def children(self) -> dict[
@@ -773,7 +773,7 @@ class LanguageGraph:
                 attack_steps={},
                 info=asset['info'],
                 own_super_asset=None,
-                own_sub_assets=set(),
+                own_sub_assets=list(),
                 own_variables={},
                 is_abstract=asset['is_abstract']
             )
@@ -788,7 +788,8 @@ class LanguageGraph:
                     msg = f'Super asset "{super_name}" for "{asset["name"]}" not found'
                     logger.error(msg)
                     raise LanguageGraphSuperAssetNotFoundError(msg)
-                super_asset.own_sub_assets.add(asset_node)
+
+                super_asset.own_sub_assets.append(asset_node)
                 asset_node.own_super_asset = super_asset
 
         # Associations
@@ -1454,7 +1455,7 @@ class LanguageGraph:
                     raise LanguageGraphSuperAssetNotFoundError(
                         msg % (asset_dict["superAsset"], asset_dict["name"]))
 
-                super_asset.own_sub_assets.add(asset)
+                super_asset.own_sub_assets.append(asset)
                 asset.own_super_asset = super_asset
 
     def _set_variables_for_assets(
@@ -1625,7 +1626,7 @@ class LanguageGraph:
                 attack_steps={},
                 info=asset_dict['meta'],
                 own_super_asset=None,
-                own_sub_assets=set(),
+                own_sub_assets=list(),
                 own_variables={},
                 is_abstract=asset_dict['isAbstract']
             )
@@ -1781,11 +1782,3 @@ class LanguageGraph:
         """
         self.assets = {}
         self._generate_graph()
-
-    def __getstate__(self):
-        return self._to_dict()
-
-    def __setstate__(self, state):
-        temp_lang_graph = self._from_dict(state)
-        self.assets = temp_lang_graph.assets
-        self.metadata = temp_lang_graph.metadata
