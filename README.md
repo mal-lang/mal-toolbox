@@ -46,9 +46,9 @@ pip install mal-toolbox
 
 ### Requirements
 
-If you want to run visualizations with graphviz then you must first download and install it on your machine. Depending on your OS, you might find how to do it here: [link to graphviz installation](https://graphviz.org/download/)
+If you wish to run visualisations with graphviz, you must first download and install it on your computer. Depending on your operating system, you can find out how to do this here: [link to graphviz installation](https://graphviz.org/download/).
 
-After successfully installing the software, you must also include the python package by running:
+Once the software has been successfully installed, you must also include the python package by running:
 ```
 pip install graphviz
 ```
