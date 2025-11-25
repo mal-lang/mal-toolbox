@@ -44,6 +44,15 @@ available.
 pip install mal-toolbox
 ```
 
+### Requirements
+
+If you wish to run visualisations with graphviz, you must first download and install it on your computer. Depending on your operating system, you can find out how to do this here: [link to graphviz installation](https://graphviz.org/download/).
+
+Once the software has been successfully installed, you must also include the python package by running:
+```
+pip install graphviz
+```
+
 ## Configuration
 You can use a `maltoolbox.yml` file in the current working directory to
 configure the toolbox.
