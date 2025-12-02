@@ -367,6 +367,7 @@ class LanguageGraphAttackStep:
     name: str
     type: Literal["or", "and", "defense", "exist", "notExist"]
     asset: LanguageGraphAsset
+    kind: Literal["action", "effect"] | None = None
     ttc: dict | None = field(default_factory=dict)
     overrides: bool = False
 
@@ -835,6 +836,7 @@ class LanguageGraph:
                 a_node.attack_steps[step['name']] = LanguageGraphAttackStep(
                     name=step['name'],
                     type=step['type'],
+                    kind=step.get('kind'),
                     asset=a_node,
                     ttc=step['ttc'],
                     overrides=step['overrides'],
@@ -1515,6 +1517,7 @@ class LanguageGraph:
                 node = LanguageGraphAttackStep(
                     name=step_dict['name'],
                     type=step_dict['type'],
+                    kind=step_dict.get('kind'),
                     asset=asset,
                     ttc=step_dict['ttc'],
                     overrides=(
@@ -1554,6 +1557,7 @@ class LanguageGraph:
                     node = LanguageGraphAttackStep(
                         name=super_step.name,
                         type=super_step.type,
+                        kind=super_step.kind,
                         asset=asset,
                         ttc=super_step.ttc,
                         overrides=False,
