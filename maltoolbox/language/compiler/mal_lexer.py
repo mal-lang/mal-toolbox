@@ -10,6 +10,7 @@ else:
     from typing.io import TextIO
 
 
+# fmt: off
 def serializedATN():
     return [
         4, 0, 51, 332, 6, -1, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7, 4, 2, 5, 7, 5,
@@ -130,10 +131,10 @@ def serializedATN():
         50, 0, 0, 331, 102, 1, 0, 0, 0, 13, 0, 169, 171, 181, 184, 188, 190, 200, 205, 212,
         225, 309, 320, 1, 6, 0, 0
     ]
+# fmt: on
 
 
 class malLexer(Lexer):
-
     atn = ATNDeserializer().deserialize(serializedATN())
 
     decisionsToDFA = [DFA(ds, i) for i, ds in enumerate(atn.decisionToState)]
@@ -190,43 +191,173 @@ class malLexer(Lexer):
     MULTILINE_COMMENT = 50
     WS = 51
 
-    channelNames = ["DEFAULT_TOKEN_CHANNEL", "HIDDEN"]
+    channelNames = ['DEFAULT_TOKEN_CHANNEL', 'HIDDEN']
 
-    modeNames = ["DEFAULT_MODE"]
+    modeNames = ['DEFAULT_MODE']
 
-    literalNames = ["<INVALID>",
-            "'abstract'", "'asset'", "'associations'", "'extends'", "'include'",
-            "'category'", "'info'", "'let'", "'E'", "'C'", "'I'", "'A'",
-            "'('", "')'", "'{'", "'}'", "'#'", "':'", "'<--'", "'-->'",
-            "'['", "']'", "'*'", "'1'", "'='", "'-'", "'/\\'", "'\\/'",
-            "'..'", "'.'", "'&'", "'|'", "'!'", "'!E'", "'@'", "'<-'", "'+>'",
-            "'->'", "','", "'+'", "'/'", "'^'", "'//!'"]
+    literalNames = [
+        '<INVALID>',
+        "'abstract'",
+        "'asset'",
+        "'associations'",
+        "'extends'",
+        "'include'",
+        "'category'",
+        "'info'",
+        "'let'",
+        "'E'",
+        "'C'",
+        "'I'",
+        "'A'",
+        "'('",
+        "')'",
+        "'{'",
+        "'}'",
+        "'#'",
+        "':'",
+        "'<--'",
+        "'-->'",
+        "'['",
+        "']'",
+        "'*'",
+        "'1'",
+        "'='",
+        "'-'",
+        "'/\\'",
+        "'\\/'",
+        "'..'",
+        "'.'",
+        "'&'",
+        "'|'",
+        "'!'",
+        "'!E'",
+        "'@'",
+        "'<-'",
+        "'+>'",
+        "'->'",
+        "','",
+        "'+'",
+        "'/'",
+        "'^'",
+        "'//!'",
+    ]
 
-    symbolicNames = ["<INVALID>",
-            "ABSTRACT", "ASSET", "ASSOCIATIONS", "EXTENDS", "INCLUDE", "CATEGORY",
-            "INFO", "LET", "STRING", "MULTILINE_STRING", "INT", "FLOAT",
-            "EXISTS", "C", "I", "A", "ID", "LPAREN", "RPAREN", "LCURLY",
-            "RCURLY", "HASH", "COLON", "LARROW", "RARROW", "LSQUARE", "RSQUARE",
-            "STAR", "ONE", "ASSIGN", "MINUS", "INTERSECT", "UNION", "RANGE",
-            "DOT", "AND", "OR", "EXCLAMATION", "NOTEXISTS", "AT", "REQUIRES",
-            "INHERITS", "LEADSTO", "COMMA", "PLUS", "DIVIDE", "POWER", "EXCLM_COMM",
-            "INLINE_COMMENT", "MULTILINE_COMMENT", "WS"]
+    symbolicNames = [
+        '<INVALID>',
+        'ABSTRACT',
+        'ASSET',
+        'ASSOCIATIONS',
+        'EXTENDS',
+        'INCLUDE',
+        'CATEGORY',
+        'INFO',
+        'LET',
+        'STRING',
+        'MULTILINE_STRING',
+        'INT',
+        'FLOAT',
+        'EXISTS',
+        'C',
+        'I',
+        'A',
+        'ID',
+        'LPAREN',
+        'RPAREN',
+        'LCURLY',
+        'RCURLY',
+        'HASH',
+        'COLON',
+        'LARROW',
+        'RARROW',
+        'LSQUARE',
+        'RSQUARE',
+        'STAR',
+        'ONE',
+        'ASSIGN',
+        'MINUS',
+        'INTERSECT',
+        'UNION',
+        'RANGE',
+        'DOT',
+        'AND',
+        'OR',
+        'EXCLAMATION',
+        'NOTEXISTS',
+        'AT',
+        'REQUIRES',
+        'INHERITS',
+        'LEADSTO',
+        'COMMA',
+        'PLUS',
+        'DIVIDE',
+        'POWER',
+        'EXCLM_COMM',
+        'INLINE_COMMENT',
+        'MULTILINE_COMMENT',
+        'WS',
+    ]
 
-    ruleNames = ["ABSTRACT", "ASSET", "ASSOCIATIONS", "EXTENDS", "INCLUDE",
-                  "CATEGORY", "INFO", "LET", "STRING", "MULTILINE_STRING",
-                  "INT", "FLOAT", "EXISTS", "C", "I", "A", "ID", "LPAREN",
-                  "RPAREN", "LCURLY", "RCURLY", "HASH", "COLON", "LARROW",
-                  "RARROW", "LSQUARE", "RSQUARE", "STAR", "ONE", "ASSIGN",
-                  "MINUS", "INTERSECT", "UNION", "RANGE", "DOT", "AND",
-                  "OR", "EXCLAMATION", "NOTEXISTS", "AT", "REQUIRES", "INHERITS",
-                  "LEADSTO", "COMMA", "PLUS", "DIVIDE", "POWER", "EXCLM_COMM",
-                  "INLINE_COMMENT", "MULTILINE_COMMENT", "WS"]
+    ruleNames = [
+        'ABSTRACT',
+        'ASSET',
+        'ASSOCIATIONS',
+        'EXTENDS',
+        'INCLUDE',
+        'CATEGORY',
+        'INFO',
+        'LET',
+        'STRING',
+        'MULTILINE_STRING',
+        'INT',
+        'FLOAT',
+        'EXISTS',
+        'C',
+        'I',
+        'A',
+        'ID',
+        'LPAREN',
+        'RPAREN',
+        'LCURLY',
+        'RCURLY',
+        'HASH',
+        'COLON',
+        'LARROW',
+        'RARROW',
+        'LSQUARE',
+        'RSQUARE',
+        'STAR',
+        'ONE',
+        'ASSIGN',
+        'MINUS',
+        'INTERSECT',
+        'UNION',
+        'RANGE',
+        'DOT',
+        'AND',
+        'OR',
+        'EXCLAMATION',
+        'NOTEXISTS',
+        'AT',
+        'REQUIRES',
+        'INHERITS',
+        'LEADSTO',
+        'COMMA',
+        'PLUS',
+        'DIVIDE',
+        'POWER',
+        'EXCLM_COMM',
+        'INLINE_COMMENT',
+        'MULTILINE_COMMENT',
+        'WS',
+    ]
 
-    grammarFileName = "mal.g4"
+    grammarFileName = 'mal.g4'
 
     def __init__(self, input=None, output: TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.13.2")
-        self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
+        self.checkVersion('4.13.2')
+        self._interp = LexerATNSimulator(
+            self, self.atn, self.decisionsToDFA, PredictionContextCache()
+        )
         self._actions = None
         self._predicates = None

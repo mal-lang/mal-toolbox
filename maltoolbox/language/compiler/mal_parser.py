@@ -6,11 +6,12 @@ import sys
 from antlr4 import *
 
 if sys.version_info[1] > 5:
-	from typing import TextIO
+    from typing import TextIO
 else:
-	from typing.io import TextIO
+    from typing.io import TextIO
 
 
+# fmt: off
 def serializedATN():
     return [
         4, 1, 51, 413, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7, 4, 2, 5, 7, 5, 2, 6, 7,
@@ -158,11 +159,11 @@ def serializedATN():
         244, 253, 256, 259, 263, 267, 270, 279, 288, 310, 319, 335, 343, 355, 358, 363,
         379, 396, 406
     ]
+# fmt: on
 
 
-class malParser (Parser):
-
-    grammarFileName = "mal.g4"
+class malParser(Parser):
+    grammarFileName = 'mal.g4'
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
@@ -170,26 +171,112 @@ class malParser (Parser):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = ["<INVALID>", "'abstract'", "'asset'", "'associations'",
-                     "'extends'", "'include'", "'category'", "'info'", "'let'",
-                     "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>",
-                     "'E'", "'C'", "'I'", "'A'", "<INVALID>", "'('", "')'",
-                     "'{'", "'}'", "'#'", "':'", "'<--'", "'-->'", "'['",
-                     "']'", "'*'", "'1'", "'='", "'-'", "'/\\'", "'\\/'",
-                     "'..'", "'.'", "'&'", "'|'", "'!'", "'!E'", "'@'",
-                     "'<-'", "'+>'", "'->'", "','", "'+'", "'/'", "'^'",
-                     "'//!'"]
+    literalNames = [
+        '<INVALID>',
+        "'abstract'",
+        "'asset'",
+        "'associations'",
+        "'extends'",
+        "'include'",
+        "'category'",
+        "'info'",
+        "'let'",
+        '<INVALID>',
+        '<INVALID>',
+        '<INVALID>',
+        '<INVALID>',
+        "'E'",
+        "'C'",
+        "'I'",
+        "'A'",
+        '<INVALID>',
+        "'('",
+        "')'",
+        "'{'",
+        "'}'",
+        "'#'",
+        "':'",
+        "'<--'",
+        "'-->'",
+        "'['",
+        "']'",
+        "'*'",
+        "'1'",
+        "'='",
+        "'-'",
+        "'/\\'",
+        "'\\/'",
+        "'..'",
+        "'.'",
+        "'&'",
+        "'|'",
+        "'!'",
+        "'!E'",
+        "'@'",
+        "'<-'",
+        "'+>'",
+        "'->'",
+        "','",
+        "'+'",
+        "'/'",
+        "'^'",
+        "'//!'",
+    ]
 
-    symbolicNames = ["<INVALID>", "ABSTRACT", "ASSET", "ASSOCIATIONS",
-                      "EXTENDS", "INCLUDE", "CATEGORY", "INFO", "LET", "STRING",
-                      "MULTILINE_STRING", "INT", "FLOAT", "EXISTS", "C",
-                      "I", "A", "ID", "LPAREN", "RPAREN", "LCURLY", "RCURLY",
-                      "HASH", "COLON", "LARROW", "RARROW", "LSQUARE", "RSQUARE",
-                      "STAR", "ONE", "ASSIGN", "MINUS", "INTERSECT", "UNION",
-                      "RANGE", "DOT", "AND", "OR", "EXCLAMATION", "NOTEXISTS",
-                      "AT", "REQUIRES", "INHERITS", "LEADSTO", "COMMA",
-                      "PLUS", "DIVIDE", "POWER", "EXCLM_COMM", "INLINE_COMMENT",
-                      "MULTILINE_COMMENT", "WS"]
+    symbolicNames = [
+        '<INVALID>',
+        'ABSTRACT',
+        'ASSET',
+        'ASSOCIATIONS',
+        'EXTENDS',
+        'INCLUDE',
+        'CATEGORY',
+        'INFO',
+        'LET',
+        'STRING',
+        'MULTILINE_STRING',
+        'INT',
+        'FLOAT',
+        'EXISTS',
+        'C',
+        'I',
+        'A',
+        'ID',
+        'LPAREN',
+        'RPAREN',
+        'LCURLY',
+        'RCURLY',
+        'HASH',
+        'COLON',
+        'LARROW',
+        'RARROW',
+        'LSQUARE',
+        'RSQUARE',
+        'STAR',
+        'ONE',
+        'ASSIGN',
+        'MINUS',
+        'INTERSECT',
+        'UNION',
+        'RANGE',
+        'DOT',
+        'AND',
+        'OR',
+        'EXCLAMATION',
+        'NOTEXISTS',
+        'AT',
+        'REQUIRES',
+        'INHERITS',
+        'LEADSTO',
+        'COMMA',
+        'PLUS',
+        'DIVIDE',
+        'POWER',
+        'EXCLM_COMM',
+        'INLINE_COMMENT',
+        'MULTILINE_COMMENT',
+        'WS',
+    ]
 
     RULE_mal = 0
     RULE_declaration = 1
@@ -237,15 +324,53 @@ class malParser (Parser):
     RULE_multatom = 43
     RULE_linkname = 44
 
-    ruleNames = ["mal", "declaration", "include", "define", "category",
-                   "meta", "text", "asset", "step", "steptype", "tag", "cias",
-                   "cia", "ttc", "pdist", "pdistexpr", "pdistterm", "pdistfact",
-                   "pdistatom", "pdistdist", "detector", "bang", "detectorname",
-                   "context", "contextpart", "contextasset", "contextlabel",
-                   "detectortype", "tprate", "precondition", "reaches",
-                   "number", "variable", "expr", "parts", "part", "varsubst",
-                   "type", "setop", "associations", "association", "field",
-                   "mult", "multatom", "linkname"]
+    ruleNames = [
+        'mal',
+        'declaration',
+        'include',
+        'define',
+        'category',
+        'meta',
+        'text',
+        'asset',
+        'step',
+        'steptype',
+        'tag',
+        'cias',
+        'cia',
+        'ttc',
+        'pdist',
+        'pdistexpr',
+        'pdistterm',
+        'pdistfact',
+        'pdistatom',
+        'pdistdist',
+        'detector',
+        'bang',
+        'detectorname',
+        'context',
+        'contextpart',
+        'contextasset',
+        'contextlabel',
+        'detectortype',
+        'tprate',
+        'precondition',
+        'reaches',
+        'number',
+        'variable',
+        'expr',
+        'parts',
+        'part',
+        'varsubst',
+        'type',
+        'setop',
+        'associations',
+        'association',
+        'field',
+        'mult',
+        'multatom',
+        'linkname',
+    ]
 
     EOF = Token.EOF
     ABSTRACT = 1
@@ -302,14 +427,18 @@ class malParser (Parser):
 
     def __init__(self, input: TokenStream, output: TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.13.2")
-        self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
+        self.checkVersion('4.13.2')
+        self._interp = ParserATNSimulator(
+            self, self.atn, self.decisionsToDFA, self.sharedContextCache
+        )
         self._predicates = None
 
     class MalContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -325,20 +454,19 @@ class malParser (Parser):
             return malParser.RULE_mal
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMal"):
+            if hasattr(listener, 'enterMal'):
                 listener.enterMal(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMal"):
+            if hasattr(listener, 'exitMal'):
                 listener.exitMal(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMal"):
+            if hasattr(visitor, 'visitMal'):
                 return visitor.visitMal(self)
             return visitor.visitChildren(self)
 
     def mal(self):
-
         localctx = malParser.MalContext(self, self._ctx, self.state)
         self.enterRule(localctx, 0, self.RULE_mal)
         self._la = 0  # Token type
@@ -357,7 +485,7 @@ class malParser (Parser):
                     self.state = 93
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 4194408) != 0):
+                    if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 4194408) != 0):
                         break
 
             elif token == -1:
@@ -378,7 +506,9 @@ class malParser (Parser):
     class DeclarationContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -398,20 +528,19 @@ class malParser (Parser):
             return malParser.RULE_declaration
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDeclaration"):
+            if hasattr(listener, 'enterDeclaration'):
                 listener.enterDeclaration(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDeclaration"):
+            if hasattr(listener, 'exitDeclaration'):
                 listener.exitDeclaration(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDeclaration"):
+            if hasattr(visitor, 'visitDeclaration'):
                 return visitor.visitDeclaration(self)
             return visitor.visitChildren(self)
 
     def declaration(self):
-
         localctx = malParser.DeclarationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_declaration)
         try:
@@ -448,7 +577,9 @@ class malParser (Parser):
     class IncludeContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -462,20 +593,19 @@ class malParser (Parser):
             return malParser.RULE_include
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterInclude"):
+            if hasattr(listener, 'enterInclude'):
                 listener.enterInclude(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitInclude"):
+            if hasattr(listener, 'exitInclude'):
                 listener.exitInclude(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitInclude"):
+            if hasattr(visitor, 'visitInclude'):
                 return visitor.visitInclude(self)
             return visitor.visitChildren(self)
 
     def include(self):
-
         localctx = malParser.IncludeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 4, self.RULE_include)
         try:
@@ -495,7 +625,9 @@ class malParser (Parser):
     class DefineContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -515,20 +647,19 @@ class malParser (Parser):
             return malParser.RULE_define
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDefine"):
+            if hasattr(listener, 'enterDefine'):
                 listener.enterDefine(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDefine"):
+            if hasattr(listener, 'exitDefine'):
                 listener.exitDefine(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDefine"):
+            if hasattr(visitor, 'visitDefine'):
                 return visitor.visitDefine(self)
             return visitor.visitChildren(self)
 
     def define(self):
-
         localctx = malParser.DefineContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_define)
         try:
@@ -552,7 +683,9 @@ class malParser (Parser):
     class CategoryContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -582,20 +715,19 @@ class malParser (Parser):
             return malParser.RULE_category
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCategory"):
+            if hasattr(listener, 'enterCategory'):
                 listener.enterCategory(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCategory"):
+            if hasattr(listener, 'exitCategory'):
                 listener.exitCategory(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCategory"):
+            if hasattr(visitor, 'visitCategory'):
                 return visitor.visitCategory(self)
             return visitor.visitChildren(self)
 
     def category(self):
-
         localctx = malParser.CategoryContext(self, self._ctx, self.state)
         self.enterRule(localctx, 8, self.RULE_category)
         self._la = 0  # Token type
@@ -640,7 +772,9 @@ class malParser (Parser):
     class MetaContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -660,20 +794,19 @@ class malParser (Parser):
             return malParser.RULE_meta
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMeta"):
+            if hasattr(listener, 'enterMeta'):
                 listener.enterMeta(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMeta"):
+            if hasattr(listener, 'exitMeta'):
                 listener.exitMeta(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMeta"):
+            if hasattr(visitor, 'visitMeta'):
                 return visitor.visitMeta(self)
             return visitor.visitChildren(self)
 
     def meta(self):
-
         localctx = malParser.MetaContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_meta)
         try:
@@ -697,7 +830,9 @@ class malParser (Parser):
     class TextContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -711,20 +846,19 @@ class malParser (Parser):
             return malParser.RULE_text
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterText"):
+            if hasattr(listener, 'enterText'):
                 listener.enterText(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitText"):
+            if hasattr(listener, 'exitText'):
                 listener.exitText(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitText"):
+            if hasattr(visitor, 'visitText'):
                 return visitor.visitText(self)
             return visitor.visitChildren(self)
 
     def text(self):
-
         localctx = malParser.TextContext(self, self._ctx, self.state)
         self.enterRule(localctx, 12, self.RULE_text)
         self._la = 0  # Token type
@@ -748,7 +882,9 @@ class malParser (Parser):
     class AssetContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -791,20 +927,19 @@ class malParser (Parser):
             return malParser.RULE_asset
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAsset"):
+            if hasattr(listener, 'enterAsset'):
                 listener.enterAsset(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAsset"):
+            if hasattr(listener, 'exitAsset'):
                 listener.exitAsset(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAsset"):
+            if hasattr(visitor, 'visitAsset'):
                 return visitor.visitAsset(self)
             return visitor.visitChildren(self)
 
     def asset(self):
-
         localctx = malParser.AssetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_asset)
         self._la = 0  # Token type
@@ -845,7 +980,7 @@ class malParser (Parser):
             self.state = 156
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 755918446848) != 0):
+            while ((_la) & ~0x3F) == 0 and ((1 << _la) & 755918446848) != 0:
                 self.state = 154
                 self._errHandler.sync(self)
                 token = self._input.LA(1)
@@ -875,7 +1010,9 @@ class malParser (Parser):
     class StepContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -916,20 +1053,19 @@ class malParser (Parser):
             return malParser.RULE_step
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterStep"):
+            if hasattr(listener, 'enterStep'):
                 listener.enterStep(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitStep"):
+            if hasattr(listener, 'exitStep'):
                 listener.exitStep(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitStep"):
+            if hasattr(visitor, 'visitStep'):
                 return visitor.visitStep(self)
             return visitor.visitChildren(self)
 
     def step(self):
-
         localctx = malParser.StepContext(self, self._ctx, self.state)
         self.enterRule(localctx, 16, self.RULE_step)
         self._la = 0  # Token type
@@ -1008,7 +1144,9 @@ class malParser (Parser):
     class SteptypeContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1031,20 +1169,19 @@ class malParser (Parser):
             return malParser.RULE_steptype
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterSteptype"):
+            if hasattr(listener, 'enterSteptype'):
                 listener.enterSteptype(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitSteptype"):
+            if hasattr(listener, 'exitSteptype'):
                 listener.exitSteptype(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSteptype"):
+            if hasattr(visitor, 'visitSteptype'):
                 return visitor.visitSteptype(self)
             return visitor.visitChildren(self)
 
     def steptype(self):
-
         localctx = malParser.SteptypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 18, self.RULE_steptype)
         self._la = 0  # Token type
@@ -1052,7 +1189,7 @@ class malParser (Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 193
             _la = self._input.LA(1)
-            if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 755918446592) != 0):
+            if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 755918446592) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1068,7 +1205,9 @@ class malParser (Parser):
     class TagContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1082,20 +1221,19 @@ class malParser (Parser):
             return malParser.RULE_tag
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterTag"):
+            if hasattr(listener, 'enterTag'):
                 listener.enterTag(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitTag"):
+            if hasattr(listener, 'exitTag'):
                 listener.exitTag(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTag"):
+            if hasattr(visitor, 'visitTag'):
                 return visitor.visitTag(self)
             return visitor.visitChildren(self)
 
     def tag(self):
-
         localctx = malParser.TagContext(self, self._ctx, self.state)
         self.enterRule(localctx, 20, self.RULE_tag)
         try:
@@ -1115,7 +1253,9 @@ class malParser (Parser):
     class CiasContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1139,20 +1279,19 @@ class malParser (Parser):
             return malParser.RULE_cias
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCias"):
+            if hasattr(listener, 'enterCias'):
                 listener.enterCias(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCias"):
+            if hasattr(listener, 'exitCias'):
                 listener.exitCias(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCias"):
+            if hasattr(visitor, 'visitCias'):
                 return visitor.visitCias(self)
             return visitor.visitChildren(self)
 
     def cias(self):
-
         localctx = malParser.CiasContext(self, self._ctx, self.state)
         self.enterRule(localctx, 22, self.RULE_cias)
         self._la = 0  # Token type
@@ -1187,7 +1326,9 @@ class malParser (Parser):
     class CiaContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1204,20 +1345,19 @@ class malParser (Parser):
             return malParser.RULE_cia
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterCia"):
+            if hasattr(listener, 'enterCia'):
                 listener.enterCia(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitCia"):
+            if hasattr(listener, 'exitCia'):
                 listener.exitCia(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitCia"):
+            if hasattr(visitor, 'visitCia'):
                 return visitor.visitCia(self)
             return visitor.visitChildren(self)
 
     def cia(self):
-
         localctx = malParser.CiaContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_cia)
         self._la = 0  # Token type
@@ -1225,7 +1365,7 @@ class malParser (Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 209
             _la = self._input.LA(1)
-            if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 114688) != 0):
+            if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 114688) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1241,7 +1381,9 @@ class malParser (Parser):
     class TtcContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1252,20 +1394,19 @@ class malParser (Parser):
             return malParser.RULE_ttc
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterTtc"):
+            if hasattr(listener, 'enterTtc'):
                 listener.enterTtc(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitTtc"):
+            if hasattr(listener, 'exitTtc'):
                 listener.exitTtc(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTtc"):
+            if hasattr(visitor, 'visitTtc'):
                 return visitor.visitTtc(self)
             return visitor.visitChildren(self)
 
     def ttc(self):
-
         localctx = malParser.TtcContext(self, self._ctx, self.state)
         self.enterRule(localctx, 26, self.RULE_ttc)
         try:
@@ -1283,7 +1424,9 @@ class malParser (Parser):
     class PdistContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1300,20 +1443,19 @@ class malParser (Parser):
             return malParser.RULE_pdist
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPdist"):
+            if hasattr(listener, 'enterPdist'):
                 listener.enterPdist(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPdist"):
+            if hasattr(listener, 'exitPdist'):
                 listener.exitPdist(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPdist"):
+            if hasattr(visitor, 'visitPdist'):
                 return visitor.visitPdist(self)
             return visitor.visitChildren(self)
 
     def pdist(self):
-
         localctx = malParser.PdistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 28, self.RULE_pdist)
         try:
@@ -1335,7 +1477,9 @@ class malParser (Parser):
     class PdistexprContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1358,20 +1502,19 @@ class malParser (Parser):
             return malParser.RULE_pdistexpr
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPdistexpr"):
+            if hasattr(listener, 'enterPdistexpr'):
                 listener.enterPdistexpr(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPdistexpr"):
+            if hasattr(listener, 'exitPdistexpr'):
                 listener.exitPdistexpr(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPdistexpr"):
+            if hasattr(visitor, 'visitPdistexpr'):
                 return visitor.visitPdistexpr(self)
             return visitor.visitChildren(self)
 
     def pdistexpr(self):
-
         localctx = malParser.PdistexprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 30, self.RULE_pdistexpr)
         self._la = 0  # Token type
@@ -1407,7 +1550,9 @@ class malParser (Parser):
     class PdisttermContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1430,20 +1575,19 @@ class malParser (Parser):
             return malParser.RULE_pdistterm
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPdistterm"):
+            if hasattr(listener, 'enterPdistterm'):
                 listener.enterPdistterm(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPdistterm"):
+            if hasattr(listener, 'exitPdistterm'):
                 listener.exitPdistterm(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPdistterm"):
+            if hasattr(visitor, 'visitPdistterm'):
                 return visitor.visitPdistterm(self)
             return visitor.visitChildren(self)
 
     def pdistterm(self):
-
         localctx = malParser.PdisttermContext(self, self._ctx, self.state)
         self.enterRule(localctx, 32, self.RULE_pdistterm)
         self._la = 0  # Token type
@@ -1479,7 +1623,9 @@ class malParser (Parser):
     class PdistfactContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1495,20 +1641,19 @@ class malParser (Parser):
             return malParser.RULE_pdistfact
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPdistfact"):
+            if hasattr(listener, 'enterPdistfact'):
                 listener.enterPdistfact(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPdistfact"):
+            if hasattr(listener, 'exitPdistfact'):
                 listener.exitPdistfact(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPdistfact"):
+            if hasattr(visitor, 'visitPdistfact'):
                 return visitor.visitPdistfact(self)
             return visitor.visitChildren(self)
 
     def pdistfact(self):
-
         localctx = malParser.PdistfactContext(self, self._ctx, self.state)
         self.enterRule(localctx, 34, self.RULE_pdistfact)
         self._la = 0  # Token type
@@ -1536,7 +1681,9 @@ class malParser (Parser):
     class PdistatomContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1559,20 +1706,19 @@ class malParser (Parser):
             return malParser.RULE_pdistatom
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPdistatom"):
+            if hasattr(listener, 'enterPdistatom'):
                 listener.enterPdistatom(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPdistatom"):
+            if hasattr(listener, 'exitPdistatom'):
                 listener.exitPdistatom(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPdistatom"):
+            if hasattr(visitor, 'visitPdistatom'):
                 return visitor.visitPdistatom(self)
             return visitor.visitChildren(self)
 
     def pdistatom(self):
-
         localctx = malParser.PdistatomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 36, self.RULE_pdistatom)
         try:
@@ -1609,7 +1755,9 @@ class malParser (Parser):
     class PdistdistContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1636,20 +1784,19 @@ class malParser (Parser):
             return malParser.RULE_pdistdist
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPdistdist"):
+            if hasattr(listener, 'enterPdistdist'):
                 listener.enterPdistdist(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPdistdist"):
+            if hasattr(listener, 'exitPdistdist'):
                 listener.exitPdistdist(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPdistdist"):
+            if hasattr(visitor, 'visitPdistdist'):
                 return visitor.visitPdistdist(self)
             return visitor.visitChildren(self)
 
     def pdistdist(self):
-
         localctx = malParser.PdistdistContext(self, self._ctx, self.state)
         self.enterRule(localctx, 38, self.RULE_pdistdist)
         self._la = 0  # Token type
@@ -1695,7 +1842,9 @@ class malParser (Parser):
     class DetectorContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1718,20 +1867,19 @@ class malParser (Parser):
             return malParser.RULE_detector
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDetector"):
+            if hasattr(listener, 'enterDetector'):
                 listener.enterDetector(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDetector"):
+            if hasattr(listener, 'exitDetector'):
                 listener.exitDetector(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDetector"):
+            if hasattr(visitor, 'visitDetector'):
                 return visitor.visitDetector(self)
             return visitor.visitChildren(self)
 
     def detector(self):
-
         localctx = malParser.DetectorContext(self, self._ctx, self.state)
         self.enterRule(localctx, 40, self.RULE_detector)
         self._la = 0  # Token type
@@ -1773,7 +1921,9 @@ class malParser (Parser):
     class BangContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1787,20 +1937,19 @@ class malParser (Parser):
             return malParser.RULE_bang
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterBang"):
+            if hasattr(listener, 'enterBang'):
                 listener.enterBang(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitBang"):
+            if hasattr(listener, 'exitBang'):
                 listener.exitBang(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitBang"):
+            if hasattr(visitor, 'visitBang'):
                 return visitor.visitBang(self)
             return visitor.visitChildren(self)
 
     def bang(self):
-
         localctx = malParser.BangContext(self, self._ctx, self.state)
         self.enterRule(localctx, 42, self.RULE_bang)
         self._la = 0  # Token type
@@ -1824,7 +1973,9 @@ class malParser (Parser):
     class DetectornameContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1842,20 +1993,19 @@ class malParser (Parser):
             return malParser.RULE_detectorname
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDetectorname"):
+            if hasattr(listener, 'enterDetectorname'):
                 listener.enterDetectorname(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDetectorname"):
+            if hasattr(listener, 'exitDetectorname'):
                 listener.exitDetectorname(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDetectorname"):
+            if hasattr(visitor, 'visitDetectorname'):
                 return visitor.visitDetectorname(self)
             return visitor.visitChildren(self)
 
     def detectorname(self):
-
         localctx = malParser.DetectornameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 44, self.RULE_detectorname)
         self._la = 0  # Token type
@@ -1886,7 +2036,9 @@ class malParser (Parser):
     class ContextContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1910,20 +2062,19 @@ class malParser (Parser):
             return malParser.RULE_context
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterContext"):
+            if hasattr(listener, 'enterContext'):
                 listener.enterContext(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitContext"):
+            if hasattr(listener, 'exitContext'):
                 listener.exitContext(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitContext"):
+            if hasattr(visitor, 'visitContext'):
                 return visitor.visitContext(self)
             return visitor.visitChildren(self)
 
     def context(self):
-
         localctx = malParser.ContextContext(self, self._ctx, self.state)
         self.enterRule(localctx, 46, self.RULE_context)
         self._la = 0  # Token type
@@ -1958,7 +2109,9 @@ class malParser (Parser):
     class ContextpartContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -1972,20 +2125,19 @@ class malParser (Parser):
             return malParser.RULE_contextpart
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterContextpart"):
+            if hasattr(listener, 'enterContextpart'):
                 listener.enterContextpart(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitContextpart"):
+            if hasattr(listener, 'exitContextpart'):
                 listener.exitContextpart(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitContextpart"):
+            if hasattr(visitor, 'visitContextpart'):
                 return visitor.visitContextpart(self)
             return visitor.visitChildren(self)
 
     def contextpart(self):
-
         localctx = malParser.ContextpartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 48, self.RULE_contextpart)
         try:
@@ -2005,7 +2157,9 @@ class malParser (Parser):
     class ContextassetContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2016,20 +2170,19 @@ class malParser (Parser):
             return malParser.RULE_contextasset
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterContextasset"):
+            if hasattr(listener, 'enterContextasset'):
                 listener.enterContextasset(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitContextasset"):
+            if hasattr(listener, 'exitContextasset'):
                 listener.exitContextasset(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitContextasset"):
+            if hasattr(visitor, 'visitContextasset'):
                 return visitor.visitContextasset(self)
             return visitor.visitChildren(self)
 
     def contextasset(self):
-
         localctx = malParser.ContextassetContext(self, self._ctx, self.state)
         self.enterRule(localctx, 50, self.RULE_contextasset)
         try:
@@ -2047,7 +2200,9 @@ class malParser (Parser):
     class ContextlabelContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2058,20 +2213,19 @@ class malParser (Parser):
             return malParser.RULE_contextlabel
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterContextlabel"):
+            if hasattr(listener, 'enterContextlabel'):
                 listener.enterContextlabel(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitContextlabel"):
+            if hasattr(listener, 'exitContextlabel'):
                 listener.exitContextlabel(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitContextlabel"):
+            if hasattr(visitor, 'visitContextlabel'):
                 return visitor.visitContextlabel(self)
             return visitor.visitChildren(self)
 
     def contextlabel(self):
-
         localctx = malParser.ContextlabelContext(self, self._ctx, self.state)
         self.enterRule(localctx, 52, self.RULE_contextlabel)
         try:
@@ -2089,7 +2243,9 @@ class malParser (Parser):
     class DetectortypeContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2100,20 +2256,19 @@ class malParser (Parser):
             return malParser.RULE_detectortype
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterDetectortype"):
+            if hasattr(listener, 'enterDetectortype'):
                 listener.enterDetectortype(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitDetectortype"):
+            if hasattr(listener, 'exitDetectortype'):
                 listener.exitDetectortype(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitDetectortype"):
+            if hasattr(visitor, 'visitDetectortype'):
                 return visitor.visitDetectortype(self)
             return visitor.visitChildren(self)
 
     def detectortype(self):
-
         localctx = malParser.DetectortypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 54, self.RULE_detectortype)
         try:
@@ -2131,7 +2286,9 @@ class malParser (Parser):
     class TprateContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2142,20 +2299,19 @@ class malParser (Parser):
             return malParser.RULE_tprate
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterTprate"):
+            if hasattr(listener, 'enterTprate'):
                 listener.enterTprate(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitTprate"):
+            if hasattr(listener, 'exitTprate'):
                 listener.exitTprate(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitTprate"):
+            if hasattr(visitor, 'visitTprate'):
                 return visitor.visitTprate(self)
             return visitor.visitChildren(self)
 
     def tprate(self):
-
         localctx = malParser.TprateContext(self, self._ctx, self.state)
         self.enterRule(localctx, 56, self.RULE_tprate)
         try:
@@ -2173,7 +2329,9 @@ class malParser (Parser):
     class PreconditionContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2194,20 +2352,19 @@ class malParser (Parser):
             return malParser.RULE_precondition
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPrecondition"):
+            if hasattr(listener, 'enterPrecondition'):
                 listener.enterPrecondition(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPrecondition"):
+            if hasattr(listener, 'exitPrecondition'):
                 listener.exitPrecondition(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPrecondition"):
+            if hasattr(visitor, 'visitPrecondition'):
                 return visitor.visitPrecondition(self)
             return visitor.visitChildren(self)
 
     def precondition(self):
-
         localctx = malParser.PreconditionContext(self, self._ctx, self.state)
         self.enterRule(localctx, 58, self.RULE_precondition)
         self._la = 0  # Token type
@@ -2240,7 +2397,9 @@ class malParser (Parser):
     class ReachesContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2264,20 +2423,19 @@ class malParser (Parser):
             return malParser.RULE_reaches
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterReaches"):
+            if hasattr(listener, 'enterReaches'):
                 listener.enterReaches(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitReaches"):
+            if hasattr(listener, 'exitReaches'):
                 listener.exitReaches(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitReaches"):
+            if hasattr(visitor, 'visitReaches'):
                 return visitor.visitReaches(self)
             return visitor.visitChildren(self)
 
     def reaches(self):
-
         localctx = malParser.ReachesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 60, self.RULE_reaches)
         self._la = 0  # Token type
@@ -2315,7 +2473,9 @@ class malParser (Parser):
     class NumberContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2329,20 +2489,19 @@ class malParser (Parser):
             return malParser.RULE_number
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterNumber"):
+            if hasattr(listener, 'enterNumber'):
                 listener.enterNumber(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitNumber"):
+            if hasattr(listener, 'exitNumber'):
                 listener.exitNumber(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitNumber"):
+            if hasattr(visitor, 'visitNumber'):
                 return visitor.visitNumber(self)
             return visitor.visitChildren(self)
 
     def number(self):
-
         localctx = malParser.NumberContext(self, self._ctx, self.state)
         self.enterRule(localctx, 62, self.RULE_number)
         self._la = 0  # Token type
@@ -2366,7 +2525,9 @@ class malParser (Parser):
     class VariableContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2386,20 +2547,19 @@ class malParser (Parser):
             return malParser.RULE_variable
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterVariable"):
+            if hasattr(listener, 'enterVariable'):
                 listener.enterVariable(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitVariable"):
+            if hasattr(listener, 'exitVariable'):
                 listener.exitVariable(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitVariable"):
+            if hasattr(visitor, 'visitVariable'):
                 return visitor.visitVariable(self)
             return visitor.visitChildren(self)
 
     def variable(self):
-
         localctx = malParser.VariableContext(self, self._ctx, self.state)
         self.enterRule(localctx, 64, self.RULE_variable)
         try:
@@ -2423,7 +2583,9 @@ class malParser (Parser):
     class ExprContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2441,20 +2603,19 @@ class malParser (Parser):
             return malParser.RULE_expr
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterExpr"):
+            if hasattr(listener, 'enterExpr'):
                 listener.enterExpr(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitExpr"):
+            if hasattr(listener, 'exitExpr'):
                 listener.exitExpr(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitExpr"):
+            if hasattr(visitor, 'visitExpr'):
                 return visitor.visitExpr(self)
             return visitor.visitChildren(self)
 
     def expr(self):
-
         localctx = malParser.ExprContext(self, self._ctx, self.state)
         self.enterRule(localctx, 66, self.RULE_expr)
         self._la = 0  # Token type
@@ -2465,7 +2626,7 @@ class malParser (Parser):
             self.state = 335
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & 15032385536) != 0):
+            while ((_la) & ~0x3F) == 0 and ((1 << _la) & 15032385536) != 0:
                 self.state = 330
                 self.setop()
                 self.state = 331
@@ -2485,7 +2646,9 @@ class malParser (Parser):
     class PartsContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2503,20 +2666,19 @@ class malParser (Parser):
             return malParser.RULE_parts
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterParts"):
+            if hasattr(listener, 'enterParts'):
                 listener.enterParts(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitParts"):
+            if hasattr(listener, 'exitParts'):
                 listener.exitParts(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitParts"):
+            if hasattr(visitor, 'visitParts'):
                 return visitor.visitParts(self)
             return visitor.visitChildren(self)
 
     def parts(self):
-
         localctx = malParser.PartsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 68, self.RULE_parts)
         self._la = 0  # Token type
@@ -2547,7 +2709,9 @@ class malParser (Parser):
     class PartContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2578,20 +2742,19 @@ class malParser (Parser):
             return malParser.RULE_part
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterPart"):
+            if hasattr(listener, 'enterPart'):
                 listener.enterPart(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitPart"):
+            if hasattr(listener, 'exitPart'):
                 listener.exitPart(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitPart"):
+            if hasattr(visitor, 'visitPart'):
                 return visitor.visitPart(self)
             return visitor.visitChildren(self)
 
     def part(self):
-
         localctx = malParser.PartContext(self, self._ctx, self.state)
         self.enterRule(localctx, 70, self.RULE_part)
         self._la = 0  # Token type
@@ -2648,7 +2811,9 @@ class malParser (Parser):
     class VarsubstContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2659,20 +2824,19 @@ class malParser (Parser):
             return malParser.RULE_varsubst
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterVarsubst"):
+            if hasattr(listener, 'enterVarsubst'):
                 listener.enterVarsubst(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitVarsubst"):
+            if hasattr(listener, 'exitVarsubst'):
                 listener.exitVarsubst(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitVarsubst"):
+            if hasattr(visitor, 'visitVarsubst'):
                 return visitor.visitVarsubst(self)
             return visitor.visitChildren(self)
 
     def varsubst(self):
-
         localctx = malParser.VarsubstContext(self, self._ctx, self.state)
         self.enterRule(localctx, 72, self.RULE_varsubst)
         try:
@@ -2690,7 +2854,9 @@ class malParser (Parser):
     class TypeContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2707,20 +2873,19 @@ class malParser (Parser):
             return malParser.RULE_type
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterType"):
+            if hasattr(listener, 'enterType'):
                 listener.enterType(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitType"):
+            if hasattr(listener, 'exitType'):
                 listener.exitType(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitType"):
+            if hasattr(visitor, 'visitType'):
                 return visitor.visitType(self)
             return visitor.visitChildren(self)
 
     def type_(self):
-
         localctx = malParser.TypeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 74, self.RULE_type)
         try:
@@ -2742,7 +2907,9 @@ class malParser (Parser):
     class SetopContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2759,20 +2926,19 @@ class malParser (Parser):
             return malParser.RULE_setop
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterSetop"):
+            if hasattr(listener, 'enterSetop'):
                 listener.enterSetop(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitSetop"):
+            if hasattr(listener, 'exitSetop'):
                 listener.exitSetop(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitSetop"):
+            if hasattr(visitor, 'visitSetop'):
                 return visitor.visitSetop(self)
             return visitor.visitChildren(self)
 
     def setop(self):
-
         localctx = malParser.SetopContext(self, self._ctx, self.state)
         self.enterRule(localctx, 76, self.RULE_setop)
         self._la = 0  # Token type
@@ -2780,7 +2946,7 @@ class malParser (Parser):
             self.enterOuterAlt(localctx, 1)
             self.state = 372
             _la = self._input.LA(1)
-            if not (((_la) & ~0x3f) == 0 and ((1 << _la) & 15032385536) != 0):
+            if not (((_la) & ~0x3F) == 0 and ((1 << _la) & 15032385536) != 0):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2796,7 +2962,9 @@ class malParser (Parser):
     class AssociationsContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2818,20 +2986,19 @@ class malParser (Parser):
             return malParser.RULE_associations
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAssociations"):
+            if hasattr(listener, 'enterAssociations'):
                 listener.enterAssociations(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAssociations"):
+            if hasattr(listener, 'exitAssociations'):
                 listener.exitAssociations(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAssociations"):
+            if hasattr(visitor, 'visitAssociations'):
                 return visitor.visitAssociations(self)
             return visitor.visitChildren(self)
 
     def associations(self):
-
         localctx = malParser.AssociationsContext(self, self._ctx, self.state)
         self.enterRule(localctx, 78, self.RULE_associations)
         self._la = 0  # Token type
@@ -2864,7 +3031,9 @@ class malParser (Parser):
     class AssociationContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2901,20 +3070,19 @@ class malParser (Parser):
             return malParser.RULE_association
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterAssociation"):
+            if hasattr(listener, 'enterAssociation'):
                 listener.enterAssociation(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitAssociation"):
+            if hasattr(listener, 'exitAssociation'):
                 listener.exitAssociation(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitAssociation"):
+            if hasattr(visitor, 'visitAssociation'):
                 return visitor.visitAssociation(self)
             return visitor.visitChildren(self)
 
     def association(self):
-
         localctx = malParser.AssociationContext(self, self._ctx, self.state)
         self.enterRule(localctx, 80, self.RULE_association)
         try:
@@ -2959,7 +3127,9 @@ class malParser (Parser):
     class FieldContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -2976,20 +3146,19 @@ class malParser (Parser):
             return malParser.RULE_field
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterField"):
+            if hasattr(listener, 'enterField'):
                 listener.enterField(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitField"):
+            if hasattr(listener, 'exitField'):
                 listener.exitField(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitField"):
+            if hasattr(visitor, 'visitField'):
                 return visitor.visitField(self)
             return visitor.visitChildren(self)
 
     def field(self):
-
         localctx = malParser.FieldContext(self, self._ctx, self.state)
         self.enterRule(localctx, 82, self.RULE_field)
         try:
@@ -3011,7 +3180,9 @@ class malParser (Parser):
     class MultContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3027,20 +3198,19 @@ class malParser (Parser):
             return malParser.RULE_mult
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMult"):
+            if hasattr(listener, 'enterMult'):
                 listener.enterMult(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMult"):
+            if hasattr(listener, 'exitMult'):
                 listener.exitMult(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMult"):
+            if hasattr(visitor, 'visitMult'):
                 return visitor.visitMult(self)
             return visitor.visitChildren(self)
 
     def mult(self):
-
         localctx = malParser.MultContext(self, self._ctx, self.state)
         self.enterRule(localctx, 84, self.RULE_mult)
         self._la = 0  # Token type
@@ -3068,7 +3238,9 @@ class malParser (Parser):
     class MultatomContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3082,20 +3254,19 @@ class malParser (Parser):
             return malParser.RULE_multatom
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterMultatom"):
+            if hasattr(listener, 'enterMultatom'):
                 listener.enterMultatom(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitMultatom"):
+            if hasattr(listener, 'exitMultatom'):
                 listener.exitMultatom(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitMultatom"):
+            if hasattr(visitor, 'visitMultatom'):
                 return visitor.visitMultatom(self)
             return visitor.visitChildren(self)
 
     def multatom(self):
-
         localctx = malParser.MultatomContext(self, self._ctx, self.state)
         self.enterRule(localctx, 86, self.RULE_multatom)
         self._la = 0  # Token type
@@ -3119,7 +3290,9 @@ class malParser (Parser):
     class LinknameContext(ParserRuleContext):
         __slots__ = 'parser'
 
-        def __init__(self, parser, parent: ParserRuleContext = None, invokingState: int = -1):
+        def __init__(
+            self, parser, parent: ParserRuleContext = None, invokingState: int = -1
+        ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
@@ -3130,20 +3303,19 @@ class malParser (Parser):
             return malParser.RULE_linkname
 
         def enterRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "enterLinkname"):
+            if hasattr(listener, 'enterLinkname'):
                 listener.enterLinkname(self)
 
         def exitRule(self, listener: ParseTreeListener):
-            if hasattr(listener, "exitLinkname"):
+            if hasattr(listener, 'exitLinkname'):
                 listener.exitLinkname(self)
 
         def accept(self, visitor: ParseTreeVisitor):
-            if hasattr(visitor, "visitLinkname"):
+            if hasattr(visitor, 'visitLinkname'):
                 return visitor.visitLinkname(self)
             return visitor.visitChildren(self)
 
     def linkname(self):
-
         localctx = malParser.LinknameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 88, self.RULE_linkname)
         try:
