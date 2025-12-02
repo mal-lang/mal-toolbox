@@ -174,7 +174,10 @@ class MalCompiler(ParseTreeVisitor):
         step["detectors"] = {
             (d := self.visit(detector))["name"]: d for detector in ctx.detector()
         }
+
         step["type"] = self.visit(ctx.steptype())
+        step["kind"] = self.visit(ctx.stepkind()) if ctx.stepkind() else None
+
         step["tags"] = [self.visit(tag) for tag in ctx.tag()]
         step["risk"] = self.visit(ctx.cias()) if ctx.cias() else None
 
@@ -187,6 +190,9 @@ class MalCompiler(ParseTreeVisitor):
         step["reaches"] = self.visit(ctx.reaches()) if ctx.reaches() else None
 
         return step
+
+    def visitStepkind(self, ctx):
+        return "action" if ctx.ACTION() else "effect" if ctx.EFFECT() else None
 
     def visitSteptype(self, ctx):
         return (

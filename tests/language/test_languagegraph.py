@@ -250,3 +250,17 @@ def test_pickle_languagegraph_attack_step(corelang_lang_graph: LanguageGraph):
     pickled_step = pickle.dumps(lang_graph_step)
     ununpickled_step = pickle.loads(pickled_step)
     assert lang_graph_step.to_dict() == ununpickled_step.to_dict()
+
+
+# def test_too_short_ids():
+#     lang_graph = LanguageGraph(
+#         MalCompiler().compile('tests/testdata/action_effect_lang.mal')
+#     )
+#     breakpoint()
+
+def test_actions_effects():
+    lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/action_effect_lang.mal')
+    )
+    pa = lang_graph.assets['Computer'].attack_steps['physicalAccess']
+    assert pa.kind == 'action'
