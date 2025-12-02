@@ -256,11 +256,17 @@ def test_pickle_languagegraph_attack_step(corelang_lang_graph: LanguageGraph):
 #     lang_graph = LanguageGraph(
 #         MalCompiler().compile('tests/testdata/action_effect_lang.mal')
 #     )
-#     breakpoint()
 
 def test_actions_effects():
+    """Make sure that action/effect kinds are parsed correctly for attack steps"""
     lang_graph = LanguageGraph(
         MalCompiler().compile('tests/testdata/action_effect_lang.mal')
     )
     pa = lang_graph.assets['Computer'].attack_steps['physicalAccess']
     assert pa.kind == 'action'
+
+    ua = lang_graph.assets['User'].attack_steps['access']
+    assert ua.kind == 'effect'
+
+    ua = lang_graph.assets['Data'].attack_steps['read']
+    assert ua.kind is None

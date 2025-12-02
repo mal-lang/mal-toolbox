@@ -27,6 +27,7 @@ class AttackGraphNode:
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
+        self.kind = lg_attack_step.kind
         self.type = lg_attack_step.type
         self.ttc = ttc_dist if ttc_dist is not None else lg_attack_step.ttc
         self.tags = lg_attack_step.tags
@@ -44,6 +45,7 @@ class AttackGraphNode:
         """Convert node to dictionary"""
         node_dict: dict = {
             'id': self.id,
+            'kind': self.kind,
             'type': self.type,
             'lang_graph_attack_step': self.lg_attack_step.full_name,
             'name': self.name,
