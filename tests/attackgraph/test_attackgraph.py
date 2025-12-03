@@ -8,7 +8,7 @@ from conftest import path_testdata
 
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
 from maltoolbox.language import LanguageGraph
-from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language.tree_sitter_compiler import MalCompiler
 from maltoolbox.model import Model
 
 

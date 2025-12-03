@@ -19,7 +19,9 @@ dependencies = [
   "docopt",
   "PyYAML",
   "py2neo",
-  "networkx"
+  "networkx",
+  "tree-sitter-mal",
+  "tree-sitter",
 ]
 license = {text = "Apache Software License"}
 keywords = ["mal"]
