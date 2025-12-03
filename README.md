@@ -7,34 +7,7 @@ Attack graphs can be used to run simulations in [MAL Simulator](https://github.c
 
 - [MAL Toolbox Documentation](https://mal-lang.org/mal-toolbox/index.html)
 - [MAL Toolbox tutorial](https://github.com/mal-lang/mal-toolbox-tutorial)
-
-## The Language Module
-
-The language module provides various tools to process MAL languages.
-
-## The Model Module
-
-With a MAL language a Model (a MAL instance model) can be created either
-from a model file or empty.
-
-The model class will store all of the relevant information to the MAL
-instance model, most importantly the assets and their associations.
-
-Model objects can be used to generate attack graphs with the AttackGraph module.
-
-## The Attack Graph Module
-
-The attack graph module contains tools used to generate attack graphs from
-existing MAL instance models and analyse MAL attack graphs. The function used
-to generate the attack graph is `generate_graph` and it requires the instance
-model and language specification. The resulting attack graph will contain
-nodes for each of the attack steps. The structure of the attack node data
-class can be seen in `attackgraph/node.py` file. Of note are the lists of
-children and parents which allow for easy reference to the other attack step
-nodes related and the asset field which will contain the object in the model
-instance to which this attack step belongs to, if this information is
-available.
-
+- [MAL Toolbox Wiki](https://github.com/mal-lang/mal-toolbox/wiki)
 
 # Usage
 
@@ -116,50 +89,9 @@ Notes:
       compiler) or a .mal file containing the DSL written in MAL.```
 ```
 
-## Code examples / Tutorial
+# Contributing
 
-To find more code examples and tutorials, visit the
-[MAL Toolbox Tutorial](https://github.com/mal-lang/mal-toolbox-tutorial/tree/main) repository.
-
-### Load a language
-```python
-
-from maltoolbox.language import LanguageGraph
-
-# Will load the MAL language (.mal/.mar) or a saved language graph (yml/json)
-lang_graph = LanguageGraph.load_from_file(lang_file_path)
-
-```
-
-### Generate a model
-```python
-from maltoolbox.model import Model
-
-# Create an empty model
-instance_model = Model("Example Model", lang_graph)
-
-# Create and add assets of type supported by the MAL language
-asset1 = instance_model.add_asset('Application', 'Application1')
-asset2 = instance_model.add_asset('Application', 'Application2')
-
-# Create association between the assets
-asset1.add_associated_assets('appExecutedApps', asset2)
-```
-
-## Generate an attack graph
-
-```python
-
-from maltoolbox.attackgraph import AttackGraph
-
-attack_graph = AttackGraph(lang_graph, model)
-
-```
-
-
-## Contributing
-
-# CI Pipeline
+## CI Pipeline
 
 Checks are made with:
 
@@ -169,12 +101,12 @@ Checks are made with:
 
 Make sure pipeline passes before PR is marked "Ready for review".
 
-# Tests
+## Tests
 There are unit tests inside of ./tests.
 
 To run all tests, use the `pytest` command. To run just a specific file or test function use `pytest tests/<filename>` or `pytest -k <function_name>`.
 
-# Making a release
+## Making a release
 
 1. Make a PR with one commit that updates the version number in `pyproject.toml` and `maltoolbox/__init__.py`.
 Follow [Semantic versioning](https://semver.org/).
