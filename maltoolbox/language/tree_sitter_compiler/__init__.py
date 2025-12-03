@@ -1,0 +1,1 @@
+from .mal_compiler import MalCompiler

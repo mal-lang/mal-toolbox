@@ -22,7 +22,7 @@ from ..exceptions import (
     LanguageGraphStepExpressionError,
     LanguageGraphSuperAssetNotFoundError,
 )
-from .compiler import MalCompiler
+from .tree_sitter_compiler import MalCompiler
 
 logger = logging.getLogger(__name__)
 
