@@ -16,8 +16,15 @@ meta: ID INFO COLON text;
 text: STRING | MULTILINE_STRING;
 asset: ABSTRACT? ASSET ID (EXTENDS ID)? meta* LCURLY (step|variable)* RCURLY;
 
-step: steptype ID tag* cias? pdist? meta* detector* precondition? reaches?;
-steptype: AND | OR | HASH | EXISTS | NOTEXISTS;
+attackstep: (AND | OR) (ACTION | EFFECT)? ID tag* cias? ttc? meta* detector*;
+defensestep: HASH ID tag* cias? pdist? meta*;
+existstep: EXISTS ID tag* cias? meta* detector* precondition?;
+notexiststep: NOTEXISTS ID tag* cias? meta* detector* precondition?;
+
+step: (attackstep | defensestep | existstep | notexiststep) reaches?;
+
+stepkind: ACTION | EFFECT;
+
 tag: AT ID;
 cias: LCURLY cia (COMMA cia)* RCURLY;
 cia: C|I|A;
@@ -63,6 +70,8 @@ linkname: ID;
 // TOKENS
 
 // words
+ACTION: 'action';
+EFFECT: 'effect';
 ABSTRACT: 'abstract';
 ASSET: 'asset';
 ASSOCIATIONS: 'associations';

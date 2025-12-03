@@ -1,0 +1,30 @@
+// vim:ft=mal
+#id: "test-short-ids"
+#version: "1.0.0"
+#mal: "1.2.0"
+
+category Category{
+    asset Computer {
+      | action physicalAccess
+        -> access
+      | action access
+        -> users.guessPass,
+           data.read
+    }
+
+    asset User {
+      | action guessPass
+        -> access
+      | effect access
+        -> computers.access
+    }
+
+    asset Data {
+      | read
+    }
+}
+
+associations {
+  Computer [computers] * <-- DataOnComputer --> * [data] Data
+  Computer [computers] * <-- UsersOnComputer --> * [users] User
+}

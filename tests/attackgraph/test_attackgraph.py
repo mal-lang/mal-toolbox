@@ -767,6 +767,7 @@ def test_attackgraph_pickle(corelang_lang_graph, model):
 
     assert ag._to_dict() == unpickled_ag._to_dict()
 
+
 def test_model_pickle(example_model: Model):
     
     pickle_path = "/tmp/model.pkl"
@@ -777,3 +778,30 @@ def test_model_pickle(example_model: Model):
         unpickled_model: Model = pickle.load(f)
 
     assert example_model.to_dict() == unpickled_model.to_dict()
+
+
+def test_actions_effects():
+    """Make sure that action/effect kinds are parsed correctly for attack steps"""
+    lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/action_effect_lang.mal')
+    )
+    model = Model('Test Model', lang_graph)
+    comp1 = model.add_asset(asset_type='Computer', name='comp1')
+    user1 = model.add_asset(asset_type='User', name='user1')
+    data1 = model.add_asset(asset_type='Data', name='data1')
+    comp1.add_associated_assets('users', {user1})
+    comp1.add_associated_assets('data', {data1})
+
+    ag = AttackGraph(lang_graph=lang_graph, model=model)
+
+    pa = ag.get_node_by_full_name('comp1:physicalAccess')
+    assert pa
+    assert pa.kind == 'action'
+
+    ua = ag.get_node_by_full_name('user1:access')
+    assert ua
+    assert ua.kind == 'effect'
+
+    ua = ag.get_node_by_full_name('data1:read')
+    assert ua
+    assert ua.kind is None
