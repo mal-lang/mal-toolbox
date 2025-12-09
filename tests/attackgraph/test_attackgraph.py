@@ -3,6 +3,7 @@
 import copy
 import pickle
 from unittest.mock import patch
+import pytest
 
 from conftest import path_testdata
 
@@ -178,6 +179,17 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
 
     # Each attack step will get one node
     assert len(example_attackgraph.nodes) == num_assets_attack_steps
+
+
+def test_attackgraph_get_node_by_full_name(example_attackgraph: AttackGraph):
+
+    with pytest.raises(LookupError) as e:
+        example_attackgraph.get_node_by_full_name("Application 2")
+    assert repr(e) == (
+        '<ExceptionInfo LookupError(\'Could not find node with name '
+        '"Application 2". Did you mean: '
+        'Application 2:read, Application 2:deny?\') tblen=2>'
+    )
 
 
 def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
