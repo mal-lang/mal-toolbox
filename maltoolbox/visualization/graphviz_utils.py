@@ -1,3 +1,6 @@
+from pathlib import Path
+from os import PathLike
+from typing import Optional
 import random
 
 import graphviz
@@ -36,8 +39,28 @@ graphviz_bright_colors = [
 ]
 
 
-def render_model(model: Model):
-    """Render a model in graphviz, create pdf and open it"""
+def _resolve_graphviz_path(path: Optional[PathLike], default_name: str):
+    """
+    Resolve a user-provided path into (directory, filename_without_ext).
+
+    - If path is None → ('.', default_name)
+    - If path is a directory → (path, default_name)
+    - If path is a file → (parent_directory, file_stem)
+    """
+    if path is None:
+        return ".", default_name
+
+    p = Path(path)
+
+    if p.is_dir():
+        return str(p), default_name
+
+    # It's a file path
+    return str(p.parent), p.stem
+
+
+def render_model(model: Model, path: Optional[PathLike] = None, view=True):
+    """Render a model in graphviz, create PDF, and open it."""
     dot = graphviz.Digraph(model.name)
 
     # Create nodes
@@ -47,53 +70,54 @@ def render_model(model: Model):
         if not bg_color:
             bg_color = random.choice(graphviz_bright_colors)
             asset_type_colors[asset.lg_asset.name] = bg_color
-        dot.node(
-            str(asset.id), asset.name, style="filled", fillcolor=bg_color
-        )
+
+        dot.node(str(asset.id), asset.name, style="filled", fillcolor=bg_color)
 
     # Create edges
     for from_asset in model.assets.values():
-
         for fieldname, to_assets in from_asset.associated_assets.items():
             for to_asset in to_assets:
-                dot.edge(
-                    str(from_asset.id), str(to_asset.id), label=fieldname
-                )
-    dot.render(directory='.', view=True)
+                dot.edge(str(from_asset.id), str(to_asset.id), label=fieldname)
+
+    directory, filename = _resolve_graphviz_path(path, model.name)
+    dot.render(directory=directory, filename=f"{filename}.gv", view=view, format="pdf")
 
 
-def render_attack_graph(attack_graph: AttackGraph):
-    """Render attack graph graphviz, create pdf and open it"""
+def render_attack_graph(attack_graph: AttackGraph, path: Optional[PathLike] = None, view = True):
+    """Render attack graph graphviz, create PDF, and open it."""
     assert attack_graph.model, "Attack graph needs a model"
-    dot = graphviz.Graph(attack_graph.model.name)
-    dot.graph_attr['nodesep'] = '3.0'  # Node separation
-    dot.graph_attr['ratio'] = 'compress'
+
+    name = attack_graph.model.name + "-attack_graph"
+    dot = graphviz.Graph(name)
+    dot.graph_attr["nodesep"] = "3.0"
+    dot.graph_attr["ratio"] = "compress"
 
     # Create nodes
     asset_colors: dict[str, str] = {}
     for node in attack_graph.nodes.values():
         assert node.model_asset, "Node needs model"
+
         bg_color = asset_colors.get(node.model_asset.name)
         if not bg_color:
             bg_color = random.choice(graphviz_bright_colors)
             asset_colors[node.model_asset.name] = bg_color
-        path_color = 'white'
+
         match node.type:
-            case 'defense':
-                path_color = 'blue'
-            case 'or':
-                path_color = 'red'
-            case 'and':
-                path_color = 'red'
-            case 'exist':
-                path_color = 'grey'
-            case 'notExist':
-                path_color = 'grey'
+            case "defense":
+                path_color = "blue"
+            case "or" | "and":
+                path_color = "red"
+            case "exist" | "notExist":
+                path_color = "grey"
             case t:
-                raise ValueError(f'Type {t} not supported')
+                raise ValueError(f"Type {t} not supported")
 
         dot.node(
-            str(node.id), node.full_name, style="filled", color=path_color, fillcolor=bg_color
+            str(node.id),
+            node.full_name,
+            style="filled",
+            color=path_color,
+            fillcolor=bg_color
         )
 
     # Create edges
@@ -101,4 +125,5 @@ def render_attack_graph(attack_graph: AttackGraph):
         for child in parent.children:
             dot.edge(str(parent.id), str(child.id))
 
-    dot.render(directory='.', view=True)
+    directory, filename = _resolve_graphviz_path(path, name)
+    dot.render(directory=directory, filename=f"{filename}.gv", view=view, format="pdf")
