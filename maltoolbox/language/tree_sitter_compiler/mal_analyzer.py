@@ -29,9 +29,9 @@ class malAnalyzer:
         self._vars: dict = {}
         self._associations: dict = {}
 
-        self._all_associations = []
-        self._current_vars = []
-        self._include_stack = []
+        self._all_associations: list[dict[str, Any]] = []
+        self._current_vars: list[str] = []
+        self._include_stack: list[str] = []
 
         self._error_msg: str = ''
 
@@ -113,8 +113,14 @@ class malAnalyzer:
         """
         for parent in self._assets:
             parent_node: Node = self._assets[parent]['node']
-            parent_node_name: str = parent_node.child_by_field_name('id').text.decode()
-            if parent_node.children[0].text.decode() == 'abstract':
+            parent_node_id_child = parent_node.child_by_field_name('id')
+            assert parent_node_id_child, 'No child id'
+            assert parent_node_id_child.text, 'No child id text'
+            parent_node_name: str = parent_node_id_child.text.decode()
+            if (
+                parent_node.children[0].text
+                and parent_node.children[0].text.decode() == 'abstract'
+            ):
                 found: bool = False
                 for extendee in self._assets:
                     extendee_node: Node = self._assets[extendee]['node']
@@ -123,6 +129,8 @@ class malAnalyzer:
                     )
                     if (
                         extendee_node_extender
+                        and extendee_node_extender.next_sibling
+                        and extendee_node_extender.next_sibling.text
                         and extendee_node_extender.next_sibling.text.decode()
                         == parent_node_name
                     ):
@@ -140,9 +148,13 @@ class malAnalyzer:
         """
         for asset in self._assets:
             parents: list[str] = []
-            parent_node: Node = self._assets[asset]['node']
+            parent_node: Node | None = self._assets[asset]['node']
             while parent_node and parent_node.type == 'asset_declaration':
-                parent_name: str = parent_node.child_by_field_name('id').text.decode()
+                parent_name_node = parent_node.child_by_field_name('id')
+                assert parent_name_node and parent_name_node.text, (
+                    'Asset need name node with text'
+                )
+                parent_name: str = parent_name_node.text.decode()
                 if parent_name in parents:
                     error_msg: str = ' -> '.join(parents)
                     error_msg += f' -> {parent_name}'
@@ -151,13 +163,16 @@ class malAnalyzer:
                 parents.append(parent_name)
                 parent_node = self._get_assets_extendee(parent_node)
 
-    def _get_assets_extendee(self, node: Node) -> Node:
+    def _get_assets_extendee(self, node: Node) -> Node | None:
         """
         Verifies if the current asset extends another and, if so, return the parent's context
         """
-        if node.child_by_field_name('extends'):
-            extender_node = node.child_by_field_name('extends')
-            extender_node_name = extender_node.next_sibling.text.decode()
+        if extender_node := node.child_by_field_name('extends'):
+            extender_name_node = extender_node.next_sibling
+            assert extender_name_node and extender_name_node.text, (
+                'Asset need name node with text'
+            )
+            extender_node_name = extender_name_node.text.decode()
             return self._assets[extender_node_name]['node']
         return None
 
@@ -316,7 +331,7 @@ class malAnalyzer:
                         error_msg = f"Variable '{var}' defined at {self._vars[asset][var]['node'].start_point.row} does not point to an asset"
                         self._raise_analyzer_exception(self._error_msg + error_msg)
 
-    def _check_to_step(self, asset, expr) -> None:
+    def _check_to_step(self, asset, expr) -> Any:
         """
         Given a reaches, verify if the expression resolves to a valid AttackStep for an existing Asset
         """
@@ -340,7 +355,7 @@ class malAnalyzer:
                 error_msg = 'Last step is not attack step'
                 self._raise_analyzer_exception(error_msg)
 
-    def _check_to_asset(self, asset, expr) -> None:
+    def _check_to_asset(self, asset, expr) -> Any:
         """
         Verify if the expression resolves to an existing Asset
         """
@@ -492,14 +507,19 @@ class malAnalyzer:
 
         return False
 
-    def _get_parents(self, node: Node) -> List[dict[str, Node]]:
+    def _get_parents(self, node: Node) -> list[str]:
         """
         Given an asset, obtain its parents in inverse order.
         I.e., A->B->C returns [C,B,A] for asset A
         """
-        parents = [node.child_by_field_name('id').text.decode()]
+        name_node = node.child_by_field_name('id')
+        assert name_node and name_node.text, 'Name node needs text'
+        parents = [name_node.text.decode()]
         while node.child_by_field_name('extends'):
-            parent_name = node.child_by_field_name('extends').next_sibling.text.decode()
+            extends_node = node.child_by_field_name('extends')
+            assert extends_node, 'Need extends node'
+            assert extends_node.next_sibling and extends_node.next_sibling.text
+            parent_name = extends_node.next_sibling.text.decode()
             if parent_name in parents:
                 break
             parents.insert(0, parent_name)
@@ -522,7 +542,9 @@ class malAnalyzer:
             parents = self._get_parents(self._assets[asset]['node'])
             self._read_steps(asset, parents)
 
-    def _attackStep_seen_in_parent(self, attackStep: str, seen_steps: List) -> str:
+    def _attackStep_seen_in_parent(
+        self, attackStep: str, seen_steps: List
+    ) -> str | None:
         """
         Given a list of parent scopes, verify if the attackStep has been defined
         """
@@ -537,7 +559,7 @@ class malAnalyzer:
         also defines this step
         """
 
-        seen_steps = []
+        seen_steps: list[tuple] = []
         for parent in parents:
             # If this parent has no steps, skip it
             if parent not in self._steps.keys():
@@ -630,7 +652,10 @@ class malAnalyzer:
         }
         """
         asset_name = asset['name']
-        category_name = node.parent.child_by_field_name('id').text.decode()
+        assert node.parent, 'Category node needed'
+        category_name_node = node.parent.child_by_field_name('id')
+        assert category_name_node and category_name_node.text, 'Category need name'
+        category_name = category_name_node.text.decode()
 
         if not asset_name:
             logging.error(
@@ -722,7 +747,10 @@ class malAnalyzer:
         """
         self._preform_post_analysis += 1
 
-        include_file = node.child_by_field_name('file').text.decode()
+        include_file_node = node.child_by_field_name('file')
+        assert include_file_node, 'Need include file node'
+        assert include_file_node.text, 'Include needs text'
+        include_file = include_file_node.text.decode()
         if include_file in self._include_stack:
             cycle = (
                 '->'.join([file.replace('"', '') for file in self._include_stack])
@@ -741,7 +769,10 @@ class malAnalyzer:
         _, step = step
 
         step_name = step['name']
-        asset_name = node.parent.parent.child_by_field_name('id').text.decode()
+        assert node.parent and node.parent.parent
+        asset_name_node = node.parent.parent.child_by_field_name('id')
+        assert asset_name_node and asset_name_node.text, 'Asset name node needs text'
+        asset_name = asset_name_node.text.decode()
 
         # Check if asset has no steps
         if asset_name not in self._steps.keys():
@@ -767,7 +798,10 @@ class malAnalyzer:
             return
 
         step_name = step['name']
-        asset_name = node.parent.parent.child_by_field_name('id').text.decode()
+        assert node.parent and node.parent.parent
+        asset_name_node = node.parent.parent.child_by_field_name('id')
+        assert asset_name_node and asset_name_node.text, 'Asset name node needs text'
+        asset_name = asset_name_node.text.decode()
 
         if (
             step['type'] == 'defense'
@@ -780,8 +814,10 @@ class malAnalyzer:
         cias = []
 
         # Get the CIAs node and iterate over the individual CIA
-        cias_node = node.child_by_field_name('cias').next_sibling
+        cias_node = node.child_by_field_name('cias')
+        assert cias_node, 'Need CIA node'
         for cia in cias_node.named_children:
+            assert cia.text, 'CIA node need text'
             letter = cia.text.decode()
 
             if letter in cias:
@@ -860,8 +896,17 @@ class malAnalyzer:
         }
         """
         _, var = var
+
+        assert node.parent, 'Asset variable needs a parent'
         parent = node.parent.parent  # Twice to skip asset_definition
-        asset_name: str = str(parent.child_by_field_name('id').text.decode())
+
+        assert parent, 'Asset variable needs a parent'
+        asset_name_node = parent.child_by_field_name('id')
+
+        assert asset_name_node, 'Asset needs name node'
+        assert asset_name_node.text, 'Asset name node needs text'
+
+        asset_name: str = str(asset_name_node.text.decode())
         var_name: str = var['name']
         if asset_name not in self._vars.keys():
             self._vars[asset_name] = {var_name: {'node': node, 'var': var}}

@@ -5,6 +5,7 @@ class DistributionsException(Exception):
 
 
 class Distributions:
+    @staticmethod
     def validate(distribution_name: str, params: list) -> None:
         match distribution_name:
             case 'Bernoulli':
@@ -42,6 +43,7 @@ class Distributions:
 
 
 class Bernoulli:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 1:
             err_msg = 'Expected exactly one parameter (probability), for Bernoulli distribution'
@@ -52,6 +54,7 @@ class Bernoulli:
 
 
 class Binomial:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 2:
             err_msg = 'Expected exactly two parameters (trials, probability), for Binomial distribution'
@@ -62,6 +65,7 @@ class Binomial:
 
 
 class Exponential:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 1:
             err_msg = (
@@ -74,6 +78,7 @@ class Exponential:
 
 
 class Gamma:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 2:
             err_msg = (
@@ -93,6 +98,7 @@ class Gamma:
 
 
 class LogNormal:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 2:
             err_msg = 'Expected exactly two parameters (mean, standardDeviation), for LogNormal distribution'
@@ -103,6 +109,7 @@ class LogNormal:
 
 
 class Pareto:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 2:
             err_msg = (
@@ -120,6 +127,7 @@ class Pareto:
 
 
 class TruncatedNormal:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 2:
             err_msg = 'Expected exactly two parameters (mean, standardDeviation), for TruncatedNormal distribution'
@@ -130,6 +138,7 @@ class TruncatedNormal:
 
 
 class Uniform:
+    @staticmethod
     def validate(params: list) -> None:
         if not params or len(params) != 2:
             err_msg = (
@@ -142,6 +151,7 @@ class Uniform:
 
 
 class Combination:
+    @staticmethod
     def validate(params: list) -> None:
         if params and len(params) != 0:
             err_msg = 'Expected exactly zero parameters, for combination distributions'

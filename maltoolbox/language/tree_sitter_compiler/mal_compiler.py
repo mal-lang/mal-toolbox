@@ -1,9 +1,12 @@
-from tree_sitter import TreeCursor
+from tree_sitter import TreeCursor, Node
 from typing import Any, Callable, Tuple
 from collections.abc import MutableMapping, MutableSequence
 from pathlib import Path
 from .lang import PARSER as parser
 from .mal_analyzer import malAnalyzer
+from .exceptions import (
+    MalCompilerError,
+)
 
 ASTNode = Tuple[str, object]
 
@@ -22,14 +25,14 @@ and if the current node is not a comment.
 
 def go_to_sibling(cursor: TreeCursor) -> bool:
     found_sibling = cursor.goto_next_sibling()
-    while cursor.node.type == 'comment' and found_sibling:
+    while assert_node(cursor.node).type == 'comment' and found_sibling:
         found_sibling = cursor.goto_next_sibling()
-    return found_sibling and cursor.node.type != 'comment'
+    return found_sibling and assert_node(cursor.node).type != 'comment'
 
 
 class ParseTreeVisitor:
-    def __init__(self):
-        self.current_file: Path = None
+    def __init__(self) -> None:
+        self.current_file: Path | None = None
         self.visited_files: set[Path] = set()
         self.path_stack: list[Path] = []
         self.analyzer = malAnalyzer()
@@ -84,8 +87,8 @@ class ParseTreeVisitor:
 
         return result
 
-    def visit_source_file(self, cursor: TreeCursor) -> ASTNode | list[ASTNode] | None:
-        langspec = {
+    def visit_source_file(self, cursor: TreeCursor) -> dict[str, Any]:
+        langspec: dict[str, Any] = {
             'formatVersion': '1.0.0',
             'defines': {},
             'categories': [],
@@ -95,7 +98,7 @@ class ParseTreeVisitor:
 
         # Go to first declaration
         while True:
-            if cursor.node.type == 'comment':
+            if assert_node(cursor.node).type == 'comment':
                 go_to_sibling(cursor)
 
             # Obtain node type of declaration
@@ -103,7 +106,7 @@ class ParseTreeVisitor:
 
             # Visit declaration
             result = self.visit(cursor)
-
+            assert result, 'No result from visit'
             key, value = result
             if key == 'categories':
                 category, assets = value
@@ -142,7 +145,7 @@ class ParseTreeVisitor:
 
     def _visit(self, cursor: TreeCursor) -> ASTNode | list[ASTNode] | None:
         # Function name of child class handling the node type
-        function_name = f'visit_{cursor.node.type}'
+        function_name = f'visit_{assert_node(cursor.node).type}'
 
         # Enter into the node
         has_children = cursor.goto_first_child()
@@ -191,13 +194,13 @@ class MalCompiler(ParseTreeVisitor):
         # skip '#' node
         go_to_sibling(cursor)
         # grab (identity) node
-        key = cursor.node.text
+        key = node_text(cursor, 'id')
         # next node
         go_to_sibling(cursor)
         # skip ':' node
         go_to_sibling(cursor)
         # grab (string) node
-        value = cursor.node.text
+        value = node_text(cursor, 'string')
 
         return ('defines', {key.decode(): value.decode().strip('"')})
 
@@ -211,7 +214,7 @@ class MalCompiler(ParseTreeVisitor):
         # skip 'category'
         go_to_sibling(cursor)
         # grab (identity)
-        category['name'] = cursor.node.text.decode()
+        category['name'] = node_text(cursor, 'id').decode()
         # next node
         go_to_sibling(cursor)
 
@@ -220,7 +223,7 @@ class MalCompiler(ParseTreeVisitor):
         # Since it is optional, we have to make sure we are dealing with a
         # grammar rule
         meta = {}
-        while cursor.node.is_named:
+        while assert_node(cursor.node).is_named:
             info = self.visit(cursor)
             meta[info[0]] = info[1]
             go_to_sibling(cursor)
@@ -231,7 +234,7 @@ class MalCompiler(ParseTreeVisitor):
 
         # grab (asset)
         assets = []
-        while cursor.node.is_named:
+        while assert_node(cursor.node).is_named:
             asset = self.visit(cursor, category['name'])
             assets.append(asset)
             go_to_sibling(cursor)
@@ -253,7 +256,7 @@ class MalCompiler(ParseTreeVisitor):
         # '"' are ASCII so they are garantueed to only take one byte in UTF-8 (assumed for .decode)
         # therefor, we can greedily only take bytes 1:-1
         # strip surrounding quotes (") by slicing
-        return ('include', cursor.node.text[1:-1].decode())
+        return ('include', node_text(cursor, '')[1:-1].decode())
 
     def visit_meta(self, cursor: TreeCursor) -> ASTNode:
         ############################
@@ -261,7 +264,7 @@ class MalCompiler(ParseTreeVisitor):
         ############################
 
         # grab (id) node
-        id = cursor.node.text.decode()
+        id = node_text(cursor, 'id').decode()
 
         # next node
         go_to_sibling(cursor)
@@ -274,17 +277,19 @@ class MalCompiler(ParseTreeVisitor):
         # '"' are ASCII so they are garantueed to only take one byte in UTF-8 (assumed for .decode)
         # therefor, we can greedily only take bytes 1:-1
         # strip surrounding quotes (") by slicing
-        info_string = cursor.node.text[1:-1].decode()
+        info_string = node_text(cursor, '')[1:-1].decode()
 
         return (id, info_string)
 
-    def visit_asset_declaration(self, cursor: TreeCursor, category: str) -> ASTNode:
+    def visit_asset_declaration(
+        self, cursor: TreeCursor, category: str
+    ) -> dict[str, Any]:
         ##############################################################################
         # (abstract)? 'asset' (id) (extends id)? (meta)* '{' (asset_definition)* '}' #
         ##############################################################################
 
         # grab (abstract)?
-        isAbstract = cursor.node.text == b'abstract'
+        isAbstract = node_text(cursor, 'abstract') == b'abstract'
         if isAbstract:
             go_to_sibling(cursor)  # We must go to 'asset'
 
@@ -292,19 +297,19 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # grab (id)
-        name = cursor.node.text.decode()
+        name = node_text(cursor, '').decode()
         go_to_sibling(cursor)
 
         # grab (extends id)?
         superAsset = None
-        if cursor.node.text == b'extends':
+        if node_text(cursor, '') == b'extends':
             go_to_sibling(cursor)  # move to the id
-            superAsset = cursor.node.text.decode()  # get the text
+            superAsset = node_text(cursor, '').decode()  # get the text
             go_to_sibling(cursor)  # move to the meta
 
         # grab (meta)*
         meta = {}
-        while cursor.node.is_named:
+        while assert_node(cursor.node).is_named:
             info = self.visit(cursor)
             meta[info[0]] = info[1]
             go_to_sibling(cursor)
@@ -314,7 +319,7 @@ class MalCompiler(ParseTreeVisitor):
 
         # visit asset_definition
         variables, attackSteps = [], []
-        if cursor.node.is_named:
+        if assert_node(cursor.node).is_named:
             variables, attackSteps = self.visit(cursor)
 
         return {
@@ -327,7 +332,7 @@ class MalCompiler(ParseTreeVisitor):
             'attackSteps': attackSteps,
         }
 
-    def visit_asset_definition(self, cursor: TreeCursor) -> ASTNode:
+    def visit_asset_definition(self, cursor: TreeCursor) -> tuple[list, list]:
         #######################
         # (variable)* (step)* #
         #######################
@@ -357,7 +362,7 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # grab id
-        ret['name'] = cursor.node.text.decode()
+        ret['name'] = node_text(cursor, 'id').decode()
         go_to_sibling(cursor)
 
         # skip '='
@@ -376,7 +381,7 @@ class MalCompiler(ParseTreeVisitor):
 
         # grab (step_type)
         # use raw text bytes to avoid decoding as much as possible
-        step_type_btext = cursor.node.text
+        step_type_btext = node_text(cursor, 'step type')
         step_type_bindings = {
             b'&': 'and',
             b'|': 'or',
@@ -390,54 +395,54 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # grab (id)
-        name = cursor.node.text.decode()
+        name = node_text(cursor, 'name').decode()
         go_to_sibling(cursor)
 
         # process all ( '@' (id) ) we might have
         tags = []
 
         # TODO change grammar to make (@ id)* instead of (@ id)?
-        while cursor.node.text == b'@':
+        while node_text(cursor, 'tag at') == b'@':
             go_to_sibling(cursor)  # skip '@'
-            tags.append(cursor.node.text.decode())  # grab (id)
+            tags.append(node_text(cursor, '').decode())  # grab (id)
             if not go_to_sibling(cursor):  # move to next symbol, break if last
                 break
 
         # process all ( '{' (cias) '}' ) we might have
         risk = None
-        if cursor.node.text == b'{':
+        if assert_node(cursor.node).text == b'{':
             go_to_sibling(cursor)  # skip '{'
             risk = self.visit(cursor)  # grab (cias)
             go_to_sibling(cursor)  # go to '}'
             go_to_sibling(cursor)  # and skip it
 
         ttc = None
-        if cursor.node.type == 'ttc':
+        if assert_node(cursor.node).type == 'ttc':
             # visit ttc
             ttc = self.visit(cursor)
             go_to_sibling(cursor)
 
         meta = {}
-        while cursor.node.type == 'meta':
+        while assert_node(cursor.node).type == 'meta':
             info = self.visit(cursor)
             meta[info[0]] = info[1]
             if not go_to_sibling(cursor):  # in case there is nothing after the meta
                 break
 
-        detectors = {}
-        while cursor.node.type == 'detector':
+        detectors: dict[str, Any] = {}
+        while assert_node(cursor.node).type == 'detector':
             detector = self.visit(cursor)
             detector[detector['name']] = detector
             if not go_to_sibling(cursor):  # in case there is nothing after the meta
                 break
 
         requires = None
-        if cursor.node.type == 'preconditions':
+        if assert_node(cursor.node).type == 'preconditions':
             requires = self.visit(cursor)
             go_to_sibling(cursor)
 
         reaches = None
-        if cursor.node.type == 'reaching':
+        if assert_node(cursor.node).type == 'reaching':
             reaches = self.visit(cursor)
             go_to_sibling(cursor)
 
@@ -466,7 +471,7 @@ class MalCompiler(ParseTreeVisitor):
         # grab detector_name
         detector_name = None
         if cursor.field_name == 'name':
-            detector_name = cursor.node.text.decode()
+            detector_name = node_text(cursor, 'detector name').decode()
             go_to_sibling(cursor)
 
         # grab detector_context
@@ -476,7 +481,7 @@ class MalCompiler(ParseTreeVisitor):
         # grab id
         detector_type = None
         if cursor.field_name == 'type':
-            detector_name = cursor.node.text.decode()
+            detector_name = node_text(cursor, 'type').decode()
             go_to_sibling(cursor)
 
         # grab ttc
@@ -508,7 +513,7 @@ class MalCompiler(ParseTreeVisitor):
         context[label] = asset
         go_to_sibling(cursor)
 
-        while cursor.node.text != b')':
+        while node_text(cursor, 'char') != b')':
             # skip ','
             go_to_sibling(cursor)
             # grab another detector_context_asset
@@ -522,8 +527,8 @@ class MalCompiler(ParseTreeVisitor):
         ###############
         # (type) (id) #
         ###############
-        asset = cursor.node.text.decode()
-        label = cursor.node.text.decode()
+        asset = node_text(cursor, 'asset')
+        label = node_text(cursor, 'label')
 
         return (label, asset)
 
@@ -555,7 +560,7 @@ class MalCompiler(ParseTreeVisitor):
         # 'C'|'I'|'A' #
         ###############
 
-        cia_btext = cursor.node.text
+        cia_btext = node_text(cursor, 'cia')
         cia_bindings = {
             b'C': 'isConfidentiality',
             b'I': 'isIntegrity',
@@ -581,21 +586,24 @@ class MalCompiler(ParseTreeVisitor):
         ###################################################################################################
 
         # check if we have '(', in this case it's a parenthesized expression
-        if cursor.node.text == b'(':
+        if node_text(cursor, 'char') == b'(':
             go_to_sibling(cursor)  # skip '('
             result = self._visit_intermediary_ttc_expr(cursor)  # visit the expression
             go_to_sibling(cursor)  # skip ')'
             return result
 
         # if we have an id, just return it
-        elif cursor.node.type == 'identifier':
-            text = cursor.node.text.decode()
+        elif assert_node(cursor.node).type == 'identifier':
+            text = node_text(cursor, 'id').decode()
             return {'type': 'function', 'name': text, 'arguments': []}
 
         # if we have a number (integer/float) we need to construct
         # the dictionary correctly
-        elif cursor.node.type == 'float' or cursor.node.type == 'integer':
-            ret = {'type': 'number'}
+        elif (
+            assert_node(cursor.node).type == 'float'
+            or assert_node(cursor.node).type == 'integer'
+        ):
+            ret: dict[str, Any] = {'type': 'number'}
             ret['value'] = self.visit(cursor)
             return ret
 
@@ -603,12 +611,12 @@ class MalCompiler(ParseTreeVisitor):
         return self.visit(cursor)
 
     def visit_float(self, cursor: TreeCursor):
-        ret = float(cursor.node.text)
+        ret = float(node_text(cursor, 'float'))
 
         return ret
 
     def visit_integer(self, cursor: TreeCursor):
-        ret = float(cursor.node.text)
+        ret = float(node_text(cursor, 'integer'))
 
         return ret
 
@@ -622,7 +630,7 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # grab operation type
-        operation = cursor.node.text
+        operation = assert_node(cursor.node).text
         operation_type_bindings = {
             b'+': 'addition',
             b'-': 'subtraction',
@@ -630,6 +638,7 @@ class MalCompiler(ParseTreeVisitor):
             b'/': 'division',
             b'^': 'exponentiation',
         }
+        assert operation, 'Operation not found'
         operation_type = operation_type_bindings.get(operation)
         go_to_sibling(cursor)
 
@@ -644,7 +653,7 @@ class MalCompiler(ParseTreeVisitor):
         ############################################
 
         # grab (id)
-        name = cursor.node.text.decode()
+        name = node_text(cursor, 'name').decode()
         go_to_sibling(cursor)
 
         # skip '('
@@ -652,13 +661,13 @@ class MalCompiler(ParseTreeVisitor):
 
         # parse function arguments
         args = []
-        while cursor.node.type in ('float', 'integer'):
+        while assert_node(cursor.node).type in ('float', 'integer'):
             # obtain the number
             arg = self.visit(cursor)
             args.append(arg)
             # move to next symbol, if it's not a comma then done
             go_to_sibling(cursor)
-            if cursor.node.text != b',':
+            if assert_node(cursor.node).text != b',':
                 break
             # otherwise, ignore the comma
             go_to_sibling(cursor)
@@ -673,7 +682,7 @@ class MalCompiler(ParseTreeVisitor):
         # Skip '<-'
         go_to_sibling(cursor)
 
-        ret = {}
+        ret: dict[str, Any] = {}
         ret['overrides'] = True
         ret['stepExpressions'] = [self.visit(cursor)]
 
@@ -688,10 +697,10 @@ class MalCompiler(ParseTreeVisitor):
         # ( '+>' | '->' ) (reaches) ( ',' (reaches) )* #
         ################################################
 
-        ret = {}
+        ret: dict[str, Any] = {}
 
         # Get type of reaches
-        ret['overrides'] = cursor.node.text == b'->'
+        ret['overrides'] = assert_node(cursor.node).text == b'->'
         go_to_sibling(cursor)
 
         # Visit the steps
@@ -717,10 +726,11 @@ class MalCompiler(ParseTreeVisitor):
 
         ret = {}
 
-        if cursor.node.type == 'identifier':
+        assert cursor.node, 'Missing node'
+        if assert_node(cursor.node).type == 'identifier':
             ret['type'] = self._resolve_part_ID_type(cursor)
-            ret['name'] = cursor.node.text.decode()
-        elif cursor.node.text.decode() == '(':
+            ret['name'] = node_text(cursor, 'name').decode()
+        elif node_text(cursor, 'char').decode() == '(':
             go_to_sibling(cursor)  # ignore the '('
             ret = self._visit_inline_asset_expr(cursor)
             go_to_sibling(cursor)  # ignore the ')'
@@ -734,7 +744,7 @@ class MalCompiler(ParseTreeVisitor):
         # (id) '(' ')' #
         ################
 
-        return {'type': 'variable', 'name': cursor.node.text.decode()}
+        return {'type': 'variable', 'name': node_text(cursor, 'name').decode()}
 
     def visit_asset_expr_type(self, cursor: TreeCursor):
         #####################################
@@ -754,7 +764,7 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # Get the subType
-        subType = cursor.node.text.decode()
+        subType = node_text(cursor, 'subType').decode()
 
         return {'type': 'subType', 'subType': subType, 'stepExpression': stepExpression}
 
@@ -768,7 +778,9 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # Get the type of operation
-        op_btext = cursor.node.text
+        assert cursor.node, 'Missing node for operation type'
+        op_btext = node_text(cursor, '')
+        assert op_btext, 'Missing text for operation node'
         optype_bindings = {
             b'.': 'collect',
             b'\\/': 'union',
@@ -796,6 +808,8 @@ class MalCompiler(ParseTreeVisitor):
     def _resolve_part_ID_type(self, cursor: TreeCursor):
         # Figure out if we have a `field` or an `attackStep`
         original_node = cursor.node
+        if not original_node:
+            raise ValueError('Missing node for id')
 
         parent_node = original_node.parent
 
@@ -831,6 +845,7 @@ class MalCompiler(ParseTreeVisitor):
 
         # We get the parent's text and split it into the original
         # lines (as written in the code)
+        assert parent_node.text, 'Missing parent node text'
         tokenStream = parent_node.text.decode()
         tokenStream = tokenStream.split('\n')
         tokenStream_split = None
@@ -851,9 +866,9 @@ class MalCompiler(ParseTreeVisitor):
             ]
 
         # Afterwards, we just do the normal checks, knowing what column to start in
-        tokenStream_split = tokenStream_split[
-            original_node_column + len(original_node.text.decode()) :
-        ]
+        assert original_node.text, 'Missing node text'
+        start_col = original_node_column + len(original_node.text.decode())
+        tokenStream_split = tokenStream_split[start_col:]
         for char in tokenStream_split:
             if char == '.':
                 return 'field'  # Only a field can have attributes
@@ -875,7 +890,7 @@ class MalCompiler(ParseTreeVisitor):
 
         # visit all associations
         associations = []
-        while cursor.node.text != b'}':
+        while cursor.node and node_text(cursor, '') != b'}':
             associations.append(self.visit(cursor))
             go_to_sibling(cursor)
 
@@ -887,14 +902,14 @@ class MalCompiler(ParseTreeVisitor):
         ##############################################################################################
 
         # Get 1st id - left asset
-        left_asset = cursor.node.text.decode()
+        left_asset = node_text(cursor, 'left asset').decode()
         go_to_sibling(cursor)
 
         # skip '['
         go_to_sibling(cursor)
 
         # Get 2nd id - left field
-        left_field = cursor.node.text.decode()
+        left_field = node_text(cursor, 'left field').decode()
         go_to_sibling(cursor)
 
         # skip ']'
@@ -908,7 +923,7 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # Get 3rd id - name of the association
-        name = cursor.node.text.decode()
+        name = node_text(cursor, 'name').decode()
         go_to_sibling(cursor)
 
         # skip '-->'
@@ -922,19 +937,20 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)
 
         # Get 4th id - right field
-        right_field = cursor.node.text.decode()
+        right_field = node_text(cursor, 'right field').decode()
         go_to_sibling(cursor)
 
         # skip ']'
         go_to_sibling(cursor)
 
         # Get 5th id - right asset
-        right_asset = cursor.node.text.decode()
+        right_asset = node_text(cursor, 'right asset').decode()
 
         # Get all metas
         meta = {}
         while go_to_sibling(cursor):
             res = self.visit(cursor)
+            assert res
             meta[res[0]] = res[1]
 
         association = {
@@ -957,7 +973,10 @@ class MalCompiler(ParseTreeVisitor):
         # (_multiplicity_atom) | (multiplicity_range) #
         ###############################################
 
-        if cursor.node.type == 'multiplicity_range':
+        if cursor.node is None:
+            raise MalCompilerError('multiplicity atom missing node')
+
+        if assert_node(cursor.node).type == 'multiplicity_range':
             return self.visit(cursor)
 
         # Otherwise we need to visit an intermediary function for
@@ -990,7 +1009,11 @@ class MalCompiler(ParseTreeVisitor):
         ######################
         # (integer) | (star) #
         ######################
-        return cursor.node.text.decode()
+        if not cursor.node:
+            raise MalCompilerError('multiplicity atom missing node')
+        if not node_text(cursor, ''):
+            raise ValueError('multiplicity atom has empty text')
+        return node_text(cursor, '').decode()
 
     def _process_multitudes(self, association):
         mult_keys = [
@@ -1021,3 +1044,18 @@ class MalCompiler(ParseTreeVisitor):
             # cast numerical strings to integers
             if (multatom := association[key][subkey]) and multatom.isdigit():
                 association[key][subkey] = int(association[key][subkey])
+
+
+def assert_node(node: Node | None) -> Node:
+    if node is None:
+        raise ValueError('Node can not be None')
+    return node
+
+
+def node_text(cursor: TreeCursor, context: str):
+    node = cursor.node
+    if node is None:
+        raise MalCompilerError(f'expected node for {context}, found None')
+    if not node.text:
+        raise MalCompilerError(f'expected text for {context}, found empty')
+    return node.text
