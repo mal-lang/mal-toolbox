@@ -1,4 +1,5 @@
 # mypy: ignore-errors
+# ruff: noqa
 # Generated from mal.g4 by ANTLR 4.13.2
 # encoding: utf-8
 import sys
