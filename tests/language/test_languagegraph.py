@@ -4,7 +4,7 @@ from conftest import path_testdata
 import pickle
 
 from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
-from maltoolbox.language.tree_sitter_compiler import MalCompiler
+from maltoolbox.language.compiler import MalCompiler
 
 
 def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):

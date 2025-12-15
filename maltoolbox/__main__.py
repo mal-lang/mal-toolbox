@@ -32,7 +32,7 @@ import docopt
 
 from . import log_configs, neo4j_configs
 from .attackgraph import AttackGraph, create_attack_graph
-from .language.tree_sitter_compiler import MalCompiler
+from .language.compiler import MalCompiler
 from .language.languagegraph import LanguageGraph
 from .model import Model
 from .translators.updater import load_model_from_older_version
