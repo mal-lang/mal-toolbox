@@ -65,7 +65,6 @@ filterwarnings = "ignore:invalid escape sequence"
 exclude = [
   'maltoolbox/ingestors',
   'maltoolbox/translators',
-  'maltoolbox/language/antlr_compiler'
 ]
 allow_redefinition = true
 
