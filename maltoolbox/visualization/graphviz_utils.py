@@ -88,7 +88,7 @@ def render_attack_graph(attack_graph: AttackGraph, path: Optional[PathLike] = No
     assert attack_graph.model, "Attack graph needs a model"
 
     name = attack_graph.model.name + "-attack_graph"
-    dot = graphviz.Graph(name)
+    dot = graphviz.Digraph(name)
     dot.graph_attr["nodesep"] = "3.0"
     dot.graph_attr["ratio"] = "compress"
 
@@ -123,7 +123,7 @@ def render_attack_graph(attack_graph: AttackGraph, path: Optional[PathLike] = No
     # Create edges
     for parent in attack_graph.nodes.values():
         for child in parent.children:
-            dot.edge(str(parent.id), str(child.id))
+            dot.edge(str(parent.id), str(child.id), arrowhead="normal")
 
     directory, filename = _resolve_graphviz_path(path, name)
     dot.render(directory=directory, filename=f"{filename}.gv", view=view, format="pdf")
