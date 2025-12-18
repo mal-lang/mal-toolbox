@@ -1,0 +1,23 @@
+// vim:ft=mal
+#id: "test-actions-effects"
+#version: "0.0.0"
+
+category Test{
+    asset AssetA {
+      | action attack
+        -> b_of_A.attack
+    }
+
+    asset AssetB {
+      | effect hack
+
+      | action attack
+        -> b_of_B.attack
+    }
+
+}
+
+associations {
+  AssetA [a] * <-- AssocAB --> * [b_of_A] AssetB
+  AssetB [b] * <-- AssocBB --> * [b_of_B] AssetB
+}

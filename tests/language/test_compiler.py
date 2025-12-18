@@ -1,4 +1,5 @@
 from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language import LanguageGraph
 import pytest
 
 
@@ -59,3 +60,8 @@ def test_compiler_non_existing_step(tmp_path):
     """
     with pytest.raises(Exception):
         compile_lang(tmp_path, lang)
+
+
+def test_compile_actions_effects():
+    """Test that we can pickle and unpickle a language graph attack step"""
+    lang_graph = LanguageGraph.load_from_file('tests/testdata/actions_effects_lang.mal')
