@@ -65,7 +65,7 @@ def test_compiler_non_existing_step(tmp_path):
 def test_compile_actions_effects():
     """Test that we can pickle and unpickle a language graph attack step"""
     lang_graph = LanguageGraph.load_from_file('tests/testdata/actions_effects_lang.mal')
-    assert lang_graph.assets['AssetA'].attack_steps['attack'].mode == 'action'
-    assert lang_graph.assets['AssetB'].attack_steps['hack'].mode == 'effect'
-    assert lang_graph.assets['AssetB'].attack_steps['attack'].mode == 'action'
-    assert lang_graph.assets['AssetB'].attack_steps['test'].mode is None
+    assert lang_graph.assets['AssetA'].attack_steps['attack'].causal_mode == 'action'
+    assert lang_graph.assets['AssetB'].attack_steps['hack'].causal_mode == 'effect'
+    assert lang_graph.assets['AssetB'].attack_steps['attack'].causal_mode == 'action'
+    assert lang_graph.assets['AssetB'].attack_steps['test'].causal_mode is None
