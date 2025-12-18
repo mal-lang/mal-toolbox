@@ -367,7 +367,7 @@ class LanguageGraphAttackStep:
     name: str
     type: Literal["or", "and", "defense", "exist", "notExist"]
     asset: LanguageGraphAsset
-    role: Optional[Literal["action", "effect"]]
+    role: Optional[Literal["action", "effect"]] = None
     ttc: dict | None = field(default_factory=dict)
     overrides: bool = False
 
