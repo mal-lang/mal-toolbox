@@ -367,7 +367,7 @@ class LanguageGraphAttackStep:
     name: str
     type: Literal["or", "and", "defense", "exist", "notExist"]
     asset: LanguageGraphAsset
-    role: Optional[Literal["action", "effect"]] = None
+    mode: Optional[Literal["action", "effect"]] = None
     ttc: dict | None = field(default_factory=dict)
     overrides: bool = False
 
@@ -835,7 +835,7 @@ class LanguageGraph:
                     name=step['name'],
                     type=step['type'],
                     asset=a_node,
-                    role=step.get('role'),
+                    mode=step.get('mode'),
                     ttc=step['ttc'],
                     overrides=step['overrides'],
                     own_children={}, own_parents={},
@@ -1516,7 +1516,7 @@ class LanguageGraph:
                     name=step_dict['name'],
                     type=step_dict['type'],
                     asset=asset,
-                    role=step_dict.get('role'),
+                    mode=step_dict.get('mode'),
                     ttc=step_dict['ttc'],
                     overrides=(
                         step_dict['reaches']['overrides']
@@ -1556,7 +1556,7 @@ class LanguageGraph:
                         name=super_step.name,
                         type=super_step.type,
                         asset=asset,
-                        role=step_dict.get('role'),
+                        mode=step_dict.get('mode'),
                         ttc=super_step.ttc,
                         overrides=False,
                         own_children={},

@@ -395,12 +395,12 @@ class MalCompiler(ParseTreeVisitor):
             step_type = step_type_btext.decode()
         go_to_sibling(cursor)
 
-        # grab optional (role) before (id)
-        role = None
-        current_text = node_text(cursor, 'role')
+        # grab optional (mode) before (id)
+        mode = None
+        current_text = node_text(cursor, 'mode')
         if current_text in (b'action', b'effect'):
-            role = current_text.decode()
-            go_to_sibling(cursor)  # skip role
+            mode = current_text.decode()
+            go_to_sibling(cursor)  # skip mode
 
         # grab (id)
         name = node_text(cursor, 'name').decode()
@@ -459,7 +459,7 @@ class MalCompiler(ParseTreeVisitor):
             'meta': meta,
             'detectors': detectors,
             'type': step_type,
-            'role': role,
+            'mode': mode,
             'tags': tags,
             'risk': risk,
             'ttc': ttc,
