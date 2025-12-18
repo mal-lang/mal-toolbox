@@ -361,8 +361,7 @@ class LanguageGraphAssociation:
 
 @dataclass
 class LanguageGraphAttackStep:
-    """An attack step belonging to an asset type in the MAL language
-    """
+    """An attack step belonging to an asset type in the MAL language"""
 
     name: str
     type: Literal["or", "and", "defense", "exist", "notExist"]

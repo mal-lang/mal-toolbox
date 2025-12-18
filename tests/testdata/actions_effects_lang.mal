@@ -13,6 +13,8 @@ category Test{
 
       | action attack
         -> b_of_B.attack
+
+      | test -> b_of_B.test
     }
 
 }
