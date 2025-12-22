@@ -8,7 +8,7 @@ import logging
 import zipfile
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from maltoolbox.file_utils import (
     load_dict_from_json_file,
@@ -361,12 +361,12 @@ class LanguageGraphAssociation:
 
 @dataclass
 class LanguageGraphAttackStep:
-    """An attack step belonging to an asset type in the MAL language
-    """
+    """An attack step belonging to an asset type in the MAL language"""
 
     name: str
     type: Literal["or", "and", "defense", "exist", "notExist"]
     asset: LanguageGraphAsset
+    causal_mode: Optional[Literal["action", "effect"]] = None
     ttc: dict | None = field(default_factory=dict)
     overrides: bool = False
 
@@ -475,8 +475,6 @@ class LanguageGraphAttackStep:
             requirements.extend(self.inherits.requires)
         return requirements
 
-    def __repr__(self) -> str:
-        return str(self.to_dict())
 
 
 class ExpressionsChain:
@@ -836,6 +834,7 @@ class LanguageGraph:
                     name=step['name'],
                     type=step['type'],
                     asset=a_node,
+                    causal_mode=step.get('causal_mode'),
                     ttc=step['ttc'],
                     overrides=step['overrides'],
                     own_children={}, own_parents={},
@@ -1516,6 +1515,7 @@ class LanguageGraph:
                     name=step_dict['name'],
                     type=step_dict['type'],
                     asset=asset,
+                    causal_mode=step_dict.get('causal_mode'),
                     ttc=step_dict['ttc'],
                     overrides=(
                         step_dict['reaches']['overrides']
@@ -1555,6 +1555,7 @@ class LanguageGraph:
                         name=super_step.name,
                         type=super_step.type,
                         asset=asset,
+                        causal_mode=step_dict.get('causal_mode'),
                         ttc=super_step.ttc,
                         overrides=False,
                         own_children={},

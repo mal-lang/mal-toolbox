@@ -374,7 +374,7 @@ class MalCompiler(ParseTreeVisitor):
 
         return ('variable', ret)
 
-    def visit_attack_step(self, cursor: TreeCursor) -> ASTNode:
+    def visit_attack_step(self, cursor: TreeCursor) -> tuple[str, dict]:
         ##############################################################################################################
         # (step_type) (id) ( '@' (id) )* ( '{' (cias) '}' )?  (ttc)? (meta)* (detector)? (preconditions)? (reaches)? #
         ##############################################################################################################
@@ -389,10 +389,18 @@ class MalCompiler(ParseTreeVisitor):
             b'E': 'exist',
             b'!E': 'notExist',
         }
+
         # decode value only if its really necessary (no binding found)
         if (step_type := step_type_bindings.get(step_type_btext)) is None:
             step_type = step_type_btext.decode()
         go_to_sibling(cursor)
+
+        # grab optional (causal_mode) before (id)
+        causal_mode = None
+        current_text = node_text(cursor, 'causal_mode')
+        if current_text in (b'action', b'effect'):
+            causal_mode = current_text.decode()
+            go_to_sibling(cursor)  # skip causal_mode
 
         # grab (id)
         name = node_text(cursor, 'name').decode()
@@ -451,6 +459,7 @@ class MalCompiler(ParseTreeVisitor):
             'meta': meta,
             'detectors': detectors,
             'type': step_type,
+            'causal_mode': causal_mode,
             'tags': tags,
             'risk': risk,
             'ttc': ttc,
