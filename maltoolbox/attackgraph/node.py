@@ -28,6 +28,7 @@ class AttackGraphNode:
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
         self.type = lg_attack_step.type
+        self.causal_mode = self.lg_attack_step.causal_mode
         self.ttc = ttc_dist if ttc_dist is not None else lg_attack_step.ttc
         self.tags = lg_attack_step.tags
         self.detectors = lg_attack_step.detectors
