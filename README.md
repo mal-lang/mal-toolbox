@@ -5,7 +5,7 @@ MAL ([Meta Attack Language](https://mal-lang.org/)) models and attack graphs.
 
 Attack graphs can be used to run simulations in [MAL Simulator](https://github.com/mal-lang/mal-simulator) or run your own custom analysis on.
 
-- [MAL Toolbox Documentation](https://github.com/mal-lang/mal-toolbox/wiki)
+- [MAL Toolbox Wiki](https://github.com/mal-lang/mal-toolbox/wiki)
 - [MAL Toolbox tutorial](https://github.com/mal-lang/mal-toolbox-tutorial)
 
 # Usage
