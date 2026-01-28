@@ -63,6 +63,7 @@ nosetests.xml
 # Make sure all test data is tracked by git
 !tests/testdata/*
 !.github/workflows/*.yml
+!examples/resources/*
 
 # uv lock file
 uv.lock

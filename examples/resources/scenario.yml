@@ -1,0 +1,22 @@
+lang_file: org.mal-lang.coreLang-1.0.0.mar
+model_file: model.yml
+
+rewards:
+  by_asset_type:
+    Application:
+      fullAccess: 10
+
+# Add entry points to AttackGraph with attacker names
+# and attack step full_names
+agents:
+  'MyAttacker':
+    type: attacker
+    agent_class: RandomAgent
+    entry_points:
+    - 'Application 1:fullAccess'
+    goals:
+    - 'Application 2:fullAccess'
+
+  'MyDefender':
+    type: defender
+    agent_class: PassiveAgent

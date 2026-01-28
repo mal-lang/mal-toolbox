@@ -1,0 +1,20 @@
+assets:
+  0:
+    associated_assets:
+      appExecutedApps:
+        1: Application 2
+    name: Application 1
+    type: Application
+  1:
+    associated_assets:
+      hostApp:
+        0: Application 1
+    name: Application 2
+    type: Application
+metadata:
+  MAL-Toolbox Version: 1.0.4
+  info: Created by the mal-toolbox model python module.
+  langID: org.mal-lang.coreLang
+  langVersion: 1.0.0
+  malVersion: 0.1.0-SNAPSHOT
+  name: Test Model
