@@ -99,7 +99,8 @@ def test_model_remove_nonexisting_asset(model: Model):
     asset1 = ModelAsset(
         name='TestAsset',
         asset_id=1,
-        lg_asset=model.lang_graph.assets['Application'])
+        lg_asset=model.lang_graph.assets['Application'],
+    )
     with pytest.raises(LookupError):
         model.remove_asset(asset1)
 
