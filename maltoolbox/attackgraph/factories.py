@@ -1,14 +1,11 @@
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING, Optional
 import zipfile
 from maltoolbox.exceptions import AttackGraphStepExpressionError
-from maltoolbox.file_utils import load_dict_from_json_file, load_dict_from_yaml_file
-from maltoolbox.language.languagegraph import LanguageGraph, disaggregate_attack_step_full_name
+from maltoolbox.language.languagegraph import LanguageGraph
 from maltoolbox.model import Model
 
 from maltoolbox.attackgraph.attackgraph import AttackGraph
-from maltoolbox.attackgraph.node import AttackGraphNode
 
 from .. import log_configs
 logger = logging.getLogger(__name__)
