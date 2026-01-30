@@ -8,7 +8,7 @@ import logging
 from typing import Any
 
 from maltoolbox.exceptions import LanguageGraphAssociationError
-from maltoolbox.language.languagegraph_asset import LanguageGraphAsset
+from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 
 logger = logging.getLogger(__name__)
 

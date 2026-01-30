@@ -8,11 +8,11 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Any
 
-from maltoolbox.language.languagegraph_attack_step import LanguageGraphAttackStep
+from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
 
 if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
-    from maltoolbox.language.languagegraph_assoc import LanguageGraphAssociation
+    from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation
 
 @dataclass
 class LanguageGraphAsset:

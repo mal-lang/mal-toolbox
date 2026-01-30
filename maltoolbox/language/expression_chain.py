@@ -8,7 +8,7 @@ import logging
 from typing import Any
 
 from maltoolbox.exceptions import LanguageGraphAssociationError, LanguageGraphException
-from maltoolbox.language.languagegraph_assoc import LanguageGraphAssociation
+from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation
 
 if TYPE_CHECKING:
     from maltoolbox.language.languagegraph import LanguageGraph

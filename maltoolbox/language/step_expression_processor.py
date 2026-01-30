@@ -5,7 +5,7 @@ from typing import Any
 
 from maltoolbox.language.expression_chain import ExpressionsChain
 from maltoolbox.language.language_graph_lookup import get_var_expr_for_asset
-from maltoolbox.language.languagegraph_asset import LanguageGraphAsset
+from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.exceptions import (
     LanguageGraphException,
     LanguageGraphAssociationError,

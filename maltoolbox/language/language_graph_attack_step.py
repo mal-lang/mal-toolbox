@@ -10,7 +10,7 @@ from typing import Any, Literal, Optional
 
 if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
-    from maltoolbox.language.languagegraph_asset import LanguageGraphAsset
+    from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 
 @dataclass
 class LanguageGraphAttackStep:
