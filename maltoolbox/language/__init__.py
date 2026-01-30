@@ -1,8 +1,8 @@
 """Contains tools to process MAL languages"""
 
+from .detector import Context, Detector
+
 from .languagegraph import (
-    Context,
-    Detector,
     ExpressionsChain,
     LanguageGraph,
     LanguageGraphAsset,

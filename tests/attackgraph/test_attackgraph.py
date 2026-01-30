@@ -10,6 +10,7 @@ from conftest import path_testdata
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
 from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
 from maltoolbox.model import Model
 
 
@@ -172,10 +173,9 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     num_assets_attack_steps = 0
     assert example_attackgraph.model
     for asset in example_attackgraph.model.assets.values():
-        attack_steps = example_attackgraph.\
-            lang_graph._get_attacks_for_asset_type(
-                asset.type
-            )
+        attack_steps = get_attacks_for_asset_type(
+            asset.type, example_attackgraph.lang_graph.lang_spec
+        )
         num_assets_attack_steps += len(attack_steps)
 
     # Each attack step will get one node

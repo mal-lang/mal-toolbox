@@ -12,6 +12,16 @@ from maltoolbox.language.languagegraph_asset import LanguageGraphAsset
 
 logger = logging.getLogger(__name__)
 
+
+def link_association_to_assets(
+    assoc: LanguageGraphAssociation,
+    left_asset: LanguageGraphAsset,
+    right_asset: LanguageGraphAsset,
+) -> None:
+    left_asset.own_associations[assoc.right_field.fieldname] = assoc
+    right_asset.own_associations[assoc.left_field.fieldname] = assoc
+
+
 @dataclass(frozen=True, eq=True)
 class LanguageGraphAssociationField:
     """A field in an association"""
@@ -134,3 +144,4 @@ class LanguageGraphAssociation:
                '%s which did not contain it!')
         logger.error(msg, fieldname, self.name)
         raise LanguageGraphAssociationError(msg % (fieldname, self.name))
+    

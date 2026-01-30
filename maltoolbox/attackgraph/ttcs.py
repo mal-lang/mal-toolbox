@@ -1,6 +1,6 @@
 import copy
 import logging
-from maltoolbox.language.languagegraph import LanguageGraphAttackStep
+from maltoolbox.language.languagegraph_attack_step import LanguageGraphAttackStep
 from maltoolbox.model import ModelAsset
 
 logger = logging.getLogger(__name__)
