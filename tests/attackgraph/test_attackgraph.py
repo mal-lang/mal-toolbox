@@ -10,14 +10,16 @@ from conftest import path_testdata
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
 from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
 from maltoolbox.model import Model
 
 
 def test_attackgraph_init(corelang_lang_graph, model):
     """Test init with different params given"""
     # _generate_graph is called when langspec and model is given to init
-    with patch("maltoolbox.attackgraph.AttackGraph._generate_graph")\
+    with patch("maltoolbox.attackgraph.attackgraph.generate_graph")\
          as _generate_graph:
+        _generate_graph.return_value = None, None, None, None
         AttackGraph(
             lang_graph=corelang_lang_graph,
             model=model
@@ -25,7 +27,7 @@ def test_attackgraph_init(corelang_lang_graph, model):
         assert _generate_graph.call_count == 1
 
     # _generate_graph is not called when no model is given
-    with patch("maltoolbox.attackgraph.AttackGraph._generate_graph")\
+    with patch("maltoolbox.attackgraph.attackgraph.generate_graph")\
         as _generate_graph:
         AttackGraph(
             lang_graph=corelang_lang_graph,
@@ -171,10 +173,9 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
     num_assets_attack_steps = 0
     assert example_attackgraph.model
     for asset in example_attackgraph.model.assets.values():
-        attack_steps = example_attackgraph.\
-            lang_graph._get_attacks_for_asset_type(
-                asset.type
-            )
+        attack_steps = get_attacks_for_asset_type(
+            asset.type, example_attackgraph.lang_graph.lang_spec
+        )
         num_assets_attack_steps += len(attack_steps)
 
     # Each attack step will get one node
@@ -188,7 +189,7 @@ def test_attackgraph_get_node_by_full_name(example_attackgraph: AttackGraph):
     assert repr(e) == (
         '<ExceptionInfo LookupError(\'Could not find node with name '
         '"Application 2". Did you mean: '
-        'Application 2:read, Application 2:deny?\') tblen=2>'
+        'Application 2:read, Application 2:deny?\') tblen=3>'
     )
 
 
@@ -316,8 +317,8 @@ def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
     assert list(copied_attackgraph.nodes.keys()) \
         == list(example_attackgraph.nodes.keys())
 
-    assert list(copied_attackgraph._full_name_to_node.keys()) \
-        == list(example_attackgraph._full_name_to_node.keys())
+    assert list(copied_attackgraph.full_name_to_node.keys()) \
+        == list(example_attackgraph.full_name_to_node.keys())
 
     assert id(copied_attackgraph.model) == id(example_attackgraph.model)
 

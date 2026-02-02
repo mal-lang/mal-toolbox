@@ -2,12 +2,12 @@
 models and analyze attack graphs.
 """
 
-from .attackgraph import AttackGraph, create_attack_graph
+from .attackgraph import AttackGraph
+from .factories import create_attack_graph
 from .node import AttackGraphNode
 
 __all__ = [
     "AttackGraph",
     "AttackGraphNode",
-    "Attacker",
     "create_attack_graph"
 ]
