@@ -1,0 +1,41 @@
+// vim:ft=mal
+#id: "test-actions-effects"
+#version: "0.0.0"
+
+category System{
+
+    asset Computer {
+      & physicalAccess
+        -> attemptAuthenticate
+
+      | attemptAuthenticate [HardAndCertain]
+        -> authenticate
+
+      & effect authenticate
+        -> computerApps.attemptExploit
+    }
+
+    asset Application {
+      # shutDown
+        -> exploit
+
+      | attemptExploit [HardAndCertain]
+        -> exploit
+
+      & effect exploit
+        ! logExploit (Computer comp)
+        -> toApplications.attemptExploit,
+           dataOnApp.read
+    }
+
+    asset Data {
+      | read
+    }
+
+}
+
+associations {
+  Computer [computerOfApp] * <-- appExecution --> * [computerApps] Application
+  Application [fromApplications] * <-- AppToAppCommunication --> * [toApplications] Application
+  Data [dataOnApp] * <-- AppData --> * [appWithData] Application
+}

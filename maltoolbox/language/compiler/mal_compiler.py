@@ -440,7 +440,8 @@ class MalCompiler(ParseTreeVisitor):
         detectors: dict[str, Any] = {}
         while assert_node(cursor.node).type == 'detector':
             detector = self.visit(cursor)
-            detector[detector['name']] = detector
+            detector_name = str(detector['name'])
+            detectors[detector_name] = detector
             if not go_to_sibling(cursor):  # in case there is nothing after the meta
                 break
 
@@ -536,8 +537,8 @@ class MalCompiler(ParseTreeVisitor):
         ###############
         # (type) (id) #
         ###############
-        asset = node_text(cursor, 'asset')
-        label = node_text(cursor, 'label')
+        asset = node_text(cursor, 'asset').decode('utf-8')
+        label = node_text(cursor, 'label').decode('utf-8')
 
         return (label, asset)
 
