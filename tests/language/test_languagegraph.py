@@ -250,3 +250,37 @@ def test_pickle_languagegraph_attack_step(corelang_lang_graph: LanguageGraph):
     pickled_step = pickle.dumps(lang_graph_step)
     ununpickled_step = pickle.loads(pickled_step)
     assert lang_graph_step.to_dict() == ununpickled_step.to_dict()
+
+
+def test_attack_graph_node_causal_mode(tmpdir):
+    """Test inheritance in node casual mode setting"""
+    language = """
+    #id: "test-actions-effects"
+    #version: "0.0.0"
+
+    category Test{
+        asset AssetA {
+          | action attackstep1
+            -> attackstep2
+
+          | action attackstep2
+        }
+
+        asset AssetB extends AssetA {
+          | effect attackstep2
+        }
+    }
+    """
+    p = tmpdir.mkdir("sub").join("lang.mal")
+    p.write(language)
+
+    lang_graph = LanguageGraph(MalCompiler().compile(p.strpath))
+    asset_a_attackstep1 = lang_graph.assets['AssetA'].attack_steps['attackstep1']
+    asset_a_attackstep2 = lang_graph.assets['AssetA'].attack_steps['attackstep2']
+    asset_b_attackstep1 = lang_graph.assets['AssetB'].attack_steps['attackstep1']
+    asset_b_attackstep2 = lang_graph.assets['AssetB'].attack_steps['attackstep2']
+
+    assert asset_a_attackstep1.causal_mode == 'action'
+    assert asset_a_attackstep2.causal_mode == 'action'
+    assert asset_b_attackstep1.causal_mode == 'action'  # inherited
+    assert asset_b_attackstep2.causal_mode == 'effect'  # overridden
