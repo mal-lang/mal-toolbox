@@ -68,6 +68,17 @@ class LanguageGraph:
         """
         return language_graph_from_mar_archive(mar_archive)
 
+    def to_mar_archive(self, mar_archive_path: str) -> None:
+        """Save the LanguageGraph lang_spec to a .mar archive
+        that can be loaded with `from_mar_archive`.
+
+        The .mar is a zip file containing a single file "langspec.json"
+        containing the language specification in JSON format.
+        """
+        with zipfile.ZipFile(mar_archive_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+            langspec_json = json.dumps(self.lang_spec, indent=4)
+            archive.writestr('langspec.json', langspec_json)
+
     @property
     def associations(self) -> set[LanguageGraphAssociation]:
         """Return all associations in the language graph.
@@ -85,7 +96,16 @@ class LanguageGraph:
 
     def save_to_file(self, filename: str) -> None:
         """Save to json/yml depending on extension"""
-        return save_dict_to_file(filename, language_graph_to_dict(self))
+
+        match filename.split('.')[-1]:
+            case 'json' | 'yaml' | 'yml':
+                save_dict_to_file(filename, language_graph_to_dict(self))
+            case 'mar':
+                self.to_mar_archive(filename)
+            case _:
+                raise TypeError(
+                    "Unknown file extension, expected json/mal/mar/yml/yaml"
+                )
 
     @classmethod
     def load_from_file(cls, filename: str) -> LanguageGraph:

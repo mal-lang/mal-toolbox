@@ -25,6 +25,14 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
         assocs.update(asset.associations.values())
 
 
+def test_languagegraph_save_load_mar(corelang_lang_graph: LanguageGraph):
+    graph_path = "/tmp/langgraph.mar"
+    corelang_lang_graph.save_to_file(graph_path)
+
+    new_lang_graph = LanguageGraph.load_from_file(graph_path)
+    assert new_lang_graph._to_dict() == corelang_lang_graph._to_dict()
+
+
 # TODO: Replace this with a dedicated test that just checks for union for
 # assets with the same super asset
 def test_corelang_with_union_different_assets_same_super_asset():

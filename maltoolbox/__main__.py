@@ -25,14 +25,12 @@ Notes:
 
 """
 
-import json
 import logging
 
 import docopt
 
 from . import log_configs, neo4j_configs
 from .attackgraph import AttackGraph, create_attack_graph
-from .language.compiler import MalCompiler
 from .language.languagegraph import LanguageGraph
 from .model import Model
 from .translators.updater import load_model_from_older_version
@@ -69,9 +67,8 @@ def generate_attack_graph(
 
 def compile(lang_file: str, output_file: str) -> None:
     """Compile language and dump into output file"""
-    compiler = MalCompiler()
-    with open(output_file, "w") as f:
-        json.dump(compiler.compile(lang_file), f, indent=2)
+    lang_graph = LanguageGraph.load_from_file(lang_file)
+    lang_graph.save_to_file(output_file)
 
 
 def upgrade_model(model_file: str, lang_file: str, output_file: str):
