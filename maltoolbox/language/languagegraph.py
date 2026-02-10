@@ -11,7 +11,7 @@ from typing import Any
 import zipfile
 
 from maltoolbox.exceptions import LanguageGraphAssociationError, LanguageGraphException, LanguageGraphSuperAssetNotFoundError
-from maltoolbox.file_utils import load_dict_from_json_file, load_dict_from_yaml_file, save_dict_to_file
+from maltoolbox.file_utils import download_git_repo, load_dict_from_json_file, load_dict_from_yaml_file, save_dict_to_file
 from maltoolbox.language.compiler.mal_compiler import MalCompiler
 from maltoolbox.language.expression_chain import ExpressionsChain
 from maltoolbox.language.language_graph_builder import generate_graph
@@ -431,7 +431,7 @@ def language_graph_from_dict(serialized_graph: dict) -> LanguageGraph:
 
 
 def load_language_graph_from_file(filename: str) -> LanguageGraph:
-    """Create LanguageGraph from mal, mar, yaml or json"""
+    """Create LanguageGraph from mal, mar, yaml, json or git url"""
     lang_graph = None
     if filename.endswith('.mal'):
         lang_graph = language_graph_from_mal_spec(filename)
@@ -441,6 +441,8 @@ def load_language_graph_from_file(filename: str) -> LanguageGraph:
         lang_graph = language_graph_from_dict(load_dict_from_yaml_file(filename))
     elif filename.endswith('.json'):
         lang_graph = language_graph_from_dict(load_dict_from_json_file(filename))
+    elif filename.endswith('.git'):
+        lang_graph = language_graph_from_git_url(filename)
     else:
         raise TypeError(
             "Unknown file extension, expected json/mal/mar/yml/yaml"
@@ -457,6 +459,26 @@ def get_language_graph_associations(language_graph: LanguageGraph):
         assoc for asset in language_graph.assets.values()
         for assoc in asset.associations.values()
     }
+
+
+def language_graph_from_git_url(git_url: str) -> LanguageGraph:
+    """Create a LanguageGraph from a git url pointing to MAL lang.
+
+    The git repository contains a src/main/mal/main.mal
+    which is the file to load as the MAL language specification.
+    The git repo will be cloned to a local directory named ./.langs.
+
+    Arguments:
+    ---------
+    git_url     -   the git url pointing to the MAL language specification
+
+    """
+    logger.info('Loading language graph from git url %s', git_url)
+
+    # Download the repository to a local directory
+    dir = download_git_repo(git_url)
+    main_mal_file = dir / 'src' / 'main' / 'mal' / 'main.mal'
+    return language_graph_from_mal_spec(str(main_mal_file))
 
 
 def language_graph_from_mal_spec(mal_spec_file: str) -> LanguageGraph:
