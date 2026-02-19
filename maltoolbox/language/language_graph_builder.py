@@ -19,6 +19,25 @@ def generate_graph(lang_spec) -> dict[str, LanguageGraphAsset]:
     """Generate language graph starting from the MAL language specification
     given in the constructor."""
     # Generate all of the asset nodes of the language graph.
+    assets = create_lg_assets(lang_spec)
+
+    # Link assets to each other
+    link_assets(lang_spec, assets)
+
+    # Add and link associations to assets
+    create_associations_for_assets(lang_spec, assets)
+
+    # Set the variables for each asset
+    set_variables_for_assets(assets, lang_spec)
+
+    # Add attack steps to the assets
+    generate_attack_steps(assets, lang_spec)
+
+    return assets
+
+
+def create_lg_assets(lang_spec: dict[str, Any]) -> dict[str, LanguageGraphAsset]:
+    """Create the LanguageGraphAsset nodes for the language graph based on the language specification."""
     assets = {}
     for asset_dict in lang_spec['assets']:
         logger.debug(
@@ -36,20 +55,8 @@ def generate_graph(lang_spec) -> dict[str, LanguageGraphAsset]:
             is_abstract=asset_dict['isAbstract']
         )
         assets[asset_dict['name']] = asset_node
-
-    # Link assets to each other
-    link_assets(lang_spec, assets)
-
-    # Add and link associations to assets
-    create_associations_for_assets(lang_spec, assets)
-
-    # Set the variables for each asset
-    set_variables_for_assets(assets, lang_spec)
-
-    # Add attack steps to the assets
-    generate_attack_steps(assets, lang_spec)
-
     return assets
+
 
 def link_assets(
         lang_spec: dict[str, Any],
