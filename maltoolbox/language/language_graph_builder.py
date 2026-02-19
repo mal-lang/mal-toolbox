@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from maltoolbox.exceptions import LanguageGraphAssociationError, LanguageGraphException, LanguageGraphStepExpressionError, LanguageGraphSuperAssetNotFoundError
-from maltoolbox.language.detector import Context, Detector
+from maltoolbox.language.detector import Detector
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type, get_variables_for_asset_type
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation, LanguageGraphAssociationField, link_association_to_assets
@@ -109,6 +109,19 @@ def _create_lg_attack_step_nodes(
             logger.debug(
                 'Create attack step language graph nodes for %s', step_dict['name']
             )
+
+            detectors = {
+                detector_name: Detector(
+                    name=detector_dict['name'],
+                    context={
+                        context_name: process_step_expression(assets, asset, None, context, lang_spec)
+                        for context_name, context in detector_dict['context'].items()
+                    },
+                    type=detector_dict.get('type'),
+                    tprate=detector_dict.get('tprate'),
+                ) for detector_name, detector_dict in step_dict['detectors'].items()
+            }
+
             node = LanguageGraphAttackStep(
                 name=step_dict['name'],
                 type=step_dict['type'],
@@ -121,20 +134,13 @@ def _create_lg_attack_step_nodes(
                 ),
                 own_children={}, own_parents={},
                 info=step_dict['meta'],
-                tags=list(step_dict['tags'])
+                tags=list(step_dict['tags']),
+                detectors=detectors
+
             )
             attack_step_dicts[node.full_name] = step_dict
             asset.attack_steps[node.name] = node
 
-            for det in step_dict.get('detectors', {}).values():
-                node.detectors[det['name']] = Detector(
-                    context=Context(
-                        {lbl: assets[a] for lbl, a in det['context'].items()}
-                    ),
-                    name=det.get('name'),
-                    type=det.get('type'),
-                    tprate=det.get('tprate'),
-                )
     return attack_step_dicts
 
 

@@ -511,13 +511,13 @@ class MalCompiler(ParseTreeVisitor):
 
     def visit_detector_context(self, cursor: TreeCursor):
         ####################################################################
-        # '(' (detector_context_asset) (',' (detector_context_asset))* ')' #
+        # '(' (detector_context_reference) (',' (detector_context_reference))* ')' #
         ####################################################################
 
         # skip '('
         go_to_sibling(cursor)
 
-        # grab detector_context_asset
+        # grab detector_context_reference
         context = {}
         label, asset = self.visit(cursor)
         context[label] = asset
@@ -526,21 +526,23 @@ class MalCompiler(ParseTreeVisitor):
         while node_text(cursor, 'char') != b')':
             # skip ','
             go_to_sibling(cursor)
-            # grab another detector_context_asset
+            # grab another detector_context_reference
             label, asset = self.visit(cursor)
             context[label] = asset
             go_to_sibling(cursor)
 
         return context
 
-    def visit_detector_context_asset(self, cursor: TreeCursor):
+    def visit_detector_context_reference(self, cursor: TreeCursor):
         ###############
-        # (type) (id) #
+        # (type) (id)? #
         ###############
-        asset = node_text(cursor, 'asset').decode('utf-8')
-        label = node_text(cursor, 'label').decode('utf-8')
 
-        return (label, asset)
+        # First child: asset_expr / attack step reference
+        attack_step_reference = self.visit(cursor)
+        go_to_sibling(cursor)
+        label = node_text(cursor, 'context identifier').decode()
+        return (label, attack_step_reference)
 
     def visit_cias(self, cursor: TreeCursor):
         ######################
@@ -719,7 +721,6 @@ class MalCompiler(ParseTreeVisitor):
         while go_to_sibling(cursor):  # check if we have a ','
             go_to_sibling(cursor)  # ignore the ','
             ret['stepExpressions'].append(self.visit(cursor))
-
         return ret
 
     def visit_asset_expr(self, cursor: TreeCursor):
@@ -822,6 +823,69 @@ class MalCompiler(ParseTreeVisitor):
             raise ValueError('Missing node for id')
 
         parent_node = original_node.parent
+
+        # ------------------------------------------------------------------
+        # New structural logic:
+        #
+        # For chained navigation:
+        #
+        #   <field>.<field>.<attackStep>
+        #
+        # The grammar represents this as nested `asset_expr_binop` nodes
+        # with '.' operators, e.g.:
+        #
+        #   ((a . b) . c)
+        #
+        # The attack step is the RIGHT-MOST identifier in the dot-chain.
+        # Everything to the left of the final '.' is a field.
+        #
+        # Therefore:
+        #   - If this identifier is the right child of a '.' binop AND
+        #     that binop is not itself the left child of another '.' binop,
+        #     then it is the attackStep.
+        #   - Otherwise it is a field.
+        # ------------------------------------------------------------------
+
+        parent_node = original_node.parent
+
+        if parent_node and parent_node.type == 'asset_expr_binop':
+            children = [c for c in parent_node.children if c.type != 'comment']
+
+            if len(children) >= 3 and children[1].text == b'.':
+                lhs = children[0]
+                rhs = children[2]
+
+                # If we are on the RHS of a dot-expression,
+                # we may be the final attack step.
+                if original_node == rhs:
+                    grandparent = parent_node.parent
+
+                    # If the parent binop is itself the LHS of another dot,
+                    # then we are still inside the chain and NOT the final step.
+                    if (
+                        grandparent
+                        and grandparent.type == 'asset_expr_binop'
+                    ):
+                        gp_children = [
+                            c for c in grandparent.children if c.type != 'comment'
+                        ]
+                        if (
+                            len(gp_children) >= 3
+                            and gp_children[1].text == b'.'
+                            and gp_children[0] == parent_node
+                        ):
+                            return 'field'
+
+                    # Otherwise this is the right-most identifier
+                    return 'attackStep'
+
+                # If we are on the LHS of a dot-expression,
+                # we are always a field.
+                if original_node == lhs:
+                    return 'field'
+        # ------------------------------------------------------------------
+        # Fallback to old logic for other contexts
+        # ------------------------------------------------------------------
 
         while parent_node and parent_node.type != 'reaching':
             # The idea is to go up the tree. If we find a "reaching" node,
@@ -1056,16 +1120,32 @@ class MalCompiler(ParseTreeVisitor):
                 association[key][subkey] = int(association[key][subkey])
 
 
-def assert_node(node: Node | None) -> Node:
-    if node is None:
-        raise ValueError('Node can not be None')
-    return node
-
-
 def node_text(cursor: TreeCursor, context: str):
     node = cursor.node
     if node is None:
-        raise MalCompilerError(f'expected node for {context}, found None')
+        raise MalCompilerError(
+            f'expected node for {context}, found None '
+            f'at {get_node_location(cursor)}'
+        )
     if not node.text:
-        raise MalCompilerError(f'expected text for {context}, found empty')
+        raise MalCompilerError(
+            f'expected text for {context}, found empty '
+            f'at {get_node_location(cursor)}'
+        )
     return node.text
+
+def assert_node(node: Node | None, context: str = '', file: Path | None = None) -> Node:
+    if node is None:
+        loc = f'{file}' if file else ''
+        raise MalCompilerError(
+            f'Node cannot be None {context} {loc}'
+        )
+    return node
+
+def get_node_location(cursor: TreeCursor):
+    node = cursor.node
+    if node is None:
+        return 'unknown location'
+    # start_point is a tuple (row, column) zero-indexed
+    row, col = node.start_point
+    return f'{row+1}:{col+1}'  # make it 1-indexed for humans
