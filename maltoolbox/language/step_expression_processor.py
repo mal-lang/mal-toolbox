@@ -393,74 +393,73 @@ def reverse_expr_chain(
     """
     if not expr_chain:
         return reverse_chain
-    match (expr_chain.type):
-        case 'union' | 'intersection' | 'difference' | 'collect':
-            left_reverse_chain = \
-                reverse_expr_chain(expr_chain.left_link, reverse_chain)
-            right_reverse_chain = \
-                reverse_expr_chain(expr_chain.right_link, reverse_chain)
-            if expr_chain.type == 'collect':
-                new_expr_chain = ExpressionsChain(
-                    type=expr_chain.type,
-                    left_link=right_reverse_chain,
-                    right_link=left_reverse_chain
-                )
-            else:
-                new_expr_chain = ExpressionsChain(
-                    type=expr_chain.type,
-                    left_link=left_reverse_chain,
-                    right_link=right_reverse_chain
-                )
-
-            return new_expr_chain
-
-        case 'transitive':
-            result_reverse_chain = reverse_expr_chain(
-                expr_chain.sub_link, reverse_chain)
+    if expr_chain.type.is_binary():
+        left_reverse_chain = \
+            reverse_expr_chain(expr_chain.left_link, reverse_chain)
+        right_reverse_chain = \
+            reverse_expr_chain(expr_chain.right_link, reverse_chain)
+        if expr_chain.type == ExprType.COLLECT:
             new_expr_chain = ExpressionsChain(
-                type=ExprType.TRANSITIVE,
-                sub_link=result_reverse_chain
+                type=expr_chain.type,
+                left_link=right_reverse_chain,
+                right_link=left_reverse_chain
             )
-            return new_expr_chain
-
-        case 'field':
-            association = expr_chain.association
-
-            if not association:
-                raise LanguageGraphException(
-                    "Missing association for expressions chain"
-                )
-
-            if not expr_chain.fieldname:
-                raise LanguageGraphException(
-                    "Missing field name for expressions chain"
-                )
-
-            opposite_fieldname = association.get_opposite_fieldname(
-                expr_chain.fieldname)
+        else:
             new_expr_chain = ExpressionsChain(
-                type=ExprType.FIELD,
-                association=association,
-                fieldname=opposite_fieldname
+                type=expr_chain.type,
+                left_link=left_reverse_chain,
+                right_link=right_reverse_chain
             )
-            return new_expr_chain
 
-        case 'subType':
-            result_reverse_chain = reverse_expr_chain(
-                expr_chain.sub_link,
-                reverse_chain
-            )
-            new_expr_chain = ExpressionsChain(
-                type=ExprType.SUBTYPE,
-                sub_link=result_reverse_chain,
-                subtype=expr_chain.subtype
-            )
-            return new_expr_chain
+        return new_expr_chain
 
-        case _:
-            msg = 'Unknown assoc chain element "%s"'
-            logger.error(msg, expr_chain.type)
-            raise LanguageGraphAssociationError(msg % expr_chain.type)
+    if expr_chain.type == ExprType.TRANSITIVE:
+        result_reverse_chain = reverse_expr_chain(
+            expr_chain.sub_link, reverse_chain)
+        new_expr_chain = ExpressionsChain(
+            type=ExprType.TRANSITIVE,
+            sub_link=result_reverse_chain
+        )
+        return new_expr_chain
+
+    if expr_chain.type == ExprType.FIELD:
+        association = expr_chain.association
+
+        if not association:
+            raise LanguageGraphException(
+                "Missing association for expressions chain"
+            )
+
+        if not expr_chain.fieldname:
+            raise LanguageGraphException(
+                "Missing field name for expressions chain"
+            )
+
+        opposite_fieldname = association.get_opposite_fieldname(
+            expr_chain.fieldname)
+        new_expr_chain = ExpressionsChain(
+            type=ExprType.FIELD,
+            association=association,
+            fieldname=opposite_fieldname
+        )
+        return new_expr_chain
+
+    if expr_chain.type == ExprType.SUBTYPE:
+        result_reverse_chain = reverse_expr_chain(
+            expr_chain.sub_link,
+            reverse_chain
+        )
+        new_expr_chain = ExpressionsChain(
+            type=ExprType.SUBTYPE,
+            sub_link=result_reverse_chain,
+            subtype=expr_chain.subtype
+        )
+        return new_expr_chain
+
+    else:
+        msg = 'Unknown assoc chain element "%s"'
+        logger.error(msg, expr_chain.type)
+        raise LanguageGraphAssociationError(msg % expr_chain.type)
 
 def resolve_variable(
     assets: dict[str, LanguageGraphAsset],

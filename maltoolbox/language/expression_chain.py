@@ -102,12 +102,15 @@ class ExpressionsChain:
         }
 
     def _transitive_to_dict(self) -> dict:
+        assert self.sub_link, "TRANSITIVE expression requires sub_link"
         return {
             "transitive": self.sub_link.to_dict(),
             "type": self.type.value,
         }
 
     def _subtype_to_dict(self) -> dict:
+        assert self.sub_link, "SUBTYPE expression requires sub_link"
+        assert self.subtype, "SUBTYPE expression requires subtype"
         return {
             "subType": self.subtype.name,
             "expression": self.sub_link.to_dict(),
@@ -116,7 +119,7 @@ class ExpressionsChain:
 
     def _field_to_dict(self) -> dict:
         asset_type = self._resolve_field_asset_type()
-
+        assert self.association, "FIELD expression requires association"
         return {
             self.association.name: {
                 "fieldname": self.fieldname,
@@ -126,6 +129,7 @@ class ExpressionsChain:
         }
 
     def _resolve_field_asset_type(self) -> str:
+        assert self.association and self.fieldname, "FIELD expression requires association and fieldname"
         if self.fieldname == self.association.left_field.fieldname:
             return self.association.left_field.asset.name
         if self.fieldname == self.association.right_field.fieldname:
@@ -211,7 +215,7 @@ class ExpressionsChain:
         lang_graph: LanguageGraph,
     ) -> ExpressionsChain:
         sub_link = cls._from_dict(
-            data.get("transitive"),
+            data["transitive"],
             lang_graph,
         )
 
@@ -227,7 +231,7 @@ class ExpressionsChain:
         lang_graph: LanguageGraph,
     ) -> ExpressionsChain:
         sub_link = cls._from_dict(
-            data.get("expression"),
+            data["expression"],
             lang_graph,
         )
 
