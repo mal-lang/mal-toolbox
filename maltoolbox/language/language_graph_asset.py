@@ -3,10 +3,9 @@
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any
 
 from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
 
@@ -31,30 +30,19 @@ class LanguageGraphAsset:
 
     def to_dict(self) -> dict:
         """Convert LanguageGraphAsset to dictionary"""
-        node_dict: dict[str, Any] = {
-            'name': self.name,
-            'associations': {},
-            'attack_steps': {},
-            'info': self.info,
-            'super_asset': self.own_super_asset.name
-                if self.own_super_asset else "",
-            'sub_assets': [asset.name for asset in self.own_sub_assets],
-            'variables': {},
-            'is_abstract': self.is_abstract
+        return {
+            "name": self.name,
+            "associations": {k: v.to_dict() for k, v in self.own_associations.items()},
+            "attack_steps": {s.name: s.to_dict() for s in self.attack_steps.values()},
+            "info": self.info,
+            "super_asset": self.own_super_asset.name if self.own_super_asset else "",
+            "sub_assets": [a.name for a in self.own_sub_assets],
+            "variables": {
+                name: (asset.name, expr.to_dict())
+                for name, (asset, expr) in self.own_variables.items()
+            },
+            "is_abstract": self.is_abstract,
         }
-
-        for fieldname, assoc in self.own_associations.items():
-            node_dict['associations'][fieldname] = assoc.to_dict()
-        for attack_step in self.attack_steps.values():
-            node_dict['attack_steps'][attack_step.name] = \
-                attack_step.to_dict()
-        for variable_name, (var_target_asset, var_expr_chain) in \
-                self.own_variables.items():
-            node_dict['variables'][variable_name] = (
-                var_target_asset.name,
-                var_expr_chain.to_dict()
-            )
-        return node_dict
 
     def __repr__(self) -> str:
         return f'LanguageGraphAsset(name: "{self.name}")'
@@ -150,7 +138,7 @@ class LanguageGraphAsset:
     @property
     def variables(
             self
-        ) -> dict[str, tuple[LanguageGraphAsset, ExpressionsChain]]:
+        ) -> dict[str, tuple[LanguageGraphAsset, Optional[ExpressionsChain]]]:
         """Return a list of all of the variables that belong to this asset
         directly or indirectly via inheritance.
 

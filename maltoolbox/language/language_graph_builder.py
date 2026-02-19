@@ -19,6 +19,25 @@ def generate_graph(lang_spec) -> dict[str, LanguageGraphAsset]:
     """Generate language graph starting from the MAL language specification
     given in the constructor."""
     # Generate all of the asset nodes of the language graph.
+    assets = create_lg_assets(lang_spec)
+
+    # Link assets to each other
+    link_assets(lang_spec, assets)
+
+    # Add and link associations to assets
+    create_associations_for_assets(lang_spec, assets)
+
+    # Set the variables for each asset
+    set_variables_for_assets(assets, lang_spec)
+
+    # Add attack steps to the assets
+    generate_attack_steps(assets, lang_spec)
+
+    return assets
+
+
+def create_lg_assets(lang_spec: dict[str, Any]) -> dict[str, LanguageGraphAsset]:
+    """Create the LanguageGraphAsset nodes for the language graph based on the language specification."""
     assets = {}
     for asset_dict in lang_spec['assets']:
         logger.debug(
@@ -36,20 +55,8 @@ def generate_graph(lang_spec) -> dict[str, LanguageGraphAsset]:
             is_abstract=asset_dict['isAbstract']
         )
         assets[asset_dict['name']] = asset_node
-
-    # Link assets to each other
-    link_assets(lang_spec, assets)
-
-    # Add and link associations to assets
-    create_associations_for_assets(lang_spec, assets)
-
-    # Set the variables for each asset
-    set_variables_for_assets(assets, lang_spec)
-
-    # Add attack steps to the assets
-    generate_attack_steps(assets, lang_spec)
-
     return assets
+
 
 def link_assets(
         lang_spec: dict[str, Any],
@@ -86,38 +93,16 @@ def set_variables_for_assets(assets: dict[str, LanguageGraphAsset], lang_spec) -
         )
         variables = get_variables_for_asset_type(asset.name, lang_spec)
         for variable in variables:
-            if logger.isEnabledFor(logging.DEBUG):
-                # Avoid running json.dumps when not in debug
-                logger.debug(
-                    'Processing Variable Expression:\n%s',
-                    json.dumps(variable, indent=2)
-                )
-            resolve_variable(assets, asset, variable['name'], lang_spec)
+            asset.own_variables[variable['name']] = resolve_variable(
+                assets, asset, variable['name'], lang_spec
+            )
 
 
-def generate_attack_steps(assets: dict[str, LanguageGraphAsset], lang_spec: dict) -> None:
-    """
-    Generate attack steps for all assets and link them according to the
-    language specification.
+def _create_lg_attack_step_nodes(
+    assets: dict[str, LanguageGraphAsset], lang_spec: dict
+) -> dict[str, dict]:
 
-    This method performs three phases:
-
-    1. Create attack step nodes for each asset, including detectors.
-    2. Inherit attack steps from super-assets, respecting overrides.
-    3. Link attack steps via 'reaches' and evaluate 'exist'/'notExist'
-    requirements.
-
-    Args:
-        assets (dict): Mapping of asset names to asset objects.
-
-    Raises:
-        LanguageGraphStepExpressionError: If a step expression cannot be
-            resolved to a target asset or attack step.
-        LanguageGraphException: If an existence requirement cannot be
-            resolved.
-    """
-    langspec_dict = {}
-
+    attack_step_dicts = {}
     for asset in assets.values():
         logger.debug('Create attack steps language graph nodes for asset %s', asset.name)
         for step_dict in get_attacks_for_asset_type(asset.name, lang_spec).values():
@@ -138,7 +123,7 @@ def generate_attack_steps(assets: dict[str, LanguageGraphAsset], lang_spec: dict
                 info=step_dict['meta'],
                 tags=list(step_dict['tags'])
             )
-            langspec_dict[node.full_name] = step_dict
+            attack_step_dicts[node.full_name] = step_dict
             asset.attack_steps[node.name] = node
 
             for det in step_dict.get('detectors', {}).values():
@@ -150,7 +135,10 @@ def generate_attack_steps(assets: dict[str, LanguageGraphAsset], lang_spec: dict
                     type=det.get('type'),
                     tprate=det.get('tprate'),
                 )
+    return attack_step_dicts
 
+
+def _inherit_attack_steps(assets: dict[str, LanguageGraphAsset]) -> None:
     pending = list(assets.values())
     while pending:
         asset = pending.pop(0)
@@ -185,14 +173,27 @@ def generate_attack_steps(assets: dict[str, LanguageGraphAsset], lang_spec: dict
                 current_step.tags += super_step.tags
                 current_step.info |= super_step.info
 
+
+def _connect_attack_steps(
+    assets: dict[str, LanguageGraphAsset],
+    lang_spec: dict[str, Any],
+    attack_step_dicts: dict[str, dict]
+) -> None:
+    """Connect attack steps based on the 'reaches' and 'requires' expressions in the language specification."""
+
     for asset in assets.values():
         for step in asset.attack_steps.values():
             logger.debug('Determining children for attack step %s', step.name)
-            if step.full_name not in langspec_dict:
+
+            if step.full_name not in attack_step_dicts:
+                # Skip steps that are not in the lang spec (inherited steps)
                 continue
 
-            entry = langspec_dict[step.full_name]
-            for expr in (entry['reaches']['stepExpressions'] if entry['reaches'] else []):
+            attack_step_dict = attack_step_dicts[step.full_name]
+
+            step_reaches = attack_step_dict.get('reaches') or {}
+
+            for expr in step_reaches.get('stepExpressions', []):
                 tgt_asset, chain, tgt_name = process_step_expression(assets, step.asset, None, expr, lang_spec)
                 if not tgt_asset:
                     raise LanguageGraphStepExpressionError(
@@ -209,11 +210,11 @@ def generate_attack_steps(assets: dict[str, LanguageGraphAsset], lang_spec: dict
                 tgt.own_parents.setdefault(step, []).append(reverse_expr_chain(chain, None))
 
             if step.type in ('exist', 'notExist'):
-                reqs = entry['requires']['stepExpressions'] if entry['requires'] else []
+                reqs = attack_step_dict.get('requires', {}).get('stepExpressions', [])
                 if not reqs:
                     raise LanguageGraphStepExpressionError(
                         'Missing requirements for "%s" of type "%s":\n%s' %
-                        (step.name, step.type, json.dumps(entry, indent=2))
+                        (step.name, step.type, json.dumps(attack_step_dict, indent=2))
                     )
                 for expr in reqs:
                     _, chain, _ = process_step_expression(assets, step.asset, None, expr, lang_spec)
@@ -222,6 +223,33 @@ def generate_attack_steps(assets: dict[str, LanguageGraphAsset], lang_spec: dict
                             f'Failed to find existence step requirement for:\n{expr}'
                         )
                     step.own_requires.append(chain)
+
+
+def generate_attack_steps(assets: dict[str, LanguageGraphAsset], lang_spec: dict) -> None:
+    """
+    Generate attack steps for all assets and link them according to the
+    language specification.
+
+    This method performs three phases:
+
+    1. Create attack step nodes for each asset, including detectors.
+    2. Inherit attack steps from super-assets, respecting overrides.
+    3. Link attack steps via 'reaches' and evaluate 'exist'/'notExist'
+    requirements.
+
+    Args:
+        assets (dict): Mapping of asset names to asset objects.
+
+    Raises:
+        LanguageGraphStepExpressionError: If a step expression cannot be
+            resolved to a target asset or attack step.
+        LanguageGraphException: If an existence requirement cannot be
+            resolved.
+    """
+
+    attack_step_dicts = _create_lg_attack_step_nodes(assets, lang_spec)
+    _inherit_attack_steps(assets)
+    _connect_attack_steps(assets, lang_spec, attack_step_dicts)
 
 
 def create_associations_for_assets(
