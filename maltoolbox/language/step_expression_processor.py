@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Any
 
-from maltoolbox.language.expression_chain import ExpressionsChain
+from maltoolbox.language.expression_chain import ExprType, ExpressionsChain
 from maltoolbox.language.language_graph_lookup import get_var_expr_for_asset
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.exceptions import (
@@ -75,7 +75,7 @@ def process_set_operation_step_expression(
         )
 
     new_expr_chain = ExpressionsChain(
-        type=step_expression['type'],
+        type=ExprType(step_expression['type']),
         left_link=lh_expr_chain,
         right_link=rh_expr_chain
     )
@@ -146,7 +146,7 @@ def process_field_step_expression(
 
         if new_target_asset:
             new_expr_chain = ExpressionsChain(
-                type='field',
+                type=ExprType.FIELD,
                 fieldname=fieldname,
                 association=association
             )
@@ -184,7 +184,7 @@ def process_transitive_step_expression(
         )
     )
     new_expr_chain = ExpressionsChain(
-        type='transitive',
+        type=ExprType.TRANSITIVE,
         sub_link=result_expr_chain
     )
     return (
@@ -236,7 +236,7 @@ def process_subType_step_expression(
         )
 
     new_expr_chain = ExpressionsChain(
-        type='subType',
+        type=ExprType.SUBTYPE,
         sub_link=result_expr_chain,
         subtype=subtype_asset
     )
@@ -279,7 +279,7 @@ def process_collect_step_expression(
     new_expr_chain = lh_expr_chain
     if rh_expr_chain:
         new_expr_chain = ExpressionsChain(
-            type='collect',
+            type=ExprType.COLLECT,
             left_link=lh_expr_chain,
             right_link=rh_expr_chain
         )
@@ -418,7 +418,7 @@ def reverse_expr_chain(
             result_reverse_chain = reverse_expr_chain(
                 expr_chain.sub_link, reverse_chain)
             new_expr_chain = ExpressionsChain(
-                type='transitive',
+                type=ExprType.TRANSITIVE,
                 sub_link=result_reverse_chain
             )
             return new_expr_chain
@@ -439,7 +439,7 @@ def reverse_expr_chain(
             opposite_fieldname = association.get_opposite_fieldname(
                 expr_chain.fieldname)
             new_expr_chain = ExpressionsChain(
-                type='field',
+                type=ExprType.FIELD,
                 association=association,
                 fieldname=opposite_fieldname
             )
@@ -451,7 +451,7 @@ def reverse_expr_chain(
                 reverse_chain
             )
             new_expr_chain = ExpressionsChain(
-                type='subType',
+                type=ExprType.SUBTYPE,
                 sub_link=result_reverse_chain,
                 subtype=expr_chain.subtype
             )
