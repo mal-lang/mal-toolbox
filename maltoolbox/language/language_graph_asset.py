@@ -3,7 +3,7 @@
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Any
@@ -139,7 +139,7 @@ class LanguageGraphAsset:
     @property
     def variables(
             self
-        ) -> dict[str, tuple[LanguageGraphAsset, ExpressionsChain]]:
+        ) -> dict[str, tuple[LanguageGraphAsset, Optional[ExpressionsChain]]]:
         """Return a list of all of the variables that belong to this asset
         directly or indirectly via inheritance.
 

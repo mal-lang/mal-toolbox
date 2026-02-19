@@ -86,13 +86,9 @@ def set_variables_for_assets(assets: dict[str, LanguageGraphAsset], lang_spec) -
         )
         variables = get_variables_for_asset_type(asset.name, lang_spec)
         for variable in variables:
-            if logger.isEnabledFor(logging.DEBUG):
-                # Avoid running json.dumps when not in debug
-                logger.debug(
-                    'Processing Variable Expression:\n%s',
-                    json.dumps(variable, indent=2)
-                )
-            resolve_variable(assets, asset, variable['name'], lang_spec)
+            asset.own_variables[variable['name']] = resolve_variable(
+                assets, asset, variable['name'], lang_spec
+            )
 
 
 def _create_lg_attack_step_nodes(
