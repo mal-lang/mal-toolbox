@@ -34,6 +34,11 @@ def test_detector_presence(detectorlang_attack_graph: AttackGraph):
 
     app1_exploit = detectorlang_attack_graph.get_node_by_full_name("Application 1:exploit")
     assert app1_exploit.detectors, "Expected detectors on the 'exploit' attack step of Application 1"
-
     detector_names = [det.name for det in app1_exploit.detectors.values()]
     assert "logExploit" in detector_names, "Expected 'logExploit' detector on the 'exploit' attack step of Application 1"
+    context_item_computer = app1_exploit.detectors['logExploit'].context['computer']
+    assert context_item_computer.asset.name == "Computer", "Expected 'computer' context item to refer to asset of type 'Computer'"
+    assert context_item_computer.attack_step == "authenticate", "Expected 'computer' context item to refer to 'authenticate' attack step"
+    assert context_item_computer.expression_chain is not None, "Expected 'computer' context item to have an expression chain"
+    assert context_item_computer.expression_chain.type == "field", "Expected 'computer' context item to have expression chain of type 'field'"
+    assert context_item_computer.expression_chain.fieldname == "computerOfApp", "Expected 'computer' context item to have expression chain with fieldname 'computerOfApp'"

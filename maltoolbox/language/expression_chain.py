@@ -297,4 +297,4 @@ class ExpressionsChain:
         )
 
     def __repr__(self) -> str:
-        return str(self.to_dict())
+        return f"ExpressionsChain(type={self.type}, fieldname={self.fieldname})"
