@@ -13,14 +13,16 @@ from maltoolbox.exceptions import (
 
 logger = logging.getLogger(__name__)
 
+StepResult = tuple[
+    LanguageGraphAsset,
+    Optional[ExpressionsChain],
+    Optional[str],
+]
+
 def process_attack_step_expression(
     target_asset: LanguageGraphAsset,
     step_expression: dict[str, Any]
-) -> tuple[
-            LanguageGraphAsset,
-            None,
-            str
-        ]:
+) -> StepResult:
     """The attack step expression just adds the name of the attack
     step. All other step expressions only modify the target
     asset and parent associations chain.
@@ -37,11 +39,7 @@ def process_set_operation_step_expression(
     expr_chain: ExpressionsChain | None,
     step_expression: dict[str, Any],
     lang_spec
-) -> tuple[
-        LanguageGraphAsset,
-        ExpressionsChain,
-        None
-    ]:
+) -> StepResult:
     """The set operators are used to combine the left hand and right
     hand targets accordingly.
     """
@@ -60,12 +58,14 @@ def process_set_operation_step_expression(
         lang_spec
     )
 
-    assert lh_target_asset, (
-        f"No lh target in step expression {step_expression}"
-    )
-    assert rh_target_asset, (
-        f"No rh target in step expression {step_expression}"
-    )
+    if lh_target_asset is None:
+        raise ValueError(
+            f"No lh target in step expression {step_expression}"
+        )
+    if rh_target_asset is None:
+        raise ValueError(
+            f"No rh target in step expression {step_expression}"
+        )
 
     if not lh_target_asset.get_all_common_superassets(rh_target_asset):
         raise ValueError(
@@ -90,11 +90,7 @@ def process_variable_step_expression(
     target_asset: LanguageGraphAsset,
     step_expression: dict[str, Any],
     lang_spec
-) -> tuple[
-        LanguageGraphAsset,
-        ExpressionsChain,
-        None
-    ]:
+) -> StepResult:
 
     var_name = step_expression['name']
     var_target_asset, var_expr_chain = (
@@ -116,11 +112,7 @@ def process_variable_step_expression(
 def process_field_step_expression(
     target_asset: LanguageGraphAsset,
     step_expression: dict[str, Any]
-) -> tuple[
-        LanguageGraphAsset,
-        ExpressionsChain,
-        None
-    ]:
+) -> StepResult:
     """Change the target asset from the current one to the associated
     asset given the specified field name and add the parent
     fieldname and association to the parent associations chain.
@@ -132,30 +124,34 @@ def process_field_step_expression(
             f'Missing target asset for field "{fieldname}"!'
         )
 
-    new_target_asset = None
     for association in target_asset.associations.values():
-        if (association.left_field.fieldname == fieldname and
-            target_asset.is_subasset_of(
-                association.right_field.asset)):
-            new_target_asset = association.left_field.asset
-
-        if (association.right_field.fieldname == fieldname and
-            target_asset.is_subasset_of(
-                association.left_field.asset)):
-            new_target_asset = association.right_field.asset
-
-        if new_target_asset:
-            new_expr_chain = ExpressionsChain(
-                type=ExprType.FIELD,
-                fieldname=fieldname,
-                association=association
-            )
+        if (
+            association.left_field.fieldname == fieldname and
+            target_asset.is_subasset_of(association.right_field.asset)
+        ):
             return (
-                new_target_asset,
-                new_expr_chain,
+                association.left_field.asset,
+                ExpressionsChain(
+                    type=ExprType.FIELD,
+                    fieldname=fieldname,
+                    association=association
+                ),
                 None
             )
 
+        if (
+            association.right_field.fieldname == fieldname and
+            target_asset.is_subasset_of(association.left_field.asset)
+        ):
+            return (
+                association.right_field.asset,
+                ExpressionsChain(
+                    type=ExprType.FIELD,
+                    fieldname=fieldname,
+                    association=association
+                ),
+                None
+            )
     raise LookupError(
         f'Failed to find field {fieldname} on asset {target_asset.name}!',
     )
@@ -166,11 +162,7 @@ def process_transitive_step_expression(
     expr_chain: ExpressionsChain | None,
     step_expression: dict[str, Any],
     lang_spec
-) -> tuple[
-        LanguageGraphAsset,
-        ExpressionsChain,
-        None
-    ]:
+) -> StepResult:
     """Create a transitive tuple entry that applies to the next
     component of the step expression.
     """
@@ -199,11 +191,7 @@ def process_subType_step_expression(
     expr_chain: ExpressionsChain | None,
     step_expression: dict[str, Any],
     lang_spec
-) -> tuple[
-        LanguageGraphAsset,
-        ExpressionsChain,
-        None
-    ]:
+) -> StepResult:
     """Create a subType tuple entry that applies to the next
     component of the step expression and changes the target
     asset to the subasset.
@@ -252,11 +240,7 @@ def process_collect_step_expression(
     expr_chain: ExpressionsChain | None,
     step_expression: dict[str, Any],
     lang_spec
-) -> tuple[
-        LanguageGraphAsset,
-        ExpressionsChain | None,
-        str | None
-    ]:
+) -> StepResult:
     """Apply the right hand step expression to left hand step
     expression target asset and parent associations chain.
     """
@@ -296,11 +280,7 @@ def process_step_expression(
     expr_chain: ExpressionsChain | None,
     step_expression: dict,
     lang_spec
-) -> tuple[
-        LanguageGraphAsset,
-        ExpressionsChain | None,
-        str | None
-    ]:
+) -> StepResult:
     """Recursively process an attack step expression.
 
     Arguments:
@@ -330,51 +310,46 @@ def process_step_expression(
             json.dumps(step_expression, indent=2)
         )
 
-    result: tuple[
-        LanguageGraphAsset,
-        ExpressionsChain | None,
-        str | None
-    ]
+    result: StepResult
 
-    match (step_expression['type']):
-        case 'attackStep':
-            result = process_attack_step_expression(
-                target_asset, step_expression
-            )
-        case 'union' | 'intersection' | 'difference':
-            result = process_set_operation_step_expression(
-                assets, target_asset, expr_chain, step_expression, lang_spec
-            )
-        case 'variable':
-            result = process_variable_step_expression(
-                assets, target_asset, step_expression, lang_spec
-            )
-        case 'field':
-            result = process_field_step_expression(
-                target_asset, step_expression
-            )
-        case 'transitive':
-            result = process_transitive_step_expression(
-                assets, target_asset, expr_chain, step_expression, lang_spec
-            )
-        case 'subType':
-            result = process_subType_step_expression(
-                assets, target_asset, expr_chain, step_expression, lang_spec
-            )
-        case 'collect':
-            result = process_collect_step_expression(
-                assets, target_asset, expr_chain, step_expression, lang_spec
-            )
-        case _:
-            raise LookupError(
-                f'Unknown attack step type: "{step_expression["type"]}"'
-            )
+    if step_expression['type'] == 'attackStep':
+        result = process_attack_step_expression(
+            target_asset, step_expression
+        )
+    elif step_expression['type'] in ['union', 'intersection', 'difference']:
+        result = process_set_operation_step_expression(
+            assets, target_asset, expr_chain, step_expression, lang_spec
+        )
+    elif step_expression['type'] == 'variable':
+        result = process_variable_step_expression(
+            assets, target_asset, step_expression, lang_spec
+        )
+    elif step_expression['type'] == 'field':
+        result = process_field_step_expression(
+            target_asset, step_expression
+        )
+    elif step_expression['type'] == 'transitive':
+        result = process_transitive_step_expression(
+            assets, target_asset, expr_chain, step_expression, lang_spec
+        )
+    elif step_expression['type'] == 'subType':
+        result = process_subType_step_expression(
+            assets, target_asset, expr_chain, step_expression, lang_spec
+        )
+    elif step_expression['type'] == 'collect':
+        result = process_collect_step_expression(
+            assets, target_asset, expr_chain, step_expression, lang_spec
+        )
+    else:
+        raise LookupError(
+            f'Unknown attack step type: "{step_expression["type"]}"'
+        )
     return result
 
 def reverse_expr_chain(
-        expr_chain: ExpressionsChain | None,
-        reverse_chain: ExpressionsChain | None
-    ) -> ExpressionsChain | None:
+    expr_chain: ExpressionsChain | None,
+    reverse_chain: ExpressionsChain | None
+) -> ExpressionsChain | None:
     """Recursively reverse the associations chain. From parent to child or
     vice versa.
 

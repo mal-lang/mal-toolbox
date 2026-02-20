@@ -18,7 +18,7 @@ from maltoolbox.language.language_graph_builder import generate_graph
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation, LanguageGraphAssociationField
 from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
-from maltoolbox.language.step_expression_processor import process_attack_step_expression, process_collect_step_expression, process_field_step_expression, process_set_operation_step_expression, process_step_expression, process_subType_step_expression, process_transitive_step_expression, process_variable_step_expression, reverse_expr_chain
+from maltoolbox.language.step_expression_processor import StepResult, process_attack_step_expression, process_collect_step_expression, process_field_step_expression, process_set_operation_step_expression, process_step_expression, process_subType_step_expression, process_transitive_step_expression, process_variable_step_expression, reverse_expr_chain
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +128,7 @@ class LanguageGraph:
         self,
         target_asset: LanguageGraphAsset,
         step_expression: dict[str, Any]
-    ) -> tuple[
-                LanguageGraphAsset,
-                None,
-                str
-            ]:
+    ) -> StepResult:
         """The attack step expression just adds the name of the attack
         step. All other step expressions only modify the target
         asset and parent associations chain.
@@ -147,11 +143,7 @@ class LanguageGraph:
         target_asset: LanguageGraphAsset,
         expr_chain: ExpressionsChain | None,
         step_expression: dict[str, Any],
-    ) -> tuple[
-            LanguageGraphAsset,
-            ExpressionsChain,
-            None
-        ]:
+    ) -> StepResult:
         """The set operators are used to combine the left hand and right
         hand targets accordingly.
         """
@@ -163,11 +155,7 @@ class LanguageGraph:
         self,
         target_asset: LanguageGraphAsset,
         step_expression: dict[str, Any],
-    ) -> tuple[
-            LanguageGraphAsset,
-            ExpressionsChain,
-            None
-        ]:
+    ) -> StepResult:
 
         return process_variable_step_expression(
             self.assets, target_asset, step_expression, self.lang_spec
@@ -177,11 +165,7 @@ class LanguageGraph:
         self,
         target_asset: LanguageGraphAsset,
         step_expression: dict[str, Any]
-    ) -> tuple[
-            LanguageGraphAsset,
-            ExpressionsChain,
-            None
-        ]:
+    ) -> StepResult:
         """Change the target asset from the current one to the associated
         asset given the specified field name and add the parent
         fieldname and association to the parent associations chain.
@@ -195,11 +179,7 @@ class LanguageGraph:
         target_asset: LanguageGraphAsset,
         expr_chain: ExpressionsChain | None,
         step_expression: dict[str, Any],
-    ) -> tuple[
-            LanguageGraphAsset,
-            ExpressionsChain,
-            None
-        ]:
+    ) -> StepResult:
         """Create a transitive tuple entry that applies to the next
         component of the step expression.
         """
@@ -212,11 +192,7 @@ class LanguageGraph:
         target_asset: LanguageGraphAsset,
         expr_chain: ExpressionsChain | None,
         step_expression: dict[str, Any],
-    ) -> tuple[
-            LanguageGraphAsset,
-            ExpressionsChain,
-            None
-        ]:
+    ) -> StepResult:
         """Create a subType tuple entry that applies to the next
         component of the step expression and changes the target
         asset to the subasset.
