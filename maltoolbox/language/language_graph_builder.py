@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from maltoolbox.exceptions import LanguageGraphAssociationError, LanguageGraphException, LanguageGraphStepExpressionError, LanguageGraphSuperAssetNotFoundError
-from maltoolbox.language.detector import Detector
+from maltoolbox.language.detector import ContextItem, Detector
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type, get_variables_for_asset_type
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation, LanguageGraphAssociationField, link_association_to_assets
@@ -98,6 +98,34 @@ def set_variables_for_assets(assets: dict[str, LanguageGraphAsset], lang_spec) -
             )
 
 
+def _create_detector(
+    detector_dict: dict[str, Any],
+    assets: dict[str, LanguageGraphAsset],
+    asset: LanguageGraphAsset,
+    lang_spec: dict[str, Any]
+) -> Detector:
+    """Create detector for an attack step based on the language specification."""
+
+    context_items = {}
+
+    for context_name, context_expr in detector_dict['context'].items():
+        asset, expr_chain, attack_step = process_step_expression(
+            assets, asset, None, context_expr, lang_spec
+        )
+        context_items[context_name] = ContextItem(
+            asset=asset,
+            attack_step=attack_step,
+            expression_chain=expr_chain
+        )
+
+    return Detector(
+        name=detector_dict['name'],
+        context=context_items,
+        type=detector_dict.get('type'),
+        tprate=detector_dict.get('tprate'),
+    )
+
+
 def _create_lg_attack_step_nodes(
     assets: dict[str, LanguageGraphAsset], lang_spec: dict
 ) -> dict[str, dict]:
@@ -111,15 +139,8 @@ def _create_lg_attack_step_nodes(
             )
 
             detectors = {
-                detector_name: Detector(
-                    name=detector_dict['name'],
-                    context={
-                        context_name: process_step_expression(assets, asset, None, context, lang_spec)
-                        for context_name, context in detector_dict['context'].items()
-                    },
-                    type=detector_dict.get('type'),
-                    tprate=detector_dict.get('tprate'),
-                ) for detector_name, detector_dict in step_dict['detectors'].items()
+                detector_name: _create_detector(detector_dict, assets, asset, lang_spec)
+                for detector_name, detector_dict in step_dict['detectors'].items()
             }
 
             node = LanguageGraphAttackStep(

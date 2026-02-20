@@ -3,10 +3,12 @@
 - It includes a context and a name
 """
 
-
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
+
+from maltoolbox.language.expression_chain import ExpressionsChain
+from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 
 
 @dataclass(frozen=True, eq=True)
@@ -16,11 +18,9 @@ class Detector:
     type: str | None
     tprate: dict | None
 
-    def to_dict(self) -> dict:
-        return {
-            "context": self.context.to_dict(),
-            "name": self.name,
-            "type": self.type,
-            "tprate": self.tprate,
-        }
 
+@dataclass(frozen=True, eq=True)
+class ContextItem:
+    asset: LanguageGraphAsset
+    attack_step: Optional[str]
+    expression_chain: Optional[ExpressionsChain]
