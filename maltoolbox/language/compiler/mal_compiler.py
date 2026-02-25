@@ -533,14 +533,15 @@ class MalCompiler(ParseTreeVisitor):
 
         return context
 
-    def visit_detector_context_asset(self, cursor: TreeCursor):
+    def visit_detector_context_reference(self, cursor: TreeCursor):
         ###############
         # (type) (id) #
         ###############
-        asset = node_text(cursor, 'asset').decode('utf-8')
-        label = node_text(cursor, 'label').decode('utf-8')
 
-        return (label, asset)
+        context = self.visit(cursor)
+        cursor.goto_next_sibling()  # move to id
+        label = node_text(cursor, 'label').decode('utf-8')
+        return (label, context)
 
     def visit_cias(self, cursor: TreeCursor):
         ######################
@@ -823,7 +824,7 @@ class MalCompiler(ParseTreeVisitor):
 
         parent_node = original_node.parent
 
-        while parent_node and parent_node.type != 'reaching':
+        while parent_node and parent_node.type not in ('reaching', 'detector_context_reference'):
             # The idea is to go up the tree. If we find a "reaching" node,
             # we still need to determine if it's a field or a an attackStep
             parent_node = parent_node.parent
