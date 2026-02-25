@@ -3,41 +3,27 @@
 - It includes a context and a name
 """
 
-
 from __future__ import annotations
 from dataclasses import dataclass
 
+from maltoolbox.language.expression_chain import ExpressionsChain
+from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 
 @dataclass(frozen=True, eq=True)
 class Detector:
     name: str | None
-    context: Context
+    context: dict[str, ContextItem]
     type: str | None
     tprate: dict | None
 
-    def to_dict(self) -> dict:
-        return {
-            "context": self.context.to_dict(),
-            "name": self.name,
-            "type": self.type,
-            "tprate": self.tprate,
-        }
 
+@dataclass(frozen=True, eq=True)
+class ContextItem:
+    """Represents a single item in the context of a detector, which specifies
+    the label and attack step that the detector is associated with.
+    """
 
-class Context(dict):
-    """Context is part of detectors to provide meta data about attackers"""
-
-    def __init__(self, context) -> None:
-        super().__init__(context)
-        self._context_dict = context
-        for label, asset in context.items():
-            setattr(self, label, asset)
-
-    def to_dict(self) -> dict:
-        return {label: asset.name for label, asset in self.items()}
-
-    def __str__(self) -> str:
-        return str({label: asset.name for label, asset in self._context_dict.items()})
-
-    def __repr__(self) -> str:
-        return f"Context({self!s}))"
+    label: str
+    asset_type: LanguageGraphAsset
+    attack_step_name: str | None
+    expr: ExpressionsChain | None

@@ -1,6 +1,6 @@
 """Contains tools to process MAL languages"""
 
-from .detector import Context, Detector
+from .detector import Detector
 
 from .languagegraph import (
     ExpressionsChain,
@@ -12,7 +12,6 @@ from .languagegraph import (
 )
 
 __all__ = [
-    "Context",
     "Detector",
     "ExpressionsChain",
     "LanguageGraph",

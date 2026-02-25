@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from maltoolbox.exceptions import LanguageGraphAssociationError, LanguageGraphException, LanguageGraphStepExpressionError, LanguageGraphSuperAssetNotFoundError
-from maltoolbox.language.detector import Context, Detector
+from maltoolbox.language.detector import ContextItem, Detector
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type, get_variables_for_asset_type
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation, LanguageGraphAssociationField, link_association_to_assets
@@ -97,6 +97,31 @@ def set_variables_for_assets(assets: dict[str, LanguageGraphAsset], lang_spec) -
                 assets, asset, variable['name'], lang_spec
             )
 
+def _create_detector(assets, target_asset, step_dict: dict, lang_spec: dict) -> dict[str, Detector]:
+    detectors = {}
+    for det in step_dict.get('detectors', {}).values():
+        detector_context = {}
+        for context_label, context in det.get('context', {}).items():
+            asset_type, expr_chain, attack_step_name = process_step_expression(
+                assets,
+                target_asset=target_asset,
+                expr_chain=None,
+                step_expression=context,
+                lang_spec=lang_spec
+            )
+            detector_context[context_label] = ContextItem(
+                label=context_label,
+                asset_type=asset_type,
+                attack_step_name=attack_step_name,
+                expr=expr_chain
+            )
+        detectors[det['name']] = Detector(
+            context=detector_context,
+            name=det.get('name'),
+            type=det.get('type'),
+            tprate=det.get('tprate'),
+        )
+    return detectors
 
 def _create_lg_attack_step_nodes(
     assets: dict[str, LanguageGraphAsset], lang_spec: dict
@@ -121,20 +146,13 @@ def _create_lg_attack_step_nodes(
                 ),
                 own_children={}, own_parents={},
                 info=step_dict['meta'],
-                tags=list(step_dict['tags'])
+                tags=list(step_dict['tags']),
+                detectors=_create_detector(assets, asset, step_dict, lang_spec)
             )
             attack_step_dicts[node.full_name] = step_dict
             asset.attack_steps[node.name] = node
 
-            for det in step_dict.get('detectors', {}).values():
-                node.detectors[det['name']] = Detector(
-                    context=Context(
-                        {lbl: assets[a] for lbl, a in det['context'].items()}
-                    ),
-                    name=det.get('name'),
-                    type=det.get('type'),
-                    tprate=det.get('tprate'),
-                )
+
     return attack_step_dicts
 
 

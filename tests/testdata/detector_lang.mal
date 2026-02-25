@@ -23,7 +23,7 @@ category System{
         -> exploit
 
       & effect exploit
-        ! logExploit (Computer comp)
+        ! logExploit (computerOfApp.authenticate comp)
         -> toApplications.attemptExploit,
            dataOnApp.read
     }
