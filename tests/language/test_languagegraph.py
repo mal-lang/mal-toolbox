@@ -1,10 +1,12 @@
 """Tests for the LanguageGraph"""
 
+import pytest
 from conftest import path_testdata
 import pickle
 
 from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
 from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language.languagegraph import load_language_graph_from_file
 
 
 def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
@@ -299,3 +301,11 @@ def test_attack_graph_node_causal_mode(tmpdir):
     assert asset_a_attackstep2.causal_mode == 'action'
     assert asset_b_attackstep1.causal_mode == 'action'  # inherited
     assert asset_b_attackstep2.causal_mode == 'effect'  # overridden
+
+
+@pytest.mark.integration
+def test_load_from_git():
+    """Test that we can pickle and unpickle a language graph attack step"""
+    git_url = 'git@github.com:mal-lang/coreLang.git'
+    lang_graph = load_language_graph_from_file(git_url)
+    assert lang_graph.assets, "Expected assets in the loaded language graph"
