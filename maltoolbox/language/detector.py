@@ -16,6 +16,14 @@ class Detector:
     type: str | None
     tprate: dict | None
 
+    def to_dict(self) -> dict:
+        """Convert Detector to dictionary"""
+        return {
+            "name": self.name,
+            "context": {k: v.to_dict() for k, v in self.context.items()},
+            "type": self.type,
+            "tprate": self.tprate,
+        }
 
 @dataclass(frozen=True, eq=True)
 class ContextItem:
@@ -27,3 +35,12 @@ class ContextItem:
     asset_type: LanguageGraphAsset
     attack_step_name: str | None
     expr: ExpressionsChain | None
+
+    def to_dict(self) -> dict:
+        """Convert ContextItem to dictionary"""
+        return {
+            "label": self.label,
+            "asset_type": self.asset_type.name,
+            "attack_step_name": self.attack_step_name,
+            "expr": self.expr.to_dict() if self.expr else None,
+        }

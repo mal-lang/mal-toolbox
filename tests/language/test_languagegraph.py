@@ -24,6 +24,13 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
     for asset in new_lang_graph.assets.values():
         assocs.update(asset.associations.values())
 
+def test_languagegraph_to_dict_detectors():
+    """Test to see that we can save detector lang to dict"""
+    lang_path = path_testdata("detector_lang.mal")
+    new_lang_graph = LanguageGraph.load_from_file(lang_path)
+    test_path = "/tmp/detector_lang.json"
+    new_lang_graph.save_to_file(test_path)
+
 
 def test_languagegraph_save_load_mar(corelang_lang_graph: LanguageGraph):
     graph_path = "/tmp/langgraph.mar"
