@@ -1,4 +1,4 @@
-# MAL Toolbox v2.1.0
+# MAL Toolbox v2.2.0
 # Copyright 2025, Andrei Buhaiu.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,7 @@
 """
 
 __title__ = "maltoolbox"
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 __authors__ = [
     "Andrei Buhaiu",
     "Giuseppe Nebbione",
