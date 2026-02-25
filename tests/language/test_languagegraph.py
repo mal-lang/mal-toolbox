@@ -308,3 +308,4 @@ def test_load_from_git():
     """Test that we can pickle and unpickle a language graph attack step"""
     git_url = 'git@github.com:mal-lang/coreLang.git'
     lang_graph = load_language_graph_from_file(git_url)
+    assert lang_graph.assets, "Expected assets in the loaded language graph"
