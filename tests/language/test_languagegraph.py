@@ -1,5 +1,6 @@
 """Tests for the LanguageGraph"""
 
+import pytest
 from conftest import path_testdata
 import pickle
 
@@ -302,6 +303,7 @@ def test_attack_graph_node_causal_mode(tmpdir):
     assert asset_b_attackstep2.causal_mode == 'effect'  # overridden
 
 
+@pytest.mark.integration
 def test_load_from_git():
     """Test that we can pickle and unpickle a language graph attack step"""
     git_url = 'git@github.com:mal-lang/coreLang.git'
