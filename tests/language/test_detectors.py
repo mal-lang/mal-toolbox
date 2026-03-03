@@ -1,5 +1,6 @@
 
 from maltoolbox.attackgraph.attackgraph import AttackGraph
+from maltoolbox.language.detector import Detector
 from maltoolbox.model import Model
 from maltoolbox.language.languagegraph import LanguageGraph
 from conftest import path_testdata
@@ -38,9 +39,11 @@ def test_detector_presence(detectorlang_attack_graph: AttackGraph):
     detector_names = [det.name for det in app1_exploit.detectors.values()]
     assert "logExploit" in detector_names, "Expected 'logExploit' detector on the 'exploit' attack step of Application 1"
 
-    assert app1_exploit.detectors["logExploit"].context, "Expected context for 'logExploit' detector"
-    assert "comp" in app1_exploit.detectors["logExploit"].context, "Expected 'comp' in the context of 'logExploit' detector"
-    context_item = app1_exploit.detectors["logExploit"].context["comp"]
+    log_exploit_detector: Detector = app1_exploit.detectors["logExploit"]
+    assert log_exploit_detector.tprate == {'type': 'number', 'value': 0.1}, "Expected a TPRate for 'logExploit' detector"
+    assert log_exploit_detector.context, "Expected context for 'logExploit' detector"
+    assert "comp" in log_exploit_detector.context, "Expected 'comp' in the context of 'logExploit' detector"
+    context_item = log_exploit_detector.context["comp"]
     assert context_item.label == "comp", "Expected context label to be 'comp'"
     assert context_item.asset_type.name == "Computer", "Expected context asset type to be 'Computer'"
     assert context_item.attack_step_name == "authenticate", "Expected context attack step name to be 'authenticate'"
