@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Optional
 
 from maltoolbox.attackgraph.generate import generate_graph
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
+from maltoolbox.language.language_graph_detector import LanguageGraphDetector
 from maltoolbox.language.languagegraph import disaggregate_attack_step_full_name
 
 from ..file_utils import load_dict_from_json_file, load_dict_from_yaml_file, save_dict_to_file
@@ -131,6 +132,7 @@ class AttackGraph:
         self.nodes: dict[int, AttackGraphNode] = {}
         self.attack_steps: list[AttackGraphNode] = []
         self.defense_steps: list[AttackGraphNode] = []
+        self.detectors: list[LanguageGraphDetector] = []
         self.model = model
         self.lang_graph = lang_graph
         self.next_node_id = 0

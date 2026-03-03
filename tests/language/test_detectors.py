@@ -1,6 +1,6 @@
 
 from maltoolbox.attackgraph.attackgraph import AttackGraph
-from maltoolbox.language.detector import Detector
+from maltoolbox.language.language_graph_detector import LanguageGraphDetector
 from maltoolbox.model import Model
 from maltoolbox.language.languagegraph import LanguageGraph
 from conftest import path_testdata
@@ -39,7 +39,7 @@ def test_detector_presence(detectorlang_attack_graph: AttackGraph):
     detector_names = [det.name for det in app1_exploit.detectors.values()]
     assert "logExploit" in detector_names, "Expected 'logExploit' detector on the 'exploit' attack step of Application 1"
 
-    log_exploit_detector: Detector = app1_exploit.detectors["logExploit"]
+    log_exploit_detector: LanguageGraphDetector = app1_exploit.detectors["logExploit"]
     assert log_exploit_detector.tprate == {'type': 'number', 'value': 0.1}, "Expected a TPRate for 'logExploit' detector"
     assert log_exploit_detector.context, "Expected context for 'logExploit' detector"
     assert "comp" in log_exploit_detector.context, "Expected 'comp' in the context of 'logExploit' detector"
