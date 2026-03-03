@@ -19,7 +19,7 @@ def test_attackgraph_init(corelang_lang_graph, model):
     # _generate_graph is called when langspec and model is given to init
     with patch("maltoolbox.attackgraph.attackgraph.generate_graph")\
          as _generate_graph:
-        _generate_graph.return_value = None, None, None, None
+        _generate_graph.return_value = None, None, None, None, None
         AttackGraph(
             lang_graph=corelang_lang_graph,
             model=model

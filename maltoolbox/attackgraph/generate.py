@@ -6,8 +6,10 @@ import json
 import logging
 from typing import TYPE_CHECKING, Optional
 
+from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
 from maltoolbox.attackgraph.ttcs import get_ttc_dist
+from maltoolbox.language.language_graph_detector import LanguageGraphDetector
 
 from ..exceptions import (
     AttackGraphException,
@@ -307,11 +309,54 @@ def create_nodes_from_model(model: Model):
 
     return id_to_node, attack_steps, defense_steps, full_name_to_node
 
+def _get_potential_context(
+    model: Model,
+    asset: ModelAsset,
+    nodes: dict[str, AttackGraphNode],
+    lg_detector: LanguageGraphDetector,
+) -> dict[str, set[AttackGraphNode]]:
+
+    context = {}
+    for context_label, context_item in lg_detector.context.items():
+        target_assets = follow_expr_chain(model, {asset}, context_item.expr)
+        for target_asset in target_assets:
+            target_node = get_node_by_full_name(
+                nodes,
+                f"{target_asset.name}:{context_item.attack_step_name}"
+            )
+            if not target_node:
+                raise AttackGraphException(
+                    f'Failed to find target node for context item "{context_label}" '
+                    f'with asset "{target_asset.name}" and attack step "{context_item.attack_step_name}"'
+                )
+            context.setdefault(context_label, set()).add(target_node)
+    return context
+
+def _create_detectors(
+        nodes: dict[str, AttackGraphNode], model: Model
+    ) -> list[Detector]:
+    detectors = []
+    for node in nodes.values():
+        node_detectors = {}
+        for det_label, lg_detector in node.lg_attack_step.detectors.items():
+            node_detectors[det_label] = Detector(
+                name=det_label,
+                node=node,
+                potential_context=_get_potential_context(
+                    model, node.model_asset, nodes, lg_detector
+                ),
+                tprate=lg_detector.tprate
+            )
+        node.detectors = node_detectors
+        detectors.extend(node_detectors.values())
+    return detectors
+
 
 def generate_graph(model: Model):
     id_to_node, attack_steps, defense_steps, full_name_to_node = create_nodes_from_model(model)
     link_nodes_by_language(model, full_name_to_node)
-    return id_to_node, attack_steps, defense_steps, full_name_to_node
+    detectors = _create_detectors(full_name_to_node, model)
+    return id_to_node, attack_steps, defense_steps, full_name_to_node, detectors
 
 
 def get_existance_status(

@@ -1,5 +1,6 @@
 
 from maltoolbox.attackgraph.attackgraph import AttackGraph
+from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.language.language_graph_detector import LanguageGraphDetector
 from maltoolbox.model import Model
 from maltoolbox.language.languagegraph import LanguageGraph
@@ -20,8 +21,10 @@ def example_detectorlang_model(detectorlang_lang_graph: LanguageGraph):
     with two applications with an association
     """
     model = Model(name='Example Model', lang_graph=detectorlang_lang_graph)
+    comp1 = model.add_asset(asset_type='Computer', name='Computer 1')
     app1 = model.add_asset(asset_type='Application', name='Application 1')
     app2 = model.add_asset(asset_type='Application', name='Application 2')
+    comp1.add_associated_assets(fieldname='computerApps', assets={app1})
     app1.add_associated_assets(fieldname='toApplications', assets={app2})
     return model
 
@@ -39,12 +42,11 @@ def test_detector_presence(detectorlang_attack_graph: AttackGraph):
     detector_names = [det.name for det in app1_exploit.detectors.values()]
     assert "logExploit" in detector_names, "Expected 'logExploit' detector on the 'exploit' attack step of Application 1"
 
-    log_exploit_detector: LanguageGraphDetector = app1_exploit.detectors["logExploit"]
+    log_exploit_detector: Detector = app1_exploit.detectors["logExploit"]
     assert log_exploit_detector.tprate == {'type': 'number', 'value': 0.1}, "Expected a TPRate for 'logExploit' detector"
-    assert log_exploit_detector.context, "Expected context for 'logExploit' detector"
-    assert "comp" in log_exploit_detector.context, "Expected 'comp' in the context of 'logExploit' detector"
-    context_item = log_exploit_detector.context["comp"]
-    assert context_item.label == "comp", "Expected context label to be 'comp'"
-    assert context_item.asset_type.name == "Computer", "Expected context asset type to be 'Computer'"
-    assert context_item.attack_step_name == "authenticate", "Expected context attack step name to be 'authenticate'"
-    assert context_item.expr is not None, "Expected an expression chain in the context item of 'logExploit' detector"
+    assert log_exploit_detector.potential_context, "Expected context for 'logExploit' detector"
+    assert "comp" in log_exploit_detector.potential_context, "Expected 'comp' in the context of 'logExploit' detector"
+    potential_comp_nodes = log_exploit_detector.potential_context["comp"]
+    assert len(potential_comp_nodes) == 1, "Expected exactly one potential node for 'comp' in the context of 'logExploit' detector"
+    comp_node = next(iter(potential_comp_nodes))
+    assert comp_node.full_name == "Computer 1:authenticate", "Expected the potential 'comp' node to be associated with 'Computer 1'"
