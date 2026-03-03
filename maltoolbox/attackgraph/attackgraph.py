@@ -6,6 +6,7 @@ import copy
 import logging
 from typing import TYPE_CHECKING, Optional
 
+from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.attackgraph.generate import generate_graph
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
 from maltoolbox.language.languagegraph import disaggregate_attack_step_full_name
@@ -131,13 +132,14 @@ class AttackGraph:
         self.nodes: dict[int, AttackGraphNode] = {}
         self.attack_steps: list[AttackGraphNode] = []
         self.defense_steps: list[AttackGraphNode] = []
+        self.detectors: list[Detector] = []
         self.model = model
         self.lang_graph = lang_graph
         self.next_node_id = 0
         self.full_name_to_node: dict[str, AttackGraphNode] = {}
 
         if self.model is not None:
-            self.nodes, self.attack_steps, self.defense_steps, self.full_name_to_node = (
+            self.nodes, self.attack_steps, self.defense_steps, self.full_name_to_node, self.detectors = (
                 generate_graph(self.model)
             )
 
@@ -221,7 +223,7 @@ class AttackGraph:
         the MAL language specification provided at initialization.
         """
         assert self.model, "Model required to generate graph"
-        self.nodes, self.attack_steps, self.defense_steps, self.full_name_to_node = (
+        self.nodes, self.attack_steps, self.defense_steps, self.full_name_to_node, self.detectors = (
             generate_graph(self.model)
         )
 

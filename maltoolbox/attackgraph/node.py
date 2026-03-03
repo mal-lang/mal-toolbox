@@ -7,6 +7,8 @@ import copy
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from maltoolbox.attackgraph.detector import Detector
+
 if TYPE_CHECKING:
 
     from ..language import LanguageGraphAttackStep
@@ -31,7 +33,6 @@ class AttackGraphNode:
         self.causal_mode = self.lg_attack_step.causal_mode
         self.ttc = ttc_dist if ttc_dist is not None else lg_attack_step.ttc
         self.tags = lg_attack_step.tags
-        self.detectors = lg_attack_step.detectors
 
         self._full_name = full_name
         self.id = node_id
@@ -40,6 +41,7 @@ class AttackGraphNode:
         self.children: set[AttackGraphNode] = set()
         self.parents: set[AttackGraphNode] = set()
         self.extras: dict = {}
+        self.detectors: dict[str, Detector] = {}
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""

@@ -11,9 +11,9 @@ from maltoolbox.language.expression_chain import ExpressionsChain
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 
 @dataclass(frozen=True, eq=True)
-class Detector:
+class LanguageGraphDetector:
     name: str | None
-    context: dict[str, ContextItem]
+    context: dict[str, LanguageGraphContextItem]
     type: str | None
     tprate: dict[str, Any] | None
 
@@ -27,7 +27,7 @@ class Detector:
         }
 
 @dataclass(frozen=True, eq=True)
-class ContextItem:
+class LanguageGraphContextItem:
     """Represents a single item in the context of a detector, which specifies
     the label and attack step that the detector is associated with.
     """

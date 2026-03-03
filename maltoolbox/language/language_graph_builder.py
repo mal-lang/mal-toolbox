@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from maltoolbox.exceptions import LanguageGraphAssociationError, LanguageGraphException, LanguageGraphStepExpressionError, LanguageGraphSuperAssetNotFoundError
-from maltoolbox.language.detector import ContextItem, Detector
+from maltoolbox.language.language_graph_detector import LanguageGraphContextItem, LanguageGraphDetector
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type, get_variables_for_asset_type
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation, LanguageGraphAssociationField, link_association_to_assets
@@ -97,7 +97,9 @@ def set_variables_for_assets(assets: dict[str, LanguageGraphAsset], lang_spec) -
                 assets, asset, variable['name'], lang_spec
             )
 
-def _create_detector(assets, target_asset, step_dict: dict, lang_spec: dict) -> dict[str, Detector]:
+def _create_detector(
+    assets, target_asset, step_dict: dict, lang_spec: dict
+) -> dict[str, LanguageGraphDetector]:
     detectors = {}
     for det in step_dict.get('detectors', {}).values():
         detector_context = {}
@@ -109,13 +111,13 @@ def _create_detector(assets, target_asset, step_dict: dict, lang_spec: dict) -> 
                 step_expression=context,
                 lang_spec=lang_spec
             )
-            detector_context[context_label] = ContextItem(
+            detector_context[context_label] = LanguageGraphContextItem(
                 label=context_label,
                 asset_type=asset_type,
                 attack_step_name=attack_step_name,
                 expr=expr_chain
             )
-        detectors[det['name']] = Detector(
+        detectors[det['name']] = LanguageGraphDetector(
             context=detector_context,
             name=det.get('name'),
             type=det.get('type'),
