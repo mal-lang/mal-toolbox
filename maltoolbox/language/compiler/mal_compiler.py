@@ -497,10 +497,8 @@ class MalCompiler(ParseTreeVisitor):
         # grab ttc
         detector_ttc = None
         if cursor.field_name == 'ttc':
-            # TODO: this is broken
-            raise NotImplementedError('TTC not implemented for detectors')
-            # detector_ttc = self.visit(ttc)
-            # go_to_sibling(cursor)
+            detector_ttc = self.visit(cursor)
+            go_to_sibling(cursor)
 
         return {
             'name': detector_name,
