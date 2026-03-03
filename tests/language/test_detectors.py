@@ -1,7 +1,6 @@
 
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.attackgraph.detector import Detector
-from maltoolbox.language.language_graph_detector import LanguageGraphDetector
 from maltoolbox.model import Model
 from maltoolbox.language.languagegraph import LanguageGraph
 from conftest import path_testdata

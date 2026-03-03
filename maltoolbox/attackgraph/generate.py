@@ -316,7 +316,7 @@ def _get_potential_context(
     lg_detector: LanguageGraphDetector,
 ) -> dict[str, set[AttackGraphNode]]:
 
-    context = {}
+    context: dict[str, set[AttackGraphNode]] = {}
     for context_label, context_item in lg_detector.context.items():
         target_assets = follow_expr_chain(model, {asset}, context_item.expr)
         for target_asset in target_assets:
@@ -335,10 +335,11 @@ def _get_potential_context(
 def _create_detectors(
         nodes: dict[str, AttackGraphNode], model: Model
     ) -> list[Detector]:
-    detectors = []
+    detectors: list[Detector] = []
     for node in nodes.values():
         node_detectors = {}
         for det_label, lg_detector in node.lg_attack_step.detectors.items():
+            assert node.model_asset, "Attack graph node is missing asset link"
             node_detectors[det_label] = Detector(
                 name=det_label,
                 node=node,
