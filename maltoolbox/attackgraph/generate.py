@@ -345,7 +345,7 @@ def _create_detectors(
                 potential_context=_get_potential_context(
                     model, node.model_asset, nodes, lg_detector
                 ),
-                tprate=lg_detector.tprate
+                tprate=dict(lg_detector.tprate)
             )
         node.detectors = node_detectors
         detectors.extend(node_detectors.values())
