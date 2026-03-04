@@ -122,6 +122,7 @@ def _create_detector(
             name=det.get('name'),
             type=det.get('type'),
             tprate=det.get('tprate'),
+            fprate=det.get('fprate'),
         )
     return detectors
 

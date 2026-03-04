@@ -9,6 +9,7 @@ from functools import cached_property
 if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
     from maltoolbox.language.language_graph_asset import LanguageGraphAsset
+    from maltoolbox.language.language_graph_detector import LanguageGraphDetector
 
 
 @dataclass
@@ -32,7 +33,7 @@ class LanguageGraphAttackStep:
     inherits: Optional[LanguageGraphAttackStep] = None
     own_requires: list[ExpressionsChain] = field(default_factory=list)
     tags: list = field(default_factory=list)
-    detectors: dict = field(default_factory=dict)
+    detectors: dict[str, LanguageGraphDetector] = field(default_factory=dict)
 
     def __hash__(self):
         return id(self)

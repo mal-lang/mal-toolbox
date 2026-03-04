@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any
 
 from maltoolbox.language.expression_chain import ExpressionsChain
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
@@ -15,7 +14,8 @@ class LanguageGraphDetector:
     name: str | None
     context: dict[str, LanguageGraphContextItem]
     type: str | None
-    tprate: dict[str, Any] | None
+    tprate: float = 1.0
+    fprate: float = 0.0
 
     def to_dict(self) -> dict:
         """Convert Detector to dictionary"""

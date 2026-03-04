@@ -42,7 +42,8 @@ def test_detector_presence(detectorlang_attack_graph: AttackGraph):
     assert "logExploit" in detector_names, "Expected 'logExploit' detector on the 'exploit' attack step of Application 1"
 
     log_exploit_detector: Detector = app1_exploit.detectors["logExploit"]
-    assert log_exploit_detector.tprate == {'type': 'number', 'value': 0.1}, "Expected a TPRate for 'logExploit' detector"
+    assert log_exploit_detector.tprate == 0.9, "Expected a TPRate for 'logExploit' detector"
+    assert log_exploit_detector.fprate == 0.1, "Expected an FPRate for 'logExploit' detector"
     assert log_exploit_detector.potential_context, "Expected context for 'logExploit' detector"
     assert "comp" in log_exploit_detector.potential_context, "Expected 'comp' in the context of 'logExploit' detector"
     potential_comp_nodes = log_exploit_detector.potential_context["comp"]

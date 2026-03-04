@@ -472,7 +472,7 @@ class MalCompiler(ParseTreeVisitor):
 
     def visit_detector(self, cursor: TreeCursor):
         ####################################################################
-        # ('!' | '//!') (detector_name)? (detector_context) (type)? (ttc)? #
+        # ('!' | '//!') (detector_name)? (detector_context) (type)? (tp_fp_rate)? #
         ####################################################################
 
         # skip bang
@@ -494,17 +494,18 @@ class MalCompiler(ParseTreeVisitor):
             detector_name = node_text(cursor, 'type').decode()
             go_to_sibling(cursor)
 
-        # grab ttc
-        detector_ttc = None
-        if cursor.field_name == 'ttc':
-            detector_ttc = self.visit(cursor)
+        # grab true positive/false positive rate
+        tp_fp_rate = None
+        if cursor.field_name == 'tp_fp_rate':
+            tp_fp_rate = self.visit(cursor)
             go_to_sibling(cursor)
 
         return {
             'name': detector_name,
             'context': detector_context,
             'type': detector_type,
-            'tprate': detector_ttc,
+            'tprate': tp_fp_rate['tprate'] if tp_fp_rate else None,
+            'fprate': tp_fp_rate['fprate'] if tp_fp_rate else None,
         }
 
     def visit_detector_context(self, cursor: TreeCursor):
@@ -540,6 +541,28 @@ class MalCompiler(ParseTreeVisitor):
         cursor.goto_next_sibling()  # move to id
         label = node_text(cursor, 'label').decode('utf-8')
         return (label, context)
+
+    def visit_tp_fp_rate(self, cursor: TreeCursor):
+        ########################################
+        # '[' (float) ',' (float) ']' #
+        ########################################
+
+        # skip '['
+        go_to_sibling(cursor)
+
+        # grab (float)
+        tprate = float(node_text(cursor, 'float'))
+
+        # skip ','
+        go_to_sibling(cursor)
+        go_to_sibling(cursor)
+
+        # grab (float)
+        fprate = float(node_text(cursor, 'float'))
+
+        # skip ']'
+        go_to_sibling(cursor)
+        return {'tprate': tprate, 'fprate': fprate}
 
     def visit_cias(self, cursor: TreeCursor):
         ######################

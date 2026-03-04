@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from maltoolbox.attackgraph.node import AttackGraphNode
@@ -10,7 +10,8 @@ class Detector:
     name: str | None
     node: AttackGraphNode
     potential_context: dict[str, set[AttackGraphNode]]
-    tprate: dict[str, Any] | None
+    tprate: float = 1.0
+    fprate: float = 0.0
 
     def to_dict(self) -> dict:
         return {
