@@ -553,11 +553,11 @@ class MalCompiler(ParseTreeVisitor):
         # skip '['
         go_to_sibling(cursor)
 
-        if cursor.node.type == 'tp_fp_pair':
+        if assert_node(cursor.node).type == 'tp_fp_pair':
             tprate, fprate = self.visit(cursor)
-        elif cursor.node.type == 'tpr_only':
+        elif assert_node(cursor.node).type == 'tpr_only':
             tprate = self.visit(cursor)
-        elif cursor.node.type == 'fpr_only':
+        elif assert_node(cursor.node).type == 'fpr_only':
             fprate = self.visit(cursor)
 
         # defaults
@@ -579,12 +579,12 @@ class MalCompiler(ParseTreeVisitor):
         tprate = None
         fprate = None
 
-        while cursor.node.type in ('tpr', 'fpr'):
-            if cursor.node.type == 'tpr':
+        while assert_node(cursor.node).type in ('tpr', 'fpr'):
+            if assert_node(cursor.node).type == 'tpr':
                 go_to_sibling(cursor)  # skip 'tpr' key
                 go_to_sibling(cursor)  # skip ':'
                 tprate = self.visit(cursor)
-            elif cursor.node.type == 'fpr':
+            elif assert_node(cursor.node).type == 'fpr':
                 go_to_sibling(cursor)  # skip 'fpr' key
                 go_to_sibling(cursor)  # skip ':'
                 fprate = self.visit(cursor)
