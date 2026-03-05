@@ -544,25 +544,54 @@ class MalCompiler(ParseTreeVisitor):
 
     def visit_tp_fp_rate(self, cursor: TreeCursor):
         ########################################
-        # '[' (float) ',' (float) ']' #
+        # '[' (tpr|fpr ':' float [, ...]) ']'
         ########################################
+
+        tprate = None
+        fprate = None
 
         # skip '['
         go_to_sibling(cursor)
 
-        # grab (float)
-        tprate = float(node_text(cursor, 'float'))
+        if assert_node(cursor.node).type == 'tp_fp_pair':
+            tprate, fprate = self.visit(cursor)
+        elif assert_node(cursor.node).type == 'tpr_only':
+            tprate = self.visit(cursor)
+        elif assert_node(cursor.node).type == 'fpr_only':
+            fprate = self.visit(cursor)
 
-        # skip ','
-        go_to_sibling(cursor)
-        go_to_sibling(cursor)
+        # defaults
+        if tprate is None:
+            tprate = 1.0
+        if fprate is None:
+            fprate = 0.0
 
-        # grab (float)
-        fprate = float(node_text(cursor, 'float'))
-
-        # skip ']'
-        go_to_sibling(cursor)
         return {'tprate': tprate, 'fprate': fprate}
+
+    def visit_tp_fp_pair(
+            self, cursor: TreeCursor
+        ) -> tuple[float | None, float | None]:
+        #########################
+        # (tpr|fpr) ':' float, (tpr|fpr) ':' float #
+        #########################
+        # grab first pair
+
+        tprate = None
+        fprate = None
+
+        while assert_node(cursor.node).type in ('tpr', 'fpr'):
+            if assert_node(cursor.node).type == 'tpr':
+                go_to_sibling(cursor)  # skip 'tpr' key
+                go_to_sibling(cursor)  # skip ':'
+                tprate = self.visit(cursor)
+            elif assert_node(cursor.node).type == 'fpr':
+                go_to_sibling(cursor)  # skip 'fpr' key
+                go_to_sibling(cursor)  # skip ':'
+                fprate = self.visit(cursor)
+            go_to_sibling(cursor)  # skip ','
+            go_to_sibling(cursor)  # move to next pair or end
+
+        return tprate, fprate
 
     def visit_cias(self, cursor: TreeCursor):
         ######################

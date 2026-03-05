@@ -20,7 +20,7 @@ dependencies = [
   "PyYAML",
   "py2neo",
   "networkx",
-  "tree-sitter-mal>=1.2.0, <2.0.0",
+  "tree-sitter-mal>=1.2.1, <2.0.0",
   "tree-sitter",
 ]
 license = {text = "Apache Software License"}
