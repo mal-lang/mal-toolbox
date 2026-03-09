@@ -50,3 +50,69 @@ def test_detector_presence(detectorlang_attack_graph: AttackGraph):
     assert len(potential_comp_nodes) == 1, "Expected exactly one potential node for 'comp' in the context of 'logExploit' detector"
     comp_node = next(iter(potential_comp_nodes))
     assert comp_node.full_name == "Computer 1:authenticate", "Expected the potential 'comp' node to be associated with 'Computer 1'"
+
+
+def test_detector_unlabeled_context():
+    """Test that a detector with an unlabeled context field is handled correctly"""
+
+    lang_str = """
+    #id: "test-actions-effects"
+    #version: "0.0.0"
+
+    category System{
+        asset Computer {
+        & physicalAccess
+            -> attemptAuthenticate
+
+        | attemptAuthenticate [HardAndCertain]
+            -> authenticate
+
+        & effect authenticate
+            -> computerApps.attemptExploit
+        }
+
+        asset Application {
+        # shutDown
+            -> exploit
+
+        | attemptExploit [HardAndCertain]
+            -> exploit
+
+        & effect exploit
+            ! logExploit (computerOfApp.authenticate) [tpr: 0.9, fpr: 0.1]
+            -> toApplications.attemptExploit,
+            dataOnApp.read
+        }
+
+        asset Data {
+        | read
+        }
+    }
+
+    associations {
+        Computer [computerOfApp] * <-- appExecution --> * [computerApps] Application
+        Application [fromApplications] * <-- AppToAppCommunication --> * [toApplications] Application
+        Data [dataOnApp] * <-- AppData --> * [appWithData] Application
+    }
+
+    """
+    tmp_lang_file = "/tmp/temp_detector_lang.mal"
+    with open(tmp_lang_file, "w") as f:
+        f.write(lang_str)
+
+    lang_graph = LanguageGraph.from_mal_spec(tmp_lang_file)
+    model = Model(name='Test Model', lang_graph=lang_graph)
+    comp1 = model.add_asset(asset_type='Computer', name='Computer 1')
+    app1 = model.add_asset(asset_type='Application', name='Application 1')
+    comp1.add_associated_assets(fieldname='computerApps', assets={app1})
+
+    attack_graph = AttackGraph(lang_graph, model)
+    app1_exploit = attack_graph.get_node_by_full_name("Application 1:exploit")
+    detectors = app1_exploit.detectors
+    assert detectors, "Expected detectors on the 'exploit' attack step of Application 1"
+    context = detectors["logExploit"].potential_context
+    assert context == {
+        'computerOfApp.authenticate': {
+            attack_graph.get_node_by_full_name("Computer 1:authenticate")
+        }
+    }
