@@ -116,3 +116,77 @@ def test_detector_unlabeled_context():
             attack_graph.get_node_by_full_name("Computer 1:authenticate")
         }
     }
+
+
+def test_multiple_detectors():
+    """Test that multiple detectors on are handled correctly"""
+
+    lang_str = """
+    #id: "test-actions-effects"
+    #version: "0.0.0"
+
+    category System{
+        asset Computer {
+        & physicalAccess
+            ! physicalAccessDetector [tpr: 0.8, fpr: 0.2]
+            -> attemptAuthenticate
+
+        | attemptAuthenticate [HardAndCertain]
+            -> authenticate
+
+        & effect authenticate
+            -> computerApps.attemptExploit
+        }
+
+        asset Application {
+        # shutDown
+            -> exploit
+
+        | attemptExploit [HardAndCertain]
+            -> exploit
+
+        & effect exploit
+            ! logExploit (computerOfApp.authenticate) [tpr: 0.9, fpr: 0.1]
+            ! logExploit2
+            -> toApplications.attemptExploit,
+            dataOnApp.read
+        }
+
+        asset Data {
+        | read
+        }
+    }
+
+    associations {
+        Computer [computerOfApp] * <-- appExecution --> * [computerApps] Application
+        Application [fromApplications] * <-- AppToAppCommunication --> * [toApplications] Application
+        Data [dataOnApp] * <-- AppData --> * [appWithData] Application
+    }
+
+    """
+    tmp_lang_file = "/tmp/temp_detector_lang.mal"
+    with open(tmp_lang_file, "w") as f:
+        f.write(lang_str)
+
+    lang_graph = LanguageGraph.from_mal_spec(tmp_lang_file)
+    model = Model(name='Test Model', lang_graph=lang_graph)
+    comp1 = model.add_asset(asset_type='Computer', name='Computer 1')
+    app1 = model.add_asset(asset_type='Application', name='Application 1')
+    comp1.add_associated_assets(fieldname='computerApps', assets={app1})
+    attack_graph = AttackGraph(lang_graph, model)
+
+    comp1_physical_access = attack_graph.get_node_by_full_name("Computer 1:physicalAccess")
+    assert "physicalAccessDetector" in comp1_physical_access.detectors, "Expected 'physicalAccessDetector' on the 'physicalAccess' attack step of Computer 1"
+
+    app1_exploit = attack_graph.get_node_by_full_name("Application 1:exploit")
+    detectors = app1_exploit.detectors
+    assert detectors, "Expected detectors on the 'exploit' attack step of Application 1"
+    assert "logExploit" in detectors, "Expected 'logExploit' detector on the 'exploit' attack step of Application 1"
+    assert "logExploit2" in detectors, "Expected 'logExploit2' detector on the 'exploit' attack step of Application 1"
+    assert detectors["logExploit"].tprate == 0.9, "Expected a TPRate for 'logExploit' detector"
+    assert detectors["logExploit"].fprate == 0.1, "Expected an FPRate for 'logExploit' detector"
+    assert detectors["logExploit2"].tprate is None, "Expected no TPRate for 'logExploit2' detector"
+    assert detectors["logExploit2"].fprate is None, "Expected no FPRate for 'logExploit2' detector"
+
+    assert comp1_physical_access.detectors["physicalAccessDetector"].tprate == 0.8, "Expected a TPRate for 'physicalAccessDetector'"
+    assert comp1_physical_access.detectors["physicalAccessDetector"].fprate == 0.2, "Expected an FPR for 'physicalAccessDetector'"
