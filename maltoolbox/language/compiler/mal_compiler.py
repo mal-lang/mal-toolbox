@@ -472,7 +472,7 @@ class MalCompiler(ParseTreeVisitor):
 
     def visit_detector(self, cursor: TreeCursor):
         ####################################################################
-        # ('!' | '//!') (detector_name)? (detector_context) (type)? (tp_fp_rate)? #
+        # ('!' | '//!') (detector_name) (detector_context)? (type)? (tp_fp_rate)? #
         ####################################################################
 
         # skip bang
