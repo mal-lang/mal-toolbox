@@ -472,7 +472,7 @@ class MalCompiler(ParseTreeVisitor):
 
     def visit_detector(self, cursor: TreeCursor):
         ####################################################################
-        # ('!' | '//!') (detector_name)? (detector_context) (type)? (tp_fp_rate)? #
+        # ('!' | '//!') (detector_name) (detector_context)? (type)? (tp_fp_rate)? #
         ####################################################################
 
         # skip bang
@@ -484,11 +484,13 @@ class MalCompiler(ParseTreeVisitor):
             detector_name = node_text(cursor, 'detector name').decode()
             go_to_sibling(cursor)
 
-        # grab detector_context
-        detector_context = self.visit(cursor)
-        go_to_sibling(cursor)
+        # grab detector_context optionally
+        detector_context = {}
+        if cursor.field_name == 'context':
+            detector_context = self.visit(cursor)
+            go_to_sibling(cursor)
 
-        # grab id
+        # grab log type
         detector_type = None
         if cursor.field_name == 'type':
             detector_name = node_text(cursor, 'type').decode()
@@ -518,28 +520,33 @@ class MalCompiler(ParseTreeVisitor):
 
         # grab detector_context_asset
         context = {}
-        label, asset = self.visit(cursor)
-        context[label] = asset
+        label, ctx_reference = self.visit(cursor)
+        context[label] = ctx_reference
         go_to_sibling(cursor)
 
         while node_text(cursor, 'char') != b')':
             # skip ','
             go_to_sibling(cursor)
             # grab another detector_context_asset
-            label, asset = self.visit(cursor)
-            context[label] = asset
+            label, ctx_reference = self.visit(cursor)
+            context[label] = ctx_reference
             go_to_sibling(cursor)
 
         return context
 
     def visit_detector_context_reference(self, cursor: TreeCursor):
         ###############
-        # (type) (id) #
+        # (type) (id)? #
         ###############
 
+        context_ref_str = node_text(cursor, 'ctx reference').decode('utf-8')
         context = self.visit(cursor)
+
         cursor.goto_next_sibling()  # move to id
-        label = node_text(cursor, 'label').decode('utf-8')
+        label = context_ref_str
+        if cursor.node and cursor.node.text:
+            label = node_text(cursor, 'label').decode('utf-8')
+
         return (label, context)
 
     def visit_tp_fp_rate(self, cursor: TreeCursor):
