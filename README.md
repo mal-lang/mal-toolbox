@@ -6,7 +6,7 @@ It allows you to:
 - Create system models from MAL languages.
 - Create attack graphs that can be used to run simulations in [MAL Simulator](https://github.com/mal-lang/mal-simulator) or run your own custom analysis on.
 
-For in-depth documentation and tutorials refer to the [mal-toolbox Wiki](https://github.com/mal-lang/mal-toolbox/wiki) and the [mal-tutorials repository](https://github.com/mal-lang/mal-toolbox-tutorial).
+For in-depth documentation and tutorials refer to the [mal-toolbox Wiki](https://github.com/mal-lang/mal-toolbox/wiki) and the [mal-tutorials repository](https://github.com/mal-lang/mal-tutorials).
 
 # Contributing
 
