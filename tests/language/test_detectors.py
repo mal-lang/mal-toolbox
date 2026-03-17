@@ -1,6 +1,7 @@
 
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.attackgraph.detector import Detector
+from maltoolbox.language.compiler.exceptions import MalCompilerError
 from maltoolbox.model import Model
 from maltoolbox.language.languagegraph import LanguageGraph
 from conftest import path_testdata
@@ -110,6 +111,8 @@ def test_detector_unlabeled_context():
     app1_exploit = attack_graph.get_node_by_full_name("Application 1:exploit")
     detectors = app1_exploit.detectors
     assert detectors, "Expected detectors on the 'exploit' attack step of Application 1"
+    assert detectors["logExploit"].fprate == 0.1
+    assert detectors["logExploit"].tprate == 0.9
     context = detectors["logExploit"].potential_context
     assert context == {
         'computerOfApp.authenticate': {
@@ -190,3 +193,163 @@ def test_multiple_detectors():
 
     assert comp1_physical_access.detectors["physicalAccessDetector"].tprate == 0.8, "Expected a TPRate for 'physicalAccessDetector'"
     assert comp1_physical_access.detectors["physicalAccessDetector"].fprate == 0.2, "Expected an FPR for 'physicalAccessDetector'"
+
+
+def test_only_tpr():
+    """Test that multiple detectors on are handled correctly"""
+
+    lang_str = """
+    #id: "test-actions-effects"
+    #version: "0.0.0"
+
+    category System{
+        asset Computer {
+        & physicalAccess
+            -> attemptAuthenticate
+
+        | attemptAuthenticate [HardAndCertain]
+            -> authenticate
+
+        & effect authenticate
+            -> computerApps.attemptExploit
+        }
+
+        asset Application {
+        # shutDown
+            -> exploit
+
+        | attemptExploit [HardAndCertain]
+            -> exploit
+
+        & effect exploit
+            ! logExploit (computerOfApp.authenticate) [tpr: 0.1]
+            -> toApplications.attemptExploit,
+            dataOnApp.read
+        }
+
+        asset Data {
+        | read
+        }
+    }
+
+    associations {
+        Computer [computerOfApp] * <-- appExecution --> * [computerApps] Application
+        Application [fromApplications] * <-- AppToAppCommunication --> * [toApplications] Application
+        Data [dataOnApp] * <-- AppData --> * [appWithData] Application
+    }
+
+    """
+    tmp_lang_file = "/tmp/temp_detector_lang.mal"
+    with open(tmp_lang_file, "w") as f:
+        f.write(lang_str)
+
+    lang_graph = LanguageGraph.from_mal_spec(tmp_lang_file)
+    det = lang_graph.assets['Application'].attack_steps['exploit'].detectors['logExploit']
+    assert det.tprate == 0.1
+    assert det.fprate is None
+
+
+def test_only_fpr():
+    """Test that multiple detectors on are handled correctly"""
+
+    lang_str = """
+    #id: "test-actions-effects"
+    #version: "0.0.0"
+
+    category System{
+        asset Computer {
+        & physicalAccess
+            -> attemptAuthenticate
+
+        | attemptAuthenticate [HardAndCertain]
+            -> authenticate
+
+        & effect authenticate
+            -> computerApps.attemptExploit
+        }
+
+        asset Application {
+        # shutDown
+            -> exploit
+
+        | attemptExploit [HardAndCertain]
+            -> exploit
+
+        & effect exploit
+            ! logExploit (computerOfApp.authenticate) [fpr: 0.1]
+            -> toApplications.attemptExploit,
+            dataOnApp.read
+        }
+
+        asset Data {
+        | read
+        }
+    }
+
+    associations {
+        Computer [computerOfApp] * <-- appExecution --> * [computerApps] Application
+        Application [fromApplications] * <-- AppToAppCommunication --> * [toApplications] Application
+        Data [dataOnApp] * <-- AppData --> * [appWithData] Application
+    }
+
+    """
+    tmp_lang_file = "/tmp/temp_detector_lang.mal"
+    with open(tmp_lang_file, "w") as f:
+        f.write(lang_str)
+
+    lang_graph = LanguageGraph.from_mal_spec(tmp_lang_file)
+    det = lang_graph.assets['Application'].attack_steps['exploit'].detectors['logExploit']
+    assert det.tprate is None
+    assert det.fprate == 0.1
+
+
+def test_wrong_labels():
+    """Test that multiple detectors on are handled correctly"""
+
+    lang_str = """
+    #id: "test-actions-effects"
+    #version: "0.0.0"
+
+    category System{
+        asset Computer {
+        & physicalAccess
+            -> attemptAuthenticate
+
+        | attemptAuthenticate [HardAndCertain]
+            -> authenticate
+
+        & effect authenticate
+            -> computerApps.attemptExploit
+        }
+
+        asset Application {
+        # shutDown
+            -> exploit
+
+        | attemptExploit [HardAndCertain]
+            -> exploit
+
+        & effect exploit
+            ! logExploit (computerOfApp.authenticate) [fnl: 0.9, nft: 0.1]
+            -> toApplications.attemptExploit,
+            dataOnApp.read
+        }
+
+        asset Data {
+        | read
+        }
+    }
+
+    associations {
+        Computer [computerOfApp] * <-- appExecution --> * [computerApps] Application
+        Application [fromApplications] * <-- AppToAppCommunication --> * [toApplications] Application
+        Data [dataOnApp] * <-- AppData --> * [appWithData] Application
+    }
+
+    """
+    tmp_lang_file = "/tmp/temp_detector_lang.mal"
+    with open(tmp_lang_file, "w") as f:
+        f.write(lang_str)
+
+    with pytest.raises(MalCompilerError):
+        LanguageGraph.from_mal_spec(tmp_lang_file)

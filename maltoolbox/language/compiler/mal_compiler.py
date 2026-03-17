@@ -438,11 +438,23 @@ class MalCompiler(ParseTreeVisitor):
                 break
 
         detectors: dict[str, Any] = {}
-        while assert_node(cursor.node).type == 'detector':
-            detector = self.visit(cursor)
-            detector_name = str(detector['name'])
-            detectors[detector_name] = detector
-            if not go_to_sibling(cursor):  # in case there is nothing after the meta
+
+        while True:
+            node = assert_node(cursor.node)
+            if node.type == 'detector':
+                detector = self.visit(cursor)
+                detector_name = str(detector['name'])
+                detectors[detector_name] = detector
+            elif node.type == 'ERROR':
+                raise MalCompilerError(
+                    f"Syntax error in detector at "
+                    f"{node.start_point}: "
+                    f"{node_text(cursor, 'error').decode(errors='ignore')!r}"
+                )
+            else:
+                # Not a detector → stop processing detectors
+                break
+            if not go_to_sibling(cursor):
                 break
 
         requires = None
@@ -493,7 +505,7 @@ class MalCompiler(ParseTreeVisitor):
         # grab log type
         detector_type = None
         if cursor.field_name == 'type':
-            detector_name = node_text(cursor, 'type').decode()
+            detector_type = node_text(cursor, 'type').decode()
             go_to_sibling(cursor)
 
         # grab true positive/false positive rate
@@ -566,14 +578,20 @@ class MalCompiler(ParseTreeVisitor):
             tprate = self.visit(cursor)
         elif assert_node(cursor.node).type == 'fpr_only':
             fprate = self.visit(cursor)
-
-        # defaults
-        if tprate is None:
-            tprate = 1.0
-        if fprate is None:
-            fprate = 0.0
+        else:
+            raise ValueError("Unknown tp/fp rate for detector")
 
         return {'tprate': tprate, 'fprate': fprate}
+
+    def visit_fpr_only(self, cursor: TreeCursor) -> float | None:
+        go_to_sibling(cursor)  # skip 'fpr' key
+        go_to_sibling(cursor)  # skip ':'
+        return self.visit(cursor)
+
+    def visit_tpr_only(self, cursor: TreeCursor) -> float | None:
+        go_to_sibling(cursor)  # skip 'tpr' key
+        go_to_sibling(cursor)  # skip ':'
+        return self.visit(cursor)
 
     def visit_tp_fp_pair(
             self, cursor: TreeCursor
