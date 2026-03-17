@@ -448,7 +448,8 @@ class MalCompiler(ParseTreeVisitor):
             elif node.type == 'ERROR':
                 raise MalCompilerError(
                     f"Syntax error in detector at "
-                    f"{node.start_point}: {node.text.decode(errors='ignore')!r}"
+                    f"{node.start_point}: "
+                    f"{node_text(cursor, 'error').decode(errors='ignore')!r}"
                 )
             else:
                 # Not a detector → stop processing detectors
