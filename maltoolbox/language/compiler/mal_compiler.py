@@ -438,11 +438,22 @@ class MalCompiler(ParseTreeVisitor):
                 break
 
         detectors: dict[str, Any] = {}
-        while assert_node(cursor.node).type == 'detector':
-            detector = self.visit(cursor)
-            detector_name = str(detector['name'])
-            detectors[detector_name] = detector
-            if not go_to_sibling(cursor):  # in case there is nothing after the meta
+
+        while True:
+            node = assert_node(cursor.node)
+            if node.type == 'detector':
+                detector = self.visit(cursor)
+                detector_name = str(detector['name'])
+                detectors[detector_name] = detector
+            elif node.type == 'ERROR':
+                raise MalCompilerError(
+                    f"Syntax error in detector at "
+                    f"{node.start_point}: {node.text.decode(errors='ignore')!r}"
+                )
+            else:
+                # Not a detector → stop processing detectors
+                break
+            if not go_to_sibling(cursor):
                 break
 
         requires = None

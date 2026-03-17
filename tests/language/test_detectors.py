@@ -1,6 +1,7 @@
 
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.attackgraph.detector import Detector
+from maltoolbox.language.compiler.exceptions import MalCompilerError
 from maltoolbox.model import Model
 from maltoolbox.language.languagegraph import LanguageGraph
 from conftest import path_testdata
@@ -350,5 +351,5 @@ def test_wrong_labels():
     with open(tmp_lang_file, "w") as f:
         f.write(lang_str)
 
-    lang_graph = LanguageGraph.from_mal_spec(tmp_lang_file)
-    det = lang_graph.assets['Application'].attack_steps['exploit'].detectors
+    with pytest.raises(MalCompilerError):
+        LanguageGraph.from_mal_spec(tmp_lang_file)
