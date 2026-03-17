@@ -10,8 +10,8 @@ class Detector:
     name: str | None
     node: AttackGraphNode
     potential_context: dict[str, set[AttackGraphNode]]
-    tprate: float = 1.0
-    fprate: float = 0.0
+    tprate: float | None = None
+    fprate: float | None = None
 
     def to_dict(self) -> dict:
         return {

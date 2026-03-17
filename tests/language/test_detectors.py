@@ -245,7 +245,7 @@ def test_only_tpr():
     lang_graph = LanguageGraph.from_mal_spec(tmp_lang_file)
     det = lang_graph.assets['Application'].attack_steps['exploit'].detectors['logExploit']
     assert det.tprate == 0.1
-    assert det.fprate == 0.0
+    assert det.fprate == None
 
 
 def test_only_fpr():
@@ -298,7 +298,7 @@ def test_only_fpr():
 
     lang_graph = LanguageGraph.from_mal_spec(tmp_lang_file)
     det = lang_graph.assets['Application'].attack_steps['exploit'].detectors['logExploit']
-    assert det.tprate == 1.0
+    assert det.tprate == None
     assert det.fprate == 0.1
 
 
