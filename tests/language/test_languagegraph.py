@@ -309,3 +309,17 @@ def test_load_from_git():
     git_url = 'git@github.com:mal-lang/coreLang.git'
     lang_graph = load_language_graph_from_file(git_url)
     assert lang_graph.assets, "Expected assets in the loaded language graph"
+
+@pytest.mark.integration
+def test_load_from_git_not_main_mal():
+    """Test that we can pickle and unpickle a language graph attack step"""
+    git_url = 'git@github.com:mal-lang/exampleLang.git'
+    lang_graph = load_language_graph_from_file(git_url)
+    assert lang_graph.assets, "Expected assets in the loaded language graph"
+
+@pytest.mark.integration
+def test_load_from_git_no_mal_files():
+    """Test that a FileNotFoundError is raised when no .mal files exist in the repo."""
+    git_url = 'git@github.com:mal-lang/mal-specification.git'
+    with pytest.raises(FileNotFoundError, match="Execution failed: No .mal files found in the cloned repository."):
+        load_language_graph_from_file(git_url)
