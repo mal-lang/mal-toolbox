@@ -305,14 +305,14 @@ def test_attack_graph_node_causal_mode(tmpdir):
 
 @pytest.mark.integration
 def test_load_from_git():
-    """Test that we can pickle and unpickle a language graph attack step"""
+    """Test that we can load the mal-lang through a git repo url"""
     git_url = 'git@github.com:mal-lang/coreLang.git'
     lang_graph = load_language_graph_from_file(git_url)
     assert lang_graph.assets, "Expected assets in the loaded language graph"
 
 @pytest.mark.integration
 def test_load_from_git_not_main_mal():
-    """Test that we can pickle and unpickle a language graph attack step"""
+    """Test that we can load the mal-lang from a git repo that has only one mal file and it is not called main.mal"""
     git_url = 'git@github.com:mal-lang/exampleLang.git'
     lang_graph = load_language_graph_from_file(git_url)
     assert lang_graph.assets, "Expected assets in the loaded language graph"
