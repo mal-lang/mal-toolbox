@@ -477,8 +477,22 @@ def language_graph_from_git_url(git_url: str) -> LanguageGraph:
 
     # Download the repository to a local directory
     dir = download_git_repo(git_url)
-    main_mal_file = dir / 'src' / 'main' / 'mal' / 'main.mal'
-    return language_graph_from_mal_spec(str(main_mal_file))
+    mal_files = list(dir.rglob('*.mal'))
+
+    if not mal_files:
+        raise FileNotFoundError("Execution failed: No .mal files found in the cloned repository.")
+    
+    if len(mal_files) == 1:
+        mal_file = mal_files[0]
+    else:
+        main_mal_files = [f for f in mal_files if f.name == 'main.mal']
+        if main_mal_files:
+            mal_file = main_mal_files[0]
+        else:
+            raise ValueError("Execution failed: .mal files found but no main.mal file in the repository.")
+
+    
+    return language_graph_from_mal_spec(str(mal_file))
 
 
 def language_graph_from_mal_spec(mal_spec_file: str) -> LanguageGraph:
