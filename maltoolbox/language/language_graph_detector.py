@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from maltoolbox.language.expression_chain import ExpressionsChain
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 
+
 @dataclass(frozen=True, eq=True)
 class LanguageGraphDetector:
     name: str | None
@@ -20,11 +21,12 @@ class LanguageGraphDetector:
     def to_dict(self) -> dict:
         """Convert Detector to dictionary"""
         return {
-            "name": self.name,
-            "context": {k: v.to_dict() for k, v in self.context.items()},
-            "type": self.type,
-            "tprate": self.tprate,
+            'name': self.name,
+            'context': {k: v.to_dict() for k, v in self.context.items()},
+            'type': self.type,
+            'tprate': self.tprate,
         }
+
 
 @dataclass(frozen=True, eq=True)
 class LanguageGraphContextItem:
@@ -40,8 +42,8 @@ class LanguageGraphContextItem:
     def to_dict(self) -> dict:
         """Convert ContextItem to dictionary"""
         return {
-            "label": self.label,
-            "asset_type": self.asset_type.name,
-            "attack_step_name": self.attack_step_name,
-            "expr": self.expr.to_dict() if self.expr else None,
+            'label': self.label,
+            'asset_type': self.asset_type.name,
+            'attack_step_name': self.attack_step_name,
+            'expr': self.expr.to_dict() if self.expr else None,
         }

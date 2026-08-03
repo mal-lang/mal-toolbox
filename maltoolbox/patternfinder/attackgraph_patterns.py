@@ -26,7 +26,7 @@ class SearchPattern:
         Args:
         ----
         graph   - The AttackGraph to search in
-    
+
         Return: list[list[AttackGraphNode]] matching paths of Nodes
 
         """
@@ -35,9 +35,7 @@ class SearchPattern:
         matching_paths = []
         for node in graph.nodes.values():
             if condition.matches(node):
-                matching_paths.extend(
-                    find_matches_recursively(node, self.conditions)
-                )
+                matching_paths.extend(find_matches_recursively(node, self.conditions))
         return matching_paths
 
 
@@ -47,7 +45,8 @@ class SearchCondition:
 
     # Predefined search conditions
     @staticmethod
-    def ANY(_): return True
+    def ANY(_):
+        return True
 
     # `matches` should be a lambda that takes node as input and returns bool
     # If lamdba returns True for a node, the node matches
@@ -69,12 +68,12 @@ class SearchCondition:
 
 
 def find_matches_recursively(
-        node: AttackGraphNode,
-        condition_list: list[SearchCondition],
-        current_path: list[AttackGraphNode] | None = None,
-        matching_paths: set[tuple[AttackGraphNode, ...]] | None = None,
-        condition_match_count: int = 0
-    ):
+    node: AttackGraphNode,
+    condition_list: list[SearchCondition],
+    current_path: list[AttackGraphNode] | None = None,
+    matching_paths: set[tuple[AttackGraphNode, ...]] | None = None,
+    condition_match_count: int = 0,
+):
     """Find all paths of nodes that match the list of conditions.
     When a sequence of conditions is fulfilled for a path of nodes,
     add the path of nodes to the returned `matching_paths`
@@ -105,10 +104,7 @@ def find_matches_recursively(
         # Try next condition for current node if there are more and
         # current condition is already fulfilled.
         matching_paths = find_matches_recursively(
-            node,
-            next_conds,
-            current_path=current_path,
-            matching_paths=matching_paths
+            node, next_conds, current_path=current_path, matching_paths=matching_paths
         )
 
     if curr_cond.matches(node):
@@ -133,7 +129,7 @@ def find_matches_recursively(
                     [curr_cond] + next_conds,
                     current_path=current_path,
                     matching_paths=matching_paths,
-                    condition_match_count=condition_match_count
+                    condition_match_count=condition_match_count,
                 )
 
         if not next_conds:

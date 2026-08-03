@@ -1,5 +1,6 @@
 """String related methods"""
 
+
 def levenshtein_distance(a: str, b: str) -> int:
     """Get distance between two strings"""
     if a == b:
@@ -19,4 +20,3 @@ def levenshtein_distance(a: str, b: str) -> int:
             curr_row.append(min(insertions, deletions, substitutions))
         prev_row = curr_row
     return prev_row[-1]
-

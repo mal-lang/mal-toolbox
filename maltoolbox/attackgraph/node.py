@@ -1,5 +1,4 @@
-"""MAL-Toolbox Attack Graph Node
-"""
+"""MAL-Toolbox Attack Graph Node"""
 
 from __future__ import annotations
 
@@ -10,7 +9,6 @@ from typing import TYPE_CHECKING
 from maltoolbox.attackgraph.detector import Detector
 
 if TYPE_CHECKING:
-
     from ..language import LanguageGraphAttackStep
     from ..model import ModelAsset
 
@@ -25,7 +23,7 @@ class AttackGraphNode:
         model_asset: ModelAsset | None = None,
         ttc_dist: dict | None = None,
         existence_status: bool | None = None,
-        full_name: str | None = None
+        full_name: str | None = None,
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
@@ -51,12 +49,8 @@ class AttackGraphNode:
             'lang_graph_attack_step': self.lg_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,
-            'children': {
-                child.id: child.full_name for child in self.children
-            },
-            'parents': {
-                parent.id: parent.full_name for parent in self.parents
-            },
+            'children': {child.id: child.full_name for child in self.children},
+            'parents': {parent.id: parent.full_name for parent in self.parents},
         }
 
         for detector in self.detectors.values():
@@ -73,8 +67,10 @@ class AttackGraphNode:
         return node_dict
 
     def __repr__(self) -> str:
-        return (f'AttackGraphNode(name: "{self.full_name}", id: {self.id}, '
-            f'type: {self.type})')
+        return (
+            f'AttackGraphNode(name: "{self.full_name}", id: {self.id}, '
+            f'type: {self.type})'
+        )
 
     def __deepcopy__(self, memo) -> AttackGraphNode:
         """Deep copy an attackgraph node
@@ -92,7 +88,7 @@ class AttackGraphNode:
         copied_node = AttackGraphNode(
             node_id=self.id,
             model_asset=self.model_asset,
-            lg_attack_step=self.lg_attack_step
+            lg_attack_step=self.lg_attack_step,
         )
 
         copied_node.tags = copy.deepcopy(self.tags, memo)

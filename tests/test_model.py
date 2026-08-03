@@ -7,8 +7,8 @@ from maltoolbox.model import Model, ModelAsset
 
 # Helper functions
 
-APP_EXEC_ASSOC_NAME = "AppExecution"
-DATA_CONTAIN_ASSOC_NAME = "DataContainment"
+APP_EXEC_ASSOC_NAME = 'AppExecution'
+DATA_CONTAIN_ASSOC_NAME = 'DataContainment'
 
 # Tests
 
@@ -41,14 +41,12 @@ def test_model_add_asset_with_id_set(model):
 
     # Add asset with same ID as previously added asset, expect ValueError
     with pytest.raises(ValueError):
-        model.add_asset(
-            asset_type='Application', asset_id=asset_id
-        )
+        model.add_asset(asset_type='Application', asset_id=asset_id)
 
 
 def test_model_add_asset_duplicate_name(model: Model):
     """Add several assets with the same name to the model"""
-    asset_name = "MyProgram"
+    asset_name = 'MyProgram'
 
     # Add a new asset
     model.add_asset(asset_type='Application', name=asset_name)
@@ -59,14 +57,13 @@ def test_model_add_asset_duplicate_name(model: Model):
     asset2 = model.add_asset(asset_type='Application', name=asset_name)
     assert len(model.assets) == 2
     # Is this expected - shouldn't asset2 have same name as asset1?
-    assert model.assets[1].name == f"{asset_name}:{asset2.id}"
+    assert model.assets[1].name == f'{asset_name}:{asset2.id}'
 
     # Add asset again while not allowing duplicates, expect ValueError
     with pytest.raises(ValueError):
         model.add_asset(
-            asset_type='Application',
-            name=asset_name,
-            allow_duplicate_names=False)
+            asset_type='Application', name=asset_name, allow_duplicate_names=False
+        )
     # Make sure there are still only two assets named 'Program 1'
     assert len(model.assets) == 2
 
@@ -164,9 +161,7 @@ def test_model_add_association_nonexisting_fieldname(model: Model):
     # Try create an association between asset1 and data
     with pytest.raises(ValueError):
         # will raise error because fieldname does not exist
-        asset1.add_associated_assets(
-            fieldname='unknownFieldName', assets={data}
-        )
+        asset1.add_associated_assets(fieldname='unknownFieldName', assets={data})
 
 
 def test_model_add_association_duplicate(model: Model):
@@ -196,8 +191,7 @@ def test_model_remove_associated_asset(model: Model):
     asset1 = model.add_asset(asset_type='Application')
     asset2 = model.add_asset(asset_type='Application')
 
-    asset1.add_associated_assets(
-        fieldname='appExecutedApps', assets={asset2})
+    asset1.add_associated_assets(fieldname='appExecutedApps', assets={asset2})
 
     assert 'appExecutedApps' in asset1.associated_assets
     assert asset2 in asset1.associated_assets['appExecutedApps']
@@ -206,8 +200,7 @@ def test_model_remove_associated_asset(model: Model):
 
     # Remove the association and make sure it was
     # removed from assets and model
-    asset1.remove_associated_assets(
-        fieldname='appExecutedApps', assets={asset2})
+    asset1.remove_associated_assets(fieldname='appExecutedApps', assets={asset2})
 
     assert 'appExecutedApps' not in asset1.associated_assets
     assert 'hostApp' not in asset2.associated_assets
@@ -220,8 +213,7 @@ def test_model_remove_associated_asset_with_leftovers(model: Model):
     asset2 = model.add_asset(asset_type='Application')
     asset3 = model.add_asset(asset_type='Application')
 
-    asset1.add_associated_assets(
-        fieldname='appExecutedApps', assets={asset2, asset3})
+    asset1.add_associated_assets(fieldname='appExecutedApps', assets={asset2, asset3})
 
     assert 'appExecutedApps' in asset1.associated_assets
     assert asset2 in asset1.associated_assets['appExecutedApps']
@@ -233,8 +225,7 @@ def test_model_remove_associated_asset_with_leftovers(model: Model):
 
     # Remove the association and make sure it was
     # removed from assets and model
-    asset1.remove_associated_assets(
-        fieldname='appExecutedApps', assets={asset2})
+    asset1.remove_associated_assets(fieldname='appExecutedApps', assets={asset2})
 
     assert 'appExecutedApps' in asset1.associated_assets
     assert asset2 not in asset1.associated_assets['appExecutedApps']
@@ -255,13 +246,10 @@ def test_model_remove_nonexisting_associated_assets(model: Model):
 
     # So we should expect a LookupError when trying to remove one
     with pytest.raises(LookupError):
-        asset1.remove_associated_assets(
-            fieldname='appExecutedApps', assets={asset2})
+        asset1.remove_associated_assets(fieldname='appExecutedApps', assets={asset2})
 
 
-def test_model_remove_asset_from_association_nonexisting_asset(
-        model: Model
-    ):
+def test_model_remove_asset_from_association_nonexisting_asset(model: Model):
     """Make sure error is thrown if deleting non existing asset
     from association
     """
@@ -272,19 +260,16 @@ def test_model_remove_asset_from_association_nonexisting_asset(
     asset4 = model.add_asset(asset_type='Application')
 
     # Create an association between asset1 and asset2
-    asset1.add_associated_assets(
-        fieldname='appExecutedApps', assets={asset2})
+    asset1.add_associated_assets(fieldname='appExecutedApps', assets={asset2})
 
     # We are removing asset3 from association where it does not exist
     with pytest.raises(LookupError):
-        asset1.remove_associated_assets(fieldname='appExecutedApps',
-            assets={asset3})
+        asset1.remove_associated_assets(fieldname='appExecutedApps', assets={asset3})
 
     # We are removing asset4 from association, but asset4
     # does not exist in the model
     with pytest.raises(LookupError):
-        asset1.remove_associated_assets(fieldname='appExecutedApps',
-            assets={asset4})
+        asset1.remove_associated_assets(fieldname='appExecutedApps', assets={asset4})
 
 
 def test_model_get_asset_by_id(model: Model):
@@ -312,7 +297,7 @@ def test_model_get_asset_by_name(model: Model):
     # Correct assets removed and None if asset with that name not exists
     assert model.get_asset_by_name(asset1.name) == asset1
     assert model.get_asset_by_name(asset2.name) == asset2
-    assert model.get_asset_by_name("Program 3") is None
+    assert model.get_asset_by_name('Program 3') is None
 
 
 def test_model_asset_to_dict(model: Model):
@@ -333,9 +318,7 @@ def test_model_asset_to_dict(model: Model):
 def test_model_asset_with_nondefault_defense_to_dict(model: Model):
     """Make sure assets are converted to dictionaries correctly"""
     # Create and add asset
-    asset1 = model.add_asset(
-        asset_type='Application',
-        defenses={'notPresent': 1.0})
+    asset1 = model.add_asset(asset_type='Application', defenses={'notPresent': 1.0})
 
     (asset1_id, asset1_dict) = next(iter(asset1._to_dict().items()))
 
@@ -344,9 +327,7 @@ def test_model_asset_with_nondefault_defense_to_dict(model: Model):
     assert asset1_dict.get('type') == 'Application'
 
     # Non-default defense value should be saved
-    assert asset1_dict.get('defenses', None) == {
-        'notPresent': 1.0
-    }
+    assert asset1_dict.get('defenses', None) == {'notPresent': 1.0}
 
 
 def test_serialize(model: Model):
@@ -357,22 +338,18 @@ def test_serialize(model: Model):
     asset3 = model.add_asset(asset_type='Application')
 
     # Create and add an association between asset1 and asset2
-    asset1.add_associated_assets(
-        fieldname='appExecutedApps', assets={asset2})
+    asset1.add_associated_assets(fieldname='appExecutedApps', assets={asset2})
 
     model_dict = model._to_dict()
 
     # to_dict will create map from asset id to asset dict
     for asset in [asset1, asset2, asset3]:
-        assert model_dict['assets'][asset.id] == \
-        asset._to_dict()[asset.id]
+        assert model_dict['assets'][asset.id] == asset._to_dict()[asset.id]
 
     # Meta data should also be added
     assert model_dict['metadata']['name'] == model.name
-    assert model_dict['metadata']['langVersion'] == \
-        model.lang_graph.metadata['version']
-    assert model_dict['metadata']['langID'] == \
-        model.lang_graph.metadata['id']
+    assert model_dict['metadata']['langVersion'] == model.lang_graph.metadata['version']
+    assert model_dict['metadata']['langID'] == model.lang_graph.metadata['id']
 
 
 def test_model_save_and_load_model_from_scratch(model: Model):
@@ -381,23 +358,19 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     """
     # Create and add 3 applications
     asset1 = model.add_asset(asset_type='Application')
-    asset1.extras = {"testing": "testing"}
+    asset1.extras = {'testing': 'testing'}
     asset2 = model.add_asset(asset_type='Application')
     asset3 = model.add_asset(asset_type='Application')
 
     # Create and add an association between asset1 and asset2
-    asset1.add_associated_assets(
-        fieldname='appExecutedApps', assets={asset2, asset3})
+    asset1.add_associated_assets(fieldname='appExecutedApps', assets={asset2, asset3})
 
-    for model_path in ("/tmp/test.yml", "/tmp/test.yaml", "/tmp/test.json"):
+    for model_path in ('/tmp/test.yml', '/tmp/test.yaml', '/tmp/test.json'):
         # Mock open() function so no real files are written to filesystem
         model.save_to_file(model_path)
 
         # Create a new model by loading old model from file
-        new_model = Model.load_from_file(
-            model_path,
-            model.lang_graph
-        )
+        new_model = Model.load_from_file(model_path, model.lang_graph)
 
         assert new_model._to_dict() == model._to_dict()
 
@@ -407,18 +380,12 @@ def test_model_load_and_save_example_model(model):
     Note: will create file in /tmp
     """
     # Load from example file
-    model = Model(
-        path_testdata("simple_example_model.yml"),
-        model.lang_graph
-    )
+    model = Model(path_testdata('simple_example_model.yml'), model.lang_graph)
 
     # Save to file
     model.save_to_file('/tmp/test.yml')
 
     # Create new model and load from previously saved file
-    new_model = Model.load_from_file(
-        '/tmp/test.yml',
-        model.lang_graph
-    )
+    new_model = Model.load_from_file('/tmp/test.yml', model.lang_graph)
 
     assert new_model._to_dict() == model._to_dict()

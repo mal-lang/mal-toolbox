@@ -8,6 +8,7 @@ associations in a language graph. Each node has a type that determines:
 - how it modifies traversal semantics (transitive)
 - how it constrains by subtype (subType)
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -25,13 +26,13 @@ if TYPE_CHECKING:
 
 
 class ExprType(str, Enum):
-    UNION = "union"
-    INTERSECTION = "intersection"
-    DIFFERENCE = "difference"
-    COLLECT = "collect"
-    FIELD = "field"
-    TRANSITIVE = "transitive"
-    SUBTYPE = "subType"
+    UNION = 'union'
+    INTERSECTION = 'intersection'
+    DIFFERENCE = 'difference'
+    COLLECT = 'collect'
+    FIELD = 'field'
+    TRANSITIVE = 'transitive'
+    SUBTYPE = 'subType'
 
     def is_binary(self) -> bool:
         return self in {
@@ -65,15 +66,15 @@ class ExpressionsChain:
 
         if self.type == ExprType.FIELD:
             if not self.association or not self.fieldname:
-                raise ValueError("FIELD requires association and fieldname")
+                raise ValueError('FIELD requires association and fieldname')
 
         if self.type == ExprType.TRANSITIVE:
             if not self.sub_link:
-                raise ValueError("TRANSITIVE requires sub_link")
+                raise ValueError('TRANSITIVE requires sub_link')
 
         if self.type == ExprType.SUBTYPE:
             if not self.sub_link or not self.subtype:
-                raise ValueError("SUBTYPE requires sub_link and subtype")
+                raise ValueError('SUBTYPE requires sub_link and subtype')
 
     def to_dict(self) -> dict:
         if self.type.is_binary():
@@ -89,55 +90,56 @@ class ExpressionsChain:
             return self._subtype_to_dict()
 
         raise LanguageGraphAssociationError(
-            f"Unknown expressions chain element {self.type}"
+            f'Unknown expressions chain element {self.type}'
         )
 
     def _binary_to_dict(self) -> dict:
         return {
             self.type.value: {
-                "left": self.left_link.to_dict() if self.left_link else {},
-                "right": self.right_link.to_dict() if self.right_link else {},
+                'left': self.left_link.to_dict() if self.left_link else {},
+                'right': self.right_link.to_dict() if self.right_link else {},
             },
-            "type": self.type.value,
+            'type': self.type.value,
         }
 
     def _transitive_to_dict(self) -> dict:
-        assert self.sub_link, "TRANSITIVE expression requires sub_link"
+        assert self.sub_link, 'TRANSITIVE expression requires sub_link'
         return {
-            "transitive": self.sub_link.to_dict(),
-            "type": self.type.value,
+            'transitive': self.sub_link.to_dict(),
+            'type': self.type.value,
         }
 
     def _subtype_to_dict(self) -> dict:
-        assert self.sub_link, "SUBTYPE expression requires sub_link"
-        assert self.subtype, "SUBTYPE expression requires subtype"
+        assert self.sub_link, 'SUBTYPE expression requires sub_link'
+        assert self.subtype, 'SUBTYPE expression requires subtype'
         return {
-            "subType": self.subtype.name,
-            "expression": self.sub_link.to_dict(),
-            "type": self.type.value,
+            'subType': self.subtype.name,
+            'expression': self.sub_link.to_dict(),
+            'type': self.type.value,
         }
 
     def _field_to_dict(self) -> dict:
         asset_type = self._resolve_field_asset_type()
-        assert self.association, "FIELD expression requires association"
+        assert self.association, 'FIELD expression requires association'
         return {
             self.association.name: {
-                "fieldname": self.fieldname,
-                "asset type": asset_type,
+                'fieldname': self.fieldname,
+                'asset type': asset_type,
             },
-            "type": self.type.value,
+            'type': self.type.value,
         }
 
     def _resolve_field_asset_type(self) -> str:
-        assert self.association and self.fieldname, "FIELD expression requires association and fieldname"
+        assert self.association and self.fieldname, (
+            'FIELD expression requires association and fieldname'
+        )
         if self.fieldname == self.association.left_field.fieldname:
             return self.association.left_field.asset.name
         if self.fieldname == self.association.right_field.fieldname:
             return self.association.right_field.asset.name
 
         raise LanguageGraphException(
-            f'Field "{self.fieldname}" not found in association '
-            f"{self.association.name}"
+            f'Field "{self.fieldname}" not found in association {self.association.name}'
         )
 
     @classmethod
@@ -149,8 +151,8 @@ class ExpressionsChain:
     ) -> ExpressionsChain:
         payload = data[expr_type.value]
 
-        left_link = cls._from_dict(payload.get("left"), lang_graph)
-        right_link = cls._from_dict(payload.get("right"), lang_graph)
+        left_link = cls._from_dict(payload.get('left'), lang_graph)
+        right_link = cls._from_dict(payload.get('right'), lang_graph)
 
         return cls(
             type=expr_type,
@@ -164,22 +166,20 @@ class ExpressionsChain:
         data: dict,
         lang_graph: LanguageGraph,
     ) -> ExpressionsChain:
-        assoc_keys = [k for k in data.keys() if k != "type"]
+        assoc_keys = [k for k in data.keys() if k != 'type']
         if len(assoc_keys) != 1:
-            raise LanguageGraphException("Invalid field expression format")
+            raise LanguageGraphException('Invalid field expression format')
 
         assoc_name = assoc_keys[0]
         field_data = data[assoc_name]
 
-        asset_name = field_data["asset type"]
-        fieldname = field_data["fieldname"]
+        asset_name = field_data['asset type']
+        fieldname = field_data['fieldname']
 
         try:
             target_asset = lang_graph.assets[asset_name]
         except KeyError:
-            raise LanguageGraphException(
-                f'Unknown asset type "{asset_name}"'
-            )
+            raise LanguageGraphException(f'Unknown asset type "{asset_name}"')
 
         association = cls._resolve_association(
             target_asset,
@@ -204,8 +204,7 @@ class ExpressionsChain:
                 return assoc
 
         raise LanguageGraphException(
-            f'Failed to find association "{assoc_name}" '
-            f'with fieldname "{fieldname}"'
+            f'Failed to find association "{assoc_name}" with fieldname "{fieldname}"'
         )
 
     @classmethod
@@ -215,7 +214,7 @@ class ExpressionsChain:
         lang_graph: LanguageGraph,
     ) -> ExpressionsChain:
         sub_link = cls._from_dict(
-            data["transitive"],
+            data['transitive'],
             lang_graph,
         )
 
@@ -231,18 +230,16 @@ class ExpressionsChain:
         lang_graph: LanguageGraph,
     ) -> ExpressionsChain:
         sub_link = cls._from_dict(
-            data["expression"],
+            data['expression'],
             lang_graph,
         )
 
-        subtype_name = data["subType"]
+        subtype_name = data['subType']
 
         try:
             subtype_asset = lang_graph.assets[subtype_name]
         except KeyError:
-            raise LanguageGraphException(
-                f"Failed to find subtype {subtype_name}"
-            )
+            raise LanguageGraphException(f'Failed to find subtype {subtype_name}')
 
         return cls(
             type=ExprType.SUBTYPE,
@@ -260,11 +257,9 @@ class ExpressionsChain:
             return None
 
         try:
-            expr_chain_type = ExprType(serialized_expr_chain["type"])
+            expr_chain_type = ExprType(serialized_expr_chain['type'])
         except KeyError:
-            raise LanguageGraphAssociationError(
-                "Missing expressions chain type"
-            )
+            raise LanguageGraphAssociationError('Missing expressions chain type')
 
         if expr_chain_type.is_binary():
             return cls._parse_binary(
@@ -292,8 +287,7 @@ class ExpressionsChain:
             )
 
         raise LanguageGraphAssociationError(
-            f"Unknown expressions chain type "
-            f"{serialized_expr_chain['type']}"
+            f'Unknown expressions chain type {serialized_expr_chain["type"]}'
         )
 
     def __repr__(self) -> str:

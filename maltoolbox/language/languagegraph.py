@@ -10,15 +10,38 @@ import logging
 from typing import Any
 import zipfile
 
-from maltoolbox.exceptions import LanguageGraphAssociationError, LanguageGraphException, LanguageGraphSuperAssetNotFoundError
-from maltoolbox.file_utils import download_git_repo, load_dict_from_json_file, load_dict_from_yaml_file, save_dict_to_file
+from maltoolbox.exceptions import (
+    LanguageGraphAssociationError,
+    LanguageGraphException,
+    LanguageGraphSuperAssetNotFoundError,
+)
+from maltoolbox.file_utils import (
+    download_git_repo,
+    load_dict_from_json_file,
+    load_dict_from_yaml_file,
+    save_dict_to_file,
+)
 from maltoolbox.language.compiler.mal_compiler import MalCompiler
 from maltoolbox.language.expression_chain import ExpressionsChain
 from maltoolbox.language.language_graph_builder import generate_graph
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
-from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation, LanguageGraphAssociationField
+from maltoolbox.language.language_graph_assoc import (
+    LanguageGraphAssociation,
+    LanguageGraphAssociationField,
+)
 from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
-from maltoolbox.language.step_expression_processor import StepResult, process_attack_step_expression, process_collect_step_expression, process_field_step_expression, process_set_operation_step_expression, process_step_expression, process_subType_step_expression, process_transitive_step_expression, process_variable_step_expression, reverse_expr_chain
+from maltoolbox.language.step_expression_processor import (
+    StepResult,
+    process_attack_step_expression,
+    process_collect_step_expression,
+    process_field_step_expression,
+    process_set_operation_step_expression,
+    process_step_expression,
+    process_subType_step_expression,
+    process_transitive_step_expression,
+    process_variable_step_expression,
+    reverse_expr_chain,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +56,8 @@ class LanguageGraph:
 
         if self.lang_spec is not None:
             self.metadata = {
-                "version": self.lang_spec["defines"]["version"],
-                "id": self.lang_spec["defines"]["id"],
+                'version': self.lang_spec['defines']['version'],
+                'id': self.lang_spec['defines']['id'],
             }
             self.assets = generate_graph(self.lang_spec)
 
@@ -75,21 +98,22 @@ class LanguageGraph:
         The .mar is a zip file containing a single file "langspec.json"
         containing the language specification in JSON format.
         """
-        with zipfile.ZipFile(mar_archive_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        with zipfile.ZipFile(
+            mar_archive_path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9
+        ) as archive:
             langspec_json = json.dumps(self.lang_spec, indent=4)
             archive.writestr('langspec.json', langspec_json)
 
     @property
     def associations(self) -> set[LanguageGraphAssociation]:
-        """Return all associations in the language graph.
-        """
+        """Return all associations in the language graph."""
         return get_language_graph_associations(self)
 
     @staticmethod
     def _link_association_to_assets(
         assoc: LanguageGraphAssociation,
         left_asset: LanguageGraphAsset,
-        right_asset: LanguageGraphAsset
+        right_asset: LanguageGraphAsset,
     ):
         left_asset.own_associations[assoc.right_field.fieldname] = assoc
         right_asset.own_associations[assoc.left_field.fieldname] = assoc
@@ -104,7 +128,7 @@ class LanguageGraph:
                 self.to_mar_archive(filename)
             case _:
                 raise TypeError(
-                    "Unknown file extension, expected json/mal/mar/yml/yaml"
+                    'Unknown file extension, expected json/mal/mar/yml/yaml'
                 )
 
     @classmethod
@@ -125,18 +149,13 @@ class LanguageGraph:
             json.dump(self.lang_spec, file, indent=4)
 
     def process_attack_step_expression(
-        self,
-        target_asset: LanguageGraphAsset,
-        step_expression: dict[str, Any]
+        self, target_asset: LanguageGraphAsset, step_expression: dict[str, Any]
     ) -> StepResult:
         """The attack step expression just adds the name of the attack
         step. All other step expressions only modify the target
         asset and parent associations chain.
         """
-        return process_attack_step_expression(
-            target_asset,
-            step_expression['name']
-        )
+        return process_attack_step_expression(target_asset, step_expression['name'])
 
     def process_set_operation_step_expression(
         self,
@@ -162,17 +181,13 @@ class LanguageGraph:
         )
 
     def process_field_step_expression(
-        self,
-        target_asset: LanguageGraphAsset,
-        step_expression: dict[str, Any]
+        self, target_asset: LanguageGraphAsset, step_expression: dict[str, Any]
     ) -> StepResult:
         """Change the target asset from the current one to the associated
         asset given the specified field name and add the parent
         fieldname and association to the parent associations chain.
         """
-        return process_field_step_expression(
-            target_asset, step_expression
-        )
+        return process_field_step_expression(target_asset, step_expression)
 
     def process_transitive_step_expression(
         self,
@@ -206,11 +221,7 @@ class LanguageGraph:
         target_asset: LanguageGraphAsset,
         expr_chain: ExpressionsChain | None,
         step_expression: dict[str, Any],
-    ) -> tuple[
-            LanguageGraphAsset,
-            ExpressionsChain | None,
-            str | None
-        ]:
+    ) -> tuple[LanguageGraphAsset, ExpressionsChain | None, str | None]:
         """Apply the right hand step expression to left hand step
         expression target asset and parent associations chain.
         """
@@ -218,15 +229,12 @@ class LanguageGraph:
             self.assets, target_asset, expr_chain, step_expression, self.lang_spec
         )
 
-    def process_step_expression(self,
+    def process_step_expression(
+        self,
         target_asset: LanguageGraphAsset,
         expr_chain: ExpressionsChain | None,
         step_expression: dict,
-    ) -> tuple[
-            LanguageGraphAsset,
-            ExpressionsChain | None,
-            str | None
-        ]:
+    ) -> tuple[LanguageGraphAsset, ExpressionsChain | None, str | None]:
         """Recursively process an attack step expression.
 
         Arguments:
@@ -256,7 +264,7 @@ class LanguageGraph:
     def reverse_expr_chain(
         self,
         expr_chain: ExpressionsChain | None,
-        reverse_chain: ExpressionsChain | None
+        reverse_chain: ExpressionsChain | None,
     ) -> ExpressionsChain | None:
         """Recursively reverse the associations chain. From parent to child or
         vice versa.
@@ -274,9 +282,7 @@ class LanguageGraph:
         The resulting reversed associations chain.
 
         """
-        return reverse_expr_chain(
-            expr_chain, reverse_chain
-        )
+        return reverse_expr_chain(expr_chain, reverse_chain)
 
     def regenerate_graph(self) -> None:
         """Regenerate language graph starting from the MAL language specification
@@ -288,18 +294,14 @@ class LanguageGraph:
         return language_graph_to_dict(self)
 
 
-def disaggregate_attack_step_full_name(
-    attack_step_full_name: str
-) -> list[str]:
+def disaggregate_attack_step_full_name(attack_step_full_name: str) -> list[str]:
     """From an attack step full name, get (asset_name, attack_step_name)"""
     return attack_step_full_name.split(':')
 
 
 def language_graph_to_dict(graph: LanguageGraph) -> dict:
     """Converts LanguageGraph into a dict"""
-    logger.debug(
-        'Serializing %s assets.', len(graph.assets.items())
-    )
+    logger.debug('Serializing %s assets.', len(graph.assets.items()))
 
     serialized_graph = {'metadata': graph.metadata}
     for asset in graph.assets.values():
@@ -325,7 +327,7 @@ def language_graph_from_dict(serialized_graph: dict) -> LanguageGraph:
             own_super_asset=None,
             own_sub_assets=list(),
             own_variables={},
-            is_abstract=asset['is_abstract']
+            is_abstract=asset['is_abstract'],
         )
 
     # Link inheritance
@@ -358,14 +360,18 @@ def language_graph_from_dict(serialized_graph: dict) -> LanguageGraph:
             assoc_node = LanguageGraphAssociation(
                 name=assoc['name'],
                 left_field=LanguageGraphAssociationField(
-                    left, assoc['left']['fieldname'],
-                    assoc['left']['min'], assoc['left']['max']
+                    left,
+                    assoc['left']['fieldname'],
+                    assoc['left']['min'],
+                    assoc['left']['max'],
                 ),
                 right_field=LanguageGraphAssociationField(
-                    right, assoc['right']['fieldname'],
-                    assoc['right']['min'], assoc['right']['max']
+                    right,
+                    assoc['right']['fieldname'],
+                    assoc['right']['min'],
+                    assoc['right']['max'],
                 ),
-                info=assoc['info']
+                info=assoc['info'],
             )
             lang_graph._link_association_to_assets(assoc_node, left, right)
 
@@ -375,7 +381,8 @@ def language_graph_from_dict(serialized_graph: dict) -> LanguageGraph:
         for var, (target_name, expr_dict) in asset['variables'].items():
             target = lang_graph.assets[target_name]
             a_node.own_variables[var] = (
-                target, ExpressionsChain._from_dict(expr_dict, lang_graph)
+                target,
+                ExpressionsChain._from_dict(expr_dict, lang_graph),
             )
 
     # Attack steps
@@ -389,9 +396,10 @@ def language_graph_from_dict(serialized_graph: dict) -> LanguageGraph:
                 causal_mode=step.get('causal_mode'),
                 ttc=step['ttc'],
                 overrides=step['overrides'],
-                own_children={}, own_parents={},
+                own_children={},
+                own_parents={},
                 info=step['info'],
-                tags=list(step['tags'])
+                tags=list(step['tags']),
             )
 
     # Inheritance for attack steps
@@ -423,7 +431,8 @@ def language_graph_from_dict(serialized_graph: dict) -> LanguageGraph:
                     s_node.own_parents.setdefault(t_node, []).append(chain)
             if step['type'] in ('exist', 'notExist') and (reqs := step.get('requires')):
                 s_node.own_requires = [
-                    chain for expr in reqs
+                    chain
+                    for expr in reqs
                     if (chain := ExpressionsChain._from_dict(expr, lang_graph))
                 ]
 
@@ -444,9 +453,7 @@ def load_language_graph_from_file(filename: str) -> LanguageGraph:
     elif filename.endswith('.git'):
         lang_graph = language_graph_from_git_url(filename)
     else:
-        raise TypeError(
-            "Unknown file extension, expected json/mal/mar/yml/yaml"
-        )
+        raise TypeError('Unknown file extension, expected json/mal/mar/yml/yaml')
     if lang_graph:
         return lang_graph
     raise LanguageGraphException(
@@ -456,7 +463,8 @@ def load_language_graph_from_file(filename: str) -> LanguageGraph:
 
 def get_language_graph_associations(language_graph: LanguageGraph):
     return {
-        assoc for asset in language_graph.assets.values()
+        assoc
+        for asset in language_graph.assets.values()
         for assoc in asset.associations.values()
     }
 
@@ -480,8 +488,10 @@ def language_graph_from_git_url(git_url: str) -> LanguageGraph:
     mal_files = list(dir.rglob('*.mal'))
 
     if not mal_files:
-        raise FileNotFoundError("Execution failed: No .mal files found in the cloned repository.")
-    
+        raise FileNotFoundError(
+            'Execution failed: No .mal files found in the cloned repository.'
+        )
+
     if len(mal_files) == 1:
         mal_file = mal_files[0]
     else:
@@ -489,9 +499,10 @@ def language_graph_from_git_url(git_url: str) -> LanguageGraph:
         if main_mal_files:
             mal_file = main_mal_files[0]
         else:
-            raise ValueError("Execution failed: .mal files found but no main.mal file in the repository.")
+            raise ValueError(
+                'Execution failed: .mal files found but no main.mal file in the repository.'
+            )
 
-    
     return language_graph_from_mal_spec(str(mal_file))
 
 
@@ -503,7 +514,7 @@ def language_graph_from_mal_spec(mal_spec_file: str) -> LanguageGraph:
     mal_spec_file   -   the path to the .mal file
 
     """
-    logger.info("Loading mal spec %s", mal_spec_file)
+    logger.info('Loading mal spec %s', mal_spec_file)
     return LanguageGraph(MalCompiler().compile(mal_spec_file))
 
 
@@ -520,5 +531,3 @@ def language_graph_from_mar_archive(mar_archive: str) -> LanguageGraph:
     with zipfile.ZipFile(mar_archive, 'r') as archive:
         langspec = archive.read('langspec.json')
         return LanguageGraph(json.loads(langspec))
-
-

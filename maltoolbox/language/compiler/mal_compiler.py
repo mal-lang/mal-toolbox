@@ -447,9 +447,9 @@ class MalCompiler(ParseTreeVisitor):
                 detectors[detector_name] = detector
             elif node.type == 'ERROR':
                 raise MalCompilerError(
-                    f"Syntax error in detector at "
-                    f"{node.start_point}: "
-                    f"{node_text(cursor, 'error').decode(errors='ignore')!r}"
+                    f'Syntax error in detector at '
+                    f'{node.start_point}: '
+                    f'{node_text(cursor, "error").decode(errors="ignore")!r}'
                 )
             else:
                 # Not a detector → stop processing detectors
@@ -579,7 +579,7 @@ class MalCompiler(ParseTreeVisitor):
         elif assert_node(cursor.node).type == 'fpr_only':
             fprate = self.visit(cursor)
         else:
-            raise ValueError("Unknown tp/fp rate for detector")
+            raise ValueError('Unknown tp/fp rate for detector')
 
         return {'tprate': tprate, 'fprate': fprate}
 
@@ -593,9 +593,7 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)  # skip ':'
         return self.visit(cursor)
 
-    def visit_tp_fp_pair(
-            self, cursor: TreeCursor
-        ) -> tuple[float | None, float | None]:
+    def visit_tp_fp_pair(self, cursor: TreeCursor) -> tuple[float | None, float | None]:
         #########################
         # (tpr|fpr) ':' float, (tpr|fpr) ':' float #
         #########################
@@ -899,7 +897,10 @@ class MalCompiler(ParseTreeVisitor):
 
         parent_node = original_node.parent
 
-        while parent_node and parent_node.type not in ('reaching', 'detector_context_reference'):
+        while parent_node and parent_node.type not in (
+            'reaching',
+            'detector_context_reference',
+        ):
             # The idea is to go up the tree. If we find a "reaching" node,
             # we still need to determine if it's a field or a an attackStep
             parent_node = parent_node.parent

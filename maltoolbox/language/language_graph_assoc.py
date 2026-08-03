@@ -34,8 +34,7 @@ class LanguageGraphAssociationField:
 
 @dataclass(frozen=True, eq=True)
 class LanguageGraphAssociation:
-    """An association type between asset types as defined in the MAL language
-    """
+    """An association type between asset types as defined in the MAL language"""
 
     name: str
     left_field: LanguageGraphAssociationField
@@ -51,14 +50,14 @@ class LanguageGraphAssociation:
                 'asset': self.left_field.asset.name,
                 'fieldname': self.left_field.fieldname,
                 'min': self.left_field.minimum,
-                'max': self.left_field.maximum
+                'max': self.left_field.maximum,
             },
             'right': {
                 'asset': self.right_field.asset.name,
                 'fieldname': self.right_field.fieldname,
                 'min': self.right_field.minimum,
-                'max': self.right_field.maximum
-            }
+                'max': self.right_field.maximum,
+            },
         }
 
         return assoc_dict
@@ -79,13 +78,12 @@ class LanguageGraphAssociation:
         full_name = '%s_%s_%s' % (
             self.name,
             self.left_field.fieldname,
-            self.right_field.fieldname
+            self.right_field.fieldname,
         )
         return full_name
 
     def get_field(self, fieldname: str) -> LanguageGraphAssociationField:
-        """Return the field that matches the `fieldname` given as parameter.
-        """
+        """Return the field that matches the `fieldname` given as parameter."""
         if self.right_field.fieldname == fieldname:
             return self.right_field
         return self.left_field
@@ -140,8 +138,6 @@ class LanguageGraphAssociation:
         if self.right_field.fieldname == fieldname:
             return self.left_field.fieldname
 
-        msg = ('Requested fieldname "%s" from association '
-               '%s which did not contain it!')
+        msg = 'Requested fieldname "%s" from association %s which did not contain it!'
         logger.error(msg, fieldname, self.name)
         raise LanguageGraphAssociationError(msg % (fieldname, self.name))
-    

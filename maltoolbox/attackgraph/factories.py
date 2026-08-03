@@ -8,13 +8,14 @@ from maltoolbox.model import Model
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 
 from .. import log_configs
+
 logger = logging.getLogger(__name__)
 
 
 def create_attack_graph(
-        lang: str | LanguageGraph,
-        model: str | Model,
-    ) -> AttackGraph:
+    lang: str | LanguageGraph,
+    model: str | Model,
+) -> AttackGraph:
     """Create and return an attack graph
 
     Args:
@@ -33,12 +34,10 @@ def create_attack_graph(
         except zipfile.BadZipFile:
             lang_graph = LanguageGraph.from_mal_spec(lang)
     else:
-        raise TypeError("`lang` must be either string or LanguageGraph")
+        raise TypeError('`lang` must be either string or LanguageGraph')
 
     if 'langspec_file' in log_configs:
-        lang_graph.save_language_specification_to_json(
-            log_configs['langspec_file']
-        )
+        lang_graph.save_language_specification_to_json(log_configs['langspec_file'])
 
     if 'langgraph_file' in log_configs:
         lang_graph.save_to_file(log_configs['langgraph_file'])
@@ -50,7 +49,7 @@ def create_attack_graph(
         # Load from path
         instance_model = Model.load_from_file(model, lang_graph)
     else:
-        raise TypeError("`model` must be either string or Model")
+        raise TypeError('`model` must be either string or Model')
 
     if log_configs['model_file']:
         instance_model.save_to_file(log_configs['model_file'])

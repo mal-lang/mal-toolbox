@@ -1,5 +1,4 @@
-"""MAL-Toolbox Neo4j Ingestor Module
-"""
+"""MAL-Toolbox Neo4j Ingestor Module"""
 # mypy: ignore-errors
 
 import logging
@@ -11,10 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 def ingest_attack_graph_neo4j(
-        graph,
-        neo4j_config: dict[str, Any],
-        delete: bool = True
-    ) -> None:
+    graph, neo4j_config: dict[str, Any], delete: bool = True
+) -> None:
     """Ingest an attack graph into a neo4j database
 
     Arguments:
@@ -61,10 +58,8 @@ def ingest_attack_graph_neo4j(
 
 
 def ingest_model_neo4j(
-        model,
-        neo4j_config: dict[str, Any],
-        delete: bool = True
-    ) -> None:
+    model, neo4j_config: dict[str, Any], delete: bool = True
+) -> None:
     """Ingest an instance model graph into a Neo4J database
 
     Arguments:
@@ -95,7 +90,7 @@ def ingest_model_neo4j(
             str(asset.type),
             name=str(asset.name),
             asset_id=str(asset.id),
-            type=str(asset.type)
+            type=str(asset.type),
         )
 
     for asset in model.assets.values():
@@ -103,9 +98,7 @@ def ingest_model_neo4j(
             for other_asset in other_assets:
                 rels.append(
                     Relationship(
-                        nodes[str(asset.id)],
-                        str(fieldname),
-                        nodes[str(other_asset.id)]
+                        nodes[str(asset.id)], str(fieldname), nodes[str(other_asset.id)]
                     )
                 )
 

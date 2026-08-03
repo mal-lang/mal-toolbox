@@ -27,7 +27,8 @@ def test_converts_from_0_1(corelang_lang_graph: LanguageGraph):
     )
 
     new_model = Model.load_from_file(
-        new_model_file, corelang_lang_graph,
+        new_model_file,
+        corelang_lang_graph,
     )
 
     assert converted_old_model._to_dict() == new_model._to_dict()
@@ -45,7 +46,8 @@ def test_converts_from_0_2(corelang_lang_graph: LanguageGraph):
     )
 
     new_model = Model.load_from_file(
-        new_model_file, corelang_lang_graph,
+        new_model_file,
+        corelang_lang_graph,
     )
 
     assert converted_old_model._to_dict() == new_model._to_dict()

@@ -13,15 +13,14 @@ if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
     from maltoolbox.language.language_graph_assoc import LanguageGraphAssociation
 
+
 @dataclass
 class LanguageGraphAsset:
     """An asset type as defined in the MAL language"""
 
     name: str
-    own_associations: dict[str, LanguageGraphAssociation] = \
-        field(default_factory=dict)
-    attack_steps: dict[str, LanguageGraphAttackStep] = \
-        field(default_factory=dict)
+    own_associations: dict[str, LanguageGraphAssociation] = field(default_factory=dict)
+    attack_steps: dict[str, LanguageGraphAttackStep] = field(default_factory=dict)
     info: dict = field(default_factory=dict)
     own_super_asset: LanguageGraphAsset | None = None
     own_sub_assets: list[LanguageGraphAsset] = field(default_factory=list)
@@ -31,17 +30,17 @@ class LanguageGraphAsset:
     def to_dict(self) -> dict:
         """Convert LanguageGraphAsset to dictionary"""
         return {
-            "name": self.name,
-            "associations": {k: v.to_dict() for k, v in self.own_associations.items()},
-            "attack_steps": {s.name: s.to_dict() for s in self.attack_steps.values()},
-            "info": self.info,
-            "super_asset": self.own_super_asset.name if self.own_super_asset else "",
-            "sub_assets": [a.name for a in self.own_sub_assets],
-            "variables": {
+            'name': self.name,
+            'associations': {k: v.to_dict() for k, v in self.own_associations.items()},
+            'attack_steps': {s.name: s.to_dict() for s in self.attack_steps.values()},
+            'info': self.info,
+            'super_asset': self.own_super_asset.name if self.own_super_asset else '',
+            'sub_assets': [a.name for a in self.own_sub_assets],
+            'variables': {
                 name: (asset.name, expr.to_dict())
                 for name, (asset, expr) in self.own_variables.items()
             },
-            "is_abstract": self.is_abstract,
+            'is_abstract': self.is_abstract,
         }
 
     def __repr__(self) -> str:
@@ -137,8 +136,8 @@ class LanguageGraphAsset:
 
     @property
     def variables(
-            self
-        ) -> dict[str, tuple[LanguageGraphAsset, Optional[ExpressionsChain]]]:
+        self,
+    ) -> dict[str, tuple[LanguageGraphAsset, Optional[ExpressionsChain]]]:
         """Return a list of all of the variables that belong to this asset
         directly or indirectly via inheritance.
 
@@ -153,16 +152,10 @@ class LanguageGraphAsset:
             all_vars |= self.own_super_asset.variables
         return all_vars
 
-    def get_all_common_superassets(
-            self, other: LanguageGraphAsset
-        ) -> set[str]:
+    def get_all_common_superassets(self, other: LanguageGraphAsset) -> set[str]:
         """Return a set of all common ancestors between this asset
         and the other asset given as parameter
         """
-        self_superassets = set(
-            asset.name for asset in self.super_assets
-        )
-        other_superassets = set(
-            asset.name for asset in other.super_assets
-        )
+        self_superassets = set(asset.name for asset in self.super_assets)
+        other_superassets = set(asset.name for asset in other.super_assets)
         return self_superassets.intersection(other_superassets)
