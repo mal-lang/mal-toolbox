@@ -64,17 +64,14 @@ class ExpressionsChain:
         if self.type.is_binary():
             return
 
-        if self.type == ExprType.FIELD:
-            if not self.association or not self.fieldname:
-                raise ValueError('FIELD requires association and fieldname')
+        if self.type == ExprType.FIELD and (not self.association or not self.fieldname):
+            raise ValueError('FIELD requires association and fieldname')
 
-        if self.type == ExprType.TRANSITIVE:
-            if not self.sub_link:
-                raise ValueError('TRANSITIVE requires sub_link')
+        if self.type == ExprType.TRANSITIVE and not self.sub_link:
+            raise ValueError('TRANSITIVE requires sub_link')
 
-        if self.type == ExprType.SUBTYPE:
-            if not self.sub_link or not self.subtype:
-                raise ValueError('SUBTYPE requires sub_link and subtype')
+        if self.type == ExprType.SUBTYPE and (not self.sub_link or not self.subtype):
+            raise ValueError('SUBTYPE requires sub_link and subtype')
 
     def to_dict(self) -> dict:
         if self.type.is_binary():

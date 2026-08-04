@@ -6,6 +6,7 @@ from tree_sitter import Node
 
 from .distributions import Distributions, DistributionsException
 
+logger = logging.getLogger(__name__)
 
 class malAnalyzerException(Exception):
     def __init__(self, error_message):
@@ -40,7 +41,7 @@ class malAnalyzer:
         super().__init__(*args, **kwargs)
 
     def _raise_analyzer_exception(self, error_msg: str):
-        logging.error(error_msg)
+        logger.error(error_msg)
         raise malAnalyzerException(error_msg)
 
     def has_error(self) -> bool:
@@ -68,7 +69,7 @@ class malAnalyzer:
         """
         Check for mandatory defines: ID & Version
         """
-        if 'id' in self._defines.keys():
+        if 'id' in self._defines:
             define_value: str = self._defines['id']['value']
             if len(define_value) == 0:
                 error_msg = "Define 'id' cannot be empty"
@@ -77,7 +78,7 @@ class malAnalyzer:
             error_msg = 'Missing required define \'#id: ""\''
             self._raise_analyzer_exception(error_msg)
 
-        if 'version' in self._defines.keys():
+        if 'version' in self._defines:
             version: str = self._defines['version']['value']
             if not re.match(r'\d+\.\d+\.\d+', version):
                 error_msg = "Define 'version' must be valid semantic versioning without pre-release identifier and build metadata"
@@ -96,9 +97,8 @@ class malAnalyzer:
             if asset_node.child_by_field_name('extends'):
                 # Next sibling is the identifier itself
                 extend_asset = asset_node.child_by_field_name('extends')
-                if extend_asset and extend_asset.next_sibling:
-                    if extend_asset.next_sibling.text:
-                        extend_asset_name = extend_asset.next_sibling.text.decode()
+                if (bool(extend_asset) and bool(extend_asset.next_sibling)) and bool(extend_asset.next_sibling.text):
+                    extend_asset_name = extend_asset.next_sibling.text.decode()
 
                 if extend_asset_name not in self._assets:
                     """
@@ -140,7 +140,7 @@ class malAnalyzer:
                         break
                 if not found:
                     self._warn = True
-                    logging.warning(
+                    logger.warning(
                         f"Asset '{parent_node_name}' is abstract but never extended to"
                     )
 
@@ -183,7 +183,7 @@ class malAnalyzer:
         For every attackStep in every asset, verify if the prerequisites point to assets and that the reaches point to
         attack steps
         """
-        for asset in self._assets.keys():
+        for asset in self._assets:
             attack_steps = self._assets[asset]['obj']['attackSteps']
             for attack_step in attack_steps:
                 if attack_step['type'] in ['exist', 'notExist']:
@@ -225,10 +225,10 @@ class malAnalyzer:
             leftAsset = association['association']['leftAsset']
             rightAsset = association['association']['rightAsset']
 
-            if leftAsset not in self._assets.keys():
+            if leftAsset not in self._assets:
                 error_msg = f"Left asset '{leftAsset}' is not defined"
                 self._raise_analyzer_exception(error_msg)
-            if rightAsset not in self._assets.keys():
+            if rightAsset not in self._assets:
                 error_msg = f"Right asset '{leftAsset}' is not defined"
                 self._raise_analyzer_exception(error_msg)
 
@@ -237,7 +237,7 @@ class malAnalyzer:
         Update a variable's fields (associations) to include its parents associations.
         Also checks if an association has been defined more than once in a hierarchy
         """
-        for asset in self._assets.keys():
+        for asset in self._assets:
             parents = self._get_parents(self._assets[asset]['node'])
             for parent in parents:
                 for association in self._all_associations:
@@ -256,7 +256,7 @@ class malAnalyzer:
             # Check if there isn't a step with the same name
             step_node = self._has_step(asset, field)
             if not step_node:
-                if asset not in self._associations.keys():
+                if asset not in self._associations:
                     self._associations[asset] = {
                         field: {k: association[k] for k in ['association', 'node']}
                     }
@@ -274,7 +274,7 @@ class malAnalyzer:
             self._raise_analyzer_exception(error_msg)
 
     def _has_step(self, asset, field):
-        if asset in self._steps.keys() and field in self._steps[asset]:
+        if asset in self._steps and field in self._steps[asset]:
             return self._steps[asset][field]['node']
         return None
 
@@ -303,22 +303,22 @@ class malAnalyzer:
         Once that is done, we need to guarantee that the variable points to an asset and that
         there are no loops in the variables, i.e. a variable does not somehow reference itself
         """
-        for asset in self._assets.keys():
+        for asset in self._assets:
             parents = self._get_parents(self._assets[asset]['node'])
             parents.pop()  # The last element is the asset itself, no need to check again if variable is defined twice
             for parent in parents:
-                if parent not in self._vars.keys():
+                if parent not in self._vars:
                     continue  # If parent has no variables, we don't need to do anything
-                if asset not in self._vars.keys():
+                if asset not in self._vars:
                     self._vars[asset] = self._vars[
                         parent
                     ]  # If asset has no variables, just inherit its parents variables
                     continue
                 # Otherwise, we do need to check if variables are defined more than once
-                for var in self._vars[asset].keys():
+                for var in self._vars[asset]:
                     if (
-                        parent in self._vars.keys()
-                        and var in self._vars[parent].keys()
+                        parent in self._vars
+                        and var in self._vars[parent]
                         and self._vars[asset][var]['node']
                         != self._vars[parent][var]['node']
                     ):
@@ -327,8 +327,8 @@ class malAnalyzer:
                 self._vars[asset].update(self._vars[parent])
 
             # If the current asset has variables, we want to check they point to an asset
-            if asset in self._vars.keys():
-                for var in self._vars[asset].keys():
+            if asset in self._vars:
+                for var in self._vars[asset]:
                     if self._variable_to_asset(asset, var) is None:
                         error_msg = f"Variable '{var}' defined at {self._vars[asset][var]['node'].start_point.row} does not point to an asset"
                         self._raise_analyzer_exception(self._error_msg + error_msg)
@@ -340,8 +340,8 @@ class malAnalyzer:
         match expr['type']:
             # Returns an attackStep if it exists for this asset
             case 'attackStep':
-                if asset in self._assets.keys():
-                    for attackStep in self._steps[asset].keys():
+                if asset in self._assets:
+                    for attackStep in self._steps[asset]:
                         if attackStep == expr['name']:
                             return self._steps[asset][attackStep]['step']
                 error_msg = (
@@ -381,7 +381,7 @@ class malAnalyzer:
             case 'subType':
                 return self._check_sub_type_expr(asset, expr)
             case _:
-                logging.error(f"Unexpected expression '{expr['type']}'")
+                logger.error(f"Unexpected expression '{expr['type']}'")
                 self._error = True
                 return None
 
@@ -389,19 +389,17 @@ class malAnalyzer:
         """
         Check if an asset exists by checking the associations for the current asset
         """
-        if asset in self._associations.keys():
-            for association in self._associations[asset].keys():
+        if asset in self._associations:
+            for association in self._associations[asset]:
                 association = self._associations[asset][association]['association']
-                if expr['name'] == association['leftField']:
-                    if self._get_asset_name(association['leftAsset']):
-                        return association['leftAsset']
-                if expr['name'] == association['rightField']:
-                    if self._get_asset_name(association['rightAsset']):
-                        return association['rightAsset']
+                if (expr['name'] == association['leftField']) and self._get_asset_name(association['leftAsset']):
+                    return association['leftAsset']
+                if (expr['name'] == association['rightField']) and self._get_asset_name(association['rightAsset']):
+                    return association['rightAsset']
 
         # Verify if there is a variable defined with the same name; possible the user forgot to call it
         extra = ''
-        if asset in self._vars.keys() and expr['name'] in self._vars[asset].keys():
+        if asset in self._vars and expr['name'] in self._vars[asset]:
             extra = f", did you mean the variable '{expr['name']}()'?"
             self._warn = True
 
@@ -413,7 +411,7 @@ class malAnalyzer:
         """
         Check if there is a variable reference in this asset with the user identifier.
         """
-        if asset in self._vars.keys() and expr['name'] in self._vars[asset].keys():
+        if asset in self._vars and expr['name'] in self._vars[asset]:
             return self._variable_to_asset(asset, expr['name'])
 
         self._error_msg = f"Variable '{expr['name']}' is not defined\n"
@@ -529,10 +527,10 @@ class malAnalyzer:
         return parents
 
     def _get_asset_name(self, name):
-        if name in self._assets.keys():
+        if name in self._assets:
             return name
 
-        logging.error(f"Asset '{name}' not defined")
+        logger.error(f"Asset '{name}' not defined")
         self._error = True
         return None
 
@@ -540,7 +538,7 @@ class malAnalyzer:
         """
         For each asset, obtain its parents and analyse each step
         """
-        for asset in self._assets.keys():
+        for asset in self._assets:
             parents = self._get_parents(self._assets[asset]['node'])
             self._read_steps(asset, parents)
 
@@ -564,11 +562,11 @@ class malAnalyzer:
         seen_steps: list[tuple] = []
         for parent in parents:
             # If this parent has no steps, skip it
-            if parent not in self._steps.keys():
+            if parent not in self._steps:
                 continue
 
             current_steps = []
-            for attackStep in self._steps[parent].keys():
+            for attackStep in self._steps[parent]:
                 # Verify if attackStep has not been defined in the current asset
                 if attackStep not in current_steps:
                     # Verify if attackStep has not been defined in any parent asset
@@ -621,7 +619,7 @@ class malAnalyzer:
 
         for parent, steps in seen_steps:
             for step in steps:
-                if asset not in self._steps.keys():
+                if asset not in self._steps:
                     self._steps[asset] = {step: self._steps[parent][step]}
                 else:
                     self._steps[asset][step] = self._steps[parent][step]
@@ -660,14 +658,14 @@ class malAnalyzer:
         category_name = category_name_node.text.decode()
 
         if not asset_name:
-            logging.error(
+            logger.error(
                 f'Asset was defined without a name at line {node.start_point.row}'
             )
             self._error = True
             return
 
         # Check if asset was previously defined in the same category.
-        if asset_name in self._assets.keys():
+        if asset_name in self._assets:
             prev_asset_line = self._assets[asset_name]['node'].start_point.row
             error_msg = f"Asset '{asset_name}' previously defined at {prev_asset_line}"
             self._raise_analyzer_exception(error_msg)
@@ -686,11 +684,11 @@ class malAnalyzer:
         meta_name, _ = data
 
         # Check if we don't have the metas for this parent (category, asset, step or association)
-        if node.parent not in self._metas.keys():
+        if node.parent not in self._metas:
             self._metas[node.parent] = {meta_name: node}
         # Check if the new meta is not already defined
         elif (
-            node.parent in self._metas.keys()
+            node.parent in self._metas
             and meta_name not in self._metas[node.parent]
         ):
             self._metas[node.parent][meta_name] = node
@@ -711,12 +709,12 @@ class malAnalyzer:
         # TODO: is this really needed? doesn't the grammar prevent this?
         if str(category['name']) == '<missing <INVALID>>':
             category_line = node.start_point.row
-            logging.error(f'Category has no name at line {category_line}')
+            logger.error(f'Category has no name at line {category_line}')
             self._error = True
             return
 
         if len(category['meta']) == 0 and len(assets) == 0:
-            logging.warning(
+            logger.warning(
                 f"Category '{category['name']}' contains no assets or metadata"
             )
 
@@ -730,10 +728,10 @@ class malAnalyzer:
         Given a new define, verify if it has been previously defined
         """
         _, obj = data
-        key, value = list(obj.items())[0]
+        key, value = next(iter(obj.items()))
 
         # ID and version can be defined multiple times
-        if key != 'id' and key != 'version' and key in self._defines.keys():
+        if key != 'id' and key != 'version' and key in self._defines:
             prev_define_line = self._defines[key]['node'].start_point.row
             error_msg = f"Define '{key}' previously defined at line {prev_define_line}"
             self._raise_analyzer_exception(error_msg)
@@ -777,10 +775,10 @@ class malAnalyzer:
         asset_name = asset_name_node.text.decode()
 
         # Check if asset has no steps
-        if asset_name not in self._steps.keys():
+        if asset_name not in self._steps:
             self._steps[asset_name] = {step_name: {'node': node, 'step': step}}
         # If so, check if the there is no step with this name in the current asset
-        elif step_name not in self._steps[asset_name].keys():
+        elif step_name not in self._steps[asset_name]:
             self._steps[asset_name][step_name] = {'node': node, 'step': step}
         # Otherwise, log error
         else:
@@ -823,7 +821,7 @@ class malAnalyzer:
             letter = cia.text.decode()
 
             if letter in cias:
-                logging.warning(
+                logger.warning(
                     f'Attack step {asset_name}.{step_name} contains duplicate classification {letter}'
                 )
                 self._warn = True
@@ -910,7 +908,7 @@ class malAnalyzer:
 
         asset_name: str = str(asset_name_node.text.decode())
         var_name: str = var['name']
-        if asset_name not in self._vars.keys():
+        if asset_name not in self._vars:
             self._vars[asset_name] = {var_name: {'node': node, 'var': var}}
         elif var_name not in self._vars[asset_name]:
             self._vars[asset_name][var_name] = {'node': node, 'var': var}

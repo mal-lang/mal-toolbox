@@ -46,7 +46,7 @@ def load_model_dict_from_file(
 ) -> dict:
     """Load a json or yaml file to dict"""
     model_dict = {}
-    if filename.endswith('.yml') or filename.endswith('.yaml'):
+    if filename.endswith(('.yml', '.yaml')):
         model_dict = load_dict_from_yaml_file(filename)
     elif filename.endswith('.json'):
         model_dict = load_dict_from_json_file(filename)
@@ -147,7 +147,7 @@ def convert_model_dict_from_version_0_1(model_dict: dict) -> dict:
             'Only one key per association in model file allowed'
         )
 
-        assoc_name = list(assoc_dict.keys())[0]
+        assoc_name = next(iter(assoc_dict.keys()))
         new_assoc_name = assoc_name.split('_')[0]
         new_assoc_dict[new_assoc_name] = {}
         for field, targets in assoc_dict[assoc_name].items():
@@ -216,9 +216,9 @@ def convert_model_dict_from_version_0_2(model_dict: dict) -> dict:
             'Only one key per association in model file allowed'
         )
 
-        assoc_name = list(assocs_dict.keys())[0]
+        assoc_name = next(iter(assocs_dict.keys()))
         assoc_dict = assocs_dict[assoc_name]
-        left_field_name = list(assoc_dict.keys())[0]
+        left_field_name = next(iter(assoc_dict.keys()))
         right_field_name = list(assoc_dict.keys())[1]
 
         for l_asset_id in assoc_dict[left_field_name]:

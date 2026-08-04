@@ -325,7 +325,7 @@ def language_graph_from_dict(serialized_graph: dict) -> LanguageGraph:
             attack_steps={},
             info=asset['info'],
             own_super_asset=None,
-            own_sub_assets=list(),
+            own_sub_assets=[],
             own_variables={},
             is_abstract=asset['is_abstract'],
         )

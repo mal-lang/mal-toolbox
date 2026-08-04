@@ -336,7 +336,7 @@ def get_existance_status(
 
     existence_status = False
     for requirement in lg_attack_step.requires:
-        target_assets = follow_expr_chain(model, set([asset]), requirement)
+        target_assets = follow_expr_chain(model, {asset}, requirement)
         # If the step expression resolution yielded
         # the target assets then the required assets
         # exist in the model.

@@ -58,11 +58,11 @@ def create_attack_graph(
     try:
         attack_graph = AttackGraph(lang_graph, instance_model)
 
-    except AttackGraphStepExpressionError as e:
+    except AttackGraphStepExpressionError:
         logger.error(
             'Attack graph generation failed when attempting '
             'to resolve attack step expression!'
         )
-        raise e
+        raise
 
     return attack_graph

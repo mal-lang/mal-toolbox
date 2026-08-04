@@ -157,6 +157,6 @@ class LanguageGraphAsset:
         """Return a set of all common ancestors between this asset
         and the other asset given as parameter
         """
-        self_superassets = set(asset.name for asset in self.super_assets)
-        other_superassets = set(asset.name for asset in other.super_assets)
+        self_superassets = {asset.name for asset in self.super_assets}
+        other_superassets = {asset.name for asset in other.super_assets}
         return self_superassets.intersection(other_superassets)

@@ -85,7 +85,7 @@ def attack_graph_from_dict(
         if not isinstance(_ag_node, AttackGraphNode):
             msg = 'Failed to find node with id %s when loading attack graph from dict'
             logger.error(msg, node_dict['id'])
-            raise LookupError(msg % node_dict['id'])
+            raise LookupError(msg % node_dict['id'])  # noqa: TRY004
         for child_id in node_dict['children']:
             child = attack_graph.nodes[int(child_id)]
             if child is None:

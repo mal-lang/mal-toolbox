@@ -215,9 +215,7 @@ class Model:
 
         """
         maltoolbox_version = (
-            serialized_object['metadata']['MAL Toolbox Version']
-            if 'MAL Toolbox Version' in serialized_object['metadata']
-            else __version__
+            serialized_object['metadata'].get('MAL Toolbox Version', __version__)
         )
         model = Model(
             serialized_object['metadata']['name'],

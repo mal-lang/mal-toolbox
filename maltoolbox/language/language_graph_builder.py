@@ -66,7 +66,7 @@ def create_lg_assets(lang_spec: dict[str, Any]) -> dict[str, LanguageGraphAsset]
             attack_steps={},
             info=asset_dict['meta'],
             own_super_asset=None,
-            own_sub_assets=list(),
+            own_sub_assets=[],
             own_variables={},
             is_abstract=asset_dict['isAbstract'],
         )
@@ -236,13 +236,11 @@ def _connect_attack_steps(
                 )
                 if not tgt_asset:
                     raise LanguageGraphStepExpressionError(
-                        'Failed to find target asset for:\n%s'
-                        % json.dumps(expr, indent=2)
+                        f'Failed to find target asset for:\n{json.dumps(expr, indent=2)}'
                     )
                 if tgt_name not in tgt_asset.attack_steps:
                     raise LanguageGraphStepExpressionError(
-                        'Failed to find target attack step %s on %s:\n%s'
-                        % (tgt_name, tgt_asset.name, json.dumps(expr, indent=2))
+                        f'Failed to find target attack step {tgt_name} on {tgt_asset.name}:\n{json.dumps(expr, indent=2)}'
                     )
 
                 tgt = tgt_asset.attack_steps[tgt_name]
@@ -255,8 +253,7 @@ def _connect_attack_steps(
                 reqs = attack_step_dict.get('requires', {}).get('stepExpressions', [])
                 if not reqs:
                     raise LanguageGraphStepExpressionError(
-                        'Missing requirements for "%s" of type "%s":\n%s'
-                        % (step.name, step.type, json.dumps(attack_step_dict, indent=2))
+                        f'Missing requirements for "{step.name}" of type "{step.type}":\n{json.dumps(attack_step_dict, indent=2)}'
                     )
                 for expr in reqs:
                     _, chain, _ = process_step_expression(

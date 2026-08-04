@@ -76,11 +76,7 @@ class LanguageGraphAssociation:
         association name, left field name, left asset type, right field name,
         and right asset type.
         """
-        full_name = '%s_%s_%s' % (
-            self.name,
-            self.left_field.fieldname,
-            self.right_field.fieldname,
-        )
+        full_name = f'{self.name}_{self.left_field.fieldname}_{self.right_field.fieldname}'
         return full_name
 
     def get_field(self, fieldname: str) -> LanguageGraphAssociationField:
@@ -99,11 +95,7 @@ class LanguageGraphAssociation:
         False, otherwise.
 
         """
-        if self.left_field.fieldname == fieldname:
-            return True
-        if self.right_field.fieldname == fieldname:
-            return True
-        return False
+        return (self.left_field.fieldname == fieldname) or (self.right_field.fieldname == fieldname)
 
     def contains_asset(self, asset: Any) -> bool:
         """Check if the association matches the asset given as a parameter. A
@@ -117,11 +109,7 @@ class LanguageGraphAssociation:
         False, otherwise.
 
         """
-        if asset.is_subasset_of(self.left_field.asset):
-            return True
-        if asset.is_subasset_of(self.right_field.asset):
-            return True
-        return False
+        return bool(asset.is_subasset_of(self.left_field.asset)) or bool(asset.is_subasset_of(self.right_field.asset))
 
     def get_opposite_fieldname(self, fieldname: str) -> str:
         """Return the opposite field name if the association contains the field
