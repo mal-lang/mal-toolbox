@@ -1,4 +1,4 @@
-# MAL Toolbox v2.9.0
+# MAL Toolbox v2.9.1
 # Copyright 2025, Andrei Buhaiu.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,20 +15,19 @@
 #
 
 
-"""MAL-Toolbox Framework
-"""
+"""MAL-Toolbox Framework"""
 
-__title__ = "maltoolbox"
-__version__ = "2.9.0"
+__title__ = 'maltoolbox'
+__version__ = '2.9.1'
 __authors__ = [
-    "Andrei Buhaiu",
-    "Giuseppe Nebbione",
-    "Nikolaos Kakouros",
-    "Jakob Nyberg",
-    "Joakim Loxdal",
+    'Andrei Buhaiu',
+    'Giuseppe Nebbione',
+    'Nikolaos Kakouros',
+    'Jakob Nyberg',
+    'Joakim Loxdal',
 ]
-__license__ = "Apache 2.0"
-__docformat__ = "restructuredtext en"
+__license__ = 'Apache 2.0'
+__docformat__ = 'restructuredtext en'
 
 __all__ = ()
 
@@ -39,38 +38,38 @@ from typing import Any
 import yaml
 
 config: dict[str, Any] = {
-    "logging": {
-        "log_level": logging.INFO,
-        "log_file": "logs/log.txt",
-        "attackgraph_file": "logs/attackgraph.yml",
-        "model_file": "logs/model.yml",
-        "langspec_file": "logs/langspec_file.json",
-        "langgraph_file": "logs/langgraph.yml",
+    'logging': {
+        'log_level': logging.INFO,
+        'log_file': 'logs/log.txt',
+        'attackgraph_file': 'logs/attackgraph.yml',
+        'model_file': 'logs/model.yml',
+        'langspec_file': 'logs/langspec_file.json',
+        'langgraph_file': 'logs/langgraph.yml',
     },
-    "neo4j": {"uri": None, "username": None, "password": None, "dbname": None},
+    'neo4j': {'uri': None, 'username': None, 'password': None, 'dbname': None},
 }
 
-config_file = os.getenv("MALTOOLBOX_CONFIG", "maltoolbox.yml")
+config_file = os.getenv('MALTOOLBOX_CONFIG', 'maltoolbox.yml')
 
 if os.path.exists(config_file):
     with open(config_file) as f:
         config |= yaml.safe_load(f)
 
 log_configs = config['logging']
-os.makedirs(os.path.dirname(log_configs["log_file"]), exist_ok=True)
+os.makedirs(os.path.dirname(log_configs['log_file']), exist_ok=True)
 
 neo4j_configs = config['logging']
 
 formatter = logging.Formatter(
-    "%(asctime)s %(name)-12s %(levelname)-8s %(message)s", datefmt="%m-%d %H:%M"
+    '%(asctime)s %(name)-12s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M'
 )
-file_handler = logging.FileHandler(log_configs["log_file"], mode="w")
+file_handler = logging.FileHandler(log_configs['log_file'], mode='w')
 file_handler.setFormatter(formatter)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(file_handler)
 
-logger.setLevel(log_configs.get("log_level"))
-logger.info("Set loggin level of %s to %s.", __name__, log_configs.get("log_level"))
+logger.setLevel(log_configs.get('log_level'))
+logger.info('Set loggin level of %s to %s.', __name__, log_configs.get('log_level'))
 
-logger.debug("Config file location: %s", config_file)
+logger.debug('Config file location: %s', config_file)

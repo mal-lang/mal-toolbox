@@ -45,10 +45,7 @@ from .visualization import (
 logger = logging.getLogger(__name__)
 
 
-def generate_attack_graph(
-        model_file: str,
-        lang_file: str
-    ) -> AttackGraph:
+def generate_attack_graph(model_file: str, lang_file: str) -> AttackGraph:
     """Create an attack graph
 
     Args:
@@ -59,9 +56,7 @@ def generate_attack_graph(
     """
     attack_graph = create_attack_graph(lang_file, model_file)
     if log_configs['attackgraph_file']:
-        attack_graph.save_to_file(
-            log_configs['attackgraph_file']
-        )
+        attack_graph.save_to_file(log_configs['attackgraph_file'])
     return attack_graph
 
 
@@ -85,22 +80,16 @@ def main():
     args = docopt.docopt(__doc__)
 
     if args['generate-attack-graph']:
-        attack_graph = generate_attack_graph(
-            args['<model_file>'], args['<lang_file>']
-        )
+        attack_graph = generate_attack_graph(args['<model_file>'], args['<lang_file>'])
         if args['--graphviz']:
             render_attack_graph(attack_graph)
         if args['--neo4j']:
             ingest_attack_graph_neo4j(attack_graph, neo4j_configs)
 
     elif args['compile']:
-        compile(
-            args['<lang_file>'], args['<output_file>']
-        )
+        compile(args['<lang_file>'], args['<output_file>'])
     elif args['upgrade-model']:
-        upgrade_model(
-            args['<model_file>'], args['<lang_file>'], args['<output_file>']
-        )
+        upgrade_model(args['<model_file>'], args['<lang_file>'], args['<output_file>'])
     elif args['visualize-model']:
         lang_graph = LanguageGraph.load_from_file(args['<lang_file>'])
         model = Model.load_from_file(args['<model_file>'], lang_graph)
@@ -112,5 +101,5 @@ def main():
             create_drawio_file_with_images(model)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

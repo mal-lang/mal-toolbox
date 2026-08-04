@@ -1,7 +1,6 @@
 class MalCompilerError(Exception):
     """Base exception for MalCompiler errors."""
 
-    pass
 
 
 class MalSyntaxError(MalCompilerError):
@@ -16,22 +15,18 @@ class MalSyntaxError(MalCompilerError):
 class MalParseError(MalCompilerError):
     """Raised when parsing fails."""
 
-    pass
 
 
 class MalTypeError(MalCompilerError):
     """Raised when type checking fails."""
 
-    pass
 
 
 class MalNameError(MalCompilerError):
     """Raised when an undefined name is referenced."""
 
-    pass
 
 
 class MalCompilationError(MalCompilerError):
     """Raised when code generation fails."""
 
-    pass

@@ -1,21 +1,22 @@
-from maltoolbox.language.compiler import MalCompiler
-from maltoolbox.language import LanguageGraph
 import pytest
+
+from maltoolbox.language import LanguageGraph
+from maltoolbox.language.compiler import MalCompiler
 
 
 def compile_lang(tmp_path, src: str):
-    lang_file = tmp_path / "test.mal"
+    lang_file = tmp_path / 'test.mal'
     lang_file.write_text(src)
     return MalCompiler().compile(str(lang_file))
 
 
 @pytest.mark.parametrize(
-    "asset_id",
+    'asset_id',
     [
-        "asset-name",     # hyphen
-        "asset.name",     # dot
-        "asset name",     # space
-        "asset$",         # special char
+        'asset-name',  # hyphen
+        'asset.name',  # dot
+        'asset name',  # space
+        'asset$',  # special char
     ],
 )
 def test_compiler_illegal_asset_names(tmp_path, asset_id):
@@ -29,7 +30,7 @@ def test_compiler_illegal_asset_names(tmp_path, asset_id):
         }}
     }}
     """
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         compile_lang(tmp_path, lang)
 
 
@@ -58,7 +59,7 @@ def test_compiler_non_existing_step(tmp_path):
         }
     }
     """
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         compile_lang(tmp_path, lang)
 
 

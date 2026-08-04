@@ -1,16 +1,17 @@
 """Utilty functions for file handling"""
 
 import json
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
+
 import yaml
 
 
 def download_git_repo(git_url: str):
     """Clone a git repository into ./langs/<repository-name>, overriding any existing copy."""
-    base_dir = Path("./.langs")
+    base_dir = Path('./.langs')
 
     # Derive repository name from URL
     repo_name = Path(urlparse(git_url).path).stem
@@ -25,13 +26,14 @@ def download_git_repo(git_url: str):
 
     # Clone repository into ./langs/<repository-name> (shallow clone)
     subprocess.run(
-        ["git", "clone", "--depth", "1", git_url, str(repo_dir)],
+        ['git', 'clone', '--depth', '1', git_url, str(repo_dir)],
         check=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
 
     return repo_dir
+
 
 def save_dict_to_json_file(filename: str, serialized_object: dict) -> None:
     """Save serialized object to a json file.

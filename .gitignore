@@ -67,3 +67,6 @@ nosetests.xml
 
 # uv lock file
 uv.lock
+
+# Claude
+.claude

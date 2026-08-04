@@ -1,8 +1,8 @@
 from maltoolbox.attackgraph import create_attack_graph
 from maltoolbox.visualization.graphviz_utils import render_attack_graph, render_model
 
-lang_file = "../resources/org.mal-lang.coreLang-1.0.0.mar" 
-model_file = "../resources/model.yml"
+lang_file = '../resources/org.mal-lang.coreLang-1.0.0.mar'
+model_file = '../resources/model.yml'
 
 # Generate attack graph from language + model
 attack_graph = create_attack_graph(lang_file, model_file)

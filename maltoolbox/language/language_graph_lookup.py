@@ -1,10 +1,9 @@
-
 import logging
 
 from maltoolbox.exceptions import LanguageGraphException
 
-
 logger = logging.getLogger(__name__)
+
 
 def get_attacks_for_asset_type(asset_type: str, lang_spec) -> dict[str, dict]:
     """Get all Attack Steps for a specific asset type.
@@ -26,19 +25,16 @@ def get_attacks_for_asset_type(asset_type: str, lang_spec) -> dict[str, dict]:
     attack_steps: dict = {}
     try:
         asset = next(
-            asset for asset in lang_spec['assets']
-                if asset['name'] == asset_type
+            asset for asset in lang_spec['assets'] if asset['name'] == asset_type
         )
     except StopIteration:
         logger.error(
-            'Failed to find asset type %s when looking'
-            'for attack steps.', asset_type
+            'Failed to find asset type %s when lookingfor attack steps.', asset_type
         )
         return attack_steps
 
     logger.debug(
-        'Get attack steps for %s asset from '
-        'language specification.', asset['name']
+        'Get attack steps for %s asset from language specification.', asset['name']
     )
 
     attack_steps = {step['name']: step for step in asset['attackSteps']}
@@ -62,23 +58,24 @@ def get_associations_for_asset_type(asset_type: str, lang_spec) -> list[dict]:
 
     """
     logger.debug(
-        'Get associations for %s asset from '
-        'language specification.', asset_type
+        'Get associations for %s asset from language specification.', asset_type
     )
     associations: list = []
 
-    asset = next((asset for asset in lang_spec['assets']
-        if asset['name'] == asset_type), None)
+    asset = next(
+        (asset for asset in lang_spec['assets'] if asset['name'] == asset_type), None
+    )
     if not asset:
         logger.error(
-            'Failed to find asset type %s when '
-            'looking for associations.', asset_type
+            'Failed to find asset type %s when looking for associations.', asset_type
         )
         return associations
 
-    assoc_iter = (assoc for assoc in lang_spec['associations']
-        if assoc['leftAsset'] == asset_type or
-            assoc['rightAsset'] == asset_type)
+    assoc_iter = (
+        assoc
+        for assoc in lang_spec['associations']
+        if assoc['leftAsset'] == asset_type or assoc['rightAsset'] == asset_type
+    )
     assoc = next(assoc_iter, None)
     while assoc:
         associations.append(assoc)
@@ -102,11 +99,14 @@ def get_variables_for_asset_type(asset_type: str, lang_spec) -> list[dict]:
     belonging to the asset.
 
     """
-    asset_dict = next((asset for asset in lang_spec['assets']
-        if asset['name'] == asset_type), None)
+    asset_dict = next(
+        (asset for asset in lang_spec['assets'] if asset['name'] == asset_type), None
+    )
     if not asset_dict:
-        msg = 'Failed to find asset type %s in language specification '\
+        msg = (
+            'Failed to find asset type %s in language specification '
             'when looking for variables.'
+        )
         logger.error(msg, asset_type)
         raise LanguageGraphException(msg % asset_type)
 
@@ -129,12 +129,20 @@ def get_var_expr_for_asset(asset_type: str, var_name: str, lang_spec) -> dict:
     """
     vars_dict = get_variables_for_asset_type(asset_type, lang_spec)
 
-    var_expr = next((var_entry['stepExpression'] for var_entry
-        in vars_dict if var_entry['name'] == var_name), None)
+    var_expr = next(
+        (
+            var_entry['stepExpression']
+            for var_entry in vars_dict
+            if var_entry['name'] == var_name
+        ),
+        None,
+    )
 
     if not var_expr:
-        msg = 'Failed to find variable name "%s" in language '\
+        msg = (
+            'Failed to find variable name "%s" in language '
             'specification when looking for variables for "%s" asset.'
+        )
         logger.error(msg, var_name, asset_type)
         raise LanguageGraphException(msg % (var_name, asset_type))
     return var_expr

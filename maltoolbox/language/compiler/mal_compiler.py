@@ -1,14 +1,16 @@
-from tree_sitter import TreeCursor, Node
-from typing import Any, Callable, Tuple
-from collections.abc import MutableMapping, MutableSequence
+from collections.abc import Callable, MutableMapping, MutableSequence
 from pathlib import Path
-from .lang import PARSER as parser
-from .mal_analyzer import malAnalyzer
+from typing import Any
+
+from tree_sitter import Node, TreeCursor
+
 from .exceptions import (
     MalCompilerError,
 )
+from .lang import PARSER as parser
+from .mal_analyzer import malAnalyzer
 
-ASTNode = Tuple[str, object]
+ASTNode = tuple[str, object]
 
 """
 This function is crucial to use instead of cursor.goto_next_sibling()
@@ -120,9 +122,9 @@ class ParseTreeVisitor:
                 included_file = self.compile(value)
                 for k, v in langspec.items():
                     if isinstance(v, MutableMapping):
-                        langspec[k].update(included_file.get(k, {}))
+                        v.update(included_file.get(k, {}))
                     if isinstance(v, MutableSequence) and k in included_file:
-                        langspec[k].extend(included_file[k])
+                        v.extend(included_file[k])
 
             # Go back to declaration
             cursor.goto_parent()
@@ -447,9 +449,9 @@ class MalCompiler(ParseTreeVisitor):
                 detectors[detector_name] = detector
             elif node.type == 'ERROR':
                 raise MalCompilerError(
-                    f"Syntax error in detector at "
-                    f"{node.start_point}: "
-                    f"{node_text(cursor, 'error').decode(errors='ignore')!r}"
+                    f'Syntax error in detector at '
+                    f'{node.start_point}: '
+                    f'{node_text(cursor, "error").decode(errors="ignore")!r}'
                 )
             else:
                 # Not a detector → stop processing detectors
@@ -579,7 +581,7 @@ class MalCompiler(ParseTreeVisitor):
         elif assert_node(cursor.node).type == 'fpr_only':
             fprate = self.visit(cursor)
         else:
-            raise ValueError("Unknown tp/fp rate for detector")
+            raise ValueError('Unknown tp/fp rate for detector')
 
         return {'tprate': tprate, 'fprate': fprate}
 
@@ -593,9 +595,7 @@ class MalCompiler(ParseTreeVisitor):
         go_to_sibling(cursor)  # skip ':'
         return self.visit(cursor)
 
-    def visit_tp_fp_pair(
-            self, cursor: TreeCursor
-        ) -> tuple[float | None, float | None]:
+    def visit_tp_fp_pair(self, cursor: TreeCursor) -> tuple[float | None, float | None]:
         #########################
         # (tpr|fpr) ':' float, (tpr|fpr) ':' float #
         #########################
@@ -899,7 +899,10 @@ class MalCompiler(ParseTreeVisitor):
 
         parent_node = original_node.parent
 
-        while parent_node and parent_node.type not in ('reaching', 'detector_context_reference'):
+        while parent_node and parent_node.type not in (
+            'reaching',
+            'detector_context_reference',
+        ):
             # The idea is to go up the tree. If we find a "reaching" node,
             # we still need to determine if it's a field or a an attackStep
             parent_node = parent_node.parent

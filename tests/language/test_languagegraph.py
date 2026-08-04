@@ -1,8 +1,9 @@
 """Tests for the LanguageGraph"""
 
+import pickle
+
 import pytest
 from conftest import path_testdata
-import pickle
 
 from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
 from maltoolbox.language.compiler import MalCompiler
@@ -14,7 +15,7 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
     the same language graph. We have to use the json format to save and load
     because YAML reorders the keys in alphabetical order.
     """
-    graph_path = "/tmp/langgraph.json"
+    graph_path = '/tmp/langgraph.json'
     corelang_lang_graph.save_to_file(graph_path)
 
     new_lang_graph = LanguageGraph.load_from_file(graph_path)
@@ -26,16 +27,17 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
     for asset in new_lang_graph.assets.values():
         assocs.update(asset.associations.values())
 
+
 def test_languagegraph_to_dict_detectors():
     """Test to see that we can save detector lang to dict"""
-    lang_path = path_testdata("detector_lang.mal")
+    lang_path = path_testdata('detector_lang.mal')
     new_lang_graph = LanguageGraph.load_from_file(lang_path)
-    test_path = "/tmp/detector_lang.json"
+    test_path = '/tmp/detector_lang.json'
     new_lang_graph.save_to_file(test_path)
 
 
 def test_languagegraph_save_load_mar(corelang_lang_graph: LanguageGraph):
-    graph_path = "/tmp/langgraph.mar"
+    graph_path = '/tmp/langgraph.mar'
     corelang_lang_graph.save_to_file(graph_path)
 
     new_lang_graph = LanguageGraph.load_from_file(graph_path)
@@ -50,7 +52,7 @@ def test_corelang_with_union_different_assets_same_super_asset():
     Identity and Group, which should be allowed, since they
     share the same super asset.
     """
-    mar_file_path = path_testdata("corelang-union-common-ancestor.mar")
+    mar_file_path = path_testdata('corelang-union-common-ancestor.mar')
 
     # Make sure that it can generate
     LanguageGraph.from_mar_archive(mar_file_path)
@@ -61,28 +63,30 @@ def test_interleaved_vars():
     variables from each other, A2 contains B1 and B2 contains A1) were
     resolved correct.
     """
-    test_lang_graph = LanguageGraph(MalCompiler().compile("tests/testdata/interleaved_vars.mal"))
-    assert "AssetA" in test_lang_graph.assets
-    assert "AssetB" in test_lang_graph.assets
+    test_lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/interleaved_vars.mal')
+    )
+    assert 'AssetA' in test_lang_graph.assets
+    assert 'AssetB' in test_lang_graph.assets
 
-    assetA = test_lang_graph.assets["AssetA"]
-    assetB = test_lang_graph.assets["AssetB"]
+    assetA = test_lang_graph.assets['AssetA']
+    assetB = test_lang_graph.assets['AssetB']
 
-    assert "A1" in assetA.variables
-    assert "A2" in assetA.variables
-    assert "B1" in assetB.variables
-    assert "B2" in assetB.variables
+    assert 'A1' in assetA.variables
+    assert 'A2' in assetA.variables
+    assert 'B1' in assetB.variables
+    assert 'B2' in assetB.variables
 
-    varA2 = assetA.variables["A2"]
-    varB2 = assetB.variables["B2"]
+    varA2 = assetA.variables['A2']
+    varB2 = assetB.variables['B2']
     assert varA2[0] == assetA
-    assert varA2[1].right_link.fieldname == "fieldA"
+    assert varA2[1].right_link.fieldname == 'fieldA'
     assert varB2[0] == assetB
-    assert varB2[1].right_link.fieldname == "fieldB"
+    assert varB2[1].right_link.fieldname == 'fieldB'
 
 
 def test_inherited_vars():
-    LanguageGraph(MalCompiler().compile("tests/testdata/inherited_vars.mal"))
+    LanguageGraph(MalCompiler().compile('tests/testdata/inherited_vars.mal'))
 
 
 def test_associations():
@@ -102,11 +106,11 @@ def test_associations():
 
 
 def test_attackstep_inherit():
-    lang_spec = MalCompiler().compile("tests/testdata/attackstep_inherit.mal")
+    lang_spec = MalCompiler().compile('tests/testdata/attackstep_inherit.mal')
     lang_graph = LanguageGraph(lang_spec)
 
-    BB_s1 = lang_graph.assets["BB"].attack_steps["s1"]
-    CC_s2 = lang_graph.assets["CC"].attack_steps["s2"]
+    BB_s1 = lang_graph.assets['BB'].attack_steps['s1']
+    CC_s2 = lang_graph.assets['CC'].attack_steps['s2']
 
     assert CC_s2 in BB_s1.children
     assert len(BB_s1.own_children) == 1
@@ -114,112 +118,114 @@ def test_attackstep_inherit():
 
     chains_to_cc_s2 = BB_s1.children[CC_s2]
     assert len(chains_to_cc_s2) == 2
-    assert chains_to_cc_s2[0].fieldname == "c_of_B"
-    assert chains_to_cc_s2[1].fieldname == "c_of_A"
+    assert chains_to_cc_s2[0].fieldname == 'c_of_B'
+    assert chains_to_cc_s2[1].fieldname == 'c_of_A'
 
 
 def test_attackstep_override():
-    test_lang_graph = LanguageGraph(MalCompiler().compile("tests/testdata/attackstep_override.mal"))
+    test_lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/attackstep_override.mal')
+    )
 
-    assert "EmptyParent" in test_lang_graph.assets
-    assert "Child1" in test_lang_graph.assets
-    assert "Child2" in test_lang_graph.assets
-    assert "Child3" in test_lang_graph.assets
-    assert "Child4" in test_lang_graph.assets
-    assert "FinalChild" in test_lang_graph.assets
+    assert 'EmptyParent' in test_lang_graph.assets
+    assert 'Child1' in test_lang_graph.assets
+    assert 'Child2' in test_lang_graph.assets
+    assert 'Child3' in test_lang_graph.assets
+    assert 'Child4' in test_lang_graph.assets
+    assert 'FinalChild' in test_lang_graph.assets
 
-    assetEP = test_lang_graph.assets["EmptyParent"]
-    assetC1 = test_lang_graph.assets["Child1"]
-    assetC2 = test_lang_graph.assets["Child2"]
-    assetC3 = test_lang_graph.assets["Child3"]
-    assetC4 = test_lang_graph.assets["Child4"]
-    assetFC = test_lang_graph.assets["FinalChild"]
+    assetEP = test_lang_graph.assets['EmptyParent']
+    assetC1 = test_lang_graph.assets['Child1']
+    assetC2 = test_lang_graph.assets['Child2']
+    assetC3 = test_lang_graph.assets['Child3']
+    assetC4 = test_lang_graph.assets['Child4']
+    assetFC = test_lang_graph.assets['FinalChild']
 
-    EP_target1 = assetEP.attack_steps["target1"]
-    assert "target1" in assetEP.attack_steps
-    assert "target2" in assetEP.attack_steps
-    assert "target3" in assetEP.attack_steps
-    assert "target4" in assetEP.attack_steps
+    EP_target1 = assetEP.attack_steps['target1']
+    assert 'target1' in assetEP.attack_steps
+    assert 'target2' in assetEP.attack_steps
+    assert 'target3' in assetEP.attack_steps
+    assert 'target4' in assetEP.attack_steps
 
-    assert "attack_step_with_child" in assetC1.attack_steps
-    assert "attackstep" in assetC1.attack_steps
-    assert "target1" in assetC1.attack_steps
-    assert "target2" in assetC1.attack_steps
-    assert "target3" in assetC1.attack_steps
-    assert "target4" in assetC1.attack_steps
-    c1_attackstep = assetC1.attack_steps["attackstep"]
+    assert 'attack_step_with_child' in assetC1.attack_steps
+    assert 'attackstep' in assetC1.attack_steps
+    assert 'target1' in assetC1.attack_steps
+    assert 'target2' in assetC1.attack_steps
+    assert 'target3' in assetC1.attack_steps
+    assert 'target4' in assetC1.attack_steps
+    c1_attackstep = assetC1.attack_steps['attackstep']
     assert c1_attackstep.own_children == {}
     assert c1_attackstep.children == {}
 
     # attack_step_with_child is defined in parent with target1 as child
-    c1_parent_attackstep = assetC1.attack_steps["attack_step_with_child"]
+    c1_parent_attackstep = assetC1.attack_steps['attack_step_with_child']
     assert c1_parent_attackstep.own_children == {}
     assert c1_parent_attackstep.children.keys() == {EP_target1}
 
-    assert "attack_step_with_child" in assetC2.attack_steps
-    assert "attackstep" in assetC2.attack_steps
-    assert "target1" in assetC2.attack_steps
-    assert "target2" in assetC2.attack_steps
-    assert "target3" in assetC2.attack_steps
-    assert "target4" in assetC2.attack_steps
-    c2_attackstep = assetC2.attack_steps["attackstep"]
+    assert 'attack_step_with_child' in assetC2.attack_steps
+    assert 'attackstep' in assetC2.attack_steps
+    assert 'target1' in assetC2.attack_steps
+    assert 'target2' in assetC2.attack_steps
+    assert 'target3' in assetC2.attack_steps
+    assert 'target4' in assetC2.attack_steps
+    c2_attackstep = assetC2.attack_steps['attackstep']
     assert c2_attackstep.inherits == c1_attackstep
     assert c2_attackstep.own_children == {}
 
     # attack_step_with_child is defined in grandparent with target1 as child
-    c2_parent_attackstep = assetC2.attack_steps["attack_step_with_child"]
+    c2_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
     assert c2_parent_attackstep.own_children == {}
     assert c2_parent_attackstep.children.keys() == {EP_target1}
 
-    assert "attack_step_with_child" in assetC3.attack_steps
-    assert "attackstep" in assetC3.attack_steps
-    assert "target1" in assetC3.attack_steps
-    assert "target2" in assetC3.attack_steps
-    assert "target3" in assetC3.attack_steps
-    assert "target4" in assetC3.attack_steps
-    c3_attackstep = assetC3.attack_steps["attackstep"]
+    assert 'attack_step_with_child' in assetC3.attack_steps
+    assert 'attackstep' in assetC3.attack_steps
+    assert 'target1' in assetC3.attack_steps
+    assert 'target2' in assetC3.attack_steps
+    assert 'target3' in assetC3.attack_steps
+    assert 'target4' in assetC3.attack_steps
+    c3_attackstep = assetC3.attack_steps['attackstep']
     assert c3_attackstep.inherits == c2_attackstep
-    c3_target1 = assetC3.attack_steps["target1"]
-    c3_target2 = assetC3.attack_steps["target2"]
-    c3_target3 = assetC3.attack_steps["target3"]
-    c3_target4 = assetC3.attack_steps["target4"]
+    c3_target1 = assetC3.attack_steps['target1']
+    c3_target2 = assetC3.attack_steps['target2']
+    c3_target3 = assetC3.attack_steps['target3']
+    c3_target4 = assetC3.attack_steps['target4']
     assert c3_target1 in c3_attackstep.own_children
     assert c3_target2 not in c3_attackstep.own_children
     assert c3_target3 not in c3_attackstep.own_children
     assert c3_target4 not in c3_attackstep.own_children
 
     # attack_step_with_child is defined in grandparent with target1 as child
-    c3_parent_attackstep = assetC2.attack_steps["attack_step_with_child"]
+    c3_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
     assert c3_parent_attackstep.own_children == {}
     assert c3_parent_attackstep.children.keys() == {EP_target1}
 
-    assert "attack_step_with_child" in assetC4.attack_steps
-    assert "attackstep" in assetC4.attack_steps
-    assert "target1" in assetC4.attack_steps
-    assert "target2" in assetC4.attack_steps
-    assert "target3" in assetC4.attack_steps
-    assert "target4" in assetC4.attack_steps
-    c4_attackstep = assetC4.attack_steps["attackstep"]
+    assert 'attack_step_with_child' in assetC4.attack_steps
+    assert 'attackstep' in assetC4.attack_steps
+    assert 'target1' in assetC4.attack_steps
+    assert 'target2' in assetC4.attack_steps
+    assert 'target3' in assetC4.attack_steps
+    assert 'target4' in assetC4.attack_steps
+    c4_attackstep = assetC4.attack_steps['attackstep']
     assert c4_attackstep.inherits == c3_attackstep
     assert c4_attackstep.own_children == {}
 
     # attack_step_with_child is defined in grandparent with target1 as child
-    c4_parent_attackstep = assetC2.attack_steps["attack_step_with_child"]
+    c4_parent_attackstep = assetC2.attack_steps['attack_step_with_child']
     assert c4_parent_attackstep.own_children == {}
     assert c4_parent_attackstep.children.keys() == {EP_target1}
 
-    assert "attack_step_with_child" in assetC4.attack_steps
-    assert "attackstep" in assetC4.attack_steps
-    assert "target1" in assetC4.attack_steps
-    assert "target2" in assetC4.attack_steps
-    assert "target3" in assetC4.attack_steps
-    assert "target4" in assetC4.attack_steps
-    fc_attackstep = assetFC.attack_steps["attackstep"]
+    assert 'attack_step_with_child' in assetC4.attack_steps
+    assert 'attackstep' in assetC4.attack_steps
+    assert 'target1' in assetC4.attack_steps
+    assert 'target2' in assetC4.attack_steps
+    assert 'target3' in assetC4.attack_steps
+    assert 'target4' in assetC4.attack_steps
+    fc_attackstep = assetFC.attack_steps['attackstep']
     assert fc_attackstep.inherits == c4_attackstep
-    fc_target1 = assetFC.attack_steps["target1"]
-    fc_target2 = assetFC.attack_steps["target2"]
-    fc_target3 = assetFC.attack_steps["target3"]
-    fc_target4 = assetFC.attack_steps["target4"]
+    fc_target1 = assetFC.attack_steps['target1']
+    fc_target2 = assetFC.attack_steps['target2']
+    fc_target3 = assetFC.attack_steps['target3']
+    fc_target4 = assetFC.attack_steps['target4']
     assert fc_target1 in fc_attackstep.own_children
     assert fc_target2 in fc_attackstep.own_children
     assert fc_target3 in fc_attackstep.own_children
@@ -233,17 +239,21 @@ def test_attackstep_override():
 
 
 def test_probability_distributions():
-    lg = LanguageGraph(MalCompiler().compile("tests/testdata/prob_dists.mal"))
-    lg.save_to_file("logs/prob_dists_lg.yml")
+    lg = LanguageGraph(MalCompiler().compile('tests/testdata/prob_dists.mal'))
+    lg.save_to_file('logs/prob_dists_lg.yml')
 
 
 def test_attack_step_types(corelang_lang_graph: LanguageGraph):
     attack_steps = [
-        attack_step for asset in corelang_lang_graph.assets.values() for attack_step in asset.attack_steps.values()
+        attack_step
+        for asset in corelang_lang_graph.assets.values()
+        for attack_step in asset.attack_steps.values()
     ]
     for attack_step in attack_steps:
-        assert attack_step.type in ["or", "and", "defense", "exist", "notExist"], (f"Attack step {attack_step.name} has type {attack_step.type}. "
-            "Attack step types must be one of: or, and, defense, exist, notExist")
+        assert attack_step.type in ['or', 'and', 'defense', 'exist', 'notExist'], (
+            f'Attack step {attack_step.name} has type {attack_step.type}. '
+            'Attack step types must be one of: or, and, defense, exist, notExist'
+        )
 
 
 def test_pickle_languagegraph(corelang_lang_graph: LanguageGraph):
@@ -263,7 +273,9 @@ def test_pickle_languagegraph_asset(corelang_lang_graph: LanguageGraph):
 
 def test_pickle_languagegraph_attack_step(corelang_lang_graph: LanguageGraph):
     """Test that we can pickle and unpickle a language graph attack step"""
-    lang_graph_step = corelang_lang_graph.assets['Application'].attack_steps['fullAccess']
+    lang_graph_step = corelang_lang_graph.assets['Application'].attack_steps[
+        'fullAccess'
+    ]
     pickled_step = pickle.dumps(lang_graph_step)
     ununpickled_step = pickle.loads(pickled_step)
     assert lang_graph_step.to_dict() == ununpickled_step.to_dict()
@@ -288,7 +300,7 @@ def test_attack_graph_node_causal_mode(tmpdir):
         }
     }
     """
-    p = tmpdir.mkdir("sub").join("lang.mal")
+    p = tmpdir.mkdir('sub').join('lang.mal')
     p.write(language)
 
     lang_graph = LanguageGraph(MalCompiler().compile(p.strpath))
@@ -308,18 +320,23 @@ def test_load_from_git():
     """Test that we can load the mal-lang through a git repo url"""
     git_url = 'git@github.com:mal-lang/coreLang.git'
     lang_graph = load_language_graph_from_file(git_url)
-    assert lang_graph.assets, "Expected assets in the loaded language graph"
+    assert lang_graph.assets, 'Expected assets in the loaded language graph'
+
 
 @pytest.mark.integration
 def test_load_from_git_not_main_mal():
     """Test that we can load the mal-lang from a git repo that has only one mal file and it is not called main.mal"""
     git_url = 'git@github.com:mal-lang/exampleLang.git'
     lang_graph = load_language_graph_from_file(git_url)
-    assert lang_graph.assets, "Expected assets in the loaded language graph"
+    assert lang_graph.assets, 'Expected assets in the loaded language graph'
+
 
 @pytest.mark.integration
 def test_load_from_git_no_mal_files():
     """Test that a FileNotFoundError is raised when no .mal files exist in the repo."""
     git_url = 'git@github.com:mal-lang/mal-specification.git'
-    with pytest.raises(FileNotFoundError, match="Execution failed: No .mal files found in the cloned repository."):
+    with pytest.raises(
+        FileNotFoundError,
+        match='Execution failed: No .mal files found in the cloned repository.',
+    ):
         load_language_graph_from_file(git_url)

@@ -1,5 +1,4 @@
-"""MAL-Toolbox Model Module
-"""
+"""MAL-Toolbox Model Module"""
 
 from __future__ import annotations
 
@@ -16,6 +15,7 @@ from .file_utils import (
     save_dict_to_file,
 )
 from .language import LanguageGraph
+
 if TYPE_CHECKING:
     from typing import Any
 
@@ -33,11 +33,8 @@ class Model:
         return f'Model(name: "{self.name}", language: {self.lang_graph})'
 
     def __init__(
-            self,
-            name: str,
-            lang_graph: LanguageGraph,
-            mt_version: str = __version__
-        ):
+        self, name: str, lang_graph: LanguageGraph, mt_version: str = __version__
+    ):
 
         self.name = name
         self.assets: dict[int, ModelAsset] = {}
@@ -46,14 +43,14 @@ class Model:
         self.maltoolbox_version: str = mt_version
 
     def add_asset(
-            self,
-            asset_type: str,
-            name: str | None = None,
-            asset_id: int | None = None,
-            defenses: dict[str, float] | None = None,
-            extras: dict | None = None,
-            allow_duplicate_names: bool = True
-        ) -> ModelAsset:
+        self,
+        asset_type: str,
+        name: str | None = None,
+        asset_id: int | None = None,
+        defenses: dict[str, float] | None = None,
+        extras: dict | None = None,
+        allow_duplicate_names: bool = True,
+    ) -> ModelAsset:
         """Create an asset based on the provided parameters and add it to the
         model.
 
@@ -92,15 +89,13 @@ class Model:
                 name = name + ':' + str(asset_id)
             else:
                 raise ValueError(
-                    f'Asset name {name} is a duplicate'
-                    ' and we do not allow duplicates.'
+                    f'Asset name {name} is a duplicate and we do not allow duplicates.'
                 )
 
         if asset_type not in self.lang_graph.assets:
             raise ValueError(
                 f'Asset type "{asset_type}" does not exist in language, '
-                'must be one of:\n -' +
-                '\n -'.join(self.lang_graph.assets.keys())
+                'must be one of:\n -' + '\n -'.join(self.lang_graph.assets.keys())
             )
         lg_asset = self.lang_graph.assets[asset_type]
 
@@ -109,11 +104,10 @@ class Model:
             asset_id=asset_id,
             lg_asset=lg_asset,
             defenses=defenses,
-            extras=extras)
-
-        logger.debug(
-            'Add "%s"(%d) to model "%s".', name, asset_id, self.name
+            extras=extras,
         )
+
+        logger.debug('Add "%s"(%d) to model "%s".', name, asset_id, self.name)
         self.assets[asset_id] = asset
         self._name_to_asset[name] = asset
 
@@ -128,13 +122,11 @@ class Model:
 
         """
         logger.debug(
-            'Remove "%s"(%d) from model "%s".',
-            asset.name, asset.id, self.name
+            'Remove "%s"(%d) from model "%s".', asset.name, asset.id, self.name
         )
         if asset.id not in self.assets:
             raise LookupError(
-                f'Asset "{asset.name}"({asset.id}) is not part'
-                f' of model"{self.name}".'
+                f'Asset "{asset.name}"({asset.id}) is not part of model"{self.name}".'
             )
 
         # First remove all of the associated assets
@@ -147,9 +139,7 @@ class Model:
         del self.assets[asset.id]
         del self._name_to_asset[asset.name]
 
-    def get_asset_by_id(
-            self, asset_id: int
-        ) -> ModelAsset | None:
+    def get_asset_by_id(self, asset_id: int) -> ModelAsset | None:
         """Find an asset in the model based on its id.
 
         Arguments:
@@ -161,15 +151,10 @@ class Model:
         An asset matching the id if it exists in the model.
 
         """
-        logger.debug(
-            'Get asset with id %d from model "%s".',
-            asset_id, self.name
-        )
+        logger.debug('Get asset with id %d from model "%s".', asset_id, self.name)
         return self.assets.get(asset_id, None)
 
-    def get_asset_by_name(
-            self, asset_name: str
-        ) -> ModelAsset | None:
+    def get_asset_by_name(self, asset_name: str) -> ModelAsset | None:
         """Find an asset in the model based on its name.
 
         Arguments:
@@ -181,10 +166,7 @@ class Model:
         An asset matching the name if it exists in the model.
 
         """
-        logger.debug(
-            'Get asset with name "%s" from model "%s".',
-            asset_name, self.name
-        )
+        logger.debug('Get asset with name "%s" from model "%s".', asset_name, self.name)
         return self._name_to_asset.get(asset_name, None)
 
     def _to_dict(self) -> dict:
@@ -204,7 +186,7 @@ class Model:
             'langID': self.lang_graph.metadata['id'],
             'malVersion': '0.1.0-SNAPSHOT',
             'MAL-Toolbox Version': __version__,
-            'info': 'Created by the mal-toolbox model python module.'
+            'info': 'Created by the mal-toolbox model python module.',
         }
 
         logger.debug('Translating assets to dictionary.')
@@ -223,7 +205,7 @@ class Model:
         cls,
         serialized_object: dict,
         lang_graph: LanguageGraph,
-        ) -> Model:
+    ) -> Model:
         """Create a model from dict representation
 
         Arguments:
@@ -232,40 +214,38 @@ class Model:
         lang_graph -
 
         """
-        maltoolbox_version = serialized_object['metadata']['MAL Toolbox Version'] \
-            if 'MAL Toolbox Version' in serialized_object['metadata'] \
-            else __version__
+        maltoolbox_version = (
+            serialized_object['metadata'].get('MAL Toolbox Version', __version__)
+        )
         model = Model(
             serialized_object['metadata']['name'],
             lang_graph,
-            mt_version=maltoolbox_version)
+            mt_version=maltoolbox_version,
+        )
 
         # Reconstruct the assets
         for asset_id, asset_dict in serialized_object['assets'].items():
-
             if logger.isEnabledFor(logging.DEBUG):
                 # Avoid running json.dumps when not in debug
-                logger.debug(
-                    "Loading asset:\n%s", json.dumps(asset_dict, indent=2)
-                )
+                logger.debug('Loading asset:\n%s', json.dumps(asset_dict, indent=2))
 
             # Allow defining an asset via type only.
             asset_dict = (
                 asset_dict
                 if isinstance(asset_dict, dict)
-                else {
-                    'type': asset_dict,
-                    'name': f"{asset_dict}:{asset_id}"
-                }
+                else {'type': asset_dict, 'name': f'{asset_dict}:{asset_id}'}
             )
 
             model.add_asset(
                 asset_type=asset_dict['type'],
                 name=asset_dict['name'],
-                defenses={defense: float(value) for defense, value in
-                    asset_dict.get('defenses', {}).items()},
+                defenses={
+                    defense: float(value)
+                    for defense, value in asset_dict.get('defenses', {}).items()
+                },
                 extras=asset_dict.get('extras', {}),
-                asset_id=int(asset_id))
+                asset_id=int(asset_id),
+            )
 
         # Reconstruct the association links
         for asset_id, asset_dict in serialized_object['assets'].items():
@@ -274,14 +254,18 @@ class Model:
             for fieldname, assoc_assets in assoc_assets_dict:
                 asset.add_associated_assets(
                     fieldname,
-                    {model.assets[int(assoc_asset_id)]
-                        for assoc_asset_id in assoc_assets}
+                    {
+                        model.assets[int(assoc_asset_id)]
+                        for assoc_asset_id in assoc_assets
+                    },
                 )
 
         # Attackers no longer part of mal-toolbox
         if 'attackers' in serialized_object:
-            msg = ("Defining attackers in a model file is deprecated,"
-                   " use mal-simulator for attacker simulations.")
+            msg = (
+                'Defining attackers in a model file is deprecated,'
+                ' use mal-simulator for attacker simulations.'
+            )
             print(msg)
             logger.warning(msg)
 
@@ -292,7 +276,7 @@ class Model:
         cls,
         filename: str,
         lang_graph: LanguageGraph,
-        ) -> Model:
+    ) -> Model:
         """Create from json or yaml file depending on file extension"""
         logger.debug('Load instance model from file "%s".', filename)
         serialized_model = None
@@ -306,7 +290,7 @@ class Model:
             return cls._from_dict(serialized_model, lang_graph)
         except Exception as e:
             raise ModelException(
-                "Could not load model. It might be of an older version. "
+                'Could not load model. It might be of an older version. '
                 "Try to upgrade it with 'maltoolbox upgrade-model'"
             ) from e
 
@@ -318,7 +302,7 @@ class ModelAsset:
         asset_id: int,
         lg_asset: LanguageGraphAsset,
         defenses: dict[str, float] | None = None,
-        extras: dict | None = None
+        extras: dict | None = None,
     ):
 
         self.name: str = name
@@ -332,22 +316,22 @@ class ModelAsset:
 
     def _to_dict(self) -> dict[int, dict[str, Any]]:
         """Get dictionary representation of the asset."""
-        logger.debug(
-            'Translating "%s"(%d) to dictionary.', self.name, self.id)
+        logger.debug('Translating "%s"(%d) to dictionary.', self.name, self.id)
 
         asset_dict: dict[str, Any] = {
             'name': self.name,
             'type': self.type,
             'defenses': {},
-            'associated_assets': {}
+            'associated_assets': {},
         }
 
         for defense, defense_value in self.defenses.items():
             asset_dict['defenses'][defense] = defense_value
 
         for fieldname, assets in self.associated_assets.items():
-            asset_dict['associated_assets'][fieldname] = {asset.id: asset.name
-                for asset in assets}
+            asset_dict['associated_assets'][fieldname] = {
+                asset.id: asset.name for asset in assets
+            }
 
         if len(asset_dict['defenses']) == 0:
             # Do not include an empty defenses dictionary
@@ -360,12 +344,9 @@ class ModelAsset:
         return {self.id: asset_dict}
 
     def __repr__(self):
-        return (f'ModelAsset(name: "{self.name}", id: {self.id}, '
-            f'type: {self.type})')
+        return f'ModelAsset(name: "{self.name}", id: {self.id}, type: {self.type})'
 
-    def associations_with(
-        self, b: ModelAsset
-    ) -> set[LanguageGraphAssociation]:
+    def associations_with(self, b: ModelAsset) -> set[LanguageGraphAssociation]:
         """Returns all associations from self to `b`"""
         assocs_in_common = set()
         for assoc in self.lg_asset.associations.values():
@@ -381,8 +362,7 @@ class ModelAsset:
         return assocs_in_common
 
     def has_association_with(self, b: ModelAsset, assoc_name: str) -> bool:
-        """Returns True if association `assoc_name` exists between self and `b`
-        """
+        """Returns True if association `assoc_name` exists between self and `b`"""
         for fieldname, associated_assets in self.associated_assets.items():
             assoc = self.lg_asset.associations[fieldname]
             if assoc.name == assoc_name and b in associated_assets:
@@ -391,8 +371,8 @@ class ModelAsset:
         return False
 
     def validate_associated_assets(
-            self, fieldname: str, assets_to_add: set[ModelAsset]
-        ):
+        self, fieldname: str, assets_to_add: set[ModelAsset]
+    ):
         """Validate an association we want to add (through `fieldname`)
         is valid with the assets given in param `assets_to_add`:
         - fieldname is valid for the asset type of this ModelAsset
@@ -412,8 +392,8 @@ class ModelAsset:
             accepted_fieldnames = list(self.lg_asset.associations.keys())
             raise LookupError(
                 f"Fieldname '{fieldname}' is not an accepted association "
-                f"fieldname from asset type {self.lg_asset.name}. "
-                f"Did you mean one of {accepted_fieldnames}?"
+                f'fieldname from asset type {self.lg_asset.name}. '
+                f'Did you mean one of {accepted_fieldnames}?'
             )
 
         lg_assoc = self.lg_asset.associations[fieldname]
@@ -427,7 +407,7 @@ class ModelAsset:
                     f"'{asset_to_add.type}' can not be added to association "
                     f"'{self.name}.{fieldname}'. Expected type of "
                     f"'{fieldname}' is {assoc_field.asset.name}."
-            )
+                )
 
         # Validate that there will not be too many assets in field
         assets_in_field_before = self.associated_assets.get(fieldname, set())
@@ -436,8 +416,8 @@ class ModelAsset:
 
         if len(assets_in_field_after) > max_assets_in_field:
             raise ValueError(
-                f"You can have maximum {assoc_field.maximum} "
-                f"assets for association field {fieldname}"
+                f'You can have maximum {assoc_field.maximum} '
+                f'assets for association field {fieldname}'
             )
 
     def add_associated_assets(self, fieldname: str, assets: set[ModelAsset]):
@@ -454,8 +434,8 @@ class ModelAsset:
             raise ValueError(
                 f'Association fieldname "{fieldname}" does not exist from '
                 f'<{self.lg_asset.name}> to <{to_asset_type.name if to_asset_type else "Any"}>'
-                ', must be one of:\n -' +
-                '\n -'.join([a for a in possible_associations])
+                ', must be one of:\n -'
+                + '\n -'.join([a for a in possible_associations])
             )
 
         lg_assoc = self.lg_asset.associations[fieldname]
@@ -467,18 +447,13 @@ class ModelAsset:
             asset.validate_associated_assets(other_fieldname, {self})
 
         # Add the associated assets to this asset's dictionary
-        self._associated_assets.setdefault(
-            fieldname, set()
-        ).update(assets)
+        self._associated_assets.setdefault(fieldname, set()).update(assets)
 
         # Add this asset to the associated assets' corresponding dictionaries
         for asset in assets:
-            asset._associated_assets.setdefault(
-                other_fieldname, set()
-            ).add(self)
+            asset._associated_assets.setdefault(other_fieldname, set()).add(self)
 
-    def remove_associated_assets(
-            self, fieldname: str, assets: set[ModelAsset]):
+    def remove_associated_assets(self, fieldname: str, assets: set[ModelAsset]):
         """Remove the assets provided as a parameter from the set of
         associated assets dictionary entry corresponding to the fieldname
         parameter.

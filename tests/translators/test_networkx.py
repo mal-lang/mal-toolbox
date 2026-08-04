@@ -31,8 +31,12 @@ def test_attackgraph_to_nx(example_attackgraph: AttackGraph):
         assert nx_node_attrs['lang_graph_attack_step'] == node.lg_attack_step.full_name
         assert nx_node_attrs['name'] == node.name
         assert nx_node_attrs['ttc'] == node.ttc
-        assert nx_node_attrs['children'] == {child.id: child.full_name for child in node.children}
-        assert nx_node_attrs['parents'] == {parent.id: parent.full_name for parent in node.parents}
+        assert nx_node_attrs['children'] == {
+            child.id: child.full_name for child in node.children
+        }
+        assert nx_node_attrs['parents'] == {
+            parent.id: parent.full_name for parent in node.parents
+        }
 
         for child in node.children:
             assert G.has_edge(node.id, child.id)
@@ -46,8 +50,11 @@ def test_model_to_nx(example_model: Model):
     def number_of_edges(model: Model) -> int:
         edges: set[tuple[int, int]] = set()
         for asset in model.assets.values():
-            for _fieldname, associated_assets in asset.associated_assets.items():
-                edges.update((asset.id, associated_asset.id) for associated_asset in associated_assets)
+            for associated_assets in asset.associated_assets.values():
+                edges.update(
+                    (asset.id, associated_asset.id)
+                    for associated_asset in associated_assets
+                )
         return len(edges)
 
     no_edges = number_of_edges(example_model)
@@ -60,10 +67,19 @@ def test_model_to_nx(example_model: Model):
         assert nx_node_attrs['id'] == asset.id
         assert nx_node_attrs['type'] == asset.type
         assert nx_node_attrs['name'] == asset.name
-        assert nx_node_attrs['associated_assets'] == {fieldname: {associated_asset.id: associated_asset.name for associated_asset in associated_assets} for fieldname, associated_assets in asset.associated_assets.items()}
+        assert nx_node_attrs['associated_assets'] == {
+            fieldname: {
+                associated_asset.id: associated_asset.name
+                for associated_asset in associated_assets
+            }
+            for fieldname, associated_assets in asset.associated_assets.items()
+        }
 
         for associated_asset in asset.associated_assets.values():
             for fieldname, associated_assets in asset.associated_assets.items():
                 for associated_asset in associated_assets:
                     assert G.has_edge(asset.id, associated_asset.id)
-                    assert G.get_edge_data(asset.id, associated_asset.id)['name'] == asset.lg_asset.associations[fieldname].name
+                    assert (
+                        G.get_edge_data(asset.id, associated_asset.id)['name']
+                        == asset.lg_asset.associations[fieldname].name
+                    )

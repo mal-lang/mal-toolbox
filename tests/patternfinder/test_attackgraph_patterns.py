@@ -12,14 +12,14 @@ from maltoolbox.patternfinder.attackgraph_patterns import SearchCondition, Searc
 @pytest.fixture
 def example_attackgraph(corelang_lang_graph, model: Model):
     """Fixture that generates an example attack graph
-    
+
     Uses coreLang specification and model with two applications
     with an association and an attacker to create and return
     an AttackGraph object
     """
     # Create 2 assets
-    app1 = model.add_asset("Application", "Application 1")
-    app2 = model.add_asset("Application", "Application 2")
+    app1 = model.add_asset('Application', 'Application 1')
+    app2 = model.add_asset('Application', 'Application 2')
 
     # Create association between app1 and app2
     app1.add_associated_assets('appExecutedApps', {app2})
@@ -31,15 +31,9 @@ def test_attackgraph_find_pattern_example_graph(example_attackgraph):
     """Test a simple pattern"""
     pattern = SearchPattern(
         [
-            SearchCondition(
-                lambda n : n.name == "attemptRead"
-            ),
-            SearchCondition(
-                lambda n : n.name == "successfulRead"
-            ),
-            SearchCondition(
-                lambda n : n.name == "read"
-            )
+            SearchCondition(lambda n: n.name == 'attemptRead'),
+            SearchCondition(lambda n: n.name == 'successfulRead'),
+            SearchCondition(lambda n: n.name == 'read'),
         ]
     )
 
@@ -60,12 +54,12 @@ def test_attackgraph_find_multiple(dummy_lang_graph):
        /
     Node7
     """
-    attack_graph = AttackGraph(
-        dummy_lang_graph, Model("hej", dummy_lang_graph)
-    )
+    attack_graph = AttackGraph(dummy_lang_graph, Model('hej', dummy_lang_graph))
 
     # Create the graph
-    dummy_and_step = dummy_lang_graph.assets['DummyAsset'].attack_steps['DummyAndAttackStep']
+    dummy_and_step = dummy_lang_graph.assets['DummyAsset'].attack_steps[
+        'DummyAndAttackStep'
+    ]
     node1 = AttackGraphNode(1, dummy_and_step, dummy_lang_graph.assets['DummyAsset'])
     node2 = AttackGraphNode(2, dummy_and_step, dummy_lang_graph.assets['DummyAsset'])
     node2.parents = {node1}
@@ -91,22 +85,18 @@ def test_attackgraph_find_multiple(dummy_lang_graph):
         node4.id: node4,
         node5.id: node5,
         node6.id: node6,
-        node7.id: node7
+        node7.id: node7,
     }
 
     # Create the search pattern from Node1 to either Node6 or Node7
     pattern = SearchPattern(
         [
-            SearchCondition(
-                lambda node: node.id == 1
-            ),
+            SearchCondition(lambda node: node.id == 1),
             SearchCondition(
                 SearchCondition.ANY,  # Match any node
-                max_repeated=math.inf  # Any number of times
+                max_repeated=math.inf,  # Any number of times
             ),
-            SearchCondition(
-                lambda node: node.id in (6, 7)
-            )
+            SearchCondition(lambda node: node.id in (6, 7)),
         ]
     )
     paths = pattern.find_matches(attack_graph)
@@ -132,9 +122,7 @@ def test_attackgraph_find_multiple_same_subpath(dummy_lang_graph):
 
     # Create the graph
     dummy_asset = dummy_lang_graph.assets['DummyAsset']
-    dummy_and_step = (
-        dummy_asset.attack_steps['DummyAndAttackStep']
-    )
+    dummy_and_step = dummy_asset.attack_steps['DummyAndAttackStep']
     node1 = AttackGraphNode(1, dummy_and_step, dummy_asset)
     node2 = AttackGraphNode(2, dummy_and_step, dummy_asset)
     node2.parents = {node1}
@@ -152,23 +140,19 @@ def test_attackgraph_find_multiple_same_subpath(dummy_lang_graph):
         node2.id: node2,
         node3.id: node3,
         node4.id: node4,
-        node5.id: node5
+        node5.id: node5,
     }
 
     # Create the search pattern to find paths from Node1 to any node
     pattern = SearchPattern(
         [
-            SearchCondition(
-                lambda node: node.id == 1
-            ),
+            SearchCondition(lambda node: node.id == 1),
             SearchCondition(
                 lambda node: True,
                 max_repeated=math.inf,
                 min_repeated=0,
             ),
-            SearchCondition(
-                lambda node: node.id in (2, 3, 4, 5)
-            )
+            SearchCondition(lambda node: node.id in (2, 3, 4, 5)),
         ]
     )
     paths = pattern.find_matches(attack_graph)
@@ -194,9 +178,7 @@ def test_attackgraph_two_same_start_end_node(dummy_lang_graph):
 
     # Create the graph
     dummy_asset = dummy_lang_graph.assets['DummyAsset']
-    dummy_and_step = (
-        dummy_asset.attack_steps['DummyAndAttackStep']
-    )
+    dummy_and_step = dummy_asset.attack_steps['DummyAndAttackStep']
 
     node1 = AttackGraphNode(1, dummy_and_step, dummy_asset)
     node2 = AttackGraphNode(2, dummy_and_step, dummy_asset)
@@ -213,21 +195,15 @@ def test_attackgraph_two_same_start_end_node(dummy_lang_graph):
         node1.id: node1,
         node2.id: node2,
         node3.id: node3,
-        node4.id: node4
+        node4.id: node4,
     }
 
     # Create the search pattern to find paths from Node1 to any node
     pattern = SearchPattern(
         [
-            SearchCondition(
-                lambda node: node.id == 1
-            ),
-            SearchCondition(
-                SearchCondition.ANY
-            ),
-            SearchCondition(
-                lambda node: node.id == 4
-            )
+            SearchCondition(lambda node: node.id == 1),
+            SearchCondition(SearchCondition.ANY),
+            SearchCondition(lambda node: node.id == 4),
         ]
     )
     paths = pattern.find_matches(attack_graph)

@@ -39,13 +39,11 @@ The scenario file can be run with the MalSimulator cli: `malsim guides/scripts/s
 
 It can also be run programatically like this:
 ```python
-
 from malsim import MalSimulator, load_scenario, run_simulation
 
 scenario = load_scenario(SCENARIO_PATH)
 sim = MalSimulator.from_scenario(scenario)
 run_simulation(sim, scenario.agents)
-
 ```
 
 See [example script](scripts/run_simulation.py).
@@ -55,7 +53,6 @@ See [example script](scripts/run_simulation.py).
 If you don't want to load a scenario file but create the scenario in memory, you can do it like this:
 
 ```python
-
 from malsim import MalSimulator, run_simulation
 from malsim.scenario import Scenario
 
@@ -66,16 +63,12 @@ scenario = Scenario(
         'Attacker1': {
             'type': 'attacker',
             'agent_class': 'BreadthFirstAttacker',
-            'entry_points': ['User:3:phishing', 'Host:0:connect']
+            'entry_points': ['User:3:phishing', 'Host:0:connect'],
         },
-        'Defender1': {
-            'type': 'defender',
-            'agent_class': 'PassiveAgent'
-        }
-    }
+        'Defender1': {'type': 'defender', 'agent_class': 'PassiveAgent'},
+    },
 )
 
 sim = MalSimulator.from_scenario(scenario)
 run_simulation(sim, scenario.agents)
-
 ```

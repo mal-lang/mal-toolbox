@@ -1,17 +1,21 @@
-"""MAL-Toolbox Attack Graph Module
-"""
+"""MAL-Toolbox Attack Graph Module"""
+
 from __future__ import annotations
 
 import copy
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.attackgraph.generate import generate_graph
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
 from maltoolbox.language.languagegraph import disaggregate_attack_step_full_name
 
-from ..file_utils import load_dict_from_json_file, load_dict_from_yaml_file, save_dict_to_file
+from ..file_utils import (
+    load_dict_from_json_file,
+    load_dict_from_yaml_file,
+    save_dict_to_file,
+)
 from ..language import LanguageGraph, LanguageGraphAttackStep
 from ..model import Model
 from .node import AttackGraphNode
@@ -23,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def attack_graph_from_dict(
-    serialized_object: dict, lang_graph: LanguageGraph, model: Optional[Model]
+    serialized_object: dict, lang_graph: LanguageGraph, model: Model | None
 ):
     attack_graph = AttackGraph(lang_graph)
     attack_graph.model = model
@@ -31,7 +35,6 @@ def attack_graph_from_dict(
 
     # Create all of the nodes in the imported attack graph.
     for node_full_name, node_dict in serialized_attack_steps.items():
-
         # Recreate asset links if model is available.
         node_asset = None
         if model and 'asset' in node_dict:
@@ -41,17 +44,15 @@ def attack_graph_from_dict(
                     'Failed to find asset with name "%s"'
                     ' when loading from attack graph dict'
                 )
-                logger.error(msg, node_dict["asset"])
-                raise LookupError(msg % node_dict["asset"])
+                logger.error(msg, node_dict['asset'])
+                raise LookupError(msg % node_dict['asset'])
 
-        lg_asset_name, lg_attack_step_name = (
-            disaggregate_attack_step_full_name(
-                node_dict['lang_graph_attack_step']
-            )
+        lg_asset_name, lg_attack_step_name = disaggregate_attack_step_full_name(
+            node_dict['lang_graph_attack_step']
         )
-        lg_attack_step = (
-            lang_graph.assets[lg_asset_name].attack_steps[lg_attack_step_name]
-        )
+        lg_attack_step = lang_graph.assets[lg_asset_name].attack_steps[
+            lg_attack_step_name
+        ]
         ag_node = attack_graph.add_node(
             lg_attack_step=lg_attack_step,
             node_id=node_dict['id'],
@@ -59,11 +60,12 @@ def attack_graph_from_dict(
             ttc_dist=node_dict['ttc'],
             existence_status=(
                 bool(node_dict['existence_status'])
-                if 'existence_status' in node_dict else None
+                if 'existence_status' in node_dict
+                else None
             ),
             # Give explicit full name if model is missing, otherwise
             # it will generate automatically in node.full_name
-            full_name=node_full_name if not model else None
+            full_name=node_full_name if not model else None,
         )
         ag_node.tags = list(node_dict.get('tags', []))
         ag_node.extras = node_dict.get('extras', {})
@@ -81,15 +83,16 @@ def attack_graph_from_dict(
     for node_dict in serialized_attack_steps.values():
         _ag_node = attack_graph.nodes[node_dict['id']]
         if not isinstance(_ag_node, AttackGraphNode):
-            msg = ('Failed to find node with id %s when loading'
-                ' attack graph from dict')
-            logger.error(msg, node_dict["id"])
-            raise LookupError(msg % node_dict["id"])
+            msg = 'Failed to find node with id %s when loading attack graph from dict'
+            logger.error(msg, node_dict['id'])
+            raise LookupError(msg % node_dict['id'])  # noqa: TRY004
         for child_id in node_dict['children']:
             child = attack_graph.nodes[int(child_id)]
             if child is None:
-                msg = ('Failed to find child node with id %s'
-                    ' when loading from attack graph from dict')
+                msg = (
+                    'Failed to find child node with id %s'
+                    ' when loading from attack graph from dict'
+                )
                 logger.error(msg, child_id)
                 raise LookupError(msg % child_id)
             _ag_node.children.add(child)
@@ -97,8 +100,10 @@ def attack_graph_from_dict(
         for parent_id in node_dict['parents']:
             parent = attack_graph.nodes[int(parent_id)]
             if parent is None:
-                msg = ('Failed to find parent node with id %s '
-                    'when loading from attack graph from dict')
+                msg = (
+                    'Failed to find parent node with id %s '
+                    'when loading from attack graph from dict'
+                )
                 logger.error(msg, parent_id)
                 raise LookupError(msg % parent_id)
             _ag_node.parents.add(parent)
@@ -107,14 +112,14 @@ def attack_graph_from_dict(
 
 
 def attack_graph_from_file(
-    filename: str, lang_graph: LanguageGraph, model: Optional[Model]
+    filename: str, lang_graph: LanguageGraph, model: Model | None
 ):
     if model is not None:
-        logger.debug('Load attack graph from file "%s" with '
-        'model "%s".', filename, model.name)
+        logger.debug(
+            'Load attack graph from file "%s" with model "%s".', filename, model.name
+        )
     else:
-        logger.debug('Load attack graph from file "%s" '
-        'without model.', filename)
+        logger.debug('Load attack graph from file "%s" without model.', filename)
     serialized_attack_graph = None
     if filename.endswith(('.yml', '.yaml')):
         serialized_attack_graph = load_dict_from_yaml_file(filename)
@@ -139,9 +144,13 @@ class AttackGraph:
         self.full_name_to_node: dict[str, AttackGraphNode] = {}
 
         if self.model is not None:
-            self.nodes, self.attack_steps, self.defense_steps, self.full_name_to_node, self.detectors = (
-                generate_graph(self.model)
-            )
+            (
+                self.nodes,
+                self.attack_steps,
+                self.defense_steps,
+                self.full_name_to_node,
+                self.detectors,
+            ) = generate_graph(self.model)
 
     def __repr__(self) -> str:
         return (
@@ -154,9 +163,7 @@ class AttackGraph:
         serialized_attack_steps = {}
         for ag_node in self.nodes.values():
             serialized_attack_steps[ag_node.full_name] = ag_node.to_dict()
-        return {
-            'attack_steps': serialized_attack_steps
-        }
+        return {'attack_steps': serialized_attack_steps}
 
     def __deepcopy__(self, memo):
         """Custom deepcopy implementation for attack graph"""
@@ -181,8 +188,9 @@ class AttackGraph:
                 memo[id(node)].children = copy.deepcopy(node.children, memo)
 
         # Copy lookup dicts
-        copied_attackgraph.full_name_to_node = \
-            copy.deepcopy(self.full_name_to_node, memo)
+        copied_attackgraph.full_name_to_node = copy.deepcopy(
+            self.full_name_to_node, memo
+        )
 
         # Copy counters
         copied_attackgraph.next_node_id = self.next_node_id
@@ -195,11 +203,8 @@ class AttackGraph:
 
     @classmethod
     def load_from_file(
-            cls,
-            filename: str,
-            lang_graph: LanguageGraph,
-            model: Model | None = None
-        ) -> AttackGraph:
+        cls, filename: str, lang_graph: LanguageGraph, model: Model | None = None
+    ) -> AttackGraph:
         """Create from json or yaml file depending on file extension"""
         return attack_graph_from_file(filename, lang_graph, model)
 
@@ -222,10 +227,14 @@ class AttackGraph:
         """Regenerate the attack graph based on the original model instance and
         the MAL language specification provided at initialization.
         """
-        assert self.model, "Model required to generate graph"
-        self.nodes, self.attack_steps, self.defense_steps, self.full_name_to_node, self.detectors = (
-            generate_graph(self.model)
-        )
+        assert self.model, 'Model required to generate graph'
+        (
+            self.nodes,
+            self.attack_steps,
+            self.defense_steps,
+            self.full_name_to_node,
+            self.detectors,
+        ) = generate_graph(self.model)
 
     def add_node(
         self,
@@ -234,7 +243,7 @@ class AttackGraph:
         model_asset: ModelAsset | None = None,
         ttc_dist: dict | None = None,
         existence_status: bool | None = None,
-        full_name: str | None = None
+        full_name: str | None = None,
     ) -> AttackGraphNode:
         """Create and add a node to the graph
         Arguments:
@@ -270,7 +279,8 @@ class AttackGraph:
 
         logger.debug(
             'Create and add to attackgraph node of type "%s" with id:%d.\n',
-            lg_attack_step.full_name, node_id
+            lg_attack_step.full_name,
+            node_id,
         )
 
         node = AttackGraphNode(
@@ -279,7 +289,7 @@ class AttackGraph:
             model_asset=model_asset,
             ttc_dist=ttc_dist,
             existence_status=existence_status,
-            full_name=full_name
+            full_name=full_name,
         )
 
         # Add to different lists depending on types
@@ -299,13 +309,10 @@ class AttackGraph:
         Arguments:
         node    - the node we wish to remove from the attack graph
         """
-        logger.debug(
-            'Remove node "%s"(%d).', node.full_name, node.id
-        )
+        logger.debug('Remove node "%s"(%d).', node.full_name, node.id)
         for child in node.children:
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
         del self.nodes[node.id]
         del self.full_name_to_node[node.full_name]
-

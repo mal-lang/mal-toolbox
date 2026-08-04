@@ -1,6 +1,6 @@
 [project]
 name = "mal-toolbox"
-version = "2.9.0"
+version = "2.9.1"
 authors = [
   { name="Andrei Buhaiu", email="buhaiu@kth.se" },
   { name="Joakim Loxdal", email="loxdal@kth.se" },
@@ -42,6 +42,8 @@ classifiers = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "ruff",
+    "mypy",
 ]
 
 [project.scripts]
