@@ -97,7 +97,7 @@ class malAnalyzer:
             if asset_node.child_by_field_name('extends'):
                 # Next sibling is the identifier itself
                 extend_asset = asset_node.child_by_field_name('extends')
-                if (bool(extend_asset) and bool(extend_asset.next_sibling)) and bool(extend_asset.next_sibling.text):
+                if isinstance(extend_asset, Node) and extend_asset.next_sibling and extend_asset.next_sibling.text:
                     extend_asset_name = extend_asset.next_sibling.text.decode()
 
                 if extend_asset_name not in self._assets:
