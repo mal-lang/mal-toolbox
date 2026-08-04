@@ -1,5 +1,6 @@
 import copy
 import logging
+
 from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
 from maltoolbox.model import ModelAsset
 

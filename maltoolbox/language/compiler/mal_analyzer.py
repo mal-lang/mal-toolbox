@@ -1,8 +1,10 @@
 import logging
 import re
+from typing import Any
+
 from tree_sitter import Node
+
 from .distributions import Distributions, DistributionsException
-from typing import Any, Tuple, List
 
 
 class malAnalyzerException(Exception):
@@ -543,7 +545,7 @@ class malAnalyzer:
             self._read_steps(asset, parents)
 
     def _attackStep_seen_in_parent(
-        self, attackStep: str, seen_steps: List
+        self, attackStep: str, seen_steps: list
     ) -> str | None:
         """
         Given a list of parent scopes, verify if the attackStep has been defined
@@ -553,7 +555,7 @@ class malAnalyzer:
                 return parent
         return None
 
-    def _read_steps(self, asset: str, parents: List) -> None:
+    def _read_steps(self, asset: str, parents: list) -> None:
         """
         For an asset, check if every step is properly defined in accordance to its hierarchy, i.e. if any of the asset's parents
         also defines this step
@@ -676,7 +678,7 @@ class malAnalyzer:
                 'parent': {'name': category_name, 'node': node.parent},
             }
 
-    def check_meta(self, node: Node, data: Tuple[str, str]) -> None:
+    def check_meta(self, node: Node, data: tuple[str, str]) -> None:
         """
         Given a meta, verify if it was previously defined for the same type (category, asset, step or association)
         """
@@ -699,7 +701,7 @@ class malAnalyzer:
             self._raise_analyzer_exception(error_msg)
 
     def check_category_declaration(
-        self, node: Node, data: Tuple[str, Tuple[List, Any]]
+        self, node: Node, data: tuple[str, tuple[list, Any]]
     ) -> None:
         """
         Given a category, verify if it has a name and if contains metadata or assets
@@ -723,7 +725,7 @@ class malAnalyzer:
             'obj': {'category': category, 'assets': assets},
         }
 
-    def check_define_declaration(self, node: Node, data: Tuple[str, dict]) -> None:
+    def check_define_declaration(self, node: Node, data: tuple[str, dict]) -> None:
         """
         Given a new define, verify if it has been previously defined
         """
@@ -738,7 +740,7 @@ class malAnalyzer:
 
         self._defines[key] = {'node': node, 'value': value}
 
-    def check_include_declaration(self, node: Node, data: Tuple[str, str]) -> None:
+    def check_include_declaration(self, node: Node, data: tuple[str, str]) -> None:
         """
         When an include is found, it triggers the analysis of a new MAL file. To prevent
         checkMal from being performed before all files have been analysed, we increment

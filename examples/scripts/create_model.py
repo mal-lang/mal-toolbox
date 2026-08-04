@@ -1,7 +1,7 @@
 """Run the script from this directory"""
 
-from maltoolbox.model import Model
 from maltoolbox.language import LanguageGraph
+from maltoolbox.model import Model
 
 # You can load language from .mar archives (created with 'malc')
 # or directly from .mal-files

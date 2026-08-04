@@ -1,10 +1,11 @@
 """MAL-Toolbox Attack Graph Module"""
 
 from __future__ import annotations
+
 import logging
+
 from ..str_utils import levenshtein_distance
 from .node import AttackGraphNode
-
 
 logger = logging.getLogger(__name__)
 

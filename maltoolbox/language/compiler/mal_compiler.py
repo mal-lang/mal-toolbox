@@ -1,14 +1,16 @@
-from tree_sitter import TreeCursor, Node
-from typing import Any, Callable, Tuple
-from collections.abc import MutableMapping, MutableSequence
+from collections.abc import Callable, MutableMapping, MutableSequence
 from pathlib import Path
-from .lang import PARSER as parser
-from .mal_analyzer import malAnalyzer
+from typing import Any
+
+from tree_sitter import Node, TreeCursor
+
 from .exceptions import (
     MalCompilerError,
 )
+from .lang import PARSER as parser
+from .mal_analyzer import malAnalyzer
 
-ASTNode = Tuple[str, object]
+ASTNode = tuple[str, object]
 
 """
 This function is crucial to use instead of cursor.goto_next_sibling()
@@ -120,9 +122,9 @@ class ParseTreeVisitor:
                 included_file = self.compile(value)
                 for k, v in langspec.items():
                     if isinstance(v, MutableMapping):
-                        langspec[k].update(included_file.get(k, {}))
+                        v.update(included_file.get(k, {}))
                     if isinstance(v, MutableSequence) and k in included_file:
-                        langspec[k].extend(included_file[k])
+                        v.extend(included_file[k])
 
             # Go back to declaration
             cursor.goto_parent()

@@ -2,7 +2,6 @@ import logging
 
 from maltoolbox.exceptions import LanguageGraphException
 
-
 logger = logging.getLogger(__name__)
 
 

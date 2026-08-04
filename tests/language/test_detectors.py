@@ -1,10 +1,11 @@
+import pytest
+from conftest import path_testdata
+
 from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.language.compiler.exceptions import MalCompilerError
-from maltoolbox.model import Model
 from maltoolbox.language.languagegraph import LanguageGraph
-from conftest import path_testdata
-import pytest
+from maltoolbox.model import Model
 
 
 @pytest.fixture

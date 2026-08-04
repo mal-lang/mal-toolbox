@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.attackgraph.generate import generate_graph
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def attack_graph_from_dict(
-    serialized_object: dict, lang_graph: LanguageGraph, model: Optional[Model]
+    serialized_object: dict, lang_graph: LanguageGraph, model: Model | None
 ):
     attack_graph = AttackGraph(lang_graph)
     attack_graph.model = model
@@ -112,7 +112,7 @@ def attack_graph_from_dict(
 
 
 def attack_graph_from_file(
-    filename: str, lang_graph: LanguageGraph, model: Optional[Model]
+    filename: str, lang_graph: LanguageGraph, model: Model | None
 ):
     if model is not None:
         logger.debug(

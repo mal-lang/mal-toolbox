@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import logging
 import zipfile
+
+from maltoolbox.attackgraph.attackgraph import AttackGraph
 from maltoolbox.exceptions import AttackGraphStepExpressionError
 from maltoolbox.language.languagegraph import LanguageGraph
 from maltoolbox.model import Model
-
-from maltoolbox.attackgraph.attackgraph import AttackGraph
 
 from .. import log_configs
 

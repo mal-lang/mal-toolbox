@@ -1,8 +1,9 @@
 """Tests for the LanguageGraph"""
 
+import pickle
+
 import pytest
 from conftest import path_testdata
-import pickle
 
 from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
 from maltoolbox.language.compiler import MalCompiler

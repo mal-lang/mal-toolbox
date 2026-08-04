@@ -1,6 +1,7 @@
-from maltoolbox.language.compiler import MalCompiler
-from maltoolbox.language import LanguageGraph
 import pytest
+
+from maltoolbox.language import LanguageGraph
+from maltoolbox.language.compiler import MalCompiler
 
 
 def compile_lang(tmp_path, src: str):

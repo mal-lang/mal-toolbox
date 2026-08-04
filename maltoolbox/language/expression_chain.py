@@ -11,9 +11,9 @@ associations in a language graph. Each node has a type that determines:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
 from dataclasses import dataclass
 from enum import Enum
+from typing import TYPE_CHECKING, Any
 
 from maltoolbox.exceptions import (
     LanguageGraphAssociationError,
@@ -166,7 +166,7 @@ class ExpressionsChain:
         data: dict,
         lang_graph: LanguageGraph,
     ) -> ExpressionsChain:
-        assoc_keys = [k for k in data.keys() if k != 'type']
+        assoc_keys = [k for k in data if k != 'type']
         if len(assoc_keys) != 1:
             raise LanguageGraphException('Invalid field expression format')
 

@@ -1,7 +1,6 @@
-from pathlib import Path
-from os import PathLike
-from typing import Optional
 import random
+from os import PathLike
+from pathlib import Path
 
 import graphviz
 
@@ -114,7 +113,7 @@ graphviz_bright_colors = [
 ]
 
 
-def _resolve_graphviz_path(path: Optional[PathLike], default_name: str):
+def _resolve_graphviz_path(path: PathLike | None, default_name: str):
     """
     Resolve a user-provided path into (directory, filename_without_ext).
 
@@ -134,7 +133,7 @@ def _resolve_graphviz_path(path: Optional[PathLike], default_name: str):
     return str(p.parent), p.stem
 
 
-def render_model(model: Model, path: Optional[PathLike] = None, view=True):
+def render_model(model: Model, path: PathLike | None = None, view=True):
     """Render a model in graphviz, create PDF, and open it."""
     dot = graphviz.Digraph(model.name)
 
@@ -159,7 +158,7 @@ def render_model(model: Model, path: Optional[PathLike] = None, view=True):
 
 
 def render_attack_graph(
-    attack_graph: AttackGraph, path: Optional[PathLike] = None, view=True
+    attack_graph: AttackGraph, path: PathLike | None = None, view=True
 ):
     """Render attack graph graphviz, create PDF, and open it."""
     assert attack_graph.model, 'Attack graph needs a model'

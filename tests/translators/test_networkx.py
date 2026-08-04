@@ -50,7 +50,7 @@ def test_model_to_nx(example_model: Model):
     def number_of_edges(model: Model) -> int:
         edges: set[tuple[int, int]] = set()
         for asset in model.assets.values():
-            for _fieldname, associated_assets in asset.associated_assets.items():
+            for associated_assets in asset.associated_assets.values():
                 edges.update(
                     (asset.id, associated_asset.id)
                     for associated_asset in associated_assets

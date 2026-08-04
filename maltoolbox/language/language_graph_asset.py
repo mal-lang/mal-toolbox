@@ -3,9 +3,10 @@
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+
 from dataclasses import dataclass, field
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
 
@@ -137,7 +138,7 @@ class LanguageGraphAsset:
     @property
     def variables(
         self,
-    ) -> dict[str, tuple[LanguageGraphAsset, Optional[ExpressionsChain]]]:
+    ) -> dict[str, tuple[LanguageGraphAsset, ExpressionsChain | None]]:
         """Return a list of all of the variables that belong to this asset
         directly or indirectly via inheritance.
 

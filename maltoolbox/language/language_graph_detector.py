@@ -4,6 +4,7 @@
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 from maltoolbox.language.expression_chain import ExpressionsChain

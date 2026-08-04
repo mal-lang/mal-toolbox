@@ -8,6 +8,13 @@ from maltoolbox.exceptions import (
     LanguageGraphStepExpressionError,
     LanguageGraphSuperAssetNotFoundError,
 )
+from maltoolbox.language.language_graph_asset import LanguageGraphAsset
+from maltoolbox.language.language_graph_assoc import (
+    LanguageGraphAssociation,
+    LanguageGraphAssociationField,
+    link_association_to_assets,
+)
+from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
 from maltoolbox.language.language_graph_detector import (
     LanguageGraphContextItem,
     LanguageGraphDetector,
@@ -16,19 +23,11 @@ from maltoolbox.language.language_graph_lookup import (
     get_attacks_for_asset_type,
     get_variables_for_asset_type,
 )
-from maltoolbox.language.language_graph_asset import LanguageGraphAsset
-from maltoolbox.language.language_graph_assoc import (
-    LanguageGraphAssociation,
-    LanguageGraphAssociationField,
-    link_association_to_assets,
-)
-from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
 from maltoolbox.language.step_expression_processor import (
     process_step_expression,
     resolve_variable,
     reverse_expr_chain,
 )
-
 
 logger = logging.getLogger(__name__)
 

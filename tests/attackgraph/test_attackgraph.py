@@ -3,8 +3,8 @@
 import copy
 import pickle
 from unittest.mock import patch
-import pytest
 
+import pytest
 from conftest import path_testdata
 
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
@@ -84,7 +84,7 @@ def test_attackgraph_save_load_no_model_given(
     # Loaded graph nodes will not have 'asset' since it does not have a model.
     for loaded_node in loaded_attack_graph.nodes.values():
         if not isinstance(loaded_node.id, int):
-            raise ValueError('Invalid node id for loaded node.')
+            raise TypeError('Invalid node id for loaded node.')
         original_node = example_attackgraph.nodes[loaded_node.id]
 
         assert original_node, f'Failed to find original node for id {loaded_node.id}.'

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
@@ -22,6 +22,7 @@ from .node import AttackGraphNode
 
 if TYPE_CHECKING:
     from typing import Any
+
     from ..model import ModelAsset
 
 logger = logging.getLogger(__name__)
@@ -197,7 +198,7 @@ def follow_collect_expr_chain(
 
 
 def follow_expr_chain(
-    model: Model, target_assets: set[ModelAsset], expr_chain: Optional[ExpressionsChain]
+    model: Model, target_assets: set[ModelAsset], expr_chain: ExpressionsChain | None
 ):
     if expr_chain is None:
         # There is no expressions chain link left to follow return the

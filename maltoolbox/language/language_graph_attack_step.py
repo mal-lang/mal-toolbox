@@ -3,9 +3,10 @@
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Literal, Optional
+
 from dataclasses import dataclass, field
 from functools import cached_property
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
@@ -20,7 +21,7 @@ class LanguageGraphAttackStep:
     name: str
     type: Literal['or', 'and', 'defense', 'exist', 'notExist']
     asset: LanguageGraphAsset
-    causal_mode: Optional[Literal['action', 'effect']] = None
+    causal_mode: Literal['action', 'effect'] | None = None
     ttc: dict | None = field(default_factory=dict)
     overrides: bool = False
 
@@ -31,7 +32,7 @@ class LanguageGraphAttackStep:
         default_factory=dict
     )
     info: dict = field(default_factory=dict)
-    inherits: Optional[LanguageGraphAttackStep] = None
+    inherits: LanguageGraphAttackStep | None = None
     own_requires: list[ExpressionsChain] = field(default_factory=list)
     tags: list = field(default_factory=list)
     detectors: dict[str, LanguageGraphDetector] = field(default_factory=dict)

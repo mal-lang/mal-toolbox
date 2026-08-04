@@ -1,10 +1,11 @@
 """Utilty functions for file handling"""
 
 import json
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
+
 import yaml
 
 

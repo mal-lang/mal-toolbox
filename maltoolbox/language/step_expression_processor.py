@@ -1,22 +1,23 @@
 from __future__ import annotations
+
 import json
 import logging
-from typing import Any, Optional
+from typing import Any
 
-from maltoolbox.language.expression_chain import ExprType, ExpressionsChain
-from maltoolbox.language.language_graph_lookup import get_var_expr_for_asset
-from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.exceptions import (
-    LanguageGraphException,
     LanguageGraphAssociationError,
+    LanguageGraphException,
 )
+from maltoolbox.language.expression_chain import ExpressionsChain, ExprType
+from maltoolbox.language.language_graph_asset import LanguageGraphAsset
+from maltoolbox.language.language_graph_lookup import get_var_expr_for_asset
 
 logger = logging.getLogger(__name__)
 
 StepResult = tuple[
     LanguageGraphAsset,
-    Optional[ExpressionsChain],
-    Optional[str],
+    ExpressionsChain | None,
+    str | None,
 ]
 
 
@@ -363,7 +364,7 @@ def resolve_variable(
     asset: LanguageGraphAsset,
     var_name: str,
     lang_spec,
-) -> tuple[LanguageGraphAsset, Optional[ExpressionsChain]]:
+) -> tuple[LanguageGraphAsset, ExpressionsChain | None]:
     """Resolve a variable for a specific asset by variable name.
 
     Arguments:

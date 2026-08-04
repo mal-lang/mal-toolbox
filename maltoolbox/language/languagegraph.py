@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
 import zipfile
+from typing import Any
 
 from maltoolbox.exceptions import (
     LanguageGraphAssociationError,
@@ -23,13 +23,13 @@ from maltoolbox.file_utils import (
 )
 from maltoolbox.language.compiler.mal_compiler import MalCompiler
 from maltoolbox.language.expression_chain import ExpressionsChain
-from maltoolbox.language.language_graph_builder import generate_graph
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import (
     LanguageGraphAssociation,
     LanguageGraphAssociationField,
 )
 from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
+from maltoolbox.language.language_graph_builder import generate_graph
 from maltoolbox.language.step_expression_processor import (
     StepResult,
     process_attack_step_expression,

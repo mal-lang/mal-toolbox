@@ -1,8 +1,8 @@
 from pathlib import Path
-from maltoolbox.model import Model
-from maltoolbox.attackgraph import AttackGraph
-from maltoolbox.visualization import render_attack_graph, render_model
 
+from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.model import Model
+from maltoolbox.visualization import render_attack_graph, render_model
 
 # -------------------------------------------------------------------
 # 1. Tests when PATH is a directory
