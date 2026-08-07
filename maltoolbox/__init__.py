@@ -25,6 +25,7 @@ __authors__ = [
     'Nikolaos Kakouros',
     'Jakob Nyberg',
     'Joakim Loxdal',
+    'Sandor Berglund',
 ]
 __license__ = 'Apache 2.0'
 __docformat__ = 'restructuredtext en'
