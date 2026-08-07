@@ -118,3 +118,10 @@ def example_model(corelang_lang_graph: LanguageGraph):
     app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
 
     return model
+
+
+@pytest.fixture
+def trainingLang_lang_graph():
+    """Fixture that returns the trainingLang language specification as dict"""
+    mar_file_path = path_testdata('org.mal-lang.trainingLang-1.0.0.mar')
+    return LanguageGraph.from_mar_archive(mar_file_path)

@@ -8,6 +8,7 @@ from .distributions import Distributions, DistributionsException
 
 logger = logging.getLogger(__name__)
 
+
 class malAnalyzerException(Exception):
     def __init__(self, error_message):
         self._error_message = error_message
@@ -97,7 +98,11 @@ class malAnalyzer:
             if asset_node.child_by_field_name('extends'):
                 # Next sibling is the identifier itself
                 extend_asset = asset_node.child_by_field_name('extends')
-                if isinstance(extend_asset, Node) and extend_asset.next_sibling and extend_asset.next_sibling.text:
+                if (
+                    isinstance(extend_asset, Node)
+                    and extend_asset.next_sibling
+                    and extend_asset.next_sibling.text
+                ):
                     extend_asset_name = extend_asset.next_sibling.text.decode()
 
                 if extend_asset_name not in self._assets:
@@ -392,9 +397,13 @@ class malAnalyzer:
         if asset in self._associations:
             for association in self._associations[asset]:
                 association = self._associations[asset][association]['association']
-                if (expr['name'] == association['leftField']) and self._get_asset_name(association['leftAsset']):
+                if (expr['name'] == association['leftField']) and self._get_asset_name(
+                    association['leftAsset']
+                ):
                     return association['leftAsset']
-                if (expr['name'] == association['rightField']) and self._get_asset_name(association['rightAsset']):
+                if (expr['name'] == association['rightField']) and self._get_asset_name(
+                    association['rightAsset']
+                ):
                     return association['rightAsset']
 
         # Verify if there is a variable defined with the same name; possible the user forgot to call it
@@ -687,10 +696,7 @@ class malAnalyzer:
         if node.parent not in self._metas:
             self._metas[node.parent] = {meta_name: node}
         # Check if the new meta is not already defined
-        elif (
-            node.parent in self._metas
-            and meta_name not in self._metas[node.parent]
-        ):
+        elif node.parent in self._metas and meta_name not in self._metas[node.parent]:
             self._metas[node.parent][meta_name] = node
         # Otherwise, throw error
         else:

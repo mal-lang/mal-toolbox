@@ -214,8 +214,8 @@ class Model:
         lang_graph -
 
         """
-        maltoolbox_version = (
-            serialized_object['metadata'].get('MAL Toolbox Version', __version__)
+        maltoolbox_version = serialized_object['metadata'].get(
+            'MAL Toolbox Version', __version__
         )
         model = Model(
             serialized_object['metadata']['name'],

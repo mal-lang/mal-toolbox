@@ -7,8 +7,19 @@ import logging
 from typing import TYPE_CHECKING
 
 from maltoolbox.attackgraph.detector import Detector
-from maltoolbox.attackgraph.generate import generate_graph
+from maltoolbox.attackgraph.generate import (
+    _create_detectors,
+    generate_graph,
+    link_node_children,
+)
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
+from maltoolbox.attackgraph.partially_generate import (
+    correct_node_children_on_modified_assoc,
+    create_nodes_from_assets,
+    get_all_field_names,
+    nodes_to_be_removed,
+    switch_fieldname,
+)
 from maltoolbox.language.languagegraph import disaggregate_attack_step_full_name
 
 from ..file_utils import (
@@ -235,6 +246,76 @@ class AttackGraph:
             self.full_name_to_node,
             self.detectors,
         ) = generate_graph(self.model)
+
+    def partially_regenerate_graph(
+        self,
+        new_assets: set[ModelAsset] | None = None,
+        new_associations: set[tuple[ModelAsset, str, ModelAsset]] | None = None,
+        removed_assets: set[ModelAsset] | None = None,
+        removed_associations: set[tuple[ModelAsset, str, ModelAsset]] | None = None,
+    ) -> None:
+        """Partially regenerate the attack graph based on changes to the model."""
+
+        if new_assets is None:
+            new_assets = set()
+        if new_associations is None:
+            new_associations = set()
+        if removed_assets is None:
+            removed_assets = set()
+        if removed_associations is None:
+            removed_associations = set()
+        
+        
+        assert self.model, 'Model required to generate graph'
+
+        (
+            id_to_created_nodes,
+            created_attack_steps,
+            created_defense_steps,
+            full_name_to_created_nodes,
+        ) = create_nodes_from_assets(new_assets, max(self.nodes.keys()) + 1, self.model)
+
+        # Do full linking of children for steps of newly created assets
+        for ag_node in full_name_to_created_nodes.values():
+            link_node_children(self.model, ag_node, full_name_to_created_nodes | self.full_name_to_node)
+
+        removed_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]] = {}
+        for left_asset, fieldname, right_asset in removed_associations:
+            removed_assoc_dict.setdefault(left_asset, {}).setdefault(fieldname, set()).add(right_asset)
+            removed_assoc_dict.setdefault(right_asset, {}).setdefault(
+                switch_fieldname(left_asset, fieldname), set()
+            ).add(left_asset)
+
+        new_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]] = {}
+        for left_asset, fieldname, right_asset in new_associations:
+            new_assoc_dict.setdefault(left_asset, {}).setdefault(fieldname, set()).add(right_asset)
+            new_assoc_dict.setdefault(right_asset, {}).setdefault(
+                switch_fieldname(left_asset, fieldname), set()
+            ).add(left_asset)
+        all_field_names = get_all_field_names(self.model.lang_graph)
+        # Correct links referencing modified associations
+        nodes_of_modified_assoc = filter(lambda step: step.model_asset in new_assoc_dict or step.model_asset in removed_assoc_dict, self.full_name_to_node.values())
+        for ag_node in nodes_of_modified_assoc:
+            assert ag_node.model_asset is not None, "Attack graph must have access to the model to do partial regeneration."
+            correct_node_children_on_modified_assoc(
+                self.model, 
+                ag_node, 
+                full_name_to_created_nodes | self.full_name_to_node, 
+                new_assoc_dict.get(ag_node.model_asset, {}), 
+                removed_assoc_dict.get(ag_node.model_asset, {}), 
+                all_field_names
+            )
+
+        self.nodes.update(id_to_created_nodes)
+        self.attack_steps.extend(created_attack_steps)
+        self.defense_steps.extend(created_defense_steps)
+        self.full_name_to_node.update(full_name_to_created_nodes)
+        new_detectors = _create_detectors(full_name_to_created_nodes, self.model)
+        self.detectors.extend(new_detectors)
+
+        removal_candidates = nodes_to_be_removed(removed_assets, self.full_name_to_node)
+        for removal_candidate in removal_candidates:
+            self.remove_node(removal_candidate)
 
     def add_node(
         self,
