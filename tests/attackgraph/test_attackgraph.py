@@ -14,6 +14,43 @@ from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
 from maltoolbox.model import Model
 
 
+def check_graph_equivalence(true: AttackGraph, other: AttackGraph) -> None:
+    """Helper function to check that two graphs are equivalent in terms of nodes and their relationships."""
+    assert len(true.nodes) == len(other.nodes), (
+        f'Number of nodes differ: True AttackGraph {len(true.nodes)} != Other: {len(other.nodes)}'
+    )
+
+    true_full_names = set(true.full_name_to_node.keys())
+    other_full_names = set(other.full_name_to_node.keys())
+    assert true_full_names == other_full_names, (
+        f'Node full_names differ: '
+        f'only in true: {true_full_names - other_full_names}; '
+        f'only in other: {other_full_names - true_full_names}'
+    )
+
+    true_node_id_to_full_name = {node.id: node.full_name for node in true.nodes.values()}
+    other_node_id_to_full_name = {node.id: node.full_name for node in other.nodes.values()}
+
+    for true_node_full_name, true_node in true.full_name_to_node.items():
+        try:
+            part_node = other.full_name_to_node[true_node_full_name]
+        except LookupError:
+            pytest.fail(
+                reason=f'{true_node.full_name} not in partially regenerated graph.'
+            )
+        true_node_child_names = {true_node_id_to_full_name[node.id] for node in true_node.children}
+        part_node_child_names = {other_node_id_to_full_name[node.id] for node in part_node.children}
+        assert true_node_child_names == part_node_child_names, (
+            f'Different children between true and partially regenerated graphs for {true_node.full_name}'
+        )
+        true_node_parent_names = {true_node_id_to_full_name[node.id] for node in true_node.parents}
+        part_node_parent_names = {other_node_id_to_full_name[node.id] for node in part_node.parents}
+        assert true_node_parent_names == part_node_parent_names, (
+            f'Different parents between true and partially regenerated graphs for {true_node.full_name}'
+        )
+
+
+
 def test_attackgraph_init(corelang_lang_graph, model):
     """Test init with different params given"""
     # _generate_graph is called when langspec and model is given to init
@@ -709,6 +746,507 @@ def tests_create_ag_from_model():
     check_parent_child_relationship(
         created_ag, 'Network:3:access', ['Host:0:connect', 'Host:1:connect']
     )
+
+
+def test_partial_regeneration(trainingLang_lang_graph: LanguageGraph) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+
+    host0 = model.add_asset(asset_type='Host', name='Host0')
+    network.add_associated_assets('hosts', {host0})
+    AG.partially_regenerate_graph(
+        new_assets={host0}, new_associations={(network, 'hosts', host0)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    user0 = model.add_asset(asset_type='User', name='User0')
+    host0.add_associated_assets(fieldname='users', assets={user0})
+    AG.partially_regenerate_graph(
+        new_assets={user0}, new_associations={(host0, 'users', user0)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Data [data] * <-- DataOnHosts --> * [hosts] Host
+    data0 = model.add_asset(asset_type='Data', name='Data0')
+    host0.add_associated_assets(fieldname='data', assets={data0})
+    AG.partially_regenerate_graph(
+        new_assets={data0}, new_associations={(host0, 'data', data0)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Add a second host to the already existing network, this requires
+    # relinking of the pre-existing Network:LAN:access node's children.
+    host1 = model.add_asset(asset_type='Host', name='Host1')
+    network.add_associated_assets('hosts', {host1})
+    AG.partially_regenerate_graph(
+        new_assets={host1}, new_associations={(network, 'hosts', host1)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Associate the same user with the second host as well, exercising
+    # relinking of an existing node (User0:compromise) to a new child.
+    host1.add_associated_assets(fieldname='users', assets={user0})
+    AG.partially_regenerate_graph(
+        new_associations={(host1, 'users', user0)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # A second Data asset, this time on Host1, and a second piece of Data
+    # added onto Host0 (which already has Data0 associated), covering both
+    # a fresh host/data pairing and a host gaining an additional Data child.
+    data1 = model.add_asset(asset_type='Data', name='Data1')
+    data2 = model.add_asset(asset_type='Data', name='Data2')
+    host1.add_associated_assets(fieldname='data', assets={data1})
+    host0.add_associated_assets(fieldname='data', assets={data2})
+    AG.partially_regenerate_graph(
+        new_assets={data1, data2},
+        new_associations={(host1, 'data', data1), (host0, 'data', data2)},
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Network [fromNetworks] * <-- InterNetworkConnectivity --> * [toNetworks] Network
+    network2 = model.add_asset(asset_type='Network', name='WAN')
+    AG.partially_regenerate_graph(new_assets={network2})
+    network.add_associated_assets(fieldname='toNetworks', assets={network2})
+    AG.partially_regenerate_graph(
+        new_associations={(network, 'toNetworks', network2)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Now tear everything back down and check that the partially regenerated graph is equivalent to the newly generated graph.
+    network.remove_associated_assets(fieldname='toNetworks', assets={network2})
+    AG.partially_regenerate_graph(
+        removed_associations={(network, 'toNetworks', network2)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    model.remove_asset(network2)
+    AG.partially_regenerate_graph(removed_assets={network2})
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    model.remove_asset(data1)
+    AG.partially_regenerate_graph(removed_assets={data1}, removed_associations={(host1, 'data', data1)})
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    model.remove_asset(data2)
+    AG.partially_regenerate_graph(removed_assets={data2}, removed_associations={(host0, 'data', data2)})
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    host1.remove_associated_assets(fieldname='users', assets={user0})
+    AG.partially_regenerate_graph(
+        removed_associations={(host1, 'users', user0)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    model.remove_asset(host1)
+    AG.partially_regenerate_graph(removed_assets={host1}, removed_associations={(network, 'hosts', host1)})
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    host0.remove_associated_assets(fieldname='data', assets={data0})
+    AG.partially_regenerate_graph(
+        removed_associations={(host0, 'data', data0)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    model.remove_asset(data0)
+    AG.partially_regenerate_graph(removed_assets={data0})
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    model.remove_asset(user0)
+    AG.partially_regenerate_graph(removed_assets={user0}, removed_associations={(host0, 'users', user0)})
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    network.remove_associated_assets(fieldname='hosts', assets={host0})
+    AG.partially_regenerate_graph(
+        removed_associations={(network, 'hosts', host0)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    model.remove_asset(host0)
+    AG.partially_regenerate_graph(removed_assets={host0})
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Back down to only the original Network asset.
+    assert set(model.assets.values()) == {network}
+
+
+def test_partial_regeneration_change_model_completely(trainingLang_lang_graph: LanguageGraph) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+
+    new_assets = set()
+    new_associations = set()
+
+    host0 = model.add_asset(asset_type='Host', name='Host0')
+    new_assets.add(host0)
+    network.add_associated_assets('hosts', {host0})
+    new_associations.add((network, 'hosts', host0))
+
+    user0 = model.add_asset(asset_type='User', name='User0')
+    new_assets.add(user0)
+    host0.add_associated_assets(fieldname='users', assets={user0})
+    new_associations.add((host0, 'users', user0))
+
+    data0 = model.add_asset(asset_type='Data', name='Data0')
+    new_assets.add(data0)
+    host0.add_associated_assets(fieldname='data', assets={data0})
+    new_associations.add((host0, 'data', data0))
+
+    host1 = model.add_asset(asset_type='Host', name='Host1')
+    new_assets.add(host1)
+    network.add_associated_assets('hosts', {host1})
+    new_associations.add((network, 'hosts', host1))
+
+    host1.add_associated_assets(fieldname='users', assets={user0})
+    new_associations.add((host1, 'users', user0))
+
+    data1 = model.add_asset(asset_type='Data', name='Data1')
+    data2 = model.add_asset(asset_type='Data', name='Data2')
+    new_assets.update({data1, data2})
+    host1.add_associated_assets(fieldname='data', assets={data1})
+    host0.add_associated_assets(fieldname='data', assets={data2})
+    new_associations.update({(host1, 'data', data1), (host0, 'data', data2)})
+
+    network2 = model.add_asset(asset_type='Network', name='WAN')
+    new_assets.add(network2)
+    network.add_associated_assets(fieldname='toNetworks', assets={network2})
+    new_associations.add((network, 'toNetworks', network2))
+
+    AG.partially_regenerate_graph(new_assets=new_assets, new_associations=new_associations)
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    removed_assets = set()
+    removed_associations = set()
+    new_assets.clear()
+    new_associations.clear()
+
+    for asset in model.assets.values():
+        for fieldname, associated_assets in asset.associated_assets.items():
+            for associated_asset in associated_assets:
+                removed_associations.add((asset, fieldname, associated_asset))
+    for asset in list(model.assets.values()):
+        if asset != network:
+            removed_assets.add(asset)
+            model.remove_asset(asset)
+
+    network1 = model.add_asset(asset_type='Network', name='Network1')
+    network2 = model.add_asset(asset_type='Network', name='Network2')
+    network3 = model.add_asset(asset_type='Network', name='Network3')
+    new_assets.update({network1, network2, network3})
+    network1.add_associated_assets(fieldname='toNetworks', assets={network2, network3})
+    new_associations.update({(network1, 'toNetworks', network2), (network1, 'toNetworks', network3)})
+    network.add_associated_assets(fieldname='toNetworks', assets={network1})
+    new_associations.add((network, 'toNetworks', network1))
+
+    hostInNetwork = model.add_asset(asset_type='Host', name='HostInNetwork')
+    hostInNetwork1 = model.add_asset(asset_type='Host', name='HostInNetwork1')
+    hostInNetwork2 = model.add_asset(asset_type='Host', name='HostInNetwork2')
+    hostInNetwork3 = model.add_asset(asset_type='Host', name='HostInNetwork3')
+    new_assets.update({hostInNetwork, hostInNetwork1, hostInNetwork2, hostInNetwork3})
+    network.add_associated_assets(fieldname='hosts', assets={hostInNetwork})
+    network1.add_associated_assets(fieldname='hosts', assets={hostInNetwork1})
+    network2.add_associated_assets(fieldname='hosts', assets={hostInNetwork2})
+    network3.add_associated_assets(fieldname='hosts', assets={hostInNetwork3})
+    new_associations.update({(network, 'hosts', hostInNetwork), (network1, 'hosts', hostInNetwork1),
+        (network2, 'hosts', hostInNetwork2), (network3, 'hosts', hostInNetwork3)
+    })
+
+    dataConnectedToAllHosts = model.add_asset(asset_type='Data', name='DataConnectedToAllHosts')
+    new_assets.add(dataConnectedToAllHosts)
+    dataConnectedToAllHosts.add_associated_assets(fieldname='hosts', assets={hostInNetwork, hostInNetwork1, hostInNetwork2, hostInNetwork3})
+
+    userFornet0and2 = model.add_asset(asset_type='User', name='UserForNet0and2')
+    userFornet1and3 = model.add_asset(asset_type='User', name='UserForNet1and3')
+    new_assets.update({userFornet0and2, userFornet1and3})
+    userFornet0and2.add_associated_assets(fieldname='hosts', assets={hostInNetwork, hostInNetwork2})
+    userFornet1and3.add_associated_assets(fieldname='hosts', assets={hostInNetwork1, hostInNetwork3})
+    new_associations.update({(userFornet0and2, 'hosts', hostInNetwork), (userFornet0and2, 'hosts', hostInNetwork2),
+        (userFornet1and3, 'hosts', hostInNetwork1), (userFornet1and3, 'hosts', hostInNetwork3)
+    })
+
+    AG.partially_regenerate_graph(new_assets=new_assets, new_associations=new_associations, removed_assets=removed_assets, removed_associations=removed_associations)
+    regenerated_AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+
+def test_partial_regeneration_corelang(corelang_lang_graph: LanguageGraph) -> None:
+    """Tests partial regeneration of the attack graph for a model in coreLang."""
+    model = Model('Test Model', corelang_lang_graph)
+    corpnet = model.add_asset(asset_type='Network', name='CorpNet')
+    AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+
+    # --- Phase 1: incremental build ---
+
+    webapp = model.add_asset(asset_type='Application', name='WebApp')
+    corpnet.add_associated_assets('applications', {webapp})
+    AG.partially_regenerate_graph(
+        new_assets={webapp}, new_associations={(corpnet, 'applications', webapp)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    webhw = model.add_asset(asset_type='Hardware', name='WebServer')
+    webhw.add_associated_assets('sysExecutedApps', {webapp})
+    AG.partially_regenerate_graph(
+        new_assets={webhw}, new_associations={(webhw, 'sysExecutedApps', webapp)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    webdata = model.add_asset(asset_type='Data', name='WebAppData')
+    webapp.add_associated_assets('containedData', {webdata})
+    AG.partially_regenerate_graph(
+        new_assets={webdata}, new_associations={(webapp, 'containedData', webdata)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Add a second application to the already existing network, this requires
+    # relinking of the pre-existing Network:CorpNet:access node's children.
+    dbapp = model.add_asset(asset_type='Application', name='DBApp')
+    corpnet.add_associated_assets('applications', {dbapp})
+    AG.partially_regenerate_graph(
+        new_assets={dbapp}, new_associations={(corpnet, 'applications', dbapp)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # WebApp executes DBApp (self-referential AppExecution association),
+    # exercising relinking of an existing node's (WebApp) children.
+    webapp.add_associated_assets('appExecutedApps', {dbapp})
+    AG.partially_regenerate_graph(
+        new_associations={(webapp, 'appExecutedApps', dbapp)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Two new assets and three new associations in a single call: DBApp gets
+    # its own hardware, which also hosts a second, hardware-only Data asset.
+    dbhw = model.add_asset(asset_type='Hardware', name='DBServer')
+    dbdata = model.add_asset(asset_type='Data', name='DBData')
+    dbhw.add_associated_assets('sysExecutedApps', {dbapp})
+    dbhw.add_associated_assets('hostedData', {dbdata})
+    dbapp.add_associated_assets('containedData', {dbdata})
+    AG.partially_regenerate_graph(
+        new_assets={dbhw, dbdata},
+        new_associations={
+            (dbhw, 'sysExecutedApps', dbapp),
+            (dbhw, 'hostedData', dbdata),
+            (dbapp, 'containedData', dbdata),
+        },
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # IDPS protecting two existing applications at once, i.e. a multi-target
+    # association added in a single call.
+    netidps = model.add_asset(asset_type='IDPS', name='NetIDPS')
+    netidps.add_associated_assets('protectedApps', {webapp, dbapp})
+    AG.partially_regenerate_graph(
+        new_assets={netidps},
+        new_associations={
+            (netidps, 'protectedApps', webapp),
+            (netidps, 'protectedApps', dbapp),
+        },
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Identity/Credentials/User chain plus an IAM read privilege, all new at once.
+    svcidentity = model.add_asset(asset_type='Identity', name='SvcIdentity')
+    svccreds = model.add_asset(asset_type='Credentials', name='SvcCreds')
+    alice = model.add_asset(asset_type='User', name='Alice')
+    svcidentity.add_associated_assets('credentials', {svccreds})
+    alice.add_associated_assets('userIds', {svcidentity})
+    svcidentity.add_associated_assets('readPrivData', {webdata})
+    AG.partially_regenerate_graph(
+        new_assets={svcidentity, svccreds, alice},
+        new_associations={
+            (svcidentity, 'credentials', svccreds),
+            (alice, 'userIds', svcidentity),
+            (svcidentity, 'readPrivData', webdata),
+        },
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # --- Phase 2: change model (almost) completely ---
+    # Tear everything down except CorpNet, then rebuild a bigger topology:
+    # three networks linked pairwise via ConnectionRule assets, each with its
+    # own application/hardware/data, plus a second IAM chain and an IDPS
+    # protecting two apps at once. CorpNet's 'applications' field is both
+    # relieved of WebApp/DBApp and given a new ProxyApp in the same call,
+    # which is exactly the "same fieldname sees both an addition and a
+    # removal in one partial_regenerate_graph call" case that previously
+    # broke partial regeneration for trainingLang.
+
+    removed_assets = set()
+    removed_associations = set()
+    for asset in model.assets.values():
+        for fieldname, associated_assets in asset.associated_assets.items():
+            for associated_asset in associated_assets:
+                removed_associations.add((asset, fieldname, associated_asset))
+    for asset in list(model.assets.values()):
+        if asset != corpnet:
+            removed_assets.add(asset)
+            model.remove_asset(asset)
+
+    new_assets = set()
+    new_associations = set()
+
+    dmz = model.add_asset(asset_type='Network', name='DMZ')
+    backup = model.add_asset(asset_type='Network', name='BackupNet')
+    new_assets.update({dmz, backup})
+
+    cr1 = model.add_asset(asset_type='ConnectionRule', name='CR-CorpNet-DMZ')
+    cr2 = model.add_asset(asset_type='ConnectionRule', name='CR-DMZ-Backup')
+    new_assets.update({cr1, cr2})
+    cr1.add_associated_assets('networks', {corpnet, dmz})
+    cr2.add_associated_assets('networks', {dmz, backup})
+    new_associations.update({
+        (cr1, 'networks', corpnet), (cr1, 'networks', dmz),
+        (cr2, 'networks', dmz), (cr2, 'networks', backup),
+    })
+
+    proxyapp = model.add_asset(asset_type='Application', name='ProxyApp')
+    dmzapp = model.add_asset(asset_type='Application', name='DmzApp')
+    backupapp = model.add_asset(asset_type='Application', name='BackupApp')
+    new_assets.update({proxyapp, dmzapp, backupapp})
+    # Same fieldname ('applications') on CorpNet as the associations just removed.
+    corpnet.add_associated_assets('applications', {proxyapp})
+    dmz.add_associated_assets('applications', {dmzapp})
+    backup.add_associated_assets('applications', {backupapp})
+    new_associations.update({
+        (corpnet, 'applications', proxyapp),
+        (dmz, 'applications', dmzapp),
+        (backup, 'applications', backupapp),
+    })
+
+    proxyhw = model.add_asset(asset_type='Hardware', name='ProxyServer')
+    new_assets.add(proxyhw)
+    proxyhw.add_associated_assets('sysExecutedApps', {proxyapp})
+    new_associations.add((proxyhw, 'sysExecutedApps', proxyapp))
+
+    shareddata = model.add_asset(asset_type='Data', name='SharedData')
+    new_assets.add(shareddata)
+    proxyapp.add_associated_assets('containedData', {shareddata})
+    # SharedData is reachable both through ProxyApp's containment and
+    # directly through the hardware it's hosted on.
+    shareddata.add_associated_assets('hardware', {proxyhw})
+    new_associations.update({
+        (proxyapp, 'containedData', shareddata),
+        (shareddata, 'hardware', proxyhw),
+    })
+
+    svcidentity2 = model.add_asset(asset_type='Identity', name='SvcIdentity2')
+    svccreds2 = model.add_asset(asset_type='Credentials', name='SvcCreds2')
+    bob = model.add_asset(asset_type='User', name='Bob')
+    new_assets.update({svcidentity2, svccreds2, bob})
+    svcidentity2.add_associated_assets('credentials', {svccreds2})
+    bob.add_associated_assets('userIds', {svcidentity2})
+    svcidentity2.add_associated_assets('readPrivData', {shareddata})
+    new_associations.update({
+        (svcidentity2, 'credentials', svccreds2),
+        (bob, 'userIds', svcidentity2),
+        (svcidentity2, 'readPrivData', shareddata),
+    })
+
+    edgeidps = model.add_asset(asset_type='IDPS', name='EdgeIDPS')
+    new_assets.add(edgeidps)
+    edgeidps.add_associated_assets('protectedApps', {proxyapp, dmzapp})
+    new_associations.update({
+        (edgeidps, 'protectedApps', proxyapp),
+        (edgeidps, 'protectedApps', dmzapp),
+    })
+
+    AG.partially_regenerate_graph(
+        new_assets=new_assets, new_associations=new_associations,
+        removed_assets=removed_assets, removed_associations=removed_associations,
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # --- Phase 3: teardown ---
+
+    # Partial removal from a multi-target association (EdgeIDPS keeps
+    # protecting ProxyApp but stops protecting DmzApp).
+    edgeidps.remove_associated_assets('protectedApps', {dmzapp})
+    AG.partially_regenerate_graph(
+        removed_associations={(edgeidps, 'protectedApps', dmzapp)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    svcidentity2.remove_associated_assets('readPrivData', {shareddata})
+    AG.partially_regenerate_graph(
+        removed_associations={(svcidentity2, 'readPrivData', shareddata)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    shareddata.remove_associated_assets('hardware', {proxyhw})
+    AG.partially_regenerate_graph(
+        removed_associations={(shareddata, 'hardware', proxyhw)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Cascading removal of several interlinked assets (a network, its
+    # application and their connecting rule) in one call.
+    removed_assets = set()
+    removed_associations = set()
+    for asset in (backup, backupapp, cr2):
+        for fieldname, associated_assets in asset.associated_assets.items():
+            for associated_asset in associated_assets:
+                removed_associations.add((asset, fieldname, associated_asset))
+    for asset in (backup, backupapp, cr2):
+        removed_assets.add(asset)
+        model.remove_asset(asset)
+    AG.partially_regenerate_graph(
+        removed_assets=removed_assets, removed_associations=removed_associations
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Final bulk teardown back to only the original Network asset.
+    removed_assets = set()
+    removed_associations = set()
+    for asset in model.assets.values():
+        for fieldname, associated_assets in asset.associated_assets.items():
+            for associated_asset in associated_assets:
+                removed_associations.add((asset, fieldname, associated_asset))
+    for asset in list(model.assets.values()):
+        if asset != corpnet:
+            removed_assets.add(asset)
+            model.remove_asset(asset)
+    AG.partially_regenerate_graph(
+        removed_assets=removed_assets, removed_associations=removed_associations
+    )
+    regenerated_AG = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    assert set(model.assets.values()) == {corpnet}
 
 
 def tests_create_ag_step_lists():
