@@ -253,8 +253,20 @@ class AttackGraph:
         new_associations: set[tuple[ModelAsset, str, ModelAsset]] | None = None,
         removed_assets: set[ModelAsset] | None = None,
         removed_associations: set[tuple[ModelAsset, str, ModelAsset]] | None = None,
-    ) -> None:
-        """Partially regenerate the attack graph based on changes to the model."""
+    ) -> set[AttackGraphNode]:
+        """Partially regenerate the attack graph based on changes to the model.
+        
+        Arguments:
+        ---------
+        new_assets              - a set of new assets that have been added to the model
+        new_associations        - a set of new associations that have been added to the model
+        removed_assets          - a set of assets that have been removed from the model
+        removed_associations    - a set of associations that have been removed from the model
+
+        Return:
+        ------
+        The newly created nodes for the attack graph.
+        """
 
         if new_assets is None:
             new_assets = set()
@@ -316,6 +328,8 @@ class AttackGraph:
         removal_candidates = nodes_to_be_removed(removed_assets, self.full_name_to_node)
         for removal_candidate in removal_candidates:
             self.remove_node(removal_candidate)
+
+        return set(created_attack_steps + created_defense_steps)
 
     def add_node(
         self,
