@@ -1,0 +1,58 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang11"
+#version: "0.1.0"
+category intDynamicTestLang11 {
+	asset Table {
+		| access
+			-> testLeftUnionRemove,
+				testRightUnionRemove,
+				testDoubleUnionRemove,
+				testLeftUnionAdd,
+				testRightUnionAdd,
+				testDoubleUnionAdd
+
+		| testLeftUnionRemove
+			R> (bowls \/ baskets) / apples
+
+		| testRightUnionRemove
+			R> bowls / (apples \/ oranges)
+
+		| testDoubleUnionRemove
+			R> (bowls \/ baskets) / (apples \/ oranges)
+
+		| testLeftUnionAdd
+			A> (bowls \/ baskets) / apples
+
+		| testRightUnionAdd
+			A> bowls / (apples \/ oranges)
+
+		| testDoubleUnionAdd
+			A> (bowls \/ baskets) / (apples \/ oranges)
+	}
+
+	abstract asset Container {}
+
+	abstract asset Fruit {}
+
+	asset Bowl extends Container {}
+
+	asset Basket extends Container {}
+
+	asset Apple extends Fruit {}
+
+	asset Orange extends Fruit {}
+
+
+}
+
+associations{
+	Table [table] 1 <-- BowlPlacement --> * [bowls] Bowl
+	Table [table] 1 <-- BasketPlacement --> * [baskets] Basket
+	Container [container] 1 <-- AppleContain --> * [apples] Apple
+	Container [container] 1 <-- OrangeContain --> * [oranges] Orange
+}

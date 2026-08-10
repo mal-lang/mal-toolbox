@@ -1,0 +1,51 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang4"
+#version: "0.0.1"
+
+category Business {
+    asset Apples {
+        | access
+            -> plantBadApple, plantInfestedApple
+
+        | plantBadApple
+            A> self / badApple
+            -> badApple.spoil
+
+        | plantInfestedApple
+            A> self / badApple[InfestedApple]
+            -> badApple.spoil
+
+        | spoil
+}
+
+    asset BadApple 
+    user info: "One bad apple spoils the bunch!"
+    {
+        | spoil
+            -> apples.spoil
+
+    }
+
+    asset InfestedApple extends BadApple
+    user info: "Ew!"
+    {
+        | spoil
+            +A> apples / pest
+    }
+
+    asset Worm
+    user info: "Wiggly."
+    {
+    }
+}
+
+associations {
+  Apples [apples] 1 <-- spoiledBy --> 0..1 [badApple] BadApple
+  Apples [apple] 1 <-- infestedBy --> 0..1 [pest] Worm
+
+}

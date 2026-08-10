@@ -1,0 +1,25 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang8"
+#version: "0.1.0"
+category intDynamicTestLang8 {
+	asset Table {
+		| assembleFruitBowl
+			A> self / bowls,
+			bowls / fruit[Apple] ^ fruit[Orange]
+	}
+	asset Bowl {}
+	abstract asset Fruit {}
+	asset Apple extends Fruit {}
+	asset Orange extends Fruit {}
+
+}
+
+associations {
+	Bowl [bowls] * <-- placement --> 1 [table] Table
+	Bowl [container] * <-- contains --> * [fruit] Fruit
+}
