@@ -20,6 +20,11 @@ StepResult = tuple[
     str | None,
 ]
 
+# DynStepResult = tuple[
+#     LanguageGraphAsset,
+#     Optional[ExpressionsChain],
+#     list[tuple[LanguageGraphAsset, Optional[ExpressionsChain]]],
+# ]
 
 def process_attack_step_expression(
     target_asset: LanguageGraphAsset, step_expression: dict[str, Any]
@@ -125,6 +130,15 @@ def process_field_step_expression(
                 ),
                 None,
             )
+        
+    if fieldname == 'self':
+        # TODO: See if this needs an expression chain of some kind
+        # Possibly implement another ExprType for self references
+        return (
+            target_asset,
+            None,
+            None,
+        )
     raise LookupError(
         f'Failed to find field {fieldname} on asset {target_asset.name}!',
     )
@@ -385,3 +399,59 @@ def resolve_variable(
         )
         return (target_asset, expr_chain)
     return asset.variables[var_name]
+
+# def proccess_dyn_sentence(
+#     assets: dict[str, LanguageGraphAsset],
+#     target_asset: LanguageGraphAsset,
+#     step_expression: dict[str, Any],
+#     lang_spec
+# ) -> DynStepResult:
+#     base_asset, base_expr, base_step = process_step_expression(assets, target_asset, None, step_expression["base"], lang_spec)
+#     assert not base_step, "A base in a dynamic sentence can not end with an attack step"
+
+#     assoc_op_or_not = lambda step_expr: process_assoc_op_step_expression(
+#         assets, target_asset, None, step_expr, lang_spec
+#         ) if step_expr["type"] == "assoc_op" else process_step_expression(
+#             assets,
+#             target_asset,
+#             None,
+#             step_expr,
+#             lang_spec
+#         )
+    
+#     target_results = [assoc_op_or_not(target) for target in step_expression["targets"]]
+#     assert all(not target_result[2] for target_result in target_results)
+#     # for target in step_expression["targets"]:
+#     #     base2target_asset, base2target_expr, base2target_step = assoc_op_or_not(target)
+#     #     assert not base2target_step, "A target in a dynamic sentence can not end with an attack step"
+
+#     return (base_asset, base_expr, target_results)
+
+def process_assoc_op_step_expression(
+    assets: dict[str, LanguageGraphAsset],
+    target_asset: LanguageGraphAsset,
+    expr_chain: ExpressionsChain | None,
+    step_expression: dict[str, Any],
+    lang_spec
+) -> StepResult:
+
+    result_target_asset, result_expr_chain, _result_step_name = (
+        process_step_expression(
+            assets,
+            target_asset,
+            expr_chain,
+            step_expression['operand'],
+            lang_spec
+        )
+    )
+    assert not _result_step_name, "ASSOC_OP can not have an attack step as operand"
+
+    new_expr_chain = ExpressionsChain(
+        type=ExprType.ASSOC_OP,
+        sub_link=result_expr_chain,
+    )
+    return (
+        result_target_asset,
+        new_expr_chain,
+        None
+    )

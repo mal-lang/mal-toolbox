@@ -593,12 +593,12 @@ class malAnalyzer:
                             or attackStep_node_reaches.child_by_field_name(
                                 'operator'
                             ).text.decode()
-                            == '->'
+                            in ('->', 'A>', 'R>')
                         ):
                             # Valid step
                             current_steps.append(attackStep)
                         else:
-                            # Step was defined using '+>', but there is nothing to inherit from
+                            # Step was defined using '+>', '+A>', or '+R>', but there is nothing to inherit from
                             error_msg = f"Cannot inherit attack step '{attackStep}' without previous definition"
                             self._raise_analyzer_exception(error_msg)
                     else:

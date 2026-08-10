@@ -23,6 +23,7 @@ from maltoolbox.language.language_graph_lookup import (
     get_attacks_for_asset_type,
     get_variables_for_asset_type,
 )
+from maltoolbox.language.language_graph_model_effect import build_model_effect
 from maltoolbox.language.step_expression_processor import (
     process_step_expression,
     resolve_variable,
@@ -216,7 +217,7 @@ def _connect_attack_steps(
     lang_spec: dict[str, Any],
     attack_step_dicts: dict[str, dict],
 ) -> None:
-    """Connect attack steps based on the 'reaches' and 'requires' expressions in the language specification."""
+    """Connect attack steps based on the 'reaches', 'append_reaches', 'remove_reaches' and 'requires' expressions in the language specification."""
 
     for asset in assets.values():
         for step in asset.attack_steps.values():
@@ -265,6 +266,33 @@ def _connect_attack_steps(
                         )
                     step.own_requires.append(chain)
 
+def _connect_model_effects(
+    assets: dict[str, LanguageGraphAsset],
+    lang_spec: dict[str, Any],
+    attack_step_dicts: dict[str, dict]
+) -> None:
+    """Connect model effects to attack steps"""
+
+    for asset in assets.values():   
+        for step in asset.attack_steps.values():
+            logger.debug('Determining children for attack step %s', step.name)
+
+            if step.full_name not in attack_step_dicts:
+                # Skip steps that are not in the lang spec (inherited steps)
+                continue
+
+            attack_step_dict = attack_step_dicts[step.full_name]
+
+            append_reaches = attack_step_dict.get('append_reaches') or {}
+            for expr in append_reaches.get('stepExpressions', []):
+                model_effect = build_model_effect(assets, step.asset, expr, lang_spec, is_additive=True)
+                step.own_additive_model_effects.append(model_effect)
+            
+            remove_reaches = attack_step_dict.get('remove_reaches') or {}
+            for expr in remove_reaches.get('stepExpressions', []):
+                model_effect = build_model_effect(assets, step.asset, expr, lang_spec, is_additive=False)
+                step.own_subtractive_model_effects.append(model_effect)
+
 
 def generate_attack_steps(
     assets: dict[str, LanguageGraphAsset], lang_spec: dict
@@ -279,6 +307,7 @@ def generate_attack_steps(
     2. Inherit attack steps from super-assets, respecting overrides.
     3. Link attack steps via 'reaches' and evaluate 'exist'/'notExist'
     requirements.
+    4. Link model effects via 'append_reaches' and 'remove_reaches'.
 
     Args:
         assets (dict): Mapping of asset names to asset objects.
@@ -293,6 +322,7 @@ def generate_attack_steps(
     attack_step_dicts = _create_lg_attack_step_nodes(assets, lang_spec)
     _inherit_attack_steps(assets)
     _connect_attack_steps(assets, lang_spec, attack_step_dicts)
+    _connect_model_effects(assets, lang_spec, attack_step_dicts)
 
 
 def create_associations_for_assets(
