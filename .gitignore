@@ -70,3 +70,6 @@ uv.lock
 
 # Claude
 .claude
+
+# Profiling Data
+prof/

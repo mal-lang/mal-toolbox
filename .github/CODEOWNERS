@@ -3,3 +3,6 @@
 
 # Owners for a specific folder
 maltoolbox/language/compiler/ @nkakouros
+
+# Owners for a specific file
+maltoolbox/attackgraph/partially_generate.py @sandorstormen
