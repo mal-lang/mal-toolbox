@@ -1,6 +1,6 @@
 [project]
 name = "mal-toolbox"
-version = "2.10.0"
+version = "2.10.1"
 authors = [
   { name="Andrei Buhaiu", email="buhaiu@kth.se" },
   { name="Joakim Loxdal", email="loxdal@kth.se" },
@@ -21,7 +21,7 @@ dependencies = [
   "py2neo",
   "networkx",
   "tree-sitter-mal>=1.2.3, <2.0.0",
-  "tree-sitter",
+  "tree-sitter>=0.23.1, <0.26.0",
 ]
 license = {text = "Apache Software License"}
 keywords = ["mal"]
