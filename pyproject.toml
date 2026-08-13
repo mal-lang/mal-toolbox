@@ -21,7 +21,7 @@ dependencies = [
   "py2neo",
   "networkx",
   "tree-sitter-mal @ git+https://github.com/sandorstormen/tree-sitter-mal.git@dynamal-grammar",
-  "tree-sitter",
+  "tree-sitter>=0.23.1, <0.26.0",
 ]
 license = {text = "Apache Software License"}
 keywords = ["mal"]
