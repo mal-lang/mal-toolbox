@@ -45,10 +45,14 @@ class AssocSet(NamedTuple):
 AssocTraversalChain: TypeAlias = list[AssocTraversal | GlobAssocTraversal | AssocSet]
 
 class DynTarget(NamedTuple):
-    """A target in a dynamic sentence"""
+    """A target in a dynamic sentence
+    
+    Attributes:
+        assoc_op: bool - Decides if we are adding/removing assets or connections to assets (associations)
+        assoc_traversal: AssocTraversalChain - The traversal chain to reach the target asset(s)
+    """
     assoc_op: bool  # Decides if we are adding/removing assets or connections to assets
     assoc_traversal: AssocTraversalChain
-
 
 class ModelEffectType(Enum):
     """The type of effect on the model instance, i.e. addition or subtraction."""
