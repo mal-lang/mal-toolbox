@@ -8,6 +8,7 @@ from maltoolbox.exceptions import (
     LanguageGraphStepExpressionError,
     LanguageGraphSuperAssetNotFoundError,
 )
+from maltoolbox.language.assoc_traversal_processor import validate_model_effects
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import (
     LanguageGraphAssociation,
@@ -323,7 +324,7 @@ def generate_attack_steps(
     _inherit_attack_steps(assets)
     _connect_attack_steps(assets, lang_spec, attack_step_dicts)
     _connect_model_effects(assets, lang_spec, attack_step_dicts)
-
+    validate_model_effects(assets)
 
 def create_associations_for_assets(
     lang_spec: dict[str, Any], assets: dict[str, LanguageGraphAsset]
