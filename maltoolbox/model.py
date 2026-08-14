@@ -76,7 +76,7 @@ class Model:
 
         """
         # Set asset ID and check for duplicates
-        asset_id = asset_id or self.next_id
+        asset_id = asset_id if asset_id is not None else self.next_id
         if asset_id in self.assets:
             raise ValueError(f'Asset index {asset_id} already in use.')
 
