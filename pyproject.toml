@@ -63,6 +63,7 @@ maltoolbox = ["*.conf*", "py.typed"]
 [tool.pytest.ini_options]
 pythonpath = ['.']
 filterwarnings = "ignore:invalid escape sequence"
+markers = ["integration: deselected during CI"]
 
 [tool.mypy]
 exclude = [
