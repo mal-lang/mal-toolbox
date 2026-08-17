@@ -240,7 +240,7 @@ def test_multiple_detectors():
 
 
 def test_only_tpr():
-    """Test that multiple detectors on are handled correctly"""
+    """Test that only specifying true-positive rate is okay, and sets false-positive rate to None"""
 
     lang_str = """
     #id: "test-actions-effects"
@@ -296,7 +296,7 @@ def test_only_tpr():
 
 
 def test_only_fpr():
-    """Test that multiple detectors on are handled correctly"""
+    """Test that only specifying false-positive rate is okay, and sets true-positive rate to None"""
 
     lang_str = """
     #id: "test-actions-effects"
@@ -352,7 +352,7 @@ def test_only_fpr():
 
 
 def test_wrong_labels():
-    """Test that multiple detectors on are handled correctly"""
+    """Test that incorrect labels raise an error"""
 
     lang_str = """
     #id: "test-actions-effects"
@@ -401,3 +401,43 @@ def test_wrong_labels():
 
     with pytest.raises(MalCompilerError):
         LanguageGraph.from_mal_spec(tmp_lang_file)
+
+def test_removing_node_removes_detector(example_detectorlang_model, detectorlang_lang_graph):
+    """
+    Test that removing a node from the attack graph also removes the detector.
+    Issue #247
+    """
+    graph = AttackGraph(detectorlang_lang_graph, example_detectorlang_model)
+    # detector fires on: computerOfApp.authenticate
+    # removing the apps should remove the alert
+    exploit = graph.get_node_by_full_name('Application 1:exploit')
+    detector = next(iter(exploit.detectors.values()))
+    graph.remove_node(exploit)
+
+    assert detector not in graph.detectors
+
+def test_remove_detector(example_detectorlang_model, detectorlang_lang_graph):
+    """
+    Detectors can be referenced in multiple ways. Make sure that removing a detector removes it everywhere.
+    Issue #247
+    """
+    graph = AttackGraph(detectorlang_lang_graph, example_detectorlang_model)
+
+    exploit1 = graph.get_node_by_full_name('Application 1:exploit')
+    detector1 = next(iter(exploit1.detectors.values()))
+
+    exploit2 = graph.get_node_by_full_name('Application 2:exploit')
+    detector2 = next(iter(exploit2.detectors.values()))
+
+    graph.remove_detector(detector1)
+
+    # check that remove worked
+    assert detector1 not in graph.detectors
+    assert detector1 not in exploit1.detectors.values()
+
+    # check that the other detector was not affected
+    assert detector2 in graph.detectors
+    assert detector2 in exploit2.detectors.values()
+
+    # TODO: Interesting to include a test where we remove one of the detectors
+    #       on an attack step that has multiple detectors, like in test_multiple_detectors

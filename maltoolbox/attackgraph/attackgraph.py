@@ -409,5 +409,18 @@ class AttackGraph:
             child.parents.remove(node)
         for parent in node.parents:
             parent.children.remove(node)
+        for detector in list(node.detectors.values()):
+            self.remove_detector(detector)
         del self.nodes[node.id]
         del self.full_name_to_node[node.full_name]
+
+    def remove_detector(self, detector: Detector) -> None:
+        """Remove a detector from the attack graph
+        Arguments:
+        detector    - the detector to be removed from the attack graph
+        """
+        logger.debug('Remove detector "%s" from node "%s"(%d).', detector.name, detector.node.full_name, detector.node.id)
+        # remove from graph's list of detectors
+        self.detectors.remove(detector)
+        # remove from node's map of detectors
+        del detector.node.detectors[detector.name]
