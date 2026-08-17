@@ -423,4 +423,5 @@ class AttackGraph:
         # remove from graph's list of detectors
         self.detectors.remove(detector)
         # remove from node's map of detectors
-        del detector.node.detectors[detector.name]
+        if detector.name is not None:
+            del detector.node.detectors[detector.name]
