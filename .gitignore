@@ -8,6 +8,7 @@ __pycache__
 *.sCAD
 tmp/
 logs/
+.langs/
 
 # Virtual Environment
 env/
