@@ -10,12 +10,12 @@ from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language.languagegraph import load_language_graph_from_file
 
 
-def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
+def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph, tmp_path):
     """Test to see if saving and loading a language graph to a file produces
     the same language graph. We have to use the json format to save and load
     because YAML reorders the keys in alphabetical order.
     """
-    graph_path = '/tmp/langgraph.json'
+    graph_path = str(tmp_path / 'langgraph.json')
     corelang_lang_graph.save_to_file(graph_path)
 
     new_lang_graph = LanguageGraph.load_from_file(graph_path)
@@ -28,16 +28,16 @@ def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):
         assocs.update(asset.associations.values())
 
 
-def test_languagegraph_to_dict_detectors():
+def test_languagegraph_to_dict_detectors(tmp_path):
     """Test to see that we can save detector lang to dict"""
     lang_path = path_testdata('detector_lang.mal')
     new_lang_graph = LanguageGraph.load_from_file(lang_path)
-    test_path = '/tmp/detector_lang.json'
+    test_path = str(tmp_path / 'detector_lang.json')
     new_lang_graph.save_to_file(test_path)
 
 
-def test_languagegraph_save_load_mar(corelang_lang_graph: LanguageGraph):
-    graph_path = '/tmp/langgraph.mar'
+def test_languagegraph_save_load_mar(corelang_lang_graph: LanguageGraph, tmp_path):
+    graph_path = str(tmp_path / 'langgraph.mar')
     corelang_lang_graph.save_to_file(graph_path)
 
     new_lang_graph = LanguageGraph.load_from_file(graph_path)

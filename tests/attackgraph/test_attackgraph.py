@@ -90,17 +90,15 @@ def test_load_attack_graph(corelang_lang_graph: LanguageGraph):
 
 
 def test_attackgraph_save_load_no_model_given(
-    example_attackgraph: AttackGraph, corelang_lang_graph: LanguageGraph
+    example_attackgraph: AttackGraph, corelang_lang_graph: LanguageGraph, tmp_path
 ):
-    """Save AttackGraph to a file and load it
-    Note: Will create file in /tmp
-    """
+    """Save AttackGraph to a file and load it """
     reward = 1
     node_with_reward_before = example_attackgraph.nodes[0]
     node_with_reward_before.extras['reward'] = reward
 
-    # Save the example attack graph to /tmp
-    example_graph_path = '/tmp/example_graph.yml'
+    # Save the example attack graph
+    example_graph_path = str(tmp_path / 'example_graph.yml')
     example_attackgraph.save_to_file(example_graph_path)
 
     # Load the attack graph
@@ -144,12 +142,12 @@ def test_attackgraph_save_load_no_model_given(
 
 
 def test_attackgraph_save_and_load_json_yml_model_given(
-    example_attackgraph: AttackGraph, corelang_lang_graph: LanguageGraph
+    example_attackgraph: AttackGraph, corelang_lang_graph: LanguageGraph, tmp_path
 ):
     """Try to save and load attack graph from json and yml with model given,
     and make sure the dict represenation is the same (except for reward field)
     """
-    for attackgraph_path in ('/tmp/attackgraph.yml', '/tmp/attackgraph.json'):
+    for attackgraph_path in (str(tmp_path / 'attackgraph.yml'), str(tmp_path / 'attackgraph.json')):
         example_attackgraph.save_to_file(attackgraph_path)
         loaded_attackgraph = AttackGraph.load_from_file(
             attackgraph_path, corelang_lang_graph, model=example_attackgraph.model
@@ -1268,10 +1266,9 @@ def tests_create_ag_step_lists():
     assert attacks == created_ag.attack_steps
 
 
-def test_attackgraph_pickle(corelang_lang_graph, model):
-
+def test_attackgraph_pickle(corelang_lang_graph, model, tmp_path):
     ag = AttackGraph(lang_graph=corelang_lang_graph, model=model)
-    pickle_path = '/tmp/attackgraph.pkl'
+    pickle_path = tmp_path / 'attackgraph.pkl'
     with open(pickle_path, 'wb') as f:
         pickle.dump(ag, f)
 
@@ -1281,9 +1278,8 @@ def test_attackgraph_pickle(corelang_lang_graph, model):
     assert ag._to_dict() == unpickled_ag._to_dict()
 
 
-def test_model_pickle(example_model: Model):
-
-    pickle_path = '/tmp/model.pkl'
+def test_model_pickle(example_model: Model, tmp_path):
+    pickle_path = tmp_path / 'model.pkl'
     with open(pickle_path, 'wb') as f:
         pickle.dump(example_model, f)
 

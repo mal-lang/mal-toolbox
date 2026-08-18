@@ -352,10 +352,8 @@ def test_serialize(model: Model):
     assert model_dict['metadata']['langID'] == model.lang_graph.metadata['id']
 
 
-def test_model_save_and_load_model_from_scratch(model: Model):
-    """Create a model, save it to file, load it from file and compare them
-    Note: will create file in /tmp
-    """
+def test_model_save_and_load_model_from_scratch(model: Model, tmp_path):
+    """Create a model, save it to file, load it from file and compare them """
     # Create and add 3 applications
     asset1 = model.add_asset(asset_type='Application')
     asset1.extras = {'testing': 'testing'}
@@ -365,7 +363,7 @@ def test_model_save_and_load_model_from_scratch(model: Model):
     # Create and add an association between asset1 and asset2
     asset1.add_associated_assets(fieldname='appExecutedApps', assets={asset2, asset3})
 
-    for model_path in ('/tmp/test.yml', '/tmp/test.yaml', '/tmp/test.json'):
+    for model_path in (str(tmp_path / 'test.yml'), str(tmp_path / 'test.yaml'), str(tmp_path / 'test.json')):
         # Mock open() function so no real files are written to filesystem
         model.save_to_file(model_path)
 
@@ -375,17 +373,16 @@ def test_model_save_and_load_model_from_scratch(model: Model):
         assert new_model._to_dict() == model._to_dict()
 
 
-def test_model_load_and_save_example_model(model):
-    """Load the simple_example_model.json from testdata, store it, compare
-    Note: will create file in /tmp
-    """
+def test_model_load_and_save_example_model(model, tmp_path):
+    """Load the simple_example_model.json from testdata, store it, compare """
     # Load from example file
     model = Model(path_testdata('simple_example_model.yml'), model.lang_graph)
 
     # Save to file
-    model.save_to_file('/tmp/test.yml')
+    path = str(tmp_path / 'test.yml')
+    model.save_to_file(path)
 
     # Create new model and load from previously saved file
-    new_model = Model.load_from_file('/tmp/test.yml', model.lang_graph)
+    new_model = Model.load_from_file(path, model.lang_graph)
 
     assert new_model._to_dict() == model._to_dict()

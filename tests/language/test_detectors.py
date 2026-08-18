@@ -77,7 +77,7 @@ def test_detector_presence(detectorlang_attack_graph: AttackGraph):
     )
 
 
-def test_detector_unlabeled_context():
+def test_detector_unlabeled_context(tmp_path):
     """Test that a detector with an unlabeled context field is handled correctly"""
 
     lang_str = """
@@ -121,7 +121,7 @@ def test_detector_unlabeled_context():
     }
 
     """
-    tmp_lang_file = '/tmp/temp_detector_lang.mal'
+    tmp_lang_file = tmp_path / 'temp_detector_lang.mal'
     with open(tmp_lang_file, 'w') as f:
         f.write(lang_str)
 
@@ -145,7 +145,7 @@ def test_detector_unlabeled_context():
     }
 
 
-def test_multiple_detectors():
+def test_multiple_detectors(tmp_path):
     """Test that multiple detectors on are handled correctly"""
 
     lang_str = """
@@ -191,7 +191,7 @@ def test_multiple_detectors():
     }
 
     """
-    tmp_lang_file = '/tmp/temp_detector_lang.mal'
+    tmp_lang_file = tmp_path / 'temp_detector_lang.mal'
     with open(tmp_lang_file, 'w') as f:
         f.write(lang_str)
 
@@ -239,7 +239,7 @@ def test_multiple_detectors():
     )
 
 
-def test_only_tpr():
+def test_only_tpr(tmp_path):
     """Test that only specifying true-positive rate is okay, and sets false-positive rate to None"""
 
     lang_str = """
@@ -283,7 +283,7 @@ def test_only_tpr():
     }
 
     """
-    tmp_lang_file = '/tmp/temp_detector_lang.mal'
+    tmp_lang_file = tmp_path / 'temp_detector_lang.mal'
     with open(tmp_lang_file, 'w') as f:
         f.write(lang_str)
 
@@ -295,7 +295,7 @@ def test_only_tpr():
     assert det.fprate is None
 
 
-def test_only_fpr():
+def test_only_fpr(tmp_path):
     """Test that only specifying false-positive rate is okay, and sets true-positive rate to None"""
 
     lang_str = """
@@ -339,7 +339,7 @@ def test_only_fpr():
     }
 
     """
-    tmp_lang_file = '/tmp/temp_detector_lang.mal'
+    tmp_lang_file = tmp_path / 'temp_detector_lang.mal'
     with open(tmp_lang_file, 'w') as f:
         f.write(lang_str)
 
@@ -351,7 +351,7 @@ def test_only_fpr():
     assert det.fprate == 0.1
 
 
-def test_wrong_labels():
+def test_wrong_labels(tmp_path):
     """Test that incorrect labels raise an error"""
 
     lang_str = """
@@ -395,7 +395,7 @@ def test_wrong_labels():
     }
 
     """
-    tmp_lang_file = '/tmp/temp_detector_lang.mal'
+    tmp_lang_file = tmp_path / 'temp_detector_lang.mal'
     with open(tmp_lang_file, 'w') as f:
         f.write(lang_str)
 
