@@ -1,12 +1,9 @@
 name: MyPy maltoolbox
-on: [push]
+on: push
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10"]
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
       - name: Set up Python
