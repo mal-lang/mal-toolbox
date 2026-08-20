@@ -353,6 +353,13 @@ class malAnalyzer:
                     f"Attack step '{expr['name']}' not defined for asset '{asset}'"
                 )
                 self._raise_analyzer_exception(error_msg)
+            case 'multiplicity':
+                step = self._check_to_step(asset, expr['stepExpression'])
+                error_msg = (
+                    f"{step['name']} has `->` or `+>` with a statement that ends in a multiplicity qualifier."
+                    " `:x`,`:x..y` and `:*` is not supported for ->` or `+>`."
+                )
+                self._raise_analyzer_exception(error_msg)
             # Returns an attackStep if it exists for the asset returned by the lhs expression
             case 'collect':
                 if left_target := self._check_to_asset(asset, expr['lhs']):

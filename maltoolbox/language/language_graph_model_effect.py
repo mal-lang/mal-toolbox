@@ -6,7 +6,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, NamedTuple, TypeAlias
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias
 
 from maltoolbox.language.expression_chain import ExprType
 from maltoolbox.language.step_expression_processor import (
@@ -18,18 +18,31 @@ if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
     from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 
+def _parse_quantity(quantity_dict: Any) -> int | tuple[int, int] | None:
+    assert isinstance(quantity_dict, dict), "Quantity must be a dictionary"
+    min, max = quantity_dict.get("min"), quantity_dict.get("max")
+    if min is None and max is None:
+        return None
+    elif min is not None and max is not None:
+        return (int(min), int(max))
+    elif min is not None and max is None:
+        return int(min)
+    else:
+        raise ValueError(f"Invalid quantity: {quantity_dict}")
+
 
 class AssocTraversal(NamedTuple):
     """A reference to assets by role name, optionally filtered by asset type and quantity."""
     field_name: str
     asset_filter: LanguageGraphAsset | None
-    quantity_filter: int | None
+    quantity_filter: int | tuple[int, int] | None
 
 SELF_TRAVERSAL = AssocTraversal(field_name="self", asset_filter=None, quantity_filter=None)
 
 class GlobAssocTraversal(NamedTuple):
     """A glob on the traversal chain."""
     pattern: AssocTraversalChain
+    quantity_filter: int | tuple[int, int] | None
 
 class SetOperation(Enum):
     UNION = "UNION"
@@ -41,6 +54,7 @@ class AssocSet(NamedTuple):
     set_op: SetOperation
     left: AssocTraversalChain
     right: AssocTraversalChain
+    quantity_filter: int | tuple[int, int] | None
 
 AssocTraversalChain: TypeAlias = list[AssocTraversal | GlobAssocTraversal | AssocSet]
 
@@ -91,7 +105,12 @@ def build_model_effect(
         elif expr_chain.type == ExprType.FIELD:
             assert expr_chain.fieldname is not None, "Fieldname must be set for FIELD expression"
             return [AssocTraversal(field_name=expr_chain.fieldname, asset_filter=None, quantity_filter=None)]
-
+        elif expr_chain.type == ExprType.MULTIPLICITY:
+            ret = parse_assoc_traversal(expr_chain.sub_link)
+            last_traversal = ret[-1]
+            last_traversal = last_traversal._replace(quantity_filter=_parse_quantity(expr_chain.multiplicity))
+            ret[-1] = last_traversal
+            return ret
         elif expr_chain.type == ExprType.SUBTYPE:
             ret = parse_assoc_traversal(expr_chain.sub_link)
             if isinstance(ret[-1], AssocTraversal):
@@ -103,19 +122,19 @@ def build_model_effect(
             return ret
         elif expr_chain.type == ExprType.TRANSITIVE:
             pattern = parse_assoc_traversal(expr_chain.sub_link)
-            return [GlobAssocTraversal(pattern=pattern)]
+            return [GlobAssocTraversal(pattern=pattern, quantity_filter=None)]
         elif expr_chain.type == ExprType.UNION:
             left = parse_assoc_traversal(expr_chain.left_link)
             right = parse_assoc_traversal(expr_chain.right_link)
-            return [AssocSet(SetOperation.UNION, left, right)]
+            return [AssocSet(set_op=SetOperation.UNION, left=left, right=right, quantity_filter=None)]
         elif expr_chain.type == ExprType.DIFFERENCE:
             left = parse_assoc_traversal(expr_chain.left_link)
             right = parse_assoc_traversal(expr_chain.right_link)
-            return [AssocSet(SetOperation.DIFFERENCE, left, right)]
+            return [AssocSet(set_op=SetOperation.DIFFERENCE, left=left, right=right, quantity_filter=None)]
         elif expr_chain.type == ExprType.INTERSECTION:
             left = parse_assoc_traversal(expr_chain.left_link)
             right = parse_assoc_traversal(expr_chain.right_link)
-            return [AssocSet(SetOperation.INTERSECTION, left, right)]
+            return [AssocSet(set_op=SetOperation.INTERSECTION, left=left, right=right, quantity_filter=None)]
 
         raise ValueError(f"Unexpected expression chain type: {expr_chain.type}")
 

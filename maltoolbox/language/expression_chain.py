@@ -35,6 +35,7 @@ class ExprType(str, Enum):
     TRANSITIVE = 'transitive'
     SUBTYPE = 'subType'
     ASSOC_OP = 'assoc_op'
+    MULTIPLICITY = 'multiplicity'
 
     def is_binary(self) -> bool:
         return self in {
@@ -58,6 +59,7 @@ class ExpressionsChain:
     fieldname: str | None = None
     association: LanguageGraphAssociation | None = None
     subtype: Any | None = None
+    multiplicity: Any | None = None
 
     def __post_init__(self) -> None:
         self._validate()

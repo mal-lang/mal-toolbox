@@ -1,5 +1,3 @@
-
-
 import logging
 
 from maltoolbox.language.compiler.mal_analyzer import malAnalyzerException
@@ -16,6 +14,7 @@ from maltoolbox.language.language_graph_model_effect import (
 
 logger = logging.getLogger(__name__)
 
+
 def _assoc_traversal(
     step: LanguageGraphAttackStep,
     instigating_assets: set[LanguageGraphAsset],
@@ -23,7 +22,7 @@ def _assoc_traversal(
 ) -> set[LanguageGraphAsset]:
     next_assets: set[LanguageGraphAsset] = set()
     for asset in instigating_assets:
-        if assoc_traversal.field_name == "self":
+        if assoc_traversal.field_name == 'self':
             next_assets.add(step.asset)
             continue
         try:
@@ -56,7 +55,9 @@ def _glob_assoc_traversal(
 
 
 def _assoc_set_traversal(
-    step: LanguageGraphAttackStep, starting_assets: set[LanguageGraphAsset], assoc_set: AssocSet
+    step: LanguageGraphAttackStep,
+    starting_assets: set[LanguageGraphAsset],
+    assoc_set: AssocSet,
 ) -> set[LanguageGraphAsset]:
     candidate_assets = set()
     left = _traverse_association_chain(step, starting_assets, assoc_set.left)
@@ -85,7 +86,9 @@ def _traverse_association_chain(
         if isinstance(assoc_traversal, AssocTraversal):
             current_assets = _assoc_traversal(step, current_assets, assoc_traversal)
         elif isinstance(assoc_traversal, GlobAssocTraversal):
-            current_assets = _glob_assoc_traversal(step, current_assets, assoc_traversal)
+            current_assets = _glob_assoc_traversal(
+                step, current_assets, assoc_traversal
+            )
         elif isinstance(assoc_traversal, AssocSet):
             current_assets = _assoc_set_traversal(step, current_assets, assoc_traversal)
         else:
@@ -93,6 +96,7 @@ def _traverse_association_chain(
                 f'Unknown association traversal type: {type(assoc_traversal)}'
             )
     return current_assets
+
 
 def _resolve_terminal_traversal(
     step: LanguageGraphAttackStep,
@@ -104,13 +108,17 @@ def _resolve_terminal_traversal(
     )
     last = assoc_traversals[-1]
     if isinstance(last, AssocTraversal):
-        terminal_resolves: set[tuple[LanguageGraphAsset, str, LanguageGraphAsset]] = set()
+        terminal_resolves: set[tuple[LanguageGraphAsset, str, LanguageGraphAsset]] = (
+            set()
+        )
         for asset in current_assets:
-            if last.field_name == "self":
+            if last.field_name == 'self':
                 terminal_resolves.add((asset, last.field_name, step.asset))
                 continue
             try:
-                candidate_asset = asset.associations[last.field_name].get_field(last.field_name).asset
+                candidate_asset = (
+                    asset.associations[last.field_name].get_field(last.field_name).asset
+                )
                 terminal_resolves.add((asset, last.field_name, candidate_asset))
             except KeyError:
                 raise malAnalyzerException(
@@ -138,24 +146,48 @@ def _resolve_terminal_traversal(
     else:
         raise TypeError(f'Unknown association traversal type: {type(last)}')
 
+
 def validate_model_effects(assets: dict[str, LanguageGraphAsset]) -> None:
     for asset in assets.values():
         for step in asset.attack_steps.values():
-            for model_effect in step.additive_model_effects + step.subtractive_model_effects:
-                base_resolves = _resolve_terminal_traversal(step, {asset}, model_effect.base)
+            for model_effect in (
+                step.additive_model_effects + step.subtractive_model_effects
+            ):
+                base_resolves = _resolve_terminal_traversal(
+                    step, {asset}, model_effect.base
+                )
                 for dyn_target in model_effect.targets:
-                    is_edge_addition = (model_effect.model_effect_type == ModelEffectType.ADDITIVE and dyn_target.assoc_op)
+                    is_edge_addition = (
+                        model_effect.model_effect_type == ModelEffectType.ADDITIVE
+                        and dyn_target.assoc_op
+                    )
                     if is_edge_addition:
-                        dyn_target_resolves = _resolve_terminal_traversal(step, {asset}, dyn_target.assoc_traversal)
-                        for anchor_asset, field_name, terminating_asset in dyn_target_resolves:
-                            for base_asset, base_field_name, base_terminating_asset in base_resolves:
-                                if not base_terminating_asset.is_subasset_of(terminating_asset):
+                        dyn_target_resolves = _resolve_terminal_traversal(
+                            step, {asset}, dyn_target.assoc_traversal
+                        )
+                        for (
+                            anchor_asset,
+                            field_name,
+                            terminating_asset,
+                        ) in dyn_target_resolves:
+                            for (
+                                base_asset,
+                                base_field_name,
+                                base_terminating_asset,
+                            ) in base_resolves:
+                                if not base_terminating_asset.is_subasset_of(
+                                    terminating_asset
+                                ):
                                     raise malAnalyzerException(
-                                        "Invalid model effect for edge addition. "
-                                        f"Base terminates in field {base_field_name} with type {base_terminating_asset.name}, "
-                                        f"which is not a subasset of the target asset {terminating_asset.name} "
-                                        f"that terminates the dynamic target with index {model_effect.targets.index(dyn_target)},"
-                                        f" in {step.full_name}."
+                                        'Invalid model effect for edge addition. '
+                                        f'Base terminates in field {base_field_name} with type {base_terminating_asset.name}, '
+                                        f'which is not a subasset of the target asset {terminating_asset.name} '
+                                        f'that terminates the dynamic target with index {model_effect.targets.index(dyn_target)},'
+                                        f' in {step.full_name}.'
                                     )
                     else:
-                        dyn_target_resolves = _resolve_terminal_traversal(step, {base_resolve[2] for base_resolve in base_resolves}, dyn_target.assoc_traversal)
+                        dyn_target_resolves = _resolve_terminal_traversal(
+                            step,
+                            {base_resolve[2] for base_resolve in base_resolves},
+                            dyn_target.assoc_traversal,
+                        )

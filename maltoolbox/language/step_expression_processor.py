@@ -20,12 +20,6 @@ StepResult = tuple[
     str | None,
 ]
 
-# DynStepResult = tuple[
-#     LanguageGraphAsset,
-#     Optional[ExpressionsChain],
-#     list[tuple[LanguageGraphAsset, Optional[ExpressionsChain]]],
-# ]
-
 def process_attack_step_expression(
     target_asset: LanguageGraphAsset, step_expression: dict[str, Any]
 ) -> StepResult:
@@ -198,6 +192,27 @@ def process_subType_step_expression(
     )
     return (subtype_asset, new_expr_chain, None)
 
+def process_multiplicity_step_expression(
+    assets: dict[str, LanguageGraphAsset],
+    target_asset: LanguageGraphAsset,
+    expr_chain: ExpressionsChain | None,
+    step_expression: dict[str, Any],
+    lang_spec,
+) -> StepResult:
+    multiplicity = step_expression['multiplicity']
+    result_target_asset, result_expr_chain, step_name = process_step_expression(
+        assets, target_asset, expr_chain, step_expression['stepExpression'], lang_spec
+    )
+
+    assert step_name is None, f"Step `{step_name}` cannot have a multiplicity qualifier."
+    new_expr_chain = ExpressionsChain(
+        type=ExprType.MULTIPLICITY,
+        sub_link=result_expr_chain,
+        multiplicity=multiplicity
+    )
+    return (result_target_asset, new_expr_chain, None)
+    
+
 
 def process_collect_step_expression(
     assets: dict[str, LanguageGraphAsset],
@@ -286,6 +301,10 @@ def process_step_expression(
         )
     elif step_expression['type'] == 'subType':
         result = process_subType_step_expression(
+            assets, target_asset, expr_chain, step_expression, lang_spec
+        )
+    elif step_expression['type'] == 'multiplicity':
+        result = process_multiplicity_step_expression(
             assets, target_asset, expr_chain, step_expression, lang_spec
         )
     elif step_expression['type'] == 'collect':

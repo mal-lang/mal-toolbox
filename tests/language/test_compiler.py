@@ -148,6 +148,17 @@ def test_compile_wiperlang():
     assert wiper_exfiltrate.own_additive_model_effects[0].targets[0].assoc_traversal[2].asset_filter == wiper_lang.assets["C2Server"]
     assert wiper_exfiltrate.own_additive_model_effects[0].targets[0].assoc_traversal[3].field_name == "data"
 
+def test_compile_multiplicity_lang():
+    """Test that we can compile the multiplicity_lang.mal language"""
+    result = MalCompiler().compile("tests/testdata/multiplicity_lang.mal")
+    multiplicity_lang = LanguageGraph(result)
+
+    createRandomFiles_step = multiplicity_lang.assets["Host"].attack_steps["createRandomFiles"]
+    assert createRandomFiles_step.additive_model_effects[0].targets[0].assoc_traversal[-1].quantity_filter == (4, 10)
+
+    createFile_step = multiplicity_lang.assets["Proc"].attack_steps["createFile"]
+    assert createFile_step.additive_model_effects[1].targets[0].assoc_traversal[-1].quantity_filter == 1
+
 def test_compile_basic_dynamal_languages():
     dynamal_test_langs_dir = Path("tests/testdata/dynamal_test_langs/basic")
     for lang_file in dynamal_test_langs_dir.glob("*.mal"):

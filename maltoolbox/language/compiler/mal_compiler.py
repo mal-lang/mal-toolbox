@@ -930,6 +930,29 @@ class MalCompiler(ParseTreeVisitor):
 
         return {'type': 'subType', 'subType': subType, 'stepExpression': stepExpression}
 
+    def visit_asset_expr_multiplicity(self, cursor: TreeCursor):
+        #####################################
+        # (_inline_asset_expr) ':' (multiplicity) #
+        #####################################
+
+        # Visit the inline expr
+        stepExpression = self._visit_inline_asset_expr(cursor)
+        go_to_sibling(cursor)
+
+        # Skip ':'
+        colon_text = node_text(cursor, "Expected multiplicity expression with `:`.")
+        assert colon_text.decode() == ':'
+        go_to_sibling(cursor)
+
+        # Get the multiplicity
+        multiplicity = self.visit(cursor)
+
+        return {
+            'type': 'multiplicity',
+            'multiplicity': multiplicity,
+            'stepExpression': stepExpression,
+        }
+
     def visit_asset_expr_binop(self, cursor: TreeCursor):
         ########################################################################
         # (_inline_asset_expr) ( '\/' | '/\' | '-' | '.') (_inline_asset_expr) #
