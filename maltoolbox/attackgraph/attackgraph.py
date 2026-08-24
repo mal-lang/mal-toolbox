@@ -288,8 +288,9 @@ class AttackGraph:
         ) = create_nodes_from_assets(new_assets, max(self.nodes.keys()) + 1, self.model)
 
         # Do full linking of children for steps of newly created assets
+        all_full_name_to_nodes = full_name_to_created_nodes | self.full_name_to_node
         for ag_node in full_name_to_created_nodes.values():
-            link_node_children(self.model, ag_node, full_name_to_created_nodes | self.full_name_to_node)
+            link_node_children(self.model, ag_node, all_full_name_to_nodes)
 
         removed_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]] = {}
         for left_asset, fieldname, right_asset in removed_associations:
@@ -306,7 +307,11 @@ class AttackGraph:
             ).add(left_asset)
         all_field_names = get_all_field_names(self.model.lang_graph)
         # Correct links referencing modified associations
-        nodes_of_modified_assoc = filter(lambda step: step.model_asset in new_assoc_dict or step.model_asset in removed_assoc_dict, self.full_name_to_node.values())
+        nodes_of_modified_assoc = [
+            all_full_name_to_nodes[f'{asset.name}:{step_name}']
+            for asset in set(new_assoc_dict.keys()) | set(removed_assoc_dict.keys())
+            for step_name in asset.lg_asset.attack_steps
+        ]
         for ag_node in nodes_of_modified_assoc:
             assert ag_node.model_asset is not None, "Attack graph must have access to the model to do partial regeneration."
             correct_node_children_on_modified_assoc(
