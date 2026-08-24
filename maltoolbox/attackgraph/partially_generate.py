@@ -1,7 +1,7 @@
 """Graph generation functions to update the attack graph when new assets are added to the model."""
 
 import logging
-from copy import copy
+from functools import cache
 
 from maltoolbox.attackgraph.generate import (
     get_existance_status,
@@ -16,7 +16,6 @@ from ..exceptions import (
 )
 from ..model import Model, ModelAsset
 from .node import AttackGraphNode
-from functools import cache
 
 logger = logging.getLogger(__name__)
 
