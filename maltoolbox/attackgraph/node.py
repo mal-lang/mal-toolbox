@@ -102,7 +102,7 @@ class AttackGraphNode:
 
         return copied_node
 
-    @property
+    @cached_property
     def full_name(self) -> str:
         """Return the full name of the attack step. This is normally a
         combination of the asset name to which the attack step

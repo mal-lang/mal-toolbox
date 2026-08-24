@@ -16,6 +16,7 @@ from ..exceptions import (
 )
 from ..model import Model, ModelAsset
 from .node import AttackGraphNode
+from functools import cache
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def create_nodes_from_assets(
     attack_steps = []
     defense_steps = []
 
-    node_id = copy(starting_id)
+    node_id = starting_id
     for asset in assets:
         asset.attack_step_nodes = []  # TODO: deprecate this
         for lg_attack_step in asset.lg_asset.attack_steps.values():
@@ -66,7 +67,8 @@ def switch_fieldname(asset: ModelAsset, fieldname: str) -> str:
         raise AttackGraphException(
             f'Fieldname {fieldname} not found in association {assoc_def.name}'
         )
-    
+
+@cache
 def get_all_field_names(lang_graph: LanguageGraph) -> set[str]:
     """Get all field names from the language graph."""
     field_names = set()
@@ -115,14 +117,16 @@ def correct_node_children_on_modified_assoc(
                 # Child is in the same asset, so it should already be linked in the graph
                 if expr_chain is None:
                     continue
-                if len(set(new_assoc_dict.keys()) & assoc_in_expr_chain(expr_chain, new_assoc_dict, all_field_names_in_lang_graph)) > 0:
+                new_assocs = assoc_in_expr_chain(expr_chain, new_assoc_dict, all_field_names_in_lang_graph)
+                if len(set(new_assoc_dict.keys()) & new_assocs) > 0:
                     link_from_expr_chain(
                         model, ag_node, child_type, expr_chain, full_name_to_node,
                     )
-                if len(set(removed_assoc_dict.keys()) & assoc_in_expr_chain(expr_chain, removed_assoc_dict, all_field_names_in_lang_graph)) > 0:
+                removed_assocs = assoc_in_expr_chain(expr_chain, removed_assoc_dict, all_field_names_in_lang_graph)
+                if len(set(removed_assoc_dict.keys()) & removed_assocs) > 0:
                     removed_assoc_assets = {
                         asset
-                        for fieldname in assoc_in_expr_chain(expr_chain, removed_assoc_dict, all_field_names_in_lang_graph)
+                        for fieldname in removed_assocs
                         for asset in removed_assoc_dict.get(fieldname, set())
                     }
                     for removed_assoc_asset in removed_assoc_assets:
