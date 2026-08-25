@@ -125,3 +125,10 @@ def trainingLang_lang_graph():
     """Fixture that returns the trainingLang language specification as dict"""
     mar_file_path = path_testdata('org.mal-lang.trainingLang-1.0.0.mar')
     return LanguageGraph.from_mar_archive(mar_file_path)
+
+
+@pytest.fixture
+def assocChainLang_lang_graph():
+    """Fixture that returns the assocChainLang language specification as dict"""
+    mal_file_path = path_testdata('assocChainLang.mal')
+    return LanguageGraph.load_from_file(mal_file_path)

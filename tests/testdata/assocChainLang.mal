@@ -1,0 +1,58 @@
+// vim:ft=mal
+#id: "org.mal-lang.assocChainLang"
+#version: "1.0.0"
+
+category LongAssocChains {
+
+    asset A {
+        | access
+            ->  reach,
+                b.reach,
+                b.c.reach,
+                b.c.d.reach,
+                b.c.d.e.reach,
+                b.c.d.e.f.reach,
+                b.c.d.e.f.g.reach,
+                b.c.d.e.f.g.h.reach,
+                b.c.d.e.f.g.h.i.reach
+        
+        | reach
+        
+    }
+    asset B {
+        | reach
+    }
+    asset C {
+        | reach
+    }
+    asset D {
+        | reach
+    }
+    asset E {
+        | reach
+    }
+    asset F {
+        | reach
+    }
+    asset G {
+        | reach
+    }
+    asset H {
+        | reach
+    }
+    asset I {
+        | reach
+    }
+
+}
+
+associations {
+  A [a] * <-- A2B --> * [b] B
+  B [b] * <-- B2C --> * [c] C
+  C [c] * <-- C2D --> * [d] D
+  D [d] * <-- D2E --> * [e] E
+  E [e] * <-- E2F --> * [f] F
+  F [f] * <-- F2G --> * [g] G
+  G [g] * <-- G2H --> * [h] H
+  H [h] * <-- H2I --> * [i] I
+}
