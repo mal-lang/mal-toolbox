@@ -4,8 +4,8 @@ import logging
 from functools import cache
 
 from maltoolbox.attackgraph.generate import (
+    follow_expr_chain,
     get_existance_status,
-    link_from_expr_chain,
 )
 from maltoolbox.attackgraph.ttcs import get_ttc_dist
 from maltoolbox.language import LanguageGraph, LanguageGraphAttackStep
@@ -76,24 +76,6 @@ def get_all_field_names(lang_graph: LanguageGraph) -> set[str]:
         field_names.add(assoc.right_field.fieldname)
     return field_names
 
-def assoc_in_expr_chain(expr_chain: ExpressionsChain, assocs: dict[str, set[ModelAsset]], all_field_names: set[str]) -> set[str]:
-    """Check if an association is in the expression chain."""
-    if expr_chain.type == ExprType.FIELD:
-        assert expr_chain.fieldname is not None, "Fieldname should not be None for FIELD type"
-        return {expr_chain.fieldname}
-    elif expr_chain.type in (ExprType.UNION, ExprType.INTERSECTION, ExprType.DIFFERENCE) or expr_chain.type == ExprType.COLLECT:
-        assert expr_chain.left_link is not None and expr_chain.right_link is not None, "Left and right links should not be None for UNION, INTERSECTION, DIFFERENCE, or COLLECT types"
-        return assoc_in_expr_chain(expr_chain.left_link, assocs, all_field_names) | assoc_in_expr_chain(expr_chain.right_link, assocs, all_field_names)
-    elif expr_chain.type == ExprType.SUBTYPE:
-        assert expr_chain.sub_link is not None, "Subtype should not be None for SUBTYPE type"
-        return assoc_in_expr_chain(expr_chain.sub_link, assocs, all_field_names)
-    elif expr_chain.type == ExprType.TRANSITIVE:
-        # TODO: Handle this in a more efficient manner
-        assert expr_chain.sub_link is not None, "Sub link should not be None for TRANSITIVE type"
-        prepend_patterns = assoc_in_expr_chain(expr_chain.sub_link, assocs, all_field_names)
-        return {field_name for field_name in all_field_names if any(field_name.startswith(pattern) for pattern in prepend_patterns)}
-    else:
-        raise ValueError(f"Unknown expression chain type: {expr_chain.type}")
 
 def correct_node_children_on_modified_assoc(
     model: Model,
@@ -103,74 +85,58 @@ def correct_node_children_on_modified_assoc(
     removed_assoc_dict: dict[str, set[ModelAsset]],
     all_field_names_in_lang_graph: set[str]
 ) -> None:
-    """Link one node to its children."""
+    """Recompute a node's children from the model's current associations.
+
+    ag_node was flagged by assoc_affected_nodes as reachable through an
+    association that was added or removed, possibly several hops away
+    (e.g. via a "b.c.d.reach" style chain). Rather than trying to patch
+    individual links based on which single association changed - which
+    breaks for any child_type reached through more than one hop, since the
+    node directly on the other end of the changed association is not
+    necessarily the expression chain's actual target - every child_type of
+    ag_node's attack step is recomputed from scratch by walking the chain
+    against the already-updated model (the same way full generation does),
+    and ag_node's children are reconciled against that correct set: targets
+    no longer reachable are unlinked, newly reachable targets are linked.
+    """
     if not ag_node.model_asset:
         raise AttackGraphException('Attack graph node is missing asset link')
+    model_asset = ag_node.model_asset
 
-    lg_asset = model.lang_graph.assets[ag_node.model_asset.type]
+    lg_asset = model.lang_graph.assets[model_asset.type]
     lg_attack_step: LanguageGraphAttackStep | None = lg_asset.attack_steps[ag_node.name]
+
+    correct_children: set[AttackGraphNode] = set()
     while lg_attack_step:
         for child_type, expr_chains in lg_attack_step.children.items():
             for expr_chain in expr_chains:
-
-                # Child is in the same asset, so it should already be linked in the graph
-                if expr_chain is None:
-                    continue
-                new_assocs = assoc_in_expr_chain(expr_chain, new_assoc_dict, all_field_names_in_lang_graph)
-                if len(set(new_assoc_dict.keys()) & new_assocs) > 0:
-                    link_from_expr_chain(
-                        model, ag_node, child_type, expr_chain, full_name_to_node,
-                    )
-                removed_assocs = assoc_in_expr_chain(expr_chain, removed_assoc_dict, all_field_names_in_lang_graph)
-                if len(set(removed_assoc_dict.keys()) & removed_assocs) > 0:
-                    removed_assoc_assets = {
-                        asset
-                        for fieldname in removed_assocs
-                        for asset in removed_assoc_dict.get(fieldname, set())
-                    }
-                    for removed_assoc_asset in removed_assoc_assets:
-                        unlink_from_associated_asset(
-                            ag_node, child_type, full_name_to_node, removed_assoc_asset
+                for target_asset in follow_expr_chain(model, {model_asset}, expr_chain):
+                    target_node = full_name_to_node.get(f'{target_asset.name}:{child_type.name}')
+                    if target_node is None:
+                        raise AttackGraphException(
+                            f'Failed to find target node "{target_asset.name}:{child_type.name}" '
+                            f'for "{ag_node.full_name}"({ag_node.id})'
                         )
-                else:
-                    logger.debug(
-                        f"Skipping linking of {ag_node.full_name} to step of type {child_type.full_name} via {expr_chain.fieldname} because the association was not modified."
-                    )
+                    correct_children.add(target_node)
         if lg_attack_step.overrides:
             break
         lg_attack_step = lg_attack_step.inherits
 
-def unlink_from_associated_asset(
-    ag_node: AttackGraphNode,
-    child_type: LanguageGraphAttackStep,
-    full_name_to_node: dict[str, AttackGraphNode],
-    associated_asset: ModelAsset
-) -> None:
-    """Unlink a node from targets from a specific expression chain."""
-    if not ag_node.model_asset:
-        raise AttackGraphException('Need model asset connection to generate graph')
-    
-    target_node: AttackGraphNode | None = full_name_to_node.get(f'{associated_asset.name}:{child_type.name}')
-    if not target_node:
+    for target_node in correct_children - ag_node.children:
         logger.debug(
-            'Failed to unlink %s -> %s:%s, %s:%s already unlinked?',
-            ag_node.full_name,
-            associated_asset.name,
-            child_type.name,
-            associated_asset.name,
-            child_type.name,
+            'Linking attack step "%s"(%d) to attack step "%s"(%d)',
+            ag_node.full_name, ag_node.id, target_node.full_name, target_node.id,
         )
-        return
+        ag_node.children.add(target_node)
+        target_node.parents.add(ag_node)
 
-    logger.debug(
-        'Unlinking attack step "%s"(%d) to attack step "%s"(%d)',
-        ag_node.full_name,
-        ag_node.id,
-        target_node.full_name,
-        target_node.id,
-    )
-    ag_node.children.discard(target_node)
-    target_node.parents.discard(ag_node)
+    for target_node in ag_node.children - correct_children:
+        logger.debug(
+            'Unlinking attack step "%s"(%d) from attack step "%s"(%d)',
+            ag_node.full_name, ag_node.id, target_node.full_name, target_node.id,
+        )
+        ag_node.children.discard(target_node)
+        target_node.parents.discard(ag_node)
 
 def nodes_to_be_removed(
     removed_assets: set[ModelAsset], full_name_to_node: dict[str, AttackGraphNode]
@@ -188,5 +154,63 @@ def nodes_to_be_removed(
             removal_candidates.add(node)
     return removal_candidates
 
-            
-    
+def assoc_affected_expr_chain(
+    model: Model,
+    instigating_assets: set[ModelAsset],
+    affected_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]],
+    expr_chain: ExpressionsChain | None,
+) -> bool:
+    """Check whether evaluating expr_chain starting from instigating_assets
+    passes through any association recorded in affected_assoc_dict."""
+    if expr_chain is None or not instigating_assets:
+        return False
+    if expr_chain.type == ExprType.FIELD:
+        assert expr_chain.fieldname is not None, "Fieldname should not be None for FIELD type"
+        return any(
+            expr_chain.fieldname in affected_assoc_dict.get(instigating_asset, {})
+            for instigating_asset in instigating_assets
+        )
+    elif expr_chain.type in (ExprType.UNION, ExprType.INTERSECTION, ExprType.DIFFERENCE):
+        # Both sides are evaluated starting from the same assets.
+        return (
+            assoc_affected_expr_chain(model, instigating_assets, affected_assoc_dict, expr_chain.left_link)
+            or assoc_affected_expr_chain(model, instigating_assets, affected_assoc_dict, expr_chain.right_link)
+        )
+    elif expr_chain.type == ExprType.COLLECT:
+        # The right hand side is evaluated starting from the assets reached
+        # by the left hand side, not from the original instigating assets.
+        if assoc_affected_expr_chain(model, instigating_assets, affected_assoc_dict, expr_chain.left_link):
+            return True
+        next_assets = follow_expr_chain(model, instigating_assets, expr_chain.left_link)
+        return assoc_affected_expr_chain(model, next_assets, affected_assoc_dict, expr_chain.right_link)
+    elif expr_chain.type == ExprType.SUBTYPE:
+        return assoc_affected_expr_chain(model, instigating_assets, affected_assoc_dict, expr_chain.sub_link)
+    elif expr_chain.type == ExprType.TRANSITIVE:
+        assert expr_chain.sub_link is not None, "Sub link should not be None for TRANSITIVE type"
+        # Check every depth of the transitive closure, since the modified
+        # association may be several hops away from instigating_assets.
+        frontier = set(instigating_assets)
+        visited: set[ModelAsset] = set()
+        while frontier:
+            if assoc_affected_expr_chain(model, frontier, affected_assoc_dict, expr_chain.sub_link):
+                return True
+            visited |= frontier
+            frontier = follow_expr_chain(model, frontier, expr_chain.sub_link) - visited
+        return False
+    else:
+        raise ValueError(f"Unknown expression chain type: {expr_chain.type}")
+
+def assoc_affected_nodes(model: Model, affected_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]], full_name_to_node: dict[str, AttackGraphNode]) -> set[AttackGraphNode]:
+    """Return every attack graph node whose children are reached via an
+    association that was added or removed."""
+    ret_nodes = set()
+    for asset in model.assets.values():
+        for node_name, lg_node in asset.lg_asset.attack_steps.items():
+            for expr_chains in lg_node.children.values():
+                if any(
+                    assoc_affected_expr_chain(model, {asset}, affected_assoc_dict, expr_chain)
+                    for expr_chain in expr_chains
+                ):
+                    ret_nodes.add(full_name_to_node[f'{asset.name}:{node_name}'])
+                    break
+    return ret_nodes

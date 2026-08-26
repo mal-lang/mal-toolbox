@@ -1260,7 +1260,9 @@ def test_partial_regeneration_with_assocChainLang(assocChainLang_lang_graph: Lan
 
     for asset_type, fieldname in [("A", "b"), ("B", "c"), ("C", "d"), ("D", "e"), ("E", "f"), ("F", "g"), ("G", "h"), ("H", "i")]:
         parent = model.get_asset_by_name(f"{asset_type}:0")
+        assert parent, f"Could not find asset {asset_type}:0"
         child = model.get_asset_by_name(f"{fieldname.upper()}:0")
+        assert child, f"Could not find asset {fieldname.upper()}:0"
         parent.remove_associated_assets(fieldname, {child})
         generated_AG = AttackGraph(lang_graph=assocChainLang_lang_graph, model=model)
         AG.partially_regenerate_graph(removed_associations={(parent, fieldname, child)})

@@ -14,6 +14,7 @@ from maltoolbox.attackgraph.generate import (
 )
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
 from maltoolbox.attackgraph.partially_generate import (
+    assoc_affected_nodes,
     correct_node_children_on_modified_assoc,
     create_nodes_from_assets,
     get_all_field_names,
@@ -307,11 +308,23 @@ class AttackGraph:
             ).add(left_asset)
         all_field_names = get_all_field_names(self.model.lang_graph)
         # Correct links referencing modified associations
-        nodes_of_modified_assoc = [
-            all_full_name_to_nodes[f'{asset.name}:{step_name}']
-            for asset in set(new_assoc_dict.keys()) | set(removed_assoc_dict.keys())
-            for step_name in asset.lg_asset.attack_steps
-        ]
+        # nodes_of_modified_assoc = [
+        #     all_full_name_to_nodes[f'{asset.name}:{step_name}']
+        #     for asset in set(new_assoc_dict.keys()) | set(removed_assoc_dict.keys())
+        #     for step_name in asset.lg_asset.attack_steps
+        # ]
+        # `new_assoc_dict | removed_assoc_dict` would be a shallow merge: if the
+        # same asset gained and lost associations in this call (e.g. a field
+        # that both dropped one target and gained another), the second dict's
+        # entry would silently replace the first's instead of combining with
+        # it. Merge per-fieldname instead so both sides are preserved.
+        affected_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]] = {}
+        for assoc_dict in (new_assoc_dict, removed_assoc_dict):
+            for asset, fields in assoc_dict.items():
+                dest_fields = affected_assoc_dict.setdefault(asset, {})
+                for fieldname, assets in fields.items():
+                    dest_fields.setdefault(fieldname, set()).update(assets)
+        nodes_of_modified_assoc = assoc_affected_nodes(self.model, affected_assoc_dict, all_full_name_to_nodes)
         for ag_node in nodes_of_modified_assoc:
             assert ag_node.model_asset is not None, "Attack graph must have access to the model to do partial regeneration."
             correct_node_children_on_modified_assoc(
