@@ -1248,6 +1248,31 @@ def test_partial_regeneration_corelang(corelang_lang_graph: LanguageGraph) -> No
 
     assert set(model.assets.values()) == {corpnet}
 
+def test_partial_regeneration_with_assocChainLang(assocChainLang_lang_graph: LanguageGraph) -> None:
+    """Tests partial regeneration of the attack graph for a model in assocChainLang."""
+    model = Model('Test Model', assocChainLang_lang_graph)
+    parent = model.add_asset(asset_type='A', name='A:0')
+    for asset_type in ["B", "C", "D", "E", "F", "G", "H", "I"]:
+        child = model.add_asset(asset_type=asset_type, name=f"{asset_type}:0")
+        parent.add_associated_assets(asset_type.lower(), {child})
+        parent = child
+    AG = AttackGraph(lang_graph=assocChainLang_lang_graph, model=model)
+
+    for asset_type, fieldname in [("A", "b"), ("B", "c"), ("C", "d"), ("D", "e"), ("E", "f"), ("F", "g"), ("G", "h"), ("H", "i")]:
+        parent = model.get_asset_by_name(f"{asset_type}:0")
+        assert parent, f"Could not find asset {asset_type}:0"
+        child = model.get_asset_by_name(f"{fieldname.upper()}:0")
+        assert child, f"Could not find asset {fieldname.upper()}:0"
+        parent.remove_associated_assets(fieldname, {child})
+        generated_AG = AttackGraph(lang_graph=assocChainLang_lang_graph, model=model)
+        AG.partially_regenerate_graph(removed_associations={(parent, fieldname, child)})
+        check_graph_equivalence(AG, generated_AG)
+
+        parent.add_associated_assets(fieldname, {child})
+        generated_AG = AttackGraph(lang_graph=assocChainLang_lang_graph, model=model)
+        AG.partially_regenerate_graph(new_associations={(parent, fieldname, child)})
+        check_graph_equivalence(AG, generated_AG)
+
 
 def tests_create_ag_step_lists():
     """We have a predefined model in trainingLang with these associations:

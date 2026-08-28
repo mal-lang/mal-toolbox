@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 from maltoolbox.exceptions import (
@@ -72,6 +73,18 @@ class ExpressionsChain:
 
         if self.type == ExprType.SUBTYPE and (not self.sub_link or not self.subtype):
             raise ValueError('SUBTYPE requires sub_link and subtype')
+
+    @cached_property
+    def fieldnames(self) -> frozenset[str]:
+        """Field names referenced anywhere in this chain, including
+        sub-chains. Chains are immutable once built, so this is computed
+        at most once per chain node."""
+        if self.type == ExprType.FIELD:
+            assert self.fieldname is not None, 'FIELD requires fieldname'
+            return frozenset({self.fieldname})
+        if self.type.is_binary():
+            return chain_fieldnames(self.left_link) | chain_fieldnames(self.right_link)
+        return chain_fieldnames(self.sub_link)
 
     def to_dict(self) -> dict:
         if self.type.is_binary():
@@ -289,3 +302,9 @@ class ExpressionsChain:
 
     def __repr__(self) -> str:
         return str(self.to_dict())
+
+
+def chain_fieldnames(expr_chain: ExpressionsChain | None) -> frozenset[str]:
+    """Field names referenced anywhere in expr_chain, or an empty set if
+    expr_chain is None."""
+    return expr_chain.fieldnames if expr_chain is not None else frozenset()

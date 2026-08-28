@@ -109,6 +109,11 @@ class LanguageGraph:
         """Return all associations in the language graph."""
         return get_language_graph_associations(self)
 
+    @property
+    def attack_steps(self) -> set[LanguageGraphAttackStep]:
+        """Return all attack steps in the language graph."""
+        return get_language_graph_attack_steps(self)
+
     @staticmethod
     def _link_association_to_assets(
         assoc: LanguageGraphAssociation,
@@ -466,6 +471,13 @@ def get_language_graph_associations(language_graph: LanguageGraph):
         assoc
         for asset in language_graph.assets.values()
         for assoc in asset.associations.values()
+    }
+
+def get_language_graph_attack_steps(language_graph: LanguageGraph) -> set[LanguageGraphAttackStep]:
+    return {
+        step
+        for asset in language_graph.assets.values()
+        for step in asset.attack_steps.values()
     }
 
 

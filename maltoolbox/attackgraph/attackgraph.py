@@ -14,9 +14,9 @@ from maltoolbox.attackgraph.generate import (
 )
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
 from maltoolbox.attackgraph.partially_generate import (
+    assoc_affected_nodes,
     correct_node_children_on_modified_assoc,
     create_nodes_from_assets,
-    get_all_field_names,
     nodes_to_be_removed,
     switch_fieldname,
 )
@@ -288,8 +288,9 @@ class AttackGraph:
         ) = create_nodes_from_assets(new_assets, max(self.nodes.keys()) + 1, self.model)
 
         # Do full linking of children for steps of newly created assets
+        all_full_name_to_nodes = full_name_to_created_nodes | self.full_name_to_node
         for ag_node in full_name_to_created_nodes.values():
-            link_node_children(self.model, ag_node, full_name_to_created_nodes | self.full_name_to_node)
+            link_node_children(self.model, ag_node, all_full_name_to_nodes)
 
         removed_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]] = {}
         for left_asset, fieldname, right_asset in removed_associations:
@@ -304,18 +305,20 @@ class AttackGraph:
             new_assoc_dict.setdefault(right_asset, {}).setdefault(
                 switch_fieldname(left_asset, fieldname), set()
             ).add(left_asset)
-        all_field_names = get_all_field_names(self.model.lang_graph)
         # Correct links referencing modified associations
-        nodes_of_modified_assoc = filter(lambda step: step.model_asset in new_assoc_dict or step.model_asset in removed_assoc_dict, self.full_name_to_node.values())
+        affected_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]] = {}
+        for assoc_dict in (new_assoc_dict, removed_assoc_dict):
+            for asset, fields in assoc_dict.items():
+                dest_fields = affected_assoc_dict.setdefault(asset, {})
+                for fieldname, assets in fields.items():
+                    dest_fields.setdefault(fieldname, set()).update(assets)
+        nodes_of_modified_assoc = assoc_affected_nodes(self.model, affected_assoc_dict, all_full_name_to_nodes)
         for ag_node in nodes_of_modified_assoc:
             assert ag_node.model_asset is not None, "Attack graph must have access to the model to do partial regeneration."
             correct_node_children_on_modified_assoc(
-                self.model, 
-                ag_node, 
-                full_name_to_created_nodes | self.full_name_to_node, 
-                new_assoc_dict.get(ag_node.model_asset, {}), 
-                removed_assoc_dict.get(ag_node.model_asset, {}), 
-                all_field_names
+                self.model,
+                ag_node,
+                full_name_to_created_nodes | self.full_name_to_node,
             )
 
         self.nodes.update(id_to_created_nodes)
