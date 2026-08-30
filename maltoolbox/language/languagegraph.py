@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import zipfile
+from functools import cached_property
 from typing import Any
 
 from maltoolbox.exceptions import (
@@ -22,7 +23,7 @@ from maltoolbox.file_utils import (
     save_dict_to_file,
 )
 from maltoolbox.language.compiler.mal_compiler import MalCompiler
-from maltoolbox.language.expression_chain import ExpressionsChain
+from maltoolbox.language.expression_chain import ExpressionsChain, chain_fieldnames
 from maltoolbox.language.language_graph_asset import LanguageGraphAsset
 from maltoolbox.language.language_graph_assoc import (
     LanguageGraphAssociation,
@@ -113,6 +114,21 @@ class LanguageGraph:
     def attack_steps(self) -> set[LanguageGraphAttackStep]:
         """Return all attack steps in the language graph."""
         return get_language_graph_attack_steps(self)
+
+    @cached_property
+    def fieldname_to_candidate_steps(self) -> dict[str, set[tuple[str, str]]]:
+        """Map each association fieldname to the (asset_type, attack_step_name)
+        pairs whose children expression chains can traverse that field."""
+        mapping: dict[str, set[tuple[str, str]]] = {}
+        for asset_type, lg_asset in self.assets.items():
+            for step_name, lg_step in lg_asset.attack_steps.items():
+                fieldnames: set[str] = set()
+                for expr_chains in lg_step.children.values():
+                    for expr_chain in expr_chains:
+                        fieldnames |= chain_fieldnames(expr_chain)
+                for fieldname in fieldnames:
+                    mapping.setdefault(fieldname, set()).add((asset_type, step_name))
+        return mapping
 
     @staticmethod
     def _link_association_to_assets(

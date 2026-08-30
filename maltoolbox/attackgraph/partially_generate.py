@@ -197,14 +197,24 @@ def assoc_affected_nodes(model: Model, affected_assoc_dict: dict[ModelAsset, dic
     modified_fieldnames = frozenset(
         fieldname for fields in affected_assoc_dict.values() for fieldname in fields
     )
-    ret_nodes = set()
+
+    candidate_steps: set[tuple[str, str]] = set()
+    for fieldname in modified_fieldnames:
+        candidate_steps |= model.lang_graph.fieldname_to_candidate_steps.get(fieldname, set())
+
+    assets_by_type: dict[str, list[ModelAsset]] = {}
     for asset in model.assets.values():
-        for node_name, lg_node in asset.lg_asset.attack_steps.items():
+        assets_by_type.setdefault(asset.type, []).append(asset)
+
+    ret_nodes = set()
+    for asset_type, step_name in candidate_steps:
+        for asset in assets_by_type.get(asset_type, []):
+            lg_node = asset.lg_asset.attack_steps[step_name]
             for expr_chains in lg_node.children.values():
                 if any(
                     assoc_affected_expr_chain(model, {asset}, affected_assoc_dict, expr_chain, modified_fieldnames)
                     for expr_chain in expr_chains
                 ):
-                    ret_nodes.add(full_name_to_node[f'{asset.name}:{node_name}'])
+                    ret_nodes.add(full_name_to_node[f'{asset.name}:{step_name}'])
                     break
     return ret_nodes
