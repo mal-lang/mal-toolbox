@@ -1418,6 +1418,38 @@ def test_partial_regeneration_set_ops_collect_left() -> None:
     check_graph_equivalence(regenerated_AG, AG)
 
 
+def test_partial_regeneration_shared_assoc_sibling() -> None:
+    """Tests partial regeneration when two sibling subtypes share an
+    inherited association but only one of them defines the attack step
+    that uses it."""
+    lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/shared_assoc_sibling.mal')
+    )
+    model = Model('Test Model', lang_graph)
+
+    a = model.add_asset(asset_type='SiblingA', name='A1')
+    b = model.add_asset(asset_type='SiblingB', name='B1')
+    t1 = model.add_asset(asset_type='Target', name='T1')
+
+    b.add_associated_assets('target', {t1})
+    AG = AttackGraph(lang_graph=lang_graph, model=model)
+
+    b.remove_associated_assets('target', {t1})
+    AG.partially_regenerate_graph(removed_associations={(b, 'target', t1)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    b.add_associated_assets('target', {t1})
+    AG.partially_regenerate_graph(new_associations={(b, 'target', t1)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    a.add_associated_assets('target', {t1})
+    AG.partially_regenerate_graph(new_associations={(a, 'target', t1)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+
 def tests_create_ag_step_lists():
     """We have a predefined model in trainingLang with these associations:
 

@@ -253,7 +253,7 @@ def assoc_affected_nodes(model: Model, affected_assoc_dict: dict[ModelAsset, dic
     for fieldname in modified_fieldnames:
         candidate_steps |= model.lang_graph.fieldname_to_candidate_steps.get(fieldname, set())
 
-    # Built lazily, only for non-additive chains (see is_additive).
+    # Built lazily, only for non-additive chains.
     assets_by_type: dict[str, list[ModelAsset]] | None = None
 
     ret_nodes = set()
@@ -277,5 +277,10 @@ def assoc_affected_nodes(model: Model, affected_assoc_dict: dict[ModelAsset, dic
                     if assoc_affected_expr_chain(model, {asset}, affected_assoc_dict, expr_chain, modified_fieldnames):
                         affected_assets.add(asset)
         for asset in affected_assets:
+            # A shared association can be inherited by sibling types that
+            # don't all define step_name themselves (e.g. two subtypes of
+            # the same abstract asset), so re-check before the lookup.
+            if step_name not in asset.lg_asset.attack_steps:
+                continue
             ret_nodes.add(full_name_to_node[f'{asset.name}:{step_name}'])
     return ret_nodes
