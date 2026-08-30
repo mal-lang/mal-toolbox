@@ -460,44 +460,52 @@ def test_attackgraph_setops():
     test_model = Model('Test Model', test_lang_graph)
 
     # Create assets
-    set_ops_a1 = test_model.add_asset(asset_type='SO_A', name='SO_A 1')
-    set_ops_b1 = test_model.add_asset(asset_type='SO_B', name='SO_B 1')
-    set_ops_b2 = test_model.add_asset(asset_type='SO_B', name='SO_B 2')
-    set_ops_b3 = test_model.add_asset(asset_type='SO_B', name='SO_B 3')
+    origin = test_model.add_asset(asset_type='Origin', name='Origin')
+    target1 = test_model.add_asset(asset_type='Target', name='Target 1')
+    target2 = test_model.add_asset(asset_type='Target', name='Target 2')
+    target3 = test_model.add_asset(asset_type='Target', name='Target 3')
 
-    # Create association
-    set_ops_a1.add_associated_assets('fieldB1', {set_ops_b1, set_ops_b2})
-
-    set_ops_a1.add_associated_assets('fieldB2', {set_ops_b2, set_ops_b3})
+    # setA = {Target 1, Target 2}, setB = {Target 2, Target 3}
+    origin.add_associated_assets('setA', {target1, target2})
+    origin.add_associated_assets('setB', {target2, target3})
 
     test_attack_graph = AttackGraph(lang_graph=test_lang_graph, model=test_model)
 
-    assetA1_origStep = test_attack_graph.get_node_by_full_name('SO_A 1:originStep')
-    assetB1_unionStep = test_attack_graph.get_node_by_full_name('SO_B 1:unionStep')
-    assetB1_intersectStep = test_attack_graph.get_node_by_full_name(
-        'SO_B 1:intersectionStep'
+    check = test_attack_graph.get_node_by_full_name('Origin:check')
+    target1_union = test_attack_graph.get_node_by_full_name('Target 1:unionResult')
+    target1_intersection = test_attack_graph.get_node_by_full_name(
+        'Target 1:intersectionResult'
     )
-    assetB1_diffStep = test_attack_graph.get_node_by_full_name('SO_B 1:differenceStep')
-    assetB2_unionStep = test_attack_graph.get_node_by_full_name('SO_B 2:unionStep')
-    assetB2_intersectStep = test_attack_graph.get_node_by_full_name(
-        'SO_B 2:intersectionStep'
+    target1_difference = test_attack_graph.get_node_by_full_name(
+        'Target 1:differenceResult'
     )
-    assetB2_diffStep = test_attack_graph.get_node_by_full_name('SO_B 2:differenceStep')
-    assetB3_unionStep = test_attack_graph.get_node_by_full_name('SO_B 3:unionStep')
-    assetB3_intersectStep = test_attack_graph.get_node_by_full_name(
-        'SO_B 3:intersectionStep'
+    target2_union = test_attack_graph.get_node_by_full_name('Target 2:unionResult')
+    target2_intersection = test_attack_graph.get_node_by_full_name(
+        'Target 2:intersectionResult'
     )
-    assetB3_diffStep = test_attack_graph.get_node_by_full_name('SO_B 3:differenceStep')
+    target2_difference = test_attack_graph.get_node_by_full_name(
+        'Target 2:differenceResult'
+    )
+    target3_union = test_attack_graph.get_node_by_full_name('Target 3:unionResult')
+    target3_intersection = test_attack_graph.get_node_by_full_name(
+        'Target 3:intersectionResult'
+    )
+    target3_difference = test_attack_graph.get_node_by_full_name(
+        'Target 3:differenceResult'
+    )
 
-    assert assetB1_unionStep in assetA1_origStep.children
-    assert assetB1_intersectStep not in assetA1_origStep.children
-    assert assetB1_diffStep in assetA1_origStep.children
-    assert assetB2_unionStep in assetA1_origStep.children
-    assert assetB2_intersectStep in assetA1_origStep.children
-    assert assetB2_diffStep not in assetA1_origStep.children
-    assert assetB3_unionStep in assetA1_origStep.children
-    assert assetB3_intersectStep not in assetA1_origStep.children
-    assert assetB3_diffStep not in assetA1_origStep.children
+    # Target 1 is only in setA: union yes, intersection no, difference yes.
+    assert target1_union in check.children
+    assert target1_intersection not in check.children
+    assert target1_difference in check.children
+    # Target 2 is in both setA and setB: union yes, intersection yes, difference no.
+    assert target2_union in check.children
+    assert target2_intersection in check.children
+    assert target2_difference not in check.children
+    # Target 3 is only in setB: union yes, intersection no, difference no.
+    assert target3_union in check.children
+    assert target3_intersection not in check.children
+    assert target3_difference not in check.children
 
 
 def test_attackgraph_setops_adv():
@@ -507,44 +515,45 @@ def test_attackgraph_setops_adv():
     )
     test_model = Model('Test Model', test_lang_graph)
 
-    # Create assets
-    set_ops_a1 = test_model.add_asset(asset_type='SOA_A', name='SOA_A 1')
-    set_ops_a2 = test_model.add_asset(asset_type='SOA_A', name='SOA_A 2')
-    set_ops_a3 = test_model.add_asset(asset_type='SOA_A', name='SOA_A 3')
-    set_ops_b1 = test_model.add_asset(asset_type='SOA_B', name='SOA_B 1')
-    set_ops_b2 = test_model.add_asset(asset_type='SOA_B', name='SOA_B 2')
-    set_ops_b3 = test_model.add_asset(asset_type='SOA_B', name='SOA_B 3')
+    # Create assets: hub1 has two sibling hubs, hub2 and hub3, each of
+    # which reaches a different, partially-overlapping set of targets.
+    hub1 = test_model.add_asset(asset_type='Hub', name='Hub 1')
+    hub2 = test_model.add_asset(asset_type='Hub', name='Hub 2')
+    hub3 = test_model.add_asset(asset_type='Hub', name='Hub 3')
+    target1 = test_model.add_asset(asset_type='Target', name='Target 1')
+    target2 = test_model.add_asset(asset_type='Target', name='Target 2')
+    target3 = test_model.add_asset(asset_type='Target', name='Target 3')
 
-    # Create association
-    set_ops_a2.add_associated_assets('fieldB1', {set_ops_b1, set_ops_b2})
-    set_ops_a3.add_associated_assets('fieldB2', {set_ops_b2, set_ops_b3})
-    set_ops_a1.add_associated_assets('fieldA3b', {set_ops_a2, set_ops_a3})
+    # hub2's setA = {Target 1, Target 2}, hub3's setB = {Target 2, Target 3}
+    hub2.add_associated_assets('setA', {target1, target2})
+    hub3.add_associated_assets('setB', {target2, target3})
+    hub1.add_associated_assets('siblings', {hub2, hub3})
 
     test_attack_graph = AttackGraph(lang_graph=test_lang_graph, model=test_model)
 
-    assetA1_origInnerStep = test_attack_graph.get_node_by_full_name(
-        'SOA_A 1:originInnerStep'
+    hub1_inner = test_attack_graph.get_node_by_full_name('Hub 1:innerIntersection')
+    hub1_outer = test_attack_graph.get_node_by_full_name('Hub 1:outerIntersection')
+    target1_intersection = test_attack_graph.get_node_by_full_name(
+        'Target 1:intersectionResult'
     )
-    assetA1_origOuterStep = test_attack_graph.get_node_by_full_name(
-        'SOA_A 1:originOuterStep'
+    target2_intersection = test_attack_graph.get_node_by_full_name(
+        'Target 2:intersectionResult'
     )
-    assetB1_intersectStep = test_attack_graph.get_node_by_full_name(
-        'SOA_B 1:intersectionStep'
-    )
-    assetB2_intersectStep = test_attack_graph.get_node_by_full_name(
-        'SOA_B 2:intersectionStep'
-    )
-    assetB3_intersectStep = test_attack_graph.get_node_by_full_name(
-        'SOA_B 3:intersectionStep'
+    target3_intersection = test_attack_graph.get_node_by_full_name(
+        'Target 3:intersectionResult'
     )
 
-    assert assetB1_intersectStep not in assetA1_origInnerStep.children
-    assert assetB2_intersectStep not in assetA1_origInnerStep.children
-    assert assetB3_intersectStep not in assetA1_origInnerStep.children
+    # innerIntersection intersects setA and setB per sibling, and no single
+    # sibling has both fields set, so it never reaches any target.
+    assert target1_intersection not in hub1_inner.children
+    assert target2_intersection not in hub1_inner.children
+    assert target3_intersection not in hub1_inner.children
 
-    assert assetB1_intersectStep not in assetA1_origOuterStep.children
-    assert assetB2_intersectStep in assetA1_origOuterStep.children
-    assert assetB3_intersectStep not in assetA1_origOuterStep.children
+    # outerIntersection intersects the union of siblings' setA with the
+    # union of siblings' setB, so only Target 2 (in both unions) survives.
+    assert target1_intersection not in hub1_outer.children
+    assert target2_intersection in hub1_outer.children
+    assert target3_intersection not in hub1_outer.children
 
 
 def test_attackgraph_transitive():
@@ -1333,86 +1342,86 @@ def test_partial_regeneration_transitive() -> None:
 
 def test_partial_regeneration_set_ops_adv() -> None:
     """Tests partial regeneration for steps whose chain nests an
-    intersection inside a collect (originInnerStep/originOuterStep)."""
+    intersection inside a collect (innerIntersection/outerIntersection)."""
     lang_graph = LanguageGraph(MalCompiler().compile('tests/testdata/set_ops_adv.mal'))
     model = Model('Test Model', lang_graph)
 
-    a1 = model.add_asset(asset_type='SOA_A', name='SOA_A 1')
-    a2 = model.add_asset(asset_type='SOA_A', name='SOA_A 2')
-    a3 = model.add_asset(asset_type='SOA_A', name='SOA_A 3')
-    b1 = model.add_asset(asset_type='SOA_B', name='SOA_B 1')
-    b2 = model.add_asset(asset_type='SOA_B', name='SOA_B 2')
-    b3 = model.add_asset(asset_type='SOA_B', name='SOA_B 3')
+    hub1 = model.add_asset(asset_type='Hub', name='Hub 1')
+    hub2 = model.add_asset(asset_type='Hub', name='Hub 2')
+    hub3 = model.add_asset(asset_type='Hub', name='Hub 3')
+    target1 = model.add_asset(asset_type='Target', name='Target 1')
+    target2 = model.add_asset(asset_type='Target', name='Target 2')
+    target3 = model.add_asset(asset_type='Target', name='Target 3')
 
-    a2.add_associated_assets('fieldB1', {b1, b2})
-    a3.add_associated_assets('fieldB2', {b2, b3})
-    a1.add_associated_assets('fieldA3b', {a2, a3})
+    hub2.add_associated_assets('setA', {target1, target2})
+    hub3.add_associated_assets('setB', {target2, target3})
+    hub1.add_associated_assets('siblings', {hub2, hub3})
 
     AG = AttackGraph(lang_graph=lang_graph, model=model)
 
-    # b2 is the only asset reachable via both fieldB1 and fieldB2.
-    a3.remove_associated_assets('fieldB2', {b2})
-    AG.partially_regenerate_graph(removed_associations={(a3, 'fieldB2', b2)})
+    # target2 is the only asset reachable via both setA and setB.
+    hub3.remove_associated_assets('setB', {target2})
+    AG.partially_regenerate_graph(removed_associations={(hub3, 'setB', target2)})
     regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
     check_graph_equivalence(regenerated_AG, AG)
 
-    a3.add_associated_assets('fieldB2', {b2})
-    AG.partially_regenerate_graph(new_associations={(a3, 'fieldB2', b2)})
+    hub3.add_associated_assets('setB', {target2})
+    AG.partially_regenerate_graph(new_associations={(hub3, 'setB', target2)})
     regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
     check_graph_equivalence(regenerated_AG, AG)
 
-    # Removing fieldA3b removes both chains' path to SOA_A 3's targets.
-    a1.remove_associated_assets('fieldA3b', {a3})
-    AG.partially_regenerate_graph(removed_associations={(a1, 'fieldA3b', a3)})
+    # Removing the sibling link removes both chains' path to Hub 3's targets.
+    hub1.remove_associated_assets('siblings', {hub3})
+    AG.partially_regenerate_graph(removed_associations={(hub1, 'siblings', hub3)})
     regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
     check_graph_equivalence(regenerated_AG, AG)
 
-    a1.add_associated_assets('fieldA3b', {a3})
-    AG.partially_regenerate_graph(new_associations={(a1, 'fieldA3b', a3)})
+    hub1.add_associated_assets('siblings', {hub3})
+    AG.partially_regenerate_graph(new_associations={(hub1, 'siblings', hub3)})
     regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
     check_graph_equivalence(regenerated_AG, AG)
 
 
 def test_partial_regeneration_set_ops_collect_left() -> None:
     """Tests partial regeneration for a step whose chain has a difference
-    nested on the left side of a collect ((fieldY - fieldZ).fieldW.reach),
-    a position where the reverse walk in affected_root_assets is unsafe if
+    nested on the left side of a collect ((setA - setB).next.reach), a
+    position where the reverse walk in affected_root_assets is unsafe if
     more than one association changes in the same call."""
     lang_graph = LanguageGraph(
         MalCompiler().compile('tests/testdata/set_ops_collect_left.mal')
     )
     model = Model('Test Model', lang_graph)
 
-    x_star = model.add_asset(asset_type='SOCL_X', name='X*')
-    q1 = model.add_asset(asset_type='SOCL_Q', name='Q1')
-    q2 = model.add_asset(asset_type='SOCL_Q', name='Q2')
-    w1 = model.add_asset(asset_type='SOCL_W', name='W1')
-    w2 = model.add_asset(asset_type='SOCL_W', name='W2')
+    origin = model.add_asset(asset_type='Origin', name='Origin')
+    node1 = model.add_asset(asset_type='Node', name='Node 1')
+    node2 = model.add_asset(asset_type='Node', name='Node 2')
+    target1 = model.add_asset(asset_type='Target', name='Target 1')
+    target2 = model.add_asset(asset_type='Target', name='Target 2')
 
-    # X*'s (fieldY - fieldZ) is {Q1, Q2} - {Q2} = {Q1}.
-    x_star.add_associated_assets('fieldY', {q1, q2})
-    x_star.add_associated_assets('fieldZ', {q2})
-    q1.add_associated_assets('fieldW', {w1})
-    q2.add_associated_assets('fieldW', {w2})
+    # Origin's (setA - setB) is {Node 1, Node 2} - {Node 2} = {Node 1}.
+    origin.add_associated_assets('setA', {node1, node2})
+    origin.add_associated_assets('setB', {node2})
+    node1.add_associated_assets('next', {target1})
+    node2.add_associated_assets('next', {target2})
 
     AG = AttackGraph(lang_graph=lang_graph, model=model)
-    origin_node = AG.get_node_by_full_name('X*:origin')
-    assert AG.get_node_by_full_name('W1:reach') in origin_node.children
-    assert AG.get_node_by_full_name('W2:reach') not in origin_node.children
+    check_node = AG.get_node_by_full_name('Origin:check')
+    assert AG.get_node_by_full_name('Target 1:reach') in check_node.children
+    assert AG.get_node_by_full_name('Target 2:reach') not in check_node.children
 
-    # Change both Q1's and Q2's fieldW in the same call.
-    q1.remove_associated_assets('fieldW', {w1})
-    q2.remove_associated_assets('fieldW', {w2})
+    # Change both Node 1's and Node 2's next in the same call.
+    node1.remove_associated_assets('next', {target1})
+    node2.remove_associated_assets('next', {target2})
     AG.partially_regenerate_graph(
-        removed_associations={(q1, 'fieldW', w1), (q2, 'fieldW', w2)}
+        removed_associations={(node1, 'next', target1), (node2, 'next', target2)}
     )
     regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
     check_graph_equivalence(regenerated_AG, AG)
 
-    q1.add_associated_assets('fieldW', {w1})
-    q2.add_associated_assets('fieldW', {w2})
+    node1.add_associated_assets('next', {target1})
+    node2.add_associated_assets('next', {target2})
     AG.partially_regenerate_graph(
-        new_associations={(q1, 'fieldW', w1), (q2, 'fieldW', w2)}
+        new_associations={(node1, 'next', target1), (node2, 'next', target2)}
     )
     regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
     check_graph_equivalence(regenerated_AG, AG)

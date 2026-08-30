@@ -3,22 +3,22 @@
 #version: "0.0.0"
 
 category Test{
-  asset SOCL_X {
-    | origin
-      -> (fieldY - fieldZ).fieldW.reach
+  asset Origin {
+    | check
+      -> (setA - setB).next.reach
   }
 
-  asset SOCL_Q {
+  asset Node {
     | reach
   }
 
-  asset SOCL_W {
+  asset Target {
     | reach
   }
 }
 
 associations {
-  SOCL_X [x1] * <-- SoclXY --> * [fieldY] SOCL_Q
-  SOCL_X [x2] * <-- SoclXZ --> * [fieldZ] SOCL_Q
-  SOCL_Q [q1] * <-- SoclQW --> * [fieldW] SOCL_W
+  Origin [inSetA] * <-- HasSetA --> * [setA] Node
+  Origin [inSetB] * <-- HasSetB --> * [setB] Node
+  Node   [nodeOf] * <-- HasNext --> * [next] Target
 }
