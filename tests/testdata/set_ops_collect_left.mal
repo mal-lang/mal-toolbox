@@ -1,0 +1,24 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset SOCL_X {
+    | origin
+      -> (fieldY - fieldZ).fieldW.reach
+  }
+
+  asset SOCL_Q {
+    | reach
+  }
+
+  asset SOCL_W {
+    | reach
+  }
+}
+
+associations {
+  SOCL_X [x1] * <-- SoclXY --> * [fieldY] SOCL_Q
+  SOCL_X [x2] * <-- SoclXZ --> * [fieldZ] SOCL_Q
+  SOCL_Q [q1] * <-- SoclQW --> * [fieldW] SOCL_W
+}

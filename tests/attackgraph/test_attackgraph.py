@@ -1274,6 +1274,150 @@ def test_partial_regeneration_with_assocChainLang(assocChainLang_lang_graph: Lan
         check_graph_equivalence(AG, generated_AG)
 
 
+def test_partial_regeneration_transitive() -> None:
+    """Tests partial regeneration for a step reached via a transitive
+    closure (field2*.test_step)."""
+    lang_graph = LanguageGraph(MalCompiler().compile('tests/testdata/transitive.mal'))
+    model = Model('Test Model', lang_graph)
+
+    a1 = model.add_asset(asset_type='TestAsset', name='TestAsset1')
+    AG = AttackGraph(lang_graph=lang_graph, model=model)
+
+    a2 = model.add_asset(asset_type='TestAsset', name='TestAsset2')
+    a1.add_associated_assets('field2', {a2})
+    AG.partially_regenerate_graph(new_assets={a2}, new_associations={(a1, 'field2', a2)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    a3 = model.add_asset(asset_type='TestAsset', name='TestAsset3')
+    a2.add_associated_assets('field2', {a3})
+    AG.partially_regenerate_graph(new_assets={a3}, new_associations={(a2, 'field2', a3)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    a4 = model.add_asset(asset_type='TestAsset', name='TestAsset4')
+    a3.add_associated_assets('field2', {a4})
+    AG.partially_regenerate_graph(new_assets={a4}, new_associations={(a3, 'field2', a4)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Fork the transitive closure off TestAsset2.
+    a5 = model.add_asset(asset_type='TestAsset', name='TestAsset5')
+    a2.add_associated_assets('field2', {a5})
+    AG.partially_regenerate_graph(new_assets={a5}, new_associations={(a2, 'field2', a5)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Deepest association: 3 hops from TestAsset1 to TestAsset4.
+    a3.remove_associated_assets('field2', {a4})
+    AG.partially_regenerate_graph(removed_associations={(a3, 'field2', a4)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    a3.add_associated_assets('field2', {a4})
+    AG.partially_regenerate_graph(new_associations={(a3, 'field2', a4)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Mid-chain association: cuts TestAsset3/4 out of the closure entirely.
+    a2.remove_associated_assets('field2', {a3})
+    AG.partially_regenerate_graph(removed_associations={(a2, 'field2', a3)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    a2.add_associated_assets('field2', {a3})
+    AG.partially_regenerate_graph(new_associations={(a2, 'field2', a3)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+
+def test_partial_regeneration_set_ops_adv() -> None:
+    """Tests partial regeneration for steps whose chain nests an
+    intersection inside a collect (originInnerStep/originOuterStep)."""
+    lang_graph = LanguageGraph(MalCompiler().compile('tests/testdata/set_ops_adv.mal'))
+    model = Model('Test Model', lang_graph)
+
+    a1 = model.add_asset(asset_type='SOA_A', name='SOA_A 1')
+    a2 = model.add_asset(asset_type='SOA_A', name='SOA_A 2')
+    a3 = model.add_asset(asset_type='SOA_A', name='SOA_A 3')
+    b1 = model.add_asset(asset_type='SOA_B', name='SOA_B 1')
+    b2 = model.add_asset(asset_type='SOA_B', name='SOA_B 2')
+    b3 = model.add_asset(asset_type='SOA_B', name='SOA_B 3')
+
+    a2.add_associated_assets('fieldB1', {b1, b2})
+    a3.add_associated_assets('fieldB2', {b2, b3})
+    a1.add_associated_assets('fieldA3b', {a2, a3})
+
+    AG = AttackGraph(lang_graph=lang_graph, model=model)
+
+    # b2 is the only asset reachable via both fieldB1 and fieldB2.
+    a3.remove_associated_assets('fieldB2', {b2})
+    AG.partially_regenerate_graph(removed_associations={(a3, 'fieldB2', b2)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    a3.add_associated_assets('fieldB2', {b2})
+    AG.partially_regenerate_graph(new_associations={(a3, 'fieldB2', b2)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    # Removing fieldA3b removes both chains' path to SOA_A 3's targets.
+    a1.remove_associated_assets('fieldA3b', {a3})
+    AG.partially_regenerate_graph(removed_associations={(a1, 'fieldA3b', a3)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    a1.add_associated_assets('fieldA3b', {a3})
+    AG.partially_regenerate_graph(new_associations={(a1, 'fieldA3b', a3)})
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+
+def test_partial_regeneration_set_ops_collect_left() -> None:
+    """Tests partial regeneration for a step whose chain has a difference
+    nested on the left side of a collect ((fieldY - fieldZ).fieldW.reach),
+    a position where the reverse walk in affected_root_assets is unsafe if
+    more than one association changes in the same call."""
+    lang_graph = LanguageGraph(
+        MalCompiler().compile('tests/testdata/set_ops_collect_left.mal')
+    )
+    model = Model('Test Model', lang_graph)
+
+    x_star = model.add_asset(asset_type='SOCL_X', name='X*')
+    q1 = model.add_asset(asset_type='SOCL_Q', name='Q1')
+    q2 = model.add_asset(asset_type='SOCL_Q', name='Q2')
+    w1 = model.add_asset(asset_type='SOCL_W', name='W1')
+    w2 = model.add_asset(asset_type='SOCL_W', name='W2')
+
+    # X*'s (fieldY - fieldZ) is {Q1, Q2} - {Q2} = {Q1}.
+    x_star.add_associated_assets('fieldY', {q1, q2})
+    x_star.add_associated_assets('fieldZ', {q2})
+    q1.add_associated_assets('fieldW', {w1})
+    q2.add_associated_assets('fieldW', {w2})
+
+    AG = AttackGraph(lang_graph=lang_graph, model=model)
+    origin_node = AG.get_node_by_full_name('X*:origin')
+    assert AG.get_node_by_full_name('W1:reach') in origin_node.children
+    assert AG.get_node_by_full_name('W2:reach') not in origin_node.children
+
+    # Change both Q1's and Q2's fieldW in the same call.
+    q1.remove_associated_assets('fieldW', {w1})
+    q2.remove_associated_assets('fieldW', {w2})
+    AG.partially_regenerate_graph(
+        removed_associations={(q1, 'fieldW', w1), (q2, 'fieldW', w2)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+    q1.add_associated_assets('fieldW', {w1})
+    q2.add_associated_assets('fieldW', {w2})
+    AG.partially_regenerate_graph(
+        new_associations={(q1, 'fieldW', w1), (q2, 'fieldW', w2)}
+    )
+    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+    check_graph_equivalence(regenerated_AG, AG)
+
+
 def tests_create_ag_step_lists():
     """We have a predefined model in trainingLang with these associations:
 

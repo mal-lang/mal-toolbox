@@ -86,6 +86,21 @@ class ExpressionsChain:
             return chain_fieldnames(self.left_link) | chain_fieldnames(self.right_link)
         return chain_fieldnames(self.sub_link)
 
+    @cached_property
+    def is_additive(self) -> bool:
+        """True if evaluating this chain over a set of assets equals the
+        union of evaluating it per asset. Intersection/difference break
+        this."""
+        if self.type in (ExprType.INTERSECTION, ExprType.DIFFERENCE):
+            return False
+        if self.type.is_binary():
+            return chain_is_additive(self.left_link) and chain_is_additive(
+                self.right_link
+            )
+        if self.type == ExprType.FIELD:
+            return True
+        return chain_is_additive(self.sub_link)
+
     def to_dict(self) -> dict:
         if self.type.is_binary():
             return self._binary_to_dict()
@@ -308,3 +323,8 @@ def chain_fieldnames(expr_chain: ExpressionsChain | None) -> frozenset[str]:
     """Field names referenced anywhere in expr_chain, or an empty set if
     expr_chain is None."""
     return expr_chain.fieldnames if expr_chain is not None else frozenset()
+
+
+def chain_is_additive(expr_chain: ExpressionsChain | None) -> bool:
+    """See ExpressionsChain.is_additive. None is vacuously additive."""
+    return expr_chain.is_additive if expr_chain is not None else True

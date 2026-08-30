@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Profile AttackGraph.partially_regenerate_graph with cProfile.
 
-Builds a coreLang model with a single Network asset, then grows it by
-repeatedly adding Hardware+Application+Data "units" (one
-`partially_regenerate_graph` call per unit, mirroring how a long-running
-caller would apply incremental model edits), and tears the model back down
-the same way. Only that incremental build/teardown phase is profiled; the
-initial single-asset AttackGraph and language/model setup are not.
+Grows a coreLang model by repeatedly adding/removing Hardware+Application+
+Data units, one partially_regenerate_graph call per unit.
 
 Usage:
     uv run scripts/profile_partial_regeneration.py [--hosts N] [--cycles N] [--output PATH]
