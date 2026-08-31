@@ -2,9 +2,18 @@
 
 import pytest
 
-from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
+from maltoolbox.attackgraph.partially_generate import (
+    affected_root_assets,
+    assoc_affected_expr_chain,
+    correct_node_children_on_modified_assoc,
+    nodes_to_be_removed,
+    switch_fieldname,
+)
+from maltoolbox.exceptions import AttackGraphException
 from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language.expression_chain import ExpressionsChain, ExprType
 from maltoolbox.model import Model
 
 
@@ -712,3 +721,147 @@ def test_partial_regeneration_shared_assoc_sibling() -> None:
     AG.partially_regenerate_graph(new_associations={(a, 'target', t1)})
     regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
     check_graph_equivalence(regenerated_AG, AG)
+
+
+def test_switch_fieldname_unknown_fieldname_raises(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    with pytest.raises(AttackGraphException, match='not found in associations'):
+        switch_fieldname(network, 'doesNotExist')
+
+
+def test_correct_node_children_on_modified_assoc_missing_asset_link_raises(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    lg_attack_step = trainingLang_lang_graph.assets['Network'].attack_steps['access']
+    node = AttackGraphNode(node_id=0, lg_attack_step=lg_attack_step, model_asset=None)
+    with pytest.raises(AttackGraphException, match='missing asset link'):
+        correct_node_children_on_modified_assoc(model, node, {})
+
+
+def test_correct_node_children_on_modified_assoc_missing_target_node_raises(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    host = model.add_asset(asset_type='Host', name='Host0')
+    network.add_associated_assets('hosts', {host})
+    AG = AttackGraph(lang_graph=trainingLang_lang_graph, model=model)
+    access_node = AG.get_node_by_full_name('LAN:access')
+    assert access_node is not None
+
+    # An intentionally incomplete full_name_to_node map: Host0:connect (a
+    # child reachable from LAN:access) is missing from it.
+    with pytest.raises(AttackGraphException, match='Failed to find target node'):
+        correct_node_children_on_modified_assoc(model, access_node, {})
+
+
+def test_nodes_to_be_removed_missing_node_raises(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    with pytest.raises(AttackGraphException, match='Failed to find'):
+        nodes_to_be_removed({network}, {})
+
+
+def test_assoc_affected_expr_chain_default_modified_fieldnames(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    """When modified_fieldnames isn't passed in, it should be derived from
+    affected_assoc_dict."""
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    host = model.add_asset(asset_type='Host', name='Host0')
+    network.add_associated_assets('hosts', {host})
+
+    hosts_assoc = trainingLang_lang_graph.assets['Network'].associations['hosts']
+    field_chain = ExpressionsChain(
+        type=ExprType.FIELD, association=hosts_assoc, fieldname='hosts'
+    )
+    affected_assoc_dict = {network: {'hosts': {host}}}
+
+    assert assoc_affected_expr_chain(model, {network}, affected_assoc_dict, field_chain)
+
+
+def test_assoc_affected_expr_chain_subtype(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    host = model.add_asset(asset_type='Host', name='Host0')
+    network.add_associated_assets('hosts', {host})
+
+    hosts_assoc = trainingLang_lang_graph.assets['Network'].associations['hosts']
+    field_chain = ExpressionsChain(
+        type=ExprType.FIELD, association=hosts_assoc, fieldname='hosts'
+    )
+    subtype_chain = ExpressionsChain(
+        type=ExprType.SUBTYPE,
+        sub_link=field_chain,
+        subtype=trainingLang_lang_graph.assets['Host'],
+    )
+    affected_assoc_dict = {network: {'hosts': {host}}}
+    modified_fieldnames = frozenset({'hosts'})
+
+    assert assoc_affected_expr_chain(
+        model, {network}, affected_assoc_dict, subtype_chain, modified_fieldnames
+    )
+
+
+def test_assoc_affected_expr_chain_transitive(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network1 = model.add_asset(asset_type='Network', name='Network1')
+    network2 = model.add_asset(asset_type='Network', name='Network2')
+    network3 = model.add_asset(asset_type='Network', name='Network3')
+    network1.add_associated_assets('toNetworks', {network2})
+    network2.add_associated_assets('toNetworks', {network3})
+
+    to_networks_assoc = trainingLang_lang_graph.assets['Network'].associations['toNetworks']
+    field_chain = ExpressionsChain(
+        type=ExprType.FIELD, association=to_networks_assoc, fieldname='toNetworks'
+    )
+    transitive_chain = ExpressionsChain(type=ExprType.TRANSITIVE, sub_link=field_chain)
+    modified_fieldnames = frozenset({'toNetworks'})
+
+    # Network2's outgoing toNetworks association changed; reachable from
+    # Network1 two hops deep into the transitive closure.
+    affected_assoc_dict = {network2: {'toNetworks': {network3}}}
+    assert assoc_affected_expr_chain(
+        model, {network1}, affected_assoc_dict, transitive_chain, modified_fieldnames
+    )
+
+    # Network3 is a leaf: nothing changed on any Network reachable from it.
+    assert not assoc_affected_expr_chain(
+        model, {network3}, affected_assoc_dict, transitive_chain, modified_fieldnames
+    )
+
+
+def test_affected_root_assets_subtype(
+    trainingLang_lang_graph: LanguageGraph,
+) -> None:
+    model = Model('Test Model', trainingLang_lang_graph)
+    network = model.add_asset(asset_type='Network', name='LAN')
+    host = model.add_asset(asset_type='Host', name='Host0')
+    network.add_associated_assets('hosts', {host})
+
+    hosts_assoc = trainingLang_lang_graph.assets['Network'].associations['hosts']
+    field_chain = ExpressionsChain(
+        type=ExprType.FIELD, association=hosts_assoc, fieldname='hosts'
+    )
+    subtype_chain = ExpressionsChain(
+        type=ExprType.SUBTYPE,
+        sub_link=field_chain,
+        subtype=trainingLang_lang_graph.assets['Host'],
+    )
+    affected_assoc_dict = {network: {'hosts': {host}}}
+    modified_fieldnames = frozenset({'hosts'})
+
+    assert affected_root_assets(
+        model, affected_assoc_dict, subtype_chain, modified_fieldnames
+    ) == {network}
