@@ -576,56 +576,24 @@ def test_partial_regeneration_transitive() -> None:
     lang_graph = LanguageGraph(MalCompiler().compile('tests/testdata/transitive.mal'))
     model = Model('Test Model', lang_graph)
 
-    a1 = model.add_asset(asset_type='TestAsset', name='TestAsset1')
+    root_a = model.add_asset(asset_type='TestAsset', name='RootTestAsset')
     AG = AttackGraph(lang_graph=lang_graph, model=model)
 
-    a2 = model.add_asset(asset_type='TestAsset', name='TestAsset2')
-    a1.add_associated_assets('field2', {a2})
-    AG.partially_regenerate_graph(new_assets={a2}, new_associations={(a1, 'field2', a2)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
+    for i in range(20):
+        next_a = model.add_asset(asset_type='TestAsset', name=f'TestAsset:{i}')
+        root_a.add_associated_assets('field2', {next_a})
+        AG.partially_regenerate_graph(new_assets={next_a}, new_associations={(root_a, 'field2', next_a)})
+        regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+        check_graph_equivalence(regenerated_AG, AG)
+        root_a = next_a
 
-    a3 = model.add_asset(asset_type='TestAsset', name='TestAsset3')
-    a2.add_associated_assets('field2', {a3})
-    AG.partially_regenerate_graph(new_assets={a3}, new_associations={(a2, 'field2', a3)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
-
-    a4 = model.add_asset(asset_type='TestAsset', name='TestAsset4')
-    a3.add_associated_assets('field2', {a4})
-    AG.partially_regenerate_graph(new_assets={a4}, new_associations={(a3, 'field2', a4)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
-
-    # Fork the transitive closure off TestAsset2.
-    a5 = model.add_asset(asset_type='TestAsset', name='TestAsset5')
-    a2.add_associated_assets('field2', {a5})
-    AG.partially_regenerate_graph(new_assets={a5}, new_associations={(a2, 'field2', a5)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
-
-    # Deepest association: 3 hops from TestAsset1 to TestAsset4.
-    a3.remove_associated_assets('field2', {a4})
-    AG.partially_regenerate_graph(removed_associations={(a3, 'field2', a4)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
-
-    a3.add_associated_assets('field2', {a4})
-    AG.partially_regenerate_graph(new_associations={(a3, 'field2', a4)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
-
-    # Mid-chain association: cuts TestAsset3/4 out of the closure entirely.
-    a2.remove_associated_assets('field2', {a3})
-    AG.partially_regenerate_graph(removed_associations={(a2, 'field2', a3)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
-
-    a2.add_associated_assets('field2', {a3})
-    AG.partially_regenerate_graph(new_associations={(a2, 'field2', a3)})
-    regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
-    check_graph_equivalence(regenerated_AG, AG)
-
+    for i in reversed(range(0, 20, 2)):
+        child_a = model.get_asset_by_name(f'TestAsset:{i}')
+        parent_a = next(iter(child_a.associated_assets['field1']))
+        parent_a.remove_associated_assets('field2', {child_a})
+        AG.partially_regenerate_graph(removed_associations={(parent_a, 'field2', child_a)})
+        regenerated_AG = AttackGraph(lang_graph=lang_graph, model=model)
+        check_graph_equivalence(regenerated_AG, AG)
 
 def test_partial_regeneration_set_ops_adv() -> None:
     """Tests partial regeneration for steps whose chain nests an
