@@ -191,15 +191,32 @@ def assoc_affected_expr_chain(
     else:
         raise ValueError(f"Unknown expression chain type: {expr_chain.type}")
 
-def affected_root_assets(
+def assoc_left_assets(
     model: Model,
     affected_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]],
     expr_chain: ExpressionsChain | None,
     modified_fieldnames: frozenset[str],
 ) -> set[ModelAsset]:
-    """Return every asset, at expr_chain's root type, that reaches a
-    modified association when evaluating expr_chain forward. Walks backward
-    from the change instead of testing each candidate asset."""
+    """Return every left asset from modified associations,
+    based on if the expression chain reaches the association.
+    
+    Only valid for additive chains, whose results union across assets.
+
+    Arguments:
+    ---------
+    model                   - the model the assets belong to
+    affected_assoc_dict     - per-asset, per-fieldname sets of associated
+                              assets that were modified (added or removed)
+    expr_chain              - the expressions chain to walk backward from
+    modified_fieldnames     - every fieldname appearing anywhere in
+                              affected_assoc_dict, used to skip sub-chains
+                              that can't have been affected
+
+    Return:
+    ------
+    The set of left assets, from which the expression chain reaches a modified association.
+
+    """
     if expr_chain is None or not (expr_chain.fieldnames & modified_fieldnames):
         return set()
 
@@ -214,24 +231,24 @@ def affected_root_assets(
         }
     elif expr_chain.type in (ExprType.UNION, ExprType.INTERSECTION, ExprType.DIFFERENCE):
         return (
-            affected_root_assets(model, affected_assoc_dict, expr_chain.left_link, modified_fieldnames)
-            | affected_root_assets(model, affected_assoc_dict, expr_chain.right_link, modified_fieldnames)
+            assoc_left_assets(model, affected_assoc_dict, expr_chain.left_link, modified_fieldnames)
+            | assoc_left_assets(model, affected_assoc_dict, expr_chain.right_link, modified_fieldnames)
         )
     elif expr_chain.type == ExprType.COLLECT:
         roots: set[ModelAsset] = set()
         if chain_fieldnames(expr_chain.left_link) & modified_fieldnames:
-            roots |= affected_root_assets(model, affected_assoc_dict, expr_chain.left_link, modified_fieldnames)
+            roots |= assoc_left_assets(model, affected_assoc_dict, expr_chain.left_link, modified_fieldnames)
         if chain_fieldnames(expr_chain.right_link) & modified_fieldnames:
-            right_roots = affected_root_assets(model, affected_assoc_dict, expr_chain.right_link, modified_fieldnames)
+            right_roots = assoc_left_assets(model, affected_assoc_dict, expr_chain.right_link, modified_fieldnames)
             if right_roots:
                 reverse_left = model.lang_graph.reverse_expr_chain(expr_chain.left_link, None)
                 roots |= follow_expr_chain(model, set(right_roots), reverse_left)
         return roots
     elif expr_chain.type == ExprType.SUBTYPE:
-        return affected_root_assets(model, affected_assoc_dict, expr_chain.sub_link, modified_fieldnames)
+        return assoc_left_assets(model, affected_assoc_dict, expr_chain.sub_link, modified_fieldnames)
     elif expr_chain.type == ExprType.TRANSITIVE:
         assert expr_chain.sub_link is not None, "Sub link should not be None for TRANSITIVE type"
-        seed_roots = affected_root_assets(model, affected_assoc_dict, expr_chain.sub_link, modified_fieldnames)
+        seed_roots = assoc_left_assets(model, affected_assoc_dict, expr_chain.sub_link, modified_fieldnames)
         reverse_sub = model.lang_graph.reverse_expr_chain(expr_chain.sub_link, None)
         roots = set(seed_roots)
         frontier = set(seed_roots)
@@ -265,7 +282,7 @@ def assoc_affected_nodes(model: Model, affected_assoc_dict: dict[ModelAsset, dic
                 if expr_chain is None:
                     continue
                 if expr_chain.is_additive:
-                    affected_assets |= affected_root_assets(
+                    affected_assets |= assoc_left_assets(
                         model, affected_assoc_dict, expr_chain, modified_fieldnames
                     )
                     continue

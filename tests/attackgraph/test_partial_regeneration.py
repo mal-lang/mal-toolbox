@@ -4,8 +4,8 @@ import pytest
 
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode
 from maltoolbox.attackgraph.partially_generate import (
-    affected_root_assets,
     assoc_affected_expr_chain,
+    assoc_left_assets,
     correct_node_children_on_modified_assoc,
     nodes_to_be_removed,
     switch_fieldname,
@@ -863,6 +863,6 @@ def test_affected_root_assets_subtype(
     affected_assoc_dict = {network: {'hosts': {host}}}
     modified_fieldnames = frozenset({'hosts'})
 
-    assert affected_root_assets(
+    assert assoc_left_assets(
         model, affected_assoc_dict, subtype_chain, modified_fieldnames
     ) == {network}
