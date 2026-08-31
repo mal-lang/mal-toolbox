@@ -598,6 +598,7 @@ def test_partial_regeneration_transitive() -> None:
 
     for i in reversed(range(0, 20, 2)):
         child_a = model.get_asset_by_name(f'TestAsset:{i}')
+        assert child_a, f"Could not find asset TestAsset:{i}"
         parent_a = next(iter(child_a.associated_assets['field1']))
         parent_a.remove_associated_assets('field2', {child_a})
         AG.partially_regenerate_graph(removed_associations={(parent_a, 'field2', child_a)})
