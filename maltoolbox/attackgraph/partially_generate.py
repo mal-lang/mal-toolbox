@@ -191,20 +191,113 @@ def assoc_affected_expr_chain(
     else:
         raise ValueError(f"Unknown expression chain type: {expr_chain.type}")
 
+def assoc_left_assets(
+    model: Model,
+    affected_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]],
+    expr_chain: ExpressionsChain | None,
+    modified_fieldnames: frozenset[str],
+) -> set[ModelAsset]:
+    """Return every left asset from modified associations,
+    based on if the expression chain reaches the association.
+    
+    Only valid for additive chains, whose results union across assets.
+
+    Arguments:
+    ---------
+    model                   - the model the assets belong to
+    affected_assoc_dict     - per-asset, per-fieldname sets of associated
+                              assets that were modified (added or removed)
+    expr_chain              - the expressions chain to walk backward from
+    modified_fieldnames     - every fieldname appearing anywhere in
+                              affected_assoc_dict, used to skip sub-chains
+                              that can't have been affected
+
+    Return:
+    ------
+    The set of left assets, from which the expression chain reaches a modified association.
+
+    """
+    if expr_chain is None or not (expr_chain.fieldnames & modified_fieldnames):
+        return set()
+
+    if expr_chain.type == ExprType.FIELD:
+        assert expr_chain.fieldname is not None, "Fieldname should not be None for FIELD type"
+        # Fieldname strings aren't unique across associations, so also match
+        # on the association to avoid an unrelated field of the same name.
+        return {
+            asset for asset, fields in affected_assoc_dict.items()
+            if expr_chain.fieldname in fields
+            and asset.lg_asset.associations.get(expr_chain.fieldname) == expr_chain.association
+        }
+    elif expr_chain.type in (ExprType.UNION, ExprType.INTERSECTION, ExprType.DIFFERENCE):
+        return (
+            assoc_left_assets(model, affected_assoc_dict, expr_chain.left_link, modified_fieldnames)
+            | assoc_left_assets(model, affected_assoc_dict, expr_chain.right_link, modified_fieldnames)
+        )
+    elif expr_chain.type == ExprType.COLLECT:
+        roots: set[ModelAsset] = set()
+        if chain_fieldnames(expr_chain.left_link) & modified_fieldnames:
+            roots |= assoc_left_assets(model, affected_assoc_dict, expr_chain.left_link, modified_fieldnames)
+        if chain_fieldnames(expr_chain.right_link) & modified_fieldnames:
+            right_roots = assoc_left_assets(model, affected_assoc_dict, expr_chain.right_link, modified_fieldnames)
+            if right_roots:
+                reverse_left = model.lang_graph.reverse_expr_chain(expr_chain.left_link, None)
+                roots |= follow_expr_chain(model, set(right_roots), reverse_left)
+        return roots
+    elif expr_chain.type == ExprType.SUBTYPE:
+        return assoc_left_assets(model, affected_assoc_dict, expr_chain.sub_link, modified_fieldnames)
+    elif expr_chain.type == ExprType.TRANSITIVE:
+        assert expr_chain.sub_link is not None, "Sub link should not be None for TRANSITIVE type"
+        seed_roots = assoc_left_assets(model, affected_assoc_dict, expr_chain.sub_link, modified_fieldnames)
+        reverse_sub = model.lang_graph.reverse_expr_chain(expr_chain.sub_link, None)
+        roots = set(seed_roots)
+        frontier = set(seed_roots)
+        while frontier:
+            frontier = follow_expr_chain(model, frontier, reverse_sub) - roots
+            roots |= frontier
+        return roots
+    else:
+        raise ValueError(f"Unknown expression chain type: {expr_chain.type}")
+
 def assoc_affected_nodes(model: Model, affected_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]], full_name_to_node: dict[str, AttackGraphNode]) -> set[AttackGraphNode]:
     """Return every attack graph node whose children are reached via an
     association that was added or removed."""
     modified_fieldnames = frozenset(
         fieldname for fields in affected_assoc_dict.values() for fieldname in fields
     )
+
+    candidate_steps: set[tuple[str, str]] = set()
+    for fieldname in modified_fieldnames:
+        candidate_steps |= model.lang_graph.fieldname_to_candidate_steps.get(fieldname, set())
+
+    # Built lazily, only for non-additive chains.
+    assets_by_type: dict[str, list[ModelAsset]] | None = None
+
     ret_nodes = set()
-    for asset in model.assets.values():
-        for node_name, lg_node in asset.lg_asset.attack_steps.items():
-            for expr_chains in lg_node.children.values():
-                if any(
-                    assoc_affected_expr_chain(model, {asset}, affected_assoc_dict, expr_chain, modified_fieldnames)
-                    for expr_chain in expr_chains
-                ):
-                    ret_nodes.add(full_name_to_node[f'{asset.name}:{node_name}'])
-                    break
+    for asset_type, step_name in candidate_steps:
+        lg_step = model.lang_graph.assets[asset_type].attack_steps[step_name]
+        affected_assets: set[ModelAsset] = set()
+        for expr_chains in lg_step.children.values():
+            for expr_chain in expr_chains:
+                if expr_chain is None:
+                    continue
+                if expr_chain.is_additive:
+                    affected_assets |= assoc_left_assets(
+                        model, affected_assoc_dict, expr_chain, modified_fieldnames
+                    )
+                    continue
+                if assets_by_type is None:
+                    assets_by_type = {}
+                    for asset in model.assets.values():
+                        assets_by_type.setdefault(asset.type, []).append(asset)
+                for asset in assets_by_type.get(asset_type, []):
+                    if assoc_affected_expr_chain(model, {asset}, affected_assoc_dict, expr_chain, modified_fieldnames):
+                        affected_assets.add(asset)
+        for asset in affected_assets:
+            # A shared association can be inherited by sibling types that
+            # don't all define step_name themselves (e.g. two subtypes of
+            # the same abstract asset), so re-check before the lookup.
+            if step_name not in asset.lg_asset.attack_steps:
+                continue
+            ret_nodes.add(full_name_to_node[f'{asset.name}:{step_name}'])
     return ret_nodes

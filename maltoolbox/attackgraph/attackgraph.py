@@ -162,6 +162,7 @@ class AttackGraph:
                 self.full_name_to_node,
                 self.detectors,
             ) = generate_graph(self.model)
+            self.next_node_id = max((self.nodes or {}).keys(), default=-1) + 1
 
     def __repr__(self) -> str:
         return (
@@ -246,6 +247,7 @@ class AttackGraph:
             self.full_name_to_node,
             self.detectors,
         ) = generate_graph(self.model)
+        self.next_node_id = max(self.nodes.keys(), default=-1) + 1
 
     def partially_regenerate_graph(
         self,
@@ -285,12 +287,17 @@ class AttackGraph:
             created_attack_steps,
             created_defense_steps,
             full_name_to_created_nodes,
-        ) = create_nodes_from_assets(new_assets, max(self.nodes.keys()) + 1, self.model)
+        ) = create_nodes_from_assets(new_assets, self.next_node_id, self.model)
+
+        self.nodes.update(id_to_created_nodes)
+        self.attack_steps.extend(created_attack_steps)
+        self.defense_steps.extend(created_defense_steps)
+        self.full_name_to_node.update(full_name_to_created_nodes)
+        self.next_node_id += len(id_to_created_nodes)
 
         # Do full linking of children for steps of newly created assets
-        all_full_name_to_nodes = full_name_to_created_nodes | self.full_name_to_node
         for ag_node in full_name_to_created_nodes.values():
-            link_node_children(self.model, ag_node, all_full_name_to_nodes)
+            link_node_children(self.model, ag_node, self.full_name_to_node)
 
         removed_assoc_dict: dict[ModelAsset, dict[str, set[ModelAsset]]] = {}
         for left_asset, fieldname, right_asset in removed_associations:
@@ -312,19 +319,15 @@ class AttackGraph:
                 dest_fields = affected_assoc_dict.setdefault(asset, {})
                 for fieldname, assets in fields.items():
                     dest_fields.setdefault(fieldname, set()).update(assets)
-        nodes_of_modified_assoc = assoc_affected_nodes(self.model, affected_assoc_dict, all_full_name_to_nodes)
+        nodes_of_modified_assoc = assoc_affected_nodes(self.model, affected_assoc_dict, self.full_name_to_node)
         for ag_node in nodes_of_modified_assoc:
             assert ag_node.model_asset is not None, "Attack graph must have access to the model to do partial regeneration."
             correct_node_children_on_modified_assoc(
                 self.model,
                 ag_node,
-                full_name_to_created_nodes | self.full_name_to_node,
+                self.full_name_to_node,
             )
 
-        self.nodes.update(id_to_created_nodes)
-        self.attack_steps.extend(created_attack_steps)
-        self.defense_steps.extend(created_defense_steps)
-        self.full_name_to_node.update(full_name_to_created_nodes)
         new_detectors = _create_detectors(full_name_to_created_nodes, self.model)
         self.detectors.extend(new_detectors)
 

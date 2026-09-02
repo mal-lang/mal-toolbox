@@ -1,0 +1,24 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset Origin {
+    | check
+      -> (setA - setB).next.reach
+  }
+
+  asset Node {
+    | reach
+  }
+
+  asset Target {
+    | reach
+  }
+}
+
+associations {
+  Origin [inSetA] * <-- HasSetA --> * [setA] Node
+  Origin [inSetB] * <-- HasSetB --> * [setB] Node
+  Node   [nodeOf] * <-- HasNext --> * [next] Target
+}

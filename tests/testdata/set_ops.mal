@@ -3,21 +3,21 @@
 #version: "0.0.0"
 
 category Test{
-  asset SO_A {
-    | originStep
-      -> (fieldB1 \/ fieldB2).unionStep,
-         (fieldB1 /\ fieldB2).intersectionStep,
-         (fieldB1 - fieldB2).differenceStep
+  asset Origin {
+    | check
+      -> (setA \/ setB).unionResult,
+         (setA /\ setB).intersectionResult,
+         (setA - setB).differenceResult
   }
 
-  asset SO_B {
-    | unionStep
-    | intersectionStep
-    | differenceStep
+  asset Target {
+    | unionResult
+    | intersectionResult
+    | differenceResult
   }
 }
 
 associations {
-  SO_A [fieldA1] * <-- SetOps1 --> * [fieldB1] SO_B
-  SO_A [fieldA2] * <-- SetOps2 --> * [fieldB2] SO_B
+  Origin [inSetA] * <-- HasSetA --> * [setA] Target
+  Origin [inSetB] * <-- HasSetB --> * [setB] Target
 }
