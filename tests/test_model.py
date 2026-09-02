@@ -3,6 +3,7 @@
 import pytest
 from conftest import path_testdata
 
+from maltoolbox.language.languagegraph import LanguageGraph
 from maltoolbox.model import Model, ModelAsset
 
 # Helper functions
@@ -389,3 +390,42 @@ def test_model_load_and_save_example_model(model):
     new_model = Model.load_from_file('/tmp/test.yml', model.lang_graph)
 
     assert new_model._to_dict() == model._to_dict()
+
+
+def test_dynamic_model():
+    """Test that a model in a language using DynaMAL grammar"""
+
+    lang = LanguageGraph.from_mal_spec('tests/testdata/wiperLang.mal')
+    model = Model(name='Example Model', lang_graph=lang)
+
+    c2server = model.add_asset(asset_type='C2Server', name='C2Server', asset_id=2)
+    infected_device = model.add_asset(
+        asset_type='Device', name='InfectedDevice', asset_id=3
+    )
+    c2server.add_associated_assets(fieldname='receiveFrom', assets={infected_device})
+
+    data = model.add_asset(asset_type='Data', name='InfectedData', asset_id=4)
+    infected_device.add_associated_assets(fieldname='data', assets={data})
+
+    malware = model.add_asset(asset_type='Wiper', name='Wiper', asset_id=5)
+    malware.add_associated_assets(fieldname='victim', assets={infected_device})
+
+    vulnerable_device = model.add_asset(
+        asset_type='Device', name='VulnerableDevice', asset_id=6
+    )
+    vulnerable_device.add_associated_assets(
+        fieldname='receiveFrom', assets={infected_device}
+    )
+    vulnerable_device.add_associated_assets(
+        fieldname='sendTo', assets={infected_device}
+    )
+
+    internet = model.add_asset(asset_type='Internet', name='Internet', asset_id=1)
+    internet.add_associated_assets(
+        fieldname='hosts', assets={c2server, infected_device, vulnerable_device}
+    )
+
+    model.save_to_file('/tmp/test.yml')
+    loaded_model = Model.load_from_file('/tmp/test.yml', lang_graph=lang)
+
+    assert loaded_model._to_dict() == model._to_dict()

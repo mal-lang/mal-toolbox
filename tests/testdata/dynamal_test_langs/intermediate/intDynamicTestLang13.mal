@@ -1,0 +1,256 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang13"
+#version: "0.1.0"
+category intDynamicTestLang13 {
+	asset Directory {
+		// Use at own risk
+		| testAll
+			-> moveTopToBottom,
+			moveTopToNothing,
+			moveTopToAll,
+			addTopToBottomLeft,
+			removeTopToBottomLeft,
+			addTopToBottomRight,
+			removeTopToBottomRight,
+			moveBackAndForth,
+			moveMiddleToBottom,
+			moveTopThenBottom,
+			moveMiddleToAll,
+			moveMiddleToAllAlternate,
+			addMiddleToTopLeft,
+			addMiddleToBottomLeft,
+			addMiddleToTopRight,
+			addMiddleToBottomRight,
+			removeMiddleToTopLeft,
+			removeMiddleToBottomLeft,
+			removeMiddleToTopRight,
+			removeMiddleToBottomRight,
+			addMiddleToAll,
+			removeMiddleToAll,
+			moveBottomToTop,
+			moveBottomToAll,
+			moveBottomToNothing,
+			addBottomToNothing,
+			addBottomToTopLeft,
+			addBottomToTopRight,
+			addBottomToAll,
+			removeBottomToNothingLeft,
+			removeBottomToNothingRight,
+			removeBottomToTopLeft,
+			removeBottomToTopRight,
+			removeBottomToAll
+
+
+		// Use on top directories
+		| testTop
+			-> moveTopToBottom,
+			moveTopToNothing,
+			moveTopToAll,
+			addTopToBottomLeft,
+			removeTopToBottomLeft,
+			addTopToBottomRight,
+			removeTopToBottomRight,
+			moveBackAndForth
+	
+
+		// Use on middle directories
+		| testMiddle
+			-> addMiddleToTopLeft,
+			addMiddleToBottomLeft,
+			addMiddleToTopRight,
+			addMiddleToBottomRight,
+			removeMiddleToTopLeft,
+			removeMiddleToBottomLeft,
+			removeMiddleToTopRight,
+			removeMiddleToBottomRight,
+			addMiddleToAll,
+			removeMiddleToAll
+	
+
+		// Use on bottom directories
+		| testBottom
+			-> moveBottomToTop,
+			moveTopThenBottom,
+			moveBottomToAll,
+			moveBottomToNothing,
+			addBottomToNothing,
+			addBottomToTopLeft,
+			addBottomToTopRight,
+			addBottomToAll,
+			removeBottomToNothingLeft,
+			removeBottomToNothingRight,
+			removeBottomToTopLeft,
+			removeBottomToTopRight,
+			removeBottomToAll
+
+
+
+	//**********************************************************
+
+		// Tests from the top
+
+		// {middle, bottom} -> reached
+		| moveTopToBottom
+			-> sub*.files.reached
+
+		// Empty set
+		| moveTopToNothing
+			-> super*.files.reached
+
+		// Joins {Top} and {middle, bottom}
+		| moveTopToAll
+			-> (files \/ sub*.files).reached
+
+		// Add from {middle, bottom}, LH
+		| addTopToBottomLeft
+			A> sub* / files
+
+		// Remove from {middle, bottom}, LH
+		| removeTopToBottomLeft
+			R> sub*.files / self
+
+		// Add to {middle, bottom}, RH
+		| addTopToBottomRight
+			A> self / sub*.files
+
+		// Remove from {middle, bottom}, RH
+		| removeTopToBottomRight
+			R> self / sub*.files
+
+	  // {middle, bottom} -> {middle, top} -> {middle, bottom} -> reached
+		| moveBackAndForth
+			-> sub*.super*.sub*.files.reached
+
+
+		// Tests from the middle
+
+		// {bottom} -> reached
+		| moveMiddleToBottom
+			-> sub*.files.reached
+
+	
+
+		// Joins {middle}, {top}, and {bottom}
+		| moveMiddleToAll
+			-> (files \/ super*.files \/ sub*.files).reached
+
+		// Joins {top} and {middle, bottom}
+		| moveMiddleToAllAlternate
+			-> (super* \/ super*.sub*).files.reached
+
+		// {top}
+		| addMiddleToTopLeft
+			A> super* / files
+
+		// {bottom}
+		| addMiddleToBottomLeft
+			A> sub* / files
+
+		// {top}
+		| addMiddleToTopRight
+			A> self / super*.files
+
+		// {bottom}
+		| addMiddleToBottomRight
+			A> self / super*.files
+
+		// {top}
+		| removeMiddleToTopLeft
+			R> super*.files / self
+
+		// {bottom}
+		| removeMiddleToBottomLeft
+			R> sub*.files / self
+
+		// {top}
+		| removeMiddleToTopRight
+			R> self / super*.files
+
+		// {top}
+		| removeMiddleToBottomRight
+			R> self / sub*.files
+
+		// {top} and {middle, bottom}
+		| addMiddleToAll
+			A> (super* \/ super*.sub*) / files
+
+		// {top} and {middle, bottom}
+		| removeMiddleToAll
+			R> (super* \/ super*.sub*) / files
+
+
+
+		// Test from the bottom
+
+		// {middle, top} -> reached
+		| moveBottomToTop
+			-> super*.files.reached
+
+		// {middle, top} -> {middle, bottom}
+		| moveTopThenBottom
+			-> super*.sub*.files.reached
+
+		// Joins {bottom}, {middle, top}, and {middle, bottom}
+		| moveBottomToAll
+			-> (files \/ super*.files \/ super*.sub*.files).reached
+
+		// Empty set
+		| moveBottomToNothing
+			-> sub*.files.reached
+
+		// Empty set
+		| addBottomToNothing
+			A> sub* / files
+
+		// {middle, top}
+		| addBottomToTopLeft
+			A> super* / files
+	
+	
+
+		// {middle, top}
+		| addBottomToTopRight
+			A> self / super*.files
+
+		// {middle, top} and {middle, bottom}
+		| addBottomToAll
+			A> (super* \/ super*.sub*) / files
+
+		// Empty set
+		| removeBottomToNothingLeft
+			R> sub*.files / self
+
+		// Empty set
+		| removeBottomToNothingRight
+			R> self / sub*.files
+
+		// {middle, top}
+		| removeBottomToTopLeft
+			R> super*.files / self
+
+		// {middle, top}
+		| removeBottomToTopRight
+			R> self / super*.files
+
+		// {middle, top} and {middle, bottom}
+		| removeBottomToAll
+			R> (super* \/ super*.sub*) / files
+	}
+
+	asset File {
+		| reached
+
+	}
+
+
+}
+
+associations {
+	Directory [super] 1 <-- nesting --> * [sub] Directory
+	Directory [dirs] * <-- contain --> * [files] File
+}

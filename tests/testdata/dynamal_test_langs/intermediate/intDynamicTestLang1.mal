@@ -1,0 +1,32 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang1"
+#version: "0.0.1"
+
+category Business {
+	asset Apples {
+		| access
+			-> plantBadApple
+
+		| plantBadApple
+			A> self / badApple
+			-> badApple.apples.spoil
+
+		| spoil
+	}
+
+	asset BadApple 
+	user info: "One bad apple spoils the bunch!"
+	{
+
+	}
+}
+
+associations {
+	Apples [apples] 1 <-- spoiledBy --> 0..1 [badApple] BadApple
+
+}

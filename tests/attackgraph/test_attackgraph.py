@@ -10,8 +10,9 @@ from conftest import path_testdata
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
 from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language.language_graph_assoc import LanguageGraphAssociationField
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
-from maltoolbox.model import Model
+from maltoolbox.model import Model, ModelAsset
 
 
 def test_attackgraph_init(corelang_lang_graph, model):
@@ -737,6 +738,68 @@ def tests_create_ag_step_lists():
     attacks = [n for n in created_ag.nodes.values() if n.type in ('or', 'and')]
     assert defenses == created_ag.defense_steps
     assert attacks == created_ag.attack_steps
+
+
+def test_create_dynamic_ag():
+    """Create an attack graph from a model in a language using DynaMAL grammar."""
+
+    lang = LanguageGraph.from_mal_spec("tests/testdata/wiperLang.mal")
+    model = Model.load_from_file("tests/testdata/wiper_model.yml", lang)
+    AG = AttackGraph(lang_graph=lang, model=model)
+
+    wiper_test = AG.get_node_by_full_name("Wiper:test")
+    for model_effect in wiper_test.additive_model_effects:
+        assert len(model_effect.base) == 1, "Too many assoc traversal for base in dynamic statement"
+        assert model_effect.base[0].field_name == "self", "Base field name is not correct for dynamic statement"
+        for dyn_target in model_effect.targets:
+            assert not dyn_target.assoc_op, "Dynamic target should not operate on associations"
+            assert len(dyn_target.assoc_traversal) == 1, "Dynamic target should have exactly one assoc traversal"
+            assert dyn_target.assoc_traversal[0].field_name == "victim", "Dynamic target assoc traversal field name is not correct"
+            assert dyn_target.assoc_traversal[0].asset_filter.name in ("C2Server", "Device")
+
+    # Imagine we compromise Wiper:test
+    def get_lg_assoc_field(asset: ModelAsset, field_name: str) -> LanguageGraphAssociationField:
+        assoc = asset.lg_asset.associations[field_name]
+        if assoc.left_field == field_name:
+            return assoc.right_field
+        else:
+            return assoc.left_field
+    for model_effect in wiper_test.additive_model_effects:
+        base_assets = {wiper_test.model_asset}
+        for assoc_traversal in model_effect.base:
+            if assoc_traversal.field_name == "self":
+                assert base_assets == {wiper_test.model_asset}
+                continue
+        for dyn_target in model_effect.targets:
+            target_assets = copy.copy(base_assets)
+            for traversal_index in range(len(dyn_target.assoc_traversal)-1):
+                assoc_traversal = dyn_target.assoc_traversal[traversal_index]
+                if assoc_traversal.field_name == "self":
+                    target_assets = {wiper_test.model_asset}
+                else:
+                    new_target_assets = set()
+                    for asset in target_assets:
+                        new_target_assets.update(asset.associated_assets[assoc_traversal.field_name])
+                    target_assets = new_target_assets
+            if dyn_target.assoc_op:
+                pass
+            else:
+                terminating_assoc_traversal = dyn_target.assoc_traversal[-1]
+                for asset in target_assets:
+                    add_assoc_field = get_lg_assoc_field(asset, terminating_assoc_traversal.field_name)
+                    added_asset = model.add_asset(
+                        asset_type=add_assoc_field.asset.name, 
+                        name=f"{add_assoc_field.fieldname}_{len(model.assets)}",
+                    )
+                    try:
+                        asset.add_associated_assets(add_assoc_field.fieldname, {added_asset})
+                    except ValueError as exception:
+                        assert exception.args[0] == 'You can have maximum 1 assets for association field victim'
+
+        AG.regenerate_graph()
+
+
+
 
 
 def test_attackgraph_pickle(corelang_lang_graph, model):

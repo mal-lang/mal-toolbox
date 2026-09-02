@@ -34,6 +34,8 @@ class ExprType(str, Enum):
     FIELD = 'field'
     TRANSITIVE = 'transitive'
     SUBTYPE = 'subType'
+    ASSOC_OP = 'assoc_op'
+    MULTIPLICITY = 'multiplicity'
 
     def is_binary(self) -> bool:
         return self in {
@@ -57,6 +59,7 @@ class ExpressionsChain:
     fieldname: str | None = None
     association: LanguageGraphAssociation | None = None
     subtype: Any | None = None
+    multiplicity: Any | None = None
 
     def __post_init__(self) -> None:
         self._validate()
@@ -73,6 +76,9 @@ class ExpressionsChain:
 
         if self.type == ExprType.SUBTYPE and (not self.sub_link or not self.subtype):
             raise ValueError('SUBTYPE requires sub_link and subtype')
+            
+        if self.type == ExprType.ASSOC_OP and  (not self.sub_link):
+            raise ValueError("ASSOC_OP requires sub_link")
 
     @cached_property
     def fieldnames(self) -> frozenset[str]:
@@ -113,6 +119,9 @@ class ExpressionsChain:
 
         if self.type == ExprType.SUBTYPE:
             return self._subtype_to_dict()
+        
+        if self.type == ExprType.ASSOC_OP:
+            return self._assoc_op_to_dict()
 
         raise LanguageGraphAssociationError(
             f'Unknown expressions chain element {self.type}'
@@ -142,6 +151,13 @@ class ExpressionsChain:
             'expression': self.sub_link.to_dict(),
             'type': self.type.value,
         }
+    
+    def _assoc_op_to_dict(self) -> dict:
+        assert self.sub_link, "ASSOC_OP expression requires sub_link"
+        return {
+                "operand": self.sub_link.to_dict(),
+                "type": self.type.value
+            }
 
     def _field_to_dict(self) -> dict:
         asset_type = self._resolve_field_asset_type()

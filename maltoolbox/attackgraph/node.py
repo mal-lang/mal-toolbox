@@ -31,6 +31,8 @@ class AttackGraphNode:
         self.causal_mode = self.lg_attack_step.causal_mode
         self.ttc = ttc_dist if ttc_dist is not None else lg_attack_step.ttc
         self.tags = lg_attack_step.tags
+        self.additive_model_effects = lg_attack_step.additive_model_effects if len(lg_attack_step.additive_model_effects) > 0 else None
+        self.subtractive_model_effects = lg_attack_step.subtractive_model_effects if len(lg_attack_step.subtractive_model_effects) > 0 else None
 
         self._full_name = full_name
         self.id = node_id
