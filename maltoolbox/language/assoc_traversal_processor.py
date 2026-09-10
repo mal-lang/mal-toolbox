@@ -116,9 +116,12 @@ def _resolve_terminal_traversal(
                 terminal_resolves.add((asset, last.field_name, step.asset))
                 continue
             try:
-                candidate_asset = (
-                    asset.associations[last.field_name].get_field(last.field_name).asset
-                )
+                if last.asset_filter is not None:
+                    candidate_asset = last.asset_filter
+                else:
+                    candidate_asset = (
+                        asset.associations[last.field_name].get_field(last.field_name).asset
+                    )
                 terminal_resolves.add((asset, last.field_name, candidate_asset))
             except KeyError:
                 raise malAnalyzerException(
