@@ -1,0 +1,36 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang2"
+#version: "0.0.1"
+
+category Business {
+	asset AccessPolicy {}
+
+	asset Banana {}
+
+	asset BananaStorage {
+		| access
+			-> pilfer
+		| pilfer
+			R> self / goods
+	}
+
+	asset Monkey {
+		let allowedAccess = (storage /\ allowPolicies.facilities)
+		| attemptTheft
+			-> allowedAccess().access
+		| rewritePolicy
+			A> self / ~storage.policy.allowedEmployees
+	}
+}
+
+associations {
+	Monkey [agent] * <-- Access --> * [storage] BananaStorage
+	BananaStorage [facilities] * <-- Govern --> 1 [policy] AccessPolicy
+	AccessPolicy [allowPolicies] * <-- Control --> * [allowedEmployees] Monkey
+	BananaStorage [container] 1 <-- Contain --> * [goods] Banana
+}

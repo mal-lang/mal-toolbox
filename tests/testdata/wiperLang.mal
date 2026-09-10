@@ -1,0 +1,58 @@
+/**
+ * @file wiperLang.mal
+ * @brief WiperLang example model
+ * @author Viktor Engström
+
+ source: https://doi.org/10.1145/3664476.3664508
+**/
+
+
+#id: "org.mal-lang.wiperLang"
+#version: "1.0.0"
+
+category WiperLang {
+	asset Internet {}
+	abstract asset Host {}
+	asset C2Server extends Host {}
+	asset Device extends Host {
+		| infect
+			A> self / malware[Wiper]   // Add Malware vertex
+			-> malware.activate
+	}
+
+	abstract asset Malware {
+		| activate
+			-> trigger
+
+		| trigger
+
+		| test
+			A> self / victim[Device]
+	}
+
+	asset Wiper extends Malware {
+		| activate
+			+> exfiltrate, propagate
+		| exfiltrate
+			A> victim.data /                       // Link data
+			~victim.inet.hosts[C2Server].data // to C2
+		| propagate
+			A> victim.sendTo / malware[Wiper]
+			-> victim.sendTo.malware[Wiper].activate
+		| trigger
+			R> victim / malware ^ ~data
+			// Retain victim, then self-destruct + wipe
+
+		| test
+			+A> self / victim[C2Server]
+	}
+
+	asset Data {}
+}
+
+associations {
+	Internet [inet] 1 <-- contains --> * [hosts] Host
+	Host [receiveFrom] * <-- neighbor --> * [sendTo] Host
+	Host [node] 1 <-- store --> * [data] Data
+	Host [victim] 1 <-- infect --> * [malware] Malware
+}

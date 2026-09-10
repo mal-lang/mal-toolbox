@@ -1,0 +1,425 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang12"
+#version: "0.1.0"
+category intDynamicTestLang12 {
+	asset Table {
+		| access
+			-> testNodeAdditions,
+			testNodeRemovals,
+			testLinkAdditions,
+			testLinkRemovals,
+			testCaretOperations,
+			testEmptySetCases
+
+		| testNodeAdditions
+			-> testAddLeftUnionTwo,
+			testAddLeftUnionThree,
+			testLeftUnionAddFour,
+			testLeftUnionAddThreeLeftNested,
+			testLeftUnionAddFourLeftNested,
+			testLeftUnionAddThreeRightNested,
+			testLeftUnionAddFourRightNested,
+			testRightUnionAddTwo,
+			testRightUnionAddThree,
+			testRightUnionAddFour,
+			testRightUnionAddThreeLeftNested,
+			testRightUnionAddFourLeftNested,
+			testDoubleUnionAddTwo,
+			testDoubleUnionAddThree,
+			testDoubleUnionAddFour
+
+		| testLinkAdditions
+			-> testLinkLeftUnionTwo,
+			testLinkLeftUnionThree,
+			testLinkLeftUnionFour,
+			testLinkLeftUnionThreeLeftNested,
+			testLinkLeftUnionFourLeftNested,
+			testLinkRightUnionTwo,
+			testLinkRightUnionThree,
+			testLinkRightUnionFour,
+			testLinkRightUnionThreeLeftNested,
+			testLinkRightUnionFourLeftNested,
+			testLinkRightUnionThreeRightNested,
+			testLinkRightUnionFourRightNested,
+			testLinkDoubleUnionTwo,
+			testLinkDoubleUnionThree,
+			testLinkDoubleUnionFour
+
+		| testNodeRemovals
+			-> testLeftUnionRemoveTwo,
+			testLeftUnionRemoveTwoSelf,
+			testLeftUnionRemoveThree,
+			testLeftUnionRemoveFour,
+			testLeftUnionRemoveThreeLeftNested,
+			testLeftUnionRemoveFourLeftNested,
+			testLeftUnionRemoveThreeRightNested,
+			testLeftUnionRemoveFourRightNested,
+			testRightUnionRemoveTwo,
+			testRightUnionRemoveThree,
+			testRightUnionRemoveFour,
+			testRightUnionRemoveThreeLeftNested,
+			testRightUnionRemoveFourLeftNested,
+			testDoubleUnionRemoveTwo,
+			testDoubleUnionRemoveThree,
+			testDoubleUnionRemoveFour
+
+		| testLinkRemovals
+			-> testUnlinkLeftUnionRemoveTwo,
+			testUnlinkLeftUnionRemoveThree,
+			testUnlinkLeftUnionRemoveFour,
+			testUnlinkLeftUnionRemoveThreeLeftNested,
+			testUnlinkLeftUnionRemoveFourLeftNested,
+			testUnlinkLeftUnionRemoveThreeRightNested,
+			testUnlinkLeftUnionRemoveFourRightNested,
+			testUnlinkRightUnionRemoveTwo,
+			testUnlinkRightUnionRemoveThree,
+			testUnlinkRightUnionRemoveFour,
+			testUnlinkRightUnionRemoveThreeLeftNested,
+			testUnlinkRightUnionRemoveFourLeftNested,
+			testUnlinkDoubleUnionRemoveTwo,
+			testUnlinkDoubleUnionRemoveThree,
+			testUnlinkDoubleUnionRemoveFour
+
+		| testCaretOperations
+			-> testAddLeftUnionAddWithCaret,
+			testAddRightUnionAddWithCaret,
+			testAddDoubleUnionWithCaret,
+			testAddDoubleUnionNestedWithCaret,
+			testAddWithBackAndForthInCaret,
+			testAddToTwoOthersFromBowlInCaret,
+			testRemoveLeftUnionRemoveWithCaret,
+			testRemoveRightUnionAddWithCaret,
+			testRemoveDoubleUnionWithCaret,
+			testRemoveDoubleUnionNestedWithCaret,
+			testRemoveWithBackAndForthInCaret,
+			testRemoveFromTwoOthersFromBowlInCaret
+
+		| testEmptySetCases
+			-> testAddEmptyBaseIntersectOne,
+			testAddEmptyBaseIntersectTwo,
+			testAddEmptyBaseDifferenceOne,
+			testAddEmptyBaseDifferenceTwo,
+			testAddEmptyTarget,
+			testAddEmptyTargetInCaretOne,
+			testAddEmptyTargetInCaretTwo,
+			testRemoveEmptyBaseIntersectOne,
+			testRemoveEmptyBaseIntersectTwo,
+			testRemoveEmptyBaseDifferenceOne,
+			testRemoveEmptyBaseDifferenceTwo,
+			testRemoveEmptyTargetInCaretOne,
+			testRemoveEmptyTargetInCaretTwo
+
+
+		// Add with union combinations
+		| testAddLeftUnionTwo
+			A> (bowls \/ baskets) / apples
+
+		| testAddLeftUnionThree
+			A> (bowls \/ baskets \/ plates) / apples
+
+		| testLeftUnionAddFour
+			A> (bowls \/ baskets \/ plates \/ buckets) / apples
+
+		| testLeftUnionAddThreeLeftNested
+			A> ((bowls \/ baskets) \/ plates) / apples
+
+		| testLeftUnionAddFourLeftNested
+			A> (((bowls \/ baskets) \/ plates) \/ buckets) / apples
+
+		| testLeftUnionAddThreeRightNested
+			A> (bowls \/ (baskets \/ plates)) / apples
+
+		| testLeftUnionAddFourRightNested
+			A> (bowls \/ (baskets \/ (plates \/ buckets))) / apples
+
+		| testRightUnionAddTwo
+			A> bowls / (apples \/ oranges)
+
+		| testRightUnionAddThree
+			A> bowls / (apples \/ oranges \/ bananas)
+
+		| testRightUnionAddFour
+			A> bowls / (apples \/ oranges \/ bananas \/ durians)
+
+		| testRightUnionAddThreeLeftNested
+			A> bowls / ((apples \/ oranges) \/ bananas)
+
+		| testRightUnionAddFourLeftNested
+			A> bowls / (((apples \/ oranges) \/ bananas) \/ durians)
+
+		| testDoubleUnionAddTwo
+			A> (bowls \/ baskets) / (apples \/ oranges)
+
+		| testDoubleUnionAddThree
+			A> (bowls \/ baskets \/ plates) / (apples \/ oranges \/ bananas)
+
+		| testDoubleUnionAddFour
+			A> (bowls \/ baskets \/ plates \/ buckets) / (apples \/ oranges \/ bananas \/ durians)
+
+
+
+		// Link add with union combinations
+		| testLinkLeftUnionTwo
+			A> (bowls \/ baskets) / ~plates.apples.container
+
+		| testLinkLeftUnionThree
+			A> (bowls \/ baskets \/ plates) / ~buckets.apples.container
+
+		| testLinkLeftUnionFour
+			A> (bowls \/ baskets \/ plates \/ buckets) / ~bowls.apples.container
+
+		| testLinkLeftUnionThreeLeftNested
+			A> ((bowls \/ baskets) \/ plates) / ~buckets.apples.container
+
+		| testLinkLeftUnionFourLeftNested
+			A> (((bowls \/ baskets) \/ plates) \/ buckets) / ~bowls.apples.container
+
+		| testLinkRightUnionTwo
+			A> bowls / ~((bowls \/ baskets).apples).container
+
+		| testLinkRightUnionThree
+			A> bowls / ~((bowls \/ baskets \/ plates).apples).container
+
+		| testLinkRightUnionFour
+			A> bowls / ~((bowls \/ baskets \/ plates \/ buckets).apples).container
+
+		| testLinkRightUnionThreeLeftNested
+			A> bowls / ~(((bowls \/ baskets) \/ plates).apples).container
+
+		| testLinkRightUnionFourLeftNested
+			A> bowls / ~((((bowls \/ baskets) \/ plates) \/ buckets).apples).container
+
+		| testLinkRightUnionThreeRightNested
+			A> bowls / ~(bowls \/ (baskets \/ plates)).apples.container
+
+		| testLinkRightUnionFourRightNested
+			A> bowls / ~(bowls \/ (baskets \/ (plates \/ buckets))).apples.container
+
+		| testLinkDoubleUnionTwo
+			A> (bowls \/ baskets) / ~(bowls \/ baskets).apples.container
+
+		| testLinkDoubleUnionThree
+			A> (bowls \/ baskets \/ plates) / ~(bowls \/ baskets \/ plates).apples.container
+
+		| testLinkDoubleUnionFour
+			A> (bowls \/ baskets \/ plates \/ buckets) / ~(bowls \/ baskets \/ plates \/ buckets).apples.container
+
+
+
+		// Remove with union combinations
+		| testLeftUnionRemoveTwo
+			R> (bowls \/ baskets) / apples
+
+		| testLeftUnionRemoveTwoSelf
+			R> (bowls \/ baskets).apples / self
+
+		| testLeftUnionRemoveThree
+			R> (bowls \/ baskets \/ plates) / apples
+
+		| testLeftUnionRemoveFour
+			R> (bowls \/ baskets \/ plates \/ buckets) / apples
+
+		| testLeftUnionRemoveThreeLeftNested
+			R> ((bowls \/ baskets) \/ plates) / apples
+
+		| testLeftUnionRemoveFourLeftNested
+			R> (((bowls \/ baskets) \/ plates) \/ buckets) / apples
+
+		| testLeftUnionRemoveThreeRightNested
+			R> (bowls \/ (baskets \/ plates)) / apples
+
+		| testLeftUnionRemoveFourRightNested
+			R> (bowls \/ (baskets \/ (plates \/ buckets))) / apples
+
+		| testRightUnionRemoveTwo
+			R> bowls / (apples \/ oranges)
+
+		| testRightUnionRemoveThree
+			R> bowls / (apples \/ oranges \/ bananas)
+
+		| testRightUnionRemoveFour
+			R> bowls / (apples \/ oranges \/ bananas \/ durians)
+
+		| testRightUnionRemoveThreeLeftNested
+			R> bowls / ((apples \/ oranges) \/ bananas)
+
+		| testRightUnionRemoveFourLeftNested
+			R> bowls / (((apples \/ oranges) \/ bananas) \/ durians)
+
+		| testDoubleUnionRemoveTwo
+			R> (bowls \/ baskets) / (apples \/ oranges)
+
+		| testDoubleUnionRemoveThree
+			R> (bowls \/ baskets \/ plates) / (apples \/ oranges \/ bananas)
+
+		| testDoubleUnionRemoveFour
+			R> (bowls \/ baskets \/ plates \/ buckets) / (apples \/ oranges \/ bananas \/ durians)
+
+
+
+		// Link remove with union combinations
+		| testUnlinkLeftUnionRemoveTwo
+			R> (bowls \/ baskets) / ~apples
+
+		| testUnlinkLeftUnionRemoveThree
+			R> (bowls \/ baskets \/ plates) / ~apples
+
+		| testUnlinkLeftUnionRemoveFour
+			R> (bowls \/ baskets \/ plates \/ buckets) / ~apples
+
+		| testUnlinkLeftUnionRemoveThreeLeftNested
+			R> ((bowls \/ baskets) \/ plates) / ~apples
+
+		| testUnlinkLeftUnionRemoveFourLeftNested
+			R> (((bowls \/ baskets) \/ plates) \/ buckets) / ~apples
+
+		| testUnlinkLeftUnionRemoveThreeRightNested
+			R> (bowls \/ (baskets \/ plates)) / ~apples
+
+		| testUnlinkLeftUnionRemoveFourRightNested
+			R> (bowls \/ (baskets \/ (plates \/ buckets))) / ~apples
+
+		| testUnlinkRightUnionRemoveTwo
+			R> bowls / ~(apples \/ oranges)
+
+		| testUnlinkRightUnionRemoveThree
+			R> bowls / ~(apples \/ oranges \/ bananas)
+
+		| testUnlinkRightUnionRemoveFour
+			R> bowls / ~(apples \/ oranges \/ bananas \/ durians)
+
+		| testUnlinkRightUnionRemoveThreeLeftNested
+			R> bowls / ~((apples \/ oranges) \/ bananas)
+
+		| testUnlinkRightUnionRemoveFourLeftNested
+			R> bowls / ~(((apples \/ oranges) \/ bananas) \/ durians)
+
+		| testUnlinkDoubleUnionRemoveTwo
+			R> (bowls \/ baskets) / ~(apples \/ oranges)
+
+		| testUnlinkDoubleUnionRemoveThree
+			R> (bowls \/ baskets \/ plates) / ~(apples \/ oranges \/ bananas)
+
+		| testUnlinkDoubleUnionRemoveFour
+			R> (bowls \/ baskets \/ plates \/ buckets) / ~(apples \/ oranges \/ bananas \/ durians)
+
+
+
+		// Tests with caret
+		| testAddLeftUnionAddWithCaret
+			A> bowls / (apples \/ oranges) ^ bananas
+
+		| testAddRightUnionAddWithCaret
+			A> bowls / apples ^ (oranges \/ bananas)
+
+		| testAddDoubleUnionWithCaret
+			A> bowls / (apples \/ oranges) ^ (bananas \/ durians)
+
+		| testAddDoubleUnionNestedWithCaret
+			A> bowls / ((apples \/ oranges) \/ bananas) ^ (oranges \/ (bananas \/ durians))
+
+		| testAddWithBackAndForthInCaret
+			A> bowls / table.bowls.apples ^ table.bowls.oranges
+
+		| testAddToTwoOthersFromBowlInCaret
+			A> bowls / (table.baskets \/ table.plates).apples ^ (table.baskets \/ table.plates).bananas
+
+		| testRemoveLeftUnionRemoveWithCaret
+			R> bowls / (apples \/ oranges) ^ bananas
+
+		| testRemoveRightUnionAddWithCaret
+			R> bowls / apples ^ (oranges \/ bananas)
+
+		| testRemoveDoubleUnionWithCaret
+			R> bowls / (apples \/ oranges) ^ (bananas \/ durians)
+
+		| testRemoveDoubleUnionNestedWithCaret
+			R> bowls / ((apples \/ oranges) \/ bananas) ^ (oranges \/ (bananas \/ durians))
+
+		| testRemoveWithBackAndForthInCaret
+			R> bowls / table.bowls.apples ^ table.bowls.oranges
+
+		| testRemoveFromTwoOthersFromBowlInCaret
+			R> bowls / (table.baskets \/ table.plates).apples ^ (table.baskets \/ table.plates).bananas
+
+
+		// Empty set cases
+		| testAddEmptyBaseIntersectOne
+			A> (bowls /\ baskets) / apples
+
+		| testAddEmptyBaseIntersectTwo
+			A> (bowls \/ baskets) /\ (plates \/ buckets) / apples
+
+		| testAddEmptyBaseDifferenceOne
+			A> (bowls - bowls) / apples
+
+		| testAddEmptyBaseDifferenceTwo
+			A> (bowls \/ baskets) - (bowls \/ baskets) / apples
+
+		| testAddEmptyTarget
+			A> bowls / (apples /\ oranges)
+
+		| testAddEmptyTargetInCaretOne
+			A> bowls / (apples /\ oranges) ^ apples
+
+		| testAddEmptyTargetInCaretTwo
+			A> bowls / apples ^ (apples /\ oranges)
+
+
+		| testRemoveEmptyBaseIntersectOne
+			R> (bowls /\ baskets) / apples
+
+		| testRemoveEmptyBaseIntersectTwo
+			R> (bowls \/ baskets) /\ (plates \/ buckets) / apples
+
+		| testRemoveEmptyBaseDifferenceOne
+			R> (bowls - bowls) / apples
+
+		| testRemoveEmptyBaseDifferenceTwo
+			R> (bowls \/ baskets) - (bowls \/ baskets) / apples
+
+		| testRemoveEmptyTargetInCaretOne
+			R> bowls / (apples /\ oranges) ^ apples
+
+		| testRemoveEmptyTargetInCaretTwo
+			R> bowls / apples ^ (apples /\ oranges)
+	}
+
+	abstract asset Container {}
+
+	abstract asset Fruit {}
+
+	asset Bowl extends Container {}
+
+	asset Basket extends Container {}
+
+	asset Plate extends Container {}
+
+	asset Bucket extends Container {}
+
+	asset Apple extends Fruit {}
+
+	asset Orange extends Fruit {}
+
+	asset Banana extends Fruit {}
+
+	asset Durian extends Fruit {}
+
+
+}
+
+associations{
+	Table [table] 1 <-- BowlPlacement --> * [bowls] Bowl
+	Table [table] 1 <-- BasketPlacement --> * [baskets] Basket
+	Table [table] 1 <-- PlatePlacement --> * [plates] Plate
+	Table [table] 1 <-- BucketPlacement --> * [buckets] Bucket
+	Container [container] 1 <-- AppleContain --> * [apples] Apple
+	Container [container] 1 <-- OrangeContain --> * [oranges] Orange
+	Container [container] 1 <-- BananaContain --> * [bananas] Banana
+	Container [container] 1 <-- DurianContain --> * [durians] Durian
+}

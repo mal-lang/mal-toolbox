@@ -1,0 +1,28 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "posterLang"
+#version: "0.1.0"
+category posterLang {
+	asset Host {
+	  | infect              // Start by infecting a host.
+	    A> self / malware   // Add the data wiping malware.
+	    -> malware.execute  // Prepare to execute the malware.
+	}
+	asset WiperMalware {
+	  | execute                     // Awaken the malware.
+	    -> victim.sendTo.infect     // Propagate then...
+	    R> victim / data            // ... wipe system data.
+	}
+	asset Data {}
+
+}
+
+associations {
+ Host [receiveFrom] * <-- communicate --> * [sendTo] Host
+ Host [host] 1 <-- contains --> * [data] Data
+ Host [victim] 1 <-- infects --> * [malware] WiperMalware
+}

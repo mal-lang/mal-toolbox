@@ -1,0 +1,21 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "glider"
+#version: "0.1.0"
+category glider {
+	asset Glider {
+		| glide
+			A> self / next
+			R> self / previous 
+			-> next.glide
+	}
+
+}
+
+associations {
+	Glider [previous] 0..1 <-- link --> 0..1 [next] Glider
+}

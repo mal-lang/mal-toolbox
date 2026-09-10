@@ -1,0 +1,24 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang10"
+#version: "0.1.0"
+category intDynamicTestLang10 {
+	asset Table {
+		| delegateFruit
+			A> bowls / apples,
+			bowls.apples / ~bowls.apples
+			R> bowls / ~apples
+	}
+	asset Bowl {}
+	asset Apple {}
+
+}
+
+associations {
+	Bowl [bowls] * <-- placement --> 1 [table] Table
+	Bowl [container] * <-- contains --> * [apples] Apple
+}

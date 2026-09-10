@@ -1,0 +1,61 @@
+assets:
+  1:
+    associated_assets:
+      hosts:
+        2: C2Server
+        3: InfectedDevice
+        6: VulnerableDevice
+    name: Internet
+    type: Internet
+  2:
+    associated_assets:
+      inet:
+        1: Internet
+      receiveFrom:
+        3: InfectedDevice
+    name: C2Server
+    type: C2Server
+  3:
+    associated_assets:
+      data:
+        4: InfectedData
+      inet:
+        1: Internet
+      malware:
+        5: Wiper
+      receiveFrom:
+        6: VulnerableDevice
+      sendTo:
+        2: C2Server
+        6: VulnerableDevice
+    name: InfectedDevice
+    type: Device
+  4:
+    associated_assets:
+      node:
+        3: InfectedDevice
+    name: InfectedData
+    type: Data
+  5:
+    associated_assets:
+      victim:
+        3: InfectedDevice
+    name: Wiper
+    type: Wiper
+  6:
+    associated_assets:
+      inet:
+        1: Internet
+      receiveFrom:
+        3: InfectedDevice
+      sendTo:
+        3: InfectedDevice
+    name: VulnerableDevice
+    type: Device
+metadata:
+  MAL-Toolbox Version: 2.9.0
+  info: Created by the mal-toolbox model python module.
+  langID: org.mal-lang.wiperLang
+  langVersion: 1.0.0
+  malVersion: 0.1.0-SNAPSHOT
+  name: Example Model

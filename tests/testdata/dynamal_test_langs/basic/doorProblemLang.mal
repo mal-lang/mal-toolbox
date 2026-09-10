@@ -1,0 +1,24 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "doorProblemLang"
+#version: "0.1.0"
+category doorProblemLang {
+	asset Room {
+		| leave
+			-> entrance.leave   // Leave the room
+			R> self / ~entrance // Remove link between two rooms, i.e., close the door.
+
+		# deathLasers
+			-> leave  // Prevent attackers in rooms.
+
+	}
+
+}
+
+associations {
+	Room [exit] * <-- Connection --> * [entrance] Room
+}

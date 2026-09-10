@@ -1,0 +1,190 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "diceLang"
+#version: "0.1.0"
+category diceLang {
+	// A contrived language for checking various dice configurations.
+
+	abstract asset Die {
+	  | even
+	  | odd
+	  | all
+	  | prime
+	  | betterPrime
+	  | evenPrime
+	  | altEvenPrime
+	  | notPrime
+	  | noPrime
+	  | noEven
+	  | noOdd
+	  | onlyPrime
+	}
+
+	asset One extends Die {}
+	asset Two extends Die {}
+	asset Three extends Die {}
+	asset Four extends Die {}
+	asset Five extends Die {}
+	asset Six extends Die {}
+
+	asset Dice {
+	  let even = ((die[Two] \/ die[Four]) \/ die[Six])
+	  let odd = (die[One] \/ (die[Three] \/ die[Five]))
+	  let all = (even() \/ odd())
+	  let primes = (all() /\ (die[Two] \/ die[Three] \/ die[Five]))
+	  let betterPrimes = (die[Two] \/ die[Three] \/ die[Five])
+	  let evenPrimes = (all() /\ die[Two])
+	  let altEvenPrimes = (die[Two] /\ all())
+	  let notPrimes = (die[Four] \/ die[Six] \/ die[One])
+	  let noPrimes = (all() - primes())
+	  let noEven = (all() - even())
+	  let noOdd = (all() - odd())
+	  let onlyPrimes = (all() - primes())
+
+	  let noOnes = (die[Two] \/ die[Three] \/ die[Four] \/ die[Five] \/ die[Six])
+	  let noTwos = (die[One] \/ die[Three] \/ die[Four] \/ die[Five] \/ die[Six])
+	  let noThrees = (die[Two] \/ die[One] \/ die[Four] \/ die[Five] \/ die[Six])
+	  let noFours = (die[Two] \/ die[Three] \/ die[One] \/ die[Five] \/ die[Six])
+	  let noFives = (die[Two] \/ die[Three] \/ die[Four] \/ die[One] \/ die[Six])
+	  let noSixes = (die[Two] \/ die[Three] \/ die[Four] \/ die[Five] \/ die[One])
+
+	  | startingPoint
+	    modeler info: "Start your agents here."
+	    -> allOnes,
+	      ((die[Two] \/ die[Four]) \/ die[Six]).even,  // Testing syntax
+	      (die[One] \/ (die[Three] \/ die[Five])).odd, // Testing syntax
+	       allTwos,
+	       allThrees,
+	       allFours,
+	       allFives,
+	       allSixes,
+	       oneExists,
+	       twoExists,
+	       threeExists,
+	       fourExists,
+	       fiveExists,
+	       sixExists,
+	       even().even,
+	       odd().odd,
+	       all().all,
+	       primes().prime,
+	       betterPrimes().betterPrime,
+	       evenPrimes().evenPrime,
+	       altEvenPrimes().altEvenPrime,
+	       notPrimes().notPrime,
+	       noPrimes().noPrime,
+	       noEven().noEven,
+	       noOdd().noOdd,
+	       onlyPrimes().onlyPrime
+       
+
+	  & allOnes
+	    -> yahtzee
+
+	  & allTwos
+	    -> yahtzee
+
+	  & allThrees
+	    -> yahtzee
+
+	  & allFours
+	    -> yahtzee
+
+	  & allFives
+	    -> yahtzee
+
+	  & allSixes
+	    -> yahtzee
+
+	  | yahtzee
+	    user info: "All show the same number, usually six dice."
+
+	  & oneExists
+	    -> simpleSequence,
+	       oneTwoThree,
+	       allOnes
+
+	  & twoExists
+	    -> simpleSequence,
+	       oneTwoThree,
+	       allTwos
+
+	  & threeExists
+	    -> simpleSequence,
+	       oneTwoThree,
+	       allThrees
+
+	  & fourExists
+	    -> simpleSequence,
+	       allFours
+
+	  & fiveExists
+	    -> simpleSequence,
+	       allFives
+
+	  & sixExists
+	    -> simpleSequence,
+	       allSixes
+
+	  & oneTwoThree
+	  & simpleSequence
+
+	  E ifOneExists
+	    <- die[One]
+	    -> oneExists
+
+	  E ifTwoExists
+	    <- die[Two]
+	    -> twoExists
+
+	  E ifThreeExists
+	    <- die[Three]
+	    -> threeExists
+
+	  E ifFourExists
+	    <- die[Four]
+	    -> fourExists
+
+	  E ifFiveExists
+	    <- die[Five]
+	    -> fiveExists
+
+	  E ifSixExists
+	    <- die[Six]
+	    -> sixExists
+
+	 !E oneComplement
+	   <- noOnes()
+	   -> allOnes
+
+	 !E twoComplement
+	   <- noTwos()
+	   -> allTwos
+
+	 !E threeComplement
+	   <- noThrees()
+	   -> allThrees
+
+	 !E fourComplement
+	   <- noFours()
+	   -> allFours
+
+	 !E fiveComplement
+	   <- noFives()
+	   -> allFives
+
+	 !E sixComplement
+	   <- noSixes()
+	   -> allSixes
+
+	}
+
+}
+
+associations{
+  Die [die] * <-- collection --> 1 [collection] Dice
+}
