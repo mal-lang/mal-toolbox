@@ -244,8 +244,8 @@ def link_nodes_by_language(model: Model, full_name_to_node: dict[str, AttackGrap
 def create_nodes_from_model(model: Model):
     id_to_node = {}
     full_name_to_node = {}
-    attack_steps = []
-    defense_steps = []
+    attack_steps: list[AttackGraphNode] = []
+    defense_steps: list[AttackGraphNode] = []
 
     node_id = 0
     for asset in model.assets.values():

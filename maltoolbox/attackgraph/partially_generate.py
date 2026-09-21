@@ -27,8 +27,8 @@ def create_nodes_from_assets(
 ) -> tuple[dict, list, list, dict]:
     id_to_node = {}
     full_name_to_node = {}
-    attack_steps = []
-    defense_steps = []
+    attack_steps: list[AttackGraphNode] = []
+    defense_steps: list[AttackGraphNode] = []
 
     node_id = starting_id
     for asset in assets:

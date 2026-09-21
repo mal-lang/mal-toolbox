@@ -7,6 +7,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 from maltoolbox.attackgraph.detector import Detector
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 
 if TYPE_CHECKING:
     from ..language import LanguageGraphAttackStep
@@ -42,6 +43,9 @@ class AttackGraphNode:
         self.parents: set[AttackGraphNode] = set()
         self.extras: dict = {}
         self.detectors: dict[str, Detector] = {}
+
+        if self.type in [AttackStepType.EXIST, AttackStepType.NOT_EXIST]:
+            assert type(self.existence_status) == type(True), f"{self.type}-node needs to have boolean existence_status"
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""

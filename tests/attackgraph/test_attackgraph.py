@@ -9,6 +9,7 @@ from conftest import path_testdata
 
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
 from maltoolbox.language import LanguageGraph
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociationField
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
@@ -40,14 +41,14 @@ def test_load_attack_graph(corelang_lang_graph: LanguageGraph):
 
     for step in loaded_json_ag.nodes.values():
         # Make sure exist status gets correct type
-        if step.type == 'exist':
+        if step.type == AttackStepType.EXIST:
             assert step.existence_status is None or isinstance(
                 step.existence_status, bool
             )
 
     for step in loaded_yml_ag.nodes.values():
         # Make sure exist status gets correct type
-        if step.type == 'exist':
+        if step.type == AttackStepType.EXIST:
             assert step.existence_status is None or isinstance(
                 step.existence_status, bool
             )

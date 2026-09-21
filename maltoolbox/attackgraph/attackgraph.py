@@ -21,6 +21,7 @@ from maltoolbox.attackgraph.partially_generate import (
     switch_fieldname,
 )
 from maltoolbox.language.languagegraph import disaggregate_attack_step_full_name
+from maltoolbox.language.languagegraph_attack_step import AttackStepType
 
 from ..file_utils import (
     load_dict_from_json_file,
@@ -395,9 +396,9 @@ class AttackGraph:
 
         # Add to different lists depending on types
         # Useful but not vital for functionality
-        if node.type in ('or', 'and'):
+        if node.type in (AttackStepType.OR, AttackStepType.AND):
             self.attack_steps.append(node)
-        if node.type == 'defense':
+        if node.type == AttackStepType.DEFENSE:
             self.defense_steps.append(node)
 
         self.nodes[node_id] = node

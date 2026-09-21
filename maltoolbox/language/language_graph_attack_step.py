@@ -7,6 +7,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
+from enum import Enum
+
+class AttackStepType(Enum):
+    OR = 1
+    AND = 2
+    DEFENSE = 3
+    EXIST = 4
+    NOT_EXIST = 5
 
 if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
@@ -19,7 +27,7 @@ class LanguageGraphAttackStep:
     """An attack step belonging to an asset type in the MAL language."""
 
     name: str
-    type: Literal['or', 'and', 'defense', 'exist', 'notExist']
+    type: AttackStepType
     asset: LanguageGraphAsset
     causal_mode: Literal['action', 'effect'] | None = None
     ttc: dict | None = field(default_factory=dict)
