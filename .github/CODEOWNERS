@@ -6,3 +6,5 @@ maltoolbox/language/compiler/ @nkakouros
 
 # Owners for a specific file
 maltoolbox/attackgraph/partially_generate.py @sandorstormen
+maltoolbox/language/compiler/mal_compiler.py @nkakouros @sandorstormen
+maltoolbox/language/language_graph_model_effect.py @sandorstormen

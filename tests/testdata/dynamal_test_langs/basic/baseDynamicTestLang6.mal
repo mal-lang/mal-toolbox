@@ -1,0 +1,27 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "baseDynamicTestLang6"
+#version: "0.0.1"
+
+category Business {
+	asset Monkey {}
+
+	asset Typewriter {
+		| access
+			-> hideTypewriter
+
+		| hideTypewriter
+		user info: "Monkeys without typewriters cannot work."
+		developer info: "Only removes the association. The typewriter still exists in the model."
+			R> self / ~writer
+	}
+}
+
+associations {
+	Typewriter [typewriter] 0..1 <-- operatedBy --> 1 [writer] Monkey
+
+}

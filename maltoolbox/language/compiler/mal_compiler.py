@@ -464,11 +464,6 @@ class MalCompiler(ParseTreeVisitor):
             requires = self.visit(cursor)
             go_to_sibling(cursor)
 
-        reaches = None
-        if assert_node(cursor.node).type == 'reaching':
-            reaches = self.visit(cursor)
-            go_to_sibling(cursor)
-
         ret = {
             'name': name,
             'meta': meta,
@@ -479,8 +474,22 @@ class MalCompiler(ParseTreeVisitor):
             'risk': risk,
             'ttc': ttc,
             'requires': requires,
-            'reaches': reaches,
+            'reaches': None,
+            'append_reaches': None,
+            'remove_reaches': None
         }
+
+        reaching_types = ('reaching', 'append_reaching', 'remove_reaching')
+
+        while assert_node(cursor.node).type in reaching_types:
+            if assert_node(cursor.node).type == 'reaching':
+                ret['reaches'] = self.visit(cursor)
+            elif assert_node(cursor.node).type == 'append_reaching':
+                ret['append_reaches'] = self.visit(cursor)
+            elif assert_node(cursor.node).type == 'remove_reaching':
+                ret['remove_reaches'] = self.visit(cursor)
+            if not go_to_sibling(cursor):
+                break
 
         return ('step', ret)
 
@@ -797,9 +806,76 @@ class MalCompiler(ParseTreeVisitor):
             ret['stepExpressions'].append(self.visit(cursor))
 
         return ret
+    
+    def visit_append_reaching(self, cursor: TreeCursor):
+        #################################################
+        # ( '+A>' | 'A>' ) (reaches) ( ',' (reaches) )* #
+        #################################################
+
+        ret: dict[str, Any] = {}
+
+        # Get type of reaches
+        ret['overrides'] = assert_node(cursor.node).text == b'A>'
+        go_to_sibling(cursor)
+
+        # Visit the steps
+        ret['stepExpressions'] = [self.visit(cursor)]
+
+        while go_to_sibling(cursor):  # check if we have a ','
+            go_to_sibling(cursor)  # ignore the ','
+            ret['stepExpressions'].append(self.visit(cursor))
+
+        return ret
+    
+    def visit_remove_reaching(self, cursor: TreeCursor):
+        #################################################
+        # ( '+R>' | 'R>' ) (reaches) ( ',' (reaches) )* #
+        #################################################
+
+        ret: dict[str, Any] = {}
+
+        # Get type of reaches
+        ret['overrides'] = assert_node(cursor.node).text == b'R>'
+        go_to_sibling(cursor)
+
+        # Visit the steps
+        ret['stepExpressions'] = [self.visit(cursor)]
+
+        while go_to_sibling(cursor):  # check if we have a ','
+            go_to_sibling(cursor)  # ignore the ','
+            ret['stepExpressions'].append(self.visit(cursor))
+
+        return ret
+    
+    def visit_dyn_sentence(self, cursor: TreeCursor):
+        #########################################
+        # (base) '/' (target) ( '^' (target) )* #
+        #########################################
+
+        base = self.visit(cursor)
+        go_to_sibling(cursor)
+        assert assert_node(cursor.node).type == 'dynamic_separator', 'Expected dynamic separator in dynamic sentence'
+        go_to_sibling(cursor)
+        targets = [self.visit(cursor)]
+        while go_to_sibling(cursor):
+            assert assert_node(cursor.node).type == 'hold', 'Expected hold between targets in dynamic sentence'
+            go_to_sibling(cursor)
+            targets.append(self.visit(cursor))
+
+        return {"type": "dyn_sentence", "base": base, "targets": targets}
+
+    def visit_assoc_and_asset_expr(self, cursor: TreeCursor):
+        if assert_node(cursor.node).type == 'assoc_op':
+            assert cursor.goto_next_sibling(), "Expected next sibling after assoc_op"
+            result = {"type": "assoc_op", "operand": self.visit(cursor)}
+            assert result["operand"] is not None, "Expected operand in assoc_and_asset_expr"
+        else:
+            result = self.visit(cursor)
+        return result
 
     def visit_asset_expr(self, cursor: TreeCursor):
-        return self._visit_inline_asset_expr(cursor)
+        ret = self._visit_inline_asset_expr(cursor)
+        return ret
 
     def _visit_inline_asset_expr(self, cursor: TreeCursor):
         #############################################################################################################################################
@@ -853,6 +929,29 @@ class MalCompiler(ParseTreeVisitor):
         subType = node_text(cursor, 'subType').decode()
 
         return {'type': 'subType', 'subType': subType, 'stepExpression': stepExpression}
+
+    def visit_asset_expr_multiplicity(self, cursor: TreeCursor):
+        #####################################
+        # (_inline_asset_expr) ':' (multiplicity) #
+        #####################################
+
+        # Visit the inline expr
+        stepExpression = self._visit_inline_asset_expr(cursor)
+        go_to_sibling(cursor)
+
+        # Skip ':'
+        colon_text = node_text(cursor, "Expected multiplicity expression with `:`.")
+        assert colon_text.decode() == ':'
+        go_to_sibling(cursor)
+
+        # Get the multiplicity
+        multiplicity = self.visit(cursor)
+
+        return {
+            'type': 'multiplicity',
+            'multiplicity': multiplicity,
+            'stepExpression': stepExpression,
+        }
 
     def visit_asset_expr_binop(self, cursor: TreeCursor):
         ########################################################################

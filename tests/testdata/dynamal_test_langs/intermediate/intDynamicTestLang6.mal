@@ -1,0 +1,30 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang6"
+#version: "0.1.0"
+category intDynamicTestLang6 {
+	asset Table {
+		| access
+			-> bowls.addApple, bowls.transferApple
+	}
+	asset Bowl {
+		| addApple
+			A> self / apples
+
+		| transferApple
+			A> apples / ~table.bowls.apples
+			R> self / ~apples
+	}
+
+	asset Apple {}
+
+}
+
+associations {
+	Bowl [bowls] * <-- placement --> 1 [table] Table
+	Bowl [container] * <-- contains --> * [apples] Apple
+}

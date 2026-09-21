@@ -1,0 +1,26 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang9"
+#version: "0.1.0"
+category intDynamicTestLang9 {
+	asset Room {
+		| addChairs
+			A> self / chairs
+		| installTable
+			A> self / tables,
+			tables / ~chairs.table
+	}
+	asset Table {}
+	asset Chair {}
+
+}
+
+associations {
+	Room [room] 1 <-- tables --> 0..* [tables] Table
+	Room [room] 1 <-- chairs --> 0..* [chairs] Chair
+	Table [table] 1 <-- arrange --> 0..* [chair] Chair
+}

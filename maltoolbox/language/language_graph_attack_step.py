@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
     from maltoolbox.language.language_graph_asset import LanguageGraphAsset
     from maltoolbox.language.language_graph_detector import LanguageGraphDetector
-
+    from maltoolbox.language.language_graph_model_effect import LanguageGraphModelEffect
 
 @dataclass
 class LanguageGraphAttackStep:
@@ -31,6 +31,8 @@ class LanguageGraphAttackStep:
     own_parents: dict[LanguageGraphAttackStep, list[ExpressionsChain | None]] = field(
         default_factory=dict
     )
+    own_additive_model_effects: list[LanguageGraphModelEffect] = field(default_factory=list)
+    own_subtractive_model_effects: list[LanguageGraphModelEffect] = field(default_factory=list)
     info: dict = field(default_factory=dict)
     inherits: LanguageGraphAttackStep | None = None
     own_requires: list[ExpressionsChain] = field(default_factory=list)
@@ -58,7 +60,28 @@ class LanguageGraphAttackStep:
 
     @property
     def parents(self) -> None:
-        raise NotImplementedError('Fetching parents is not supported.')
+        raise NotImplementedError("Fetching parents is not supported.")
+    
+    @property
+    def additive_model_effects(self) -> list[LanguageGraphModelEffect]:
+        """Return own and inherited additive model effects."""
+        all_effects = list(self.own_additive_model_effects)
+        # TODO: Figure out if self.overrides is correct here or only for "static" steps
+        if self.overrides or not self.inherits:
+            return all_effects
+
+        all_effects += self.inherits.additive_model_effects
+        return all_effects
+    
+    @property
+    def subtractive_model_effects(self) -> list[LanguageGraphModelEffect]:
+        """Return own and inherited subtractive model effects."""
+        all_effects = list(self.own_subtractive_model_effects)
+        if self.overrides or not self.inherits:
+            return all_effects
+
+        all_effects += self.inherits.subtractive_model_effects
+        return all_effects
 
     @property
     def full_name(self) -> str:
