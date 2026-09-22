@@ -7,6 +7,7 @@ from maltoolbox.attackgraph.generate import (
     get_existance_status,
 )
 from maltoolbox.attackgraph.ttcs import get_ttc_dist
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language import LanguageGraphAttackStep
 from maltoolbox.language.expression_chain import (
     ExpressionsChain,
@@ -45,9 +46,9 @@ def create_nodes_from_assets(
             id_to_node[node.id] = node
             full_name_to_node[node.full_name] = node
 
-            if node.type in ('or', 'and'):
+            if node.type in (AttackStepType.OR, AttackStepType.AND):
                 attack_steps.append(node)
-            elif node.type == 'defense':
+            elif node.type == AttackStepType.DEFENSE:
                 defense_steps.append(node)
 
             node_id += 1
