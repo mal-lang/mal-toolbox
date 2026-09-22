@@ -6,6 +6,7 @@ import graphviz
 
 from ..attackgraph import AttackGraph
 from ..model import Model
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 
 graphviz_bright_colors = [
     'aliceblue',
@@ -179,11 +180,11 @@ def render_attack_graph(
             asset_colors[node.model_asset.name] = bg_color
 
         match node.type:
-            case 'defense':
+            case AttackStepType.DEFENSE:
                 path_color = 'blue'
-            case 'or' | 'and':
+            case AttackStepType.OR | AttackStepType.AND:
                 path_color = 'red'
-            case 'exist' | 'notExist':
+            case AttackStepType.EXIST | AttackStepType.NOTEXIST:
                 path_color = 'grey'
             case t:
                 raise ValueError(f'Type {t} not supported')

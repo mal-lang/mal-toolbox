@@ -27,7 +27,7 @@ def test_attackgraph_to_nx(example_attackgraph: AttackGraph):
     for node in example_attackgraph.nodes.values():
         nx_node_attrs = G.nodes[node.id]
         assert nx_node_attrs['id'] == node.id
-        assert nx_node_attrs['type'] == node.type
+        assert nx_node_attrs['type'] == str(node.type)
         assert nx_node_attrs['lang_graph_attack_step'] == node.lg_attack_step.full_name
         assert nx_node_attrs['name'] == node.name
         assert nx_node_attrs['ttc'] == node.ttc

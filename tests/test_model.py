@@ -4,6 +4,7 @@ import pytest
 from conftest import path_testdata
 
 from maltoolbox.language.languagegraph import LanguageGraph
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.model import Model, ModelAsset
 
 # Helper functions

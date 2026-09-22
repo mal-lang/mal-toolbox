@@ -15,6 +15,11 @@ class AttackStepType(Enum):
     DEFENSE = 3
     EXIST = 4
     NOT_EXIST = 5
+    NOTEXIST = 5
+
+    def __str__(self):
+        return self.name.lower().replace('_e', 'E')
+
 
 if TYPE_CHECKING:
     from maltoolbox.language.expression_chain import ExpressionsChain
@@ -46,6 +51,37 @@ class LanguageGraphAttackStep:
     own_requires: list[ExpressionsChain] = field(default_factory=list)
     tags: list = field(default_factory=list)
     detectors: dict[str, LanguageGraphDetector] = field(default_factory=dict)
+
+    def __init__(self, name: str,
+                 type: AttackStepType | str,
+                 asset: LanguageGraphAsset,
+                 causal_mode: Literal['action', 'effect'] | None = None,
+                 ttc: dict | None = None,
+                 overrides: bool = False,
+                 own_children: dict[LanguageGraphAttackStep, list[ExpressionsChain | None]] | None = None,
+                 own_parents: dict[LanguageGraphAttackStep, list[ExpressionsChain | None]] | None = None,
+                 own_additive_model_effects: list[LanguageGraphModelEffect] | None = None,
+                 own_subtractive_model_effects: list[LanguageGraphModelEffect] | None = None,
+                 info: dict | None = None,
+                 inherits: LanguageGraphAttackStep | None = None, 
+                 own_requires: list[ExpressionsChain] | None = None,
+                 tags: list | None = None,
+                 detectors: dict[str, LanguageGraphDetector] | None = None):
+        self.name = name
+        self.type = AttackStepType[type.upper()] if isinstance(type, str) else type
+        self.asset = asset 
+        self.causal_mode = causal_mode
+        self.ttc = {} if ttc is None else ttc
+        self.overrides = overrides
+        self.own_children = {} if own_children is None else own_children
+        self.own_parents = {} if own_parents is None else own_parents
+        self.own_additive_model_effects = [] if own_additive_model_effects is None else own_additive_model_effects
+        self.own_subtractive_model_effects = [] if own_subtractive_model_effects is None else own_subtractive_model_effects
+        self.info = {} if info is None else info
+        self.inherits = inherits
+        self.own_requires = [] if own_requires is None else own_requires
+        self.tags = [] if tags is None else tags
+        self.detectors = {} if detectors is None else detectors
 
     def __hash__(self):
         return id(self)
@@ -100,7 +136,7 @@ class LanguageGraphAttackStep:
         """Serialize the attack step to a dictionary."""
         node_dict: dict[Any, Any] = {
             'name': self.name,
-            'type': self.type,
+            'type': str(self.type),
             'asset': self.asset.name,
             'ttc': self.ttc,
             'own_children': {},

@@ -28,7 +28,7 @@ class AttackGraphNode:
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
-        self.type = lg_attack_step.type
+        self.type = AttackStepType[lg_attack_step.type] if isinstance(lg_attack_step.type, str) else lg_attack_step.type
         self.causal_mode = self.lg_attack_step.causal_mode
         self.ttc = ttc_dist if ttc_dist is not None else lg_attack_step.ttc
         self.tags = lg_attack_step.tags
@@ -44,14 +44,16 @@ class AttackGraphNode:
         self.extras: dict = {}
         self.detectors: dict[str, Detector] = {}
 
-        if self.type in [AttackStepType.EXIST, AttackStepType.NOT_EXIST]:
-            assert type(self.existence_status) == type(True), f"{self.type}-node needs to have boolean existence_status"
+        # if Exist/NotExist and existance_status = None, set existance_status to not existing
+        if self.type in (AttackStepType.EXIST, AttackStepType.NOT_EXIST) and type(self.existence_status) != type(True):
+            #assert type(self.existence_status) == type(True), f"{self.type}-node needs to have boolean existence_status"
+            self.existence_status = self.type != AttackStepType.EXIST
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict: dict = {
             'id': self.id,
-            'type': self.type,
+            'type': str(self.type),
             'lang_graph_attack_step': self.lg_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,

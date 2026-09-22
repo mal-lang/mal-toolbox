@@ -21,7 +21,7 @@ from maltoolbox.attackgraph.partially_generate import (
     switch_fieldname,
 )
 from maltoolbox.language.languagegraph import disaggregate_attack_step_full_name
-from maltoolbox.language.languagegraph_attack_step import AttackStepType
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 
 from ..file_utils import (
     load_dict_from_json_file,
