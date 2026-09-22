@@ -177,6 +177,28 @@ def test_attackgraph_get_node_by_full_name(example_attackgraph: AttackGraph):
         "Application 2:read, Application 2:deny?') tblen=3>"
     )
 
+def test_attackgraph_according_to_corelang_has_defense_steps(corelang_lang_graph, model):
+    """Looking at corelang .mal file, make sure the resulting
+    AttackGraph contains defense nodes
+    """
+    # Create 2 assets
+    app1 = model.add_asset(asset_type='Application')
+    app2 = model.add_asset(asset_type='Application')
+
+    # Create association between app1 and app2
+    app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
+    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    seen = {
+        "Application:0:notPresent": False,
+        "Application:0:supplyChainAuditing": False,
+        "Application:1:notPresent": False,
+        "Application:1:supplyChainAuditing": False,
+    }
+    for n in attack_graph.defense_steps:
+        seen[n.full_name] = True
+    for n in seen:
+        assert seen[n] == True
+
 
 def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
     """Looking at corelang .mal file, make sure the resulting
@@ -735,8 +757,8 @@ def tests_create_ag_step_lists():
     created_ag = create_attack_graph(mar, model)
 
     # Make sure all nodes were stored in correct list
-    defenses = [n for n in created_ag.nodes.values() if n.type == 'defense']
-    attacks = [n for n in created_ag.nodes.values() if n.type in ('or', 'and')]
+    defenses = [n for n in created_ag.nodes.values() if n.type == AttackStepType.DEFENSE]
+    attacks = [n for n in created_ag.nodes.values() if n.type in (AttackStepType.OR, AttackStepType.AND)]
     assert defenses == created_ag.defense_steps
     assert attacks == created_ag.attack_steps
 
