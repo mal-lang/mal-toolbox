@@ -11,6 +11,7 @@ from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_g
 from maltoolbox.language import LanguageGraph
 from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociationField
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
 from maltoolbox.model import Model, ModelAsset
 
@@ -40,14 +41,14 @@ def test_load_attack_graph(corelang_lang_graph: LanguageGraph):
 
     for step in loaded_json_ag.nodes.values():
         # Make sure exist status gets correct type
-        if step.type == 'exist':
+        if step.type == AttackStepType.EXIST:
             assert step.existence_status is None or isinstance(
                 step.existence_status, bool
             )
 
     for step in loaded_yml_ag.nodes.values():
         # Make sure exist status gets correct type
-        if step.type == 'exist':
+        if step.type == AttackStepType.EXIST:
             assert step.existence_status is None or isinstance(
                 step.existence_status, bool
             )
@@ -175,6 +176,28 @@ def test_attackgraph_get_node_by_full_name(example_attackgraph: AttackGraph):
         '"Application 2". Did you mean: '
         "Application 2:read, Application 2:deny?') tblen=3>"
     )
+
+def test_attackgraph_according_to_corelang_has_defense_steps(corelang_lang_graph, model):
+    """Looking at corelang .mal file, make sure the resulting
+    AttackGraph contains defense nodes
+    """
+    # Create 2 assets
+    app1 = model.add_asset(asset_type='Application')
+    app2 = model.add_asset(asset_type='Application')
+
+    # Create association between app1 and app2
+    app1.add_associated_assets(fieldname='appExecutedApps', assets={app2})
+    attack_graph = AttackGraph(lang_graph=corelang_lang_graph, model=model)
+    seen = {
+        "Application:0:notPresent": False,
+        "Application:0:supplyChainAuditing": False,
+        "Application:1:notPresent": False,
+        "Application:1:supplyChainAuditing": False,
+    }
+    for n in attack_graph.defense_steps:
+        seen[n.full_name] = True
+    for v in seen.values():
+        assert v
 
 
 def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
@@ -734,8 +757,8 @@ def tests_create_ag_step_lists():
     created_ag = create_attack_graph(mar, model)
 
     # Make sure all nodes were stored in correct list
-    defenses = [n for n in created_ag.nodes.values() if n.type == 'defense']
-    attacks = [n for n in created_ag.nodes.values() if n.type in ('or', 'and')]
+    defenses = [n for n in created_ag.nodes.values() if n.type == AttackStepType.DEFENSE]
+    attacks = [n for n in created_ag.nodes.values() if n.type in (AttackStepType.OR, AttackStepType.AND)]
     assert defenses == created_ag.defense_steps
     assert attacks == created_ag.attack_steps
 

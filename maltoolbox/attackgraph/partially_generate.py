@@ -13,6 +13,7 @@ from maltoolbox.language.expression_chain import (
     ExprType,
     chain_fieldnames,
 )
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 
 from ..exceptions import (
     AttackGraphException,
@@ -27,8 +28,8 @@ def create_nodes_from_assets(
 ) -> tuple[dict, list, list, dict]:
     id_to_node = {}
     full_name_to_node = {}
-    attack_steps = []
-    defense_steps = []
+    attack_steps: list[AttackGraphNode] = []
+    defense_steps: list[AttackGraphNode] = []
 
     node_id = starting_id
     for asset in assets:
@@ -45,9 +46,9 @@ def create_nodes_from_assets(
             id_to_node[node.id] = node
             full_name_to_node[node.full_name] = node
 
-            if node.type in ('or', 'and'):
+            if node.type in (AttackStepType.OR, AttackStepType.AND):
                 attack_steps.append(node)
-            elif node.type == 'defense':
+            elif node.type == AttackStepType.DEFENSE:
                 defense_steps.append(node)
 
             node_id += 1

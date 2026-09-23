@@ -15,7 +15,10 @@ from maltoolbox.language.language_graph_assoc import (
     LanguageGraphAssociationField,
     link_association_to_assets,
 )
-from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
+from maltoolbox.language.language_graph_attack_step import (
+    AttackStepType,
+    LanguageGraphAttackStep,
+)
 from maltoolbox.language.language_graph_detector import (
     LanguageGraphContextItem,
     LanguageGraphDetector,
@@ -251,7 +254,7 @@ def _connect_attack_steps(
                     reverse_expr_chain(chain, None)
                 )
 
-            if step.type in ('exist', 'notExist'):
+            if step.type in (AttackStepType.EXIST, AttackStepType.NOT_EXIST):
                 reqs = attack_step_dict.get('requires', {}).get('stepExpressions', [])
                 if not reqs:
                     raise LanguageGraphStepExpressionError(

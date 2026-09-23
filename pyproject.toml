@@ -62,6 +62,7 @@ maltoolbox = ["*.conf*", "py.typed"]
 
 [tool.pytest.ini_options]
 pythonpath = ['.']
+markers = "integration: deselected in CI/CD"
 filterwarnings = "ignore:invalid escape sequence"
 
 [tool.mypy]

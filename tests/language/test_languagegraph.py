@@ -7,6 +7,7 @@ from conftest import path_testdata
 
 from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
 from maltoolbox.language.compiler import MalCompiler
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language.languagegraph import load_language_graph_from_file
 
 
@@ -250,7 +251,7 @@ def test_attack_step_types(corelang_lang_graph: LanguageGraph):
         for attack_step in asset.attack_steps.values()
     ]
     for attack_step in attack_steps:
-        assert attack_step.type in ['or', 'and', 'defense', 'exist', 'notExist'], (
+        assert attack_step.type in [AttackStepType.OR, AttackStepType.AND, AttackStepType.DEFENSE, AttackStepType.EXIST, AttackStepType.NOT_EXIST], (
             f'Attack step {attack_step.name} has type {attack_step.type}. '
             'Attack step types must be one of: or, and, defense, exist, notExist'
         )

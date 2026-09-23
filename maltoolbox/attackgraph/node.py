@@ -7,6 +7,7 @@ from functools import cached_property
 from typing import TYPE_CHECKING
 
 from maltoolbox.attackgraph.detector import Detector
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 
 if TYPE_CHECKING:
     from ..language import LanguageGraphAttackStep
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 
 class AttackGraphNode:
     """Node part of AttackGraph"""
+    existence_status: bool
 
     def __init__(
         self,
@@ -27,7 +29,7 @@ class AttackGraphNode:
     ):
         self.lg_attack_step = lg_attack_step
         self.name = lg_attack_step.name
-        self.type = lg_attack_step.type
+        self.type = AttackStepType[lg_attack_step.type] if isinstance(lg_attack_step.type, str) else lg_attack_step.type
         self.causal_mode = self.lg_attack_step.causal_mode
         self.ttc = ttc_dist if ttc_dist is not None else lg_attack_step.ttc
         self.tags = lg_attack_step.tags
@@ -37,17 +39,25 @@ class AttackGraphNode:
         self._full_name = full_name
         self.id = node_id
         self.model_asset = model_asset
-        self.existence_status = existence_status
+        #self.existence_status = existence_status
         self.children: set[AttackGraphNode] = set()
         self.parents: set[AttackGraphNode] = set()
         self.extras: dict = {}
         self.detectors: dict[str, Detector] = {}
 
+        # if Exist/NotExist and existance_status = None, set existance_status to not existing
+        if self.type in (AttackStepType.EXIST, AttackStepType.NOT_EXIST) and type(existence_status) != bool:
+            self.existence_status = self.type != AttackStepType.EXIST
+        elif existence_status is None:
+            self.existence_status = False
+        else:
+            self.existence_status = existence_status
+
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
         node_dict: dict = {
             'id': self.id,
-            'type': self.type,
+            'type': str(self.type),
             'lang_graph_attack_step': self.lg_attack_step.full_name,
             'name': self.name,
             'ttc': self.ttc,

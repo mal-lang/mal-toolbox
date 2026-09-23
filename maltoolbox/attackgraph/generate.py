@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from maltoolbox.attackgraph.detector import Detector
 from maltoolbox.attackgraph.node_getters import get_node_by_full_name
 from maltoolbox.attackgraph.ttcs import get_ttc_dist
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language.language_graph_detector import LanguageGraphDetector
 
 from ..exceptions import (
@@ -244,8 +245,8 @@ def link_nodes_by_language(model: Model, full_name_to_node: dict[str, AttackGrap
 def create_nodes_from_model(model: Model):
     id_to_node = {}
     full_name_to_node = {}
-    attack_steps = []
-    defense_steps = []
+    attack_steps: list[AttackGraphNode] = []
+    defense_steps: list[AttackGraphNode] = []
 
     node_id = 0
     for asset in model.assets.values():
@@ -262,9 +263,9 @@ def create_nodes_from_model(model: Model):
             id_to_node[node.id] = node
             full_name_to_node[node.full_name] = node
 
-            if node.type in ('or', 'and'):
+            if node.type in (AttackStepType.OR, AttackStepType.AND):
                 attack_steps.append(node)
-            elif node.type == 'defense':
+            elif node.type == AttackStepType.DEFENSE:
                 defense_steps.append(node)
 
             node_id += 1
@@ -330,7 +331,7 @@ def get_existance_status(
     model: Model, asset: ModelAsset, lg_attack_step: LanguageGraphAttackStep
 ):
 
-    if lg_attack_step.type not in ('exist', 'notExist'):
+    if lg_attack_step.type not in (AttackStepType.EXIST, AttackStepType.NOT_EXIST):
         # No existence status for other type of steps
         return None
 

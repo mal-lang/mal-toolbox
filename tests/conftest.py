@@ -10,6 +10,7 @@ from maltoolbox.language import (
     LanguageGraphAsset,
     LanguageGraphAttackStep,
 )
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.model import Model
 
 # Helpers
@@ -62,27 +63,27 @@ def dummy_lang_graph(corelang_lang_graph):
     dummy_asset = LanguageGraphAsset(name='DummyAsset')
     lang_graph.assets['DummyAsset'] = dummy_asset
     dummy_or_attack_step_node = LanguageGraphAttackStep(
-        name='DummyOrAttackStep', type='or', asset=dummy_asset
+        name='DummyOrAttackStep', type=AttackStepType.OR, asset=dummy_asset
     )
     dummy_asset.attack_steps['DummyOrAttackStep'] = dummy_or_attack_step_node
 
     dummy_and_attack_step_node = LanguageGraphAttackStep(
-        name='DummyAndAttackStep', type='and', asset=dummy_asset
+        name='DummyAndAttackStep', type=AttackStepType.AND, asset=dummy_asset
     )
     dummy_asset.attack_steps['DummyAndAttackStep'] = dummy_and_attack_step_node
 
     dummy_defense_attack_step_node = LanguageGraphAttackStep(
-        name='DummyDefenseAttackStep', type='defense', asset=dummy_asset
+        name='DummyDefenseAttackStep', type=AttackStepType.DEFENSE, asset=dummy_asset
     )
     dummy_asset.attack_steps['DummyDefenseAttackStep'] = dummy_defense_attack_step_node
 
     dummy_exist_attack_step_node = LanguageGraphAttackStep(
-        name='DummyExistAttackStep', type='exist', asset=dummy_asset
+        name='DummyExistAttackStep', type=AttackStepType.EXIST, asset=dummy_asset
     )
     dummy_asset.attack_steps['DummyExistAttackStep'] = dummy_exist_attack_step_node
 
     dummy_exist_attack_step_node = LanguageGraphAttackStep(
-        name='DummyNotExistAttackStep', type='notExist', asset=dummy_asset
+        name='DummyNotExistAttackStep', type=AttackStepType.NOT_EXIST, asset=dummy_asset
     )
     dummy_asset.attack_steps['DummyNotExistAttackStep'] = dummy_exist_attack_step_node
     return lang_graph

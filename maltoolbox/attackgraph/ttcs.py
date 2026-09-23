@@ -1,7 +1,10 @@
 import copy
 import logging
 
-from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep
+from maltoolbox.language.language_graph_attack_step import (
+    AttackStepType,
+    LanguageGraphAttackStep,
+)
 from maltoolbox.model import ModelAsset
 
 logger = logging.getLogger(__name__)
@@ -12,7 +15,7 @@ def get_ttc_dist(asset: ModelAsset, attack_step: LanguageGraphAttackStep):
     and possibly overriding defense status
     """
     ttc_dist = copy.deepcopy(attack_step.ttc)
-    if (attack_step.type == 'defense') and (attack_step.name in asset.defenses):
+    if (attack_step.type == AttackStepType.DEFENSE) and (attack_step.name in asset.defenses):
         # If defense status was set in model, set ttc accordingly
         defense_value = float(asset.defenses[attack_step.name])
         ttc_dist = {
