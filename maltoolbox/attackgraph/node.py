@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class AttackGraphNode:
     """Node part of AttackGraph"""
+    existence_status: bool
 
     def __init__(
         self,
@@ -38,7 +39,7 @@ class AttackGraphNode:
         self._full_name = full_name
         self.id = node_id
         self.model_asset = model_asset
-        self.existence_status = existence_status
+        #self.existence_status = existence_status
         self.children: set[AttackGraphNode] = set()
         self.parents: set[AttackGraphNode] = set()
         self.extras: dict = {}
@@ -46,8 +47,11 @@ class AttackGraphNode:
 
         # if Exist/NotExist and existance_status = None, set existance_status to not existing
         if self.type in (AttackStepType.EXIST, AttackStepType.NOT_EXIST) and type(self.existence_status) != type(True):
-            #assert type(self.existence_status) == type(True), f"{self.type}-node needs to have boolean existence_status"
             self.existence_status = self.type != AttackStepType.EXIST
+        elif existence_status is None:
+            self.existence_status = False
+        else:
+            self.existence_status = existence_status
 
     def to_dict(self) -> dict:
         """Convert node to dictionary"""
