@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from enum import Enum
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
-from enum import Enum
+
 
 class AttackStepType(Enum):
     OR = 1
@@ -15,7 +15,7 @@ class AttackStepType(Enum):
     DEFENSE = 3
     EXIST = 4
     NOT_EXIST = 5
-    NOTEXIST = 5
+    NOTEXIST = 5 # noqa: PIE796 (to enable: AttackStepType['NOTEXIST'])
 
     def __str__(self):
         return self.name.lower().replace('_e', 'E')

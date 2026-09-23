@@ -7,8 +7,8 @@ from conftest import path_testdata
 
 from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
 from maltoolbox.language.compiler import MalCompiler
-from maltoolbox.language.languagegraph import load_language_graph_from_file
 from maltoolbox.language.language_graph_attack_step import AttackStepType
+from maltoolbox.language.languagegraph import load_language_graph_from_file
 
 
 def test_languagegraph_save_load(corelang_lang_graph: LanguageGraph):

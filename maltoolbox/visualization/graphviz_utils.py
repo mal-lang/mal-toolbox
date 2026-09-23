@@ -4,9 +4,10 @@ from pathlib import Path
 
 import graphviz
 
+from maltoolbox.language.language_graph_attack_step import AttackStepType
+
 from ..attackgraph import AttackGraph
 from ..model import Model
-from maltoolbox.language.language_graph_attack_step import AttackStepType
 
 graphviz_bright_colors = [
     'aliceblue',

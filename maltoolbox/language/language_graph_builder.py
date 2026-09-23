@@ -15,7 +15,10 @@ from maltoolbox.language.language_graph_assoc import (
     LanguageGraphAssociationField,
     link_association_to_assets,
 )
-from maltoolbox.language.language_graph_attack_step import LanguageGraphAttackStep, AttackStepType
+from maltoolbox.language.language_graph_attack_step import (
+    AttackStepType,
+    LanguageGraphAttackStep,
+)
 from maltoolbox.language.language_graph_detector import (
     LanguageGraphContextItem,
     LanguageGraphDetector,

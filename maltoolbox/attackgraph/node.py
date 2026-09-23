@@ -46,7 +46,7 @@ class AttackGraphNode:
         self.detectors: dict[str, Detector] = {}
 
         # if Exist/NotExist and existance_status = None, set existance_status to not existing
-        if self.type in (AttackStepType.EXIST, AttackStepType.NOT_EXIST) and type(self.existence_status) != type(True):
+        if self.type in (AttackStepType.EXIST, AttackStepType.NOT_EXIST) and type(self.existence_status) != bool:
             self.existence_status = self.type != AttackStepType.EXIST
         elif existence_status is None:
             self.existence_status = False

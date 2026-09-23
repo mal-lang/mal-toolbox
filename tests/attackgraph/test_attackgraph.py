@@ -9,9 +9,9 @@ from conftest import path_testdata
 
 from maltoolbox.attackgraph import AttackGraph, AttackGraphNode, create_attack_graph
 from maltoolbox.language import LanguageGraph
-from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language.language_graph_assoc import LanguageGraphAssociationField
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
 from maltoolbox.model import Model, ModelAsset
 
@@ -196,8 +196,8 @@ def test_attackgraph_according_to_corelang_has_defense_steps(corelang_lang_graph
     }
     for n in attack_graph.defense_steps:
         seen[n.full_name] = True
-    for n in seen:
-        assert seen[n] == True
+    for v in seen.values():
+        assert v
 
 
 def test_attackgraph_according_to_corelang(corelang_lang_graph, model):

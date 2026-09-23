@@ -7,13 +7,13 @@ from maltoolbox.attackgraph.generate import (
     get_existance_status,
 )
 from maltoolbox.attackgraph.ttcs import get_ttc_dist
-from maltoolbox.language.language_graph_attack_step import AttackStepType
 from maltoolbox.language import LanguageGraphAttackStep
 from maltoolbox.language.expression_chain import (
     ExpressionsChain,
     ExprType,
     chain_fieldnames,
 )
+from maltoolbox.language.language_graph_attack_step import AttackStepType
 
 from ..exceptions import (
     AttackGraphException,
