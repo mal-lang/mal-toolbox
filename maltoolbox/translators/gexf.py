@@ -58,6 +58,19 @@ _NODE_TYPE_COLORS: dict[str, Color] = {
     "defense": Color(r=148, g=103, b=189, a=0.8),
 }
 
+# Colors for common asset types (matching the drawio exporter's palette).
+_ASSET_TYPE_HEX_COLORS: dict[str, str] = {
+    "Hardware": "#4CAF50",  # Green
+    "Application": "#2196F3",  # Blue
+    "Network": "#9C27B0",  # Purple
+    "ConnectionRule": "#FF9800",  # Orange
+    "Identity": "#607D8B",  # Blue Grey
+    "Credentials": "#4CAF50",  # Green
+    "SoftwareVulnerability": "#F44336",  # Red
+    "Data": "#795548",  # Brown
+    "User": "#00BCD4",  # Cyan
+}
+
 def _hash_color(value: str) -> Color:
     """Deterministically derive a display color from a string"""
 
@@ -65,6 +78,26 @@ def _hash_color(value: str) -> Color:
     hue = (int(digest[:8], 16) % 360) / 360.0
     r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.85)
     return Color(r=round(r * 255), g=round(g * 255), b=round(b * 255), a=0.8)
+
+
+def _color_from_hex(hex_color: str, alpha: float = 0.8) -> Color:
+    hex_color = hex_color.lstrip("#")
+    return Color(
+        r=int(hex_color[0:2], 16),
+        g=int(hex_color[2:4], 16),
+        b=int(hex_color[4:6], 16),
+        a=alpha,
+    )
+
+
+def _color_for_asset_type(asset_type: str) -> Color:
+    """Color an asset type, matching the palette used by the drawio exporter
+    for known types and falling back to a hash-derived color otherwise."""
+
+    hex_color = _ASSET_TYPE_HEX_COLORS.get(asset_type)
+    if hex_color is not None:
+        return _color_from_hex(hex_color)
+    return _hash_color(asset_type)
 
 
 def attack_graph_to_gexf(
@@ -97,7 +130,7 @@ def attack_graph_to_gexf(
         if color_map == "node_type":
             color = _NODE_TYPE_COLORS.get(node.type, _DEFAULT_COLOR)
         elif color_map == "asset_type" and node.model_asset is not None:
-            color = _hash_color(node.model_asset.type)
+            color = _color_for_asset_type(node.model_asset.type)
         elif color_map == "asset" and node.model_asset is not None:
             color = _hash_color(node.model_asset.name)
 
@@ -188,7 +221,8 @@ def model_to_gexf(
 
     if not color_map:
         type_colors = {
-            asset.type: _hash_color(asset.type) for asset in model.assets.values()
+            asset.type: _color_for_asset_type(asset.type)
+            for asset in model.assets.values()
         }
         color_map = {
             asset_id: type_colors[asset.type]
