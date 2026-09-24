@@ -1,7 +1,9 @@
 import xml.etree.ElementTree as ET
 
 import pytest
-from gexfpy import stringify
+
+gexfpy = pytest.importorskip("gexfpy", reason="requires the 'gexf' optional dependency")
+stringify = gexfpy.stringify
 
 from maltoolbox.attackgraph import AttackGraph
 from maltoolbox.model import Model
@@ -44,7 +46,7 @@ def test_model_to_gexf(example_model: Model):
     def number_of_edges(model: Model) -> int:
         edges = set()
         for asset in model.assets.values():
-            for _fieldname, associated_assets in asset.associated_assets.items():
+            for associated_assets in asset.associated_assets.values():
                 for associated_asset in associated_assets:
                     edges.add((asset.id, associated_asset.id))
         return len(edges)
