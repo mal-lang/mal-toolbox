@@ -38,6 +38,16 @@ except ImportError:
     )
 
 _DEFAULT_COLOR = Color(r=0, g=0, b=0, a=0.5)
+_DEFAULT_EDGE_SHAPE = EdgeShapeContent(value=EdgeShapeType.SOLID)
+_DEFAULT_EDGE_THICKNESS = Thickness(value=3.0)
+_DEFAULT_NODE_SHAPE = NodeShapeContent(value=NodeShapeType.DISC)
+_DEFAULT_NODE_TYPE_SHAPE_MAP: dict[str, NodeShapeContent] = {
+    "or": NodeShapeContent(value=NodeShapeType.DISC),
+    "and": NodeShapeContent(value=NodeShapeType.DIAMOND),
+    "exist": NodeShapeContent(value=NodeShapeType.TRIANGLE),
+    "notExist": NodeShapeContent(value=NodeShapeType.TRIANGLE),
+    "defense": NodeShapeContent(value=NodeShapeType.SQUARE),
+}
 
 # Colors for the static AttackGraphNode types.
 _NODE_TYPE_COLORS: dict[str, Color] = {
@@ -59,16 +69,10 @@ def _hash_color(value: str) -> Color:
 
 def attack_graph_to_gexf(
     attack_graph: AttackGraph,
-    node_type_shape_map: dict[str, NodeShapeContent] = {
-        "or": NodeShapeContent(value=NodeShapeType.DISC),
-        "and": NodeShapeContent(value=NodeShapeType.DIAMOND),
-        "exist": NodeShapeContent(value=NodeShapeType.TRIANGLE),
-        "notExist": NodeShapeContent(value=NodeShapeType.TRIANGLE),
-        "defense": NodeShapeContent(value=NodeShapeType.SQUARE),
-    },
+    node_type_shape_map: dict[str, NodeShapeContent] = _DEFAULT_NODE_TYPE_SHAPE_MAP,
     color_map: Literal["node_type", "asset_type", "asset"] | None = None,
-    edge_thickness: Thickness = Thickness(value=3.0),
-    edge_shape: EdgeShapeContent = EdgeShapeContent(value=EdgeShapeType.SOLID),
+    edge_thickness: Thickness = _DEFAULT_EDGE_THICKNESS,
+    edge_shape: EdgeShapeContent = _DEFAULT_EDGE_SHAPE,
 ) -> Gexf:
     """Export an attack graph to GEXF format
 
@@ -84,6 +88,7 @@ def attack_graph_to_gexf(
             f"color_map must be one of 'node_type', 'asset_type', 'asset' or None, "
             f"got {color_map!r}"
         )
+    assert attack_graph.model is not None, "AttackGraph must have a model to export"
 
     node_list: list[Node] = []
     edge_list: list[Edge] = []
@@ -171,9 +176,9 @@ def attack_graph_to_gexf(
 
 def model_to_gexf(
     model: Model,
-    color_map: dict[str, Color] | dict[int, Color] | None = None,
-    edge_thickness: Thickness = Thickness(value=8.0),
-    edge_shape: EdgeShapeContent = EdgeShapeContent(value=EdgeShapeType.SOLID),
+    color_map: dict[int, Color] | None = None,
+    edge_thickness: Thickness = _DEFAULT_EDGE_THICKNESS,
+    edge_shape: EdgeShapeContent = _DEFAULT_EDGE_SHAPE,
 ) -> Gexf:
     """Export a model to GEXF format
 

@@ -1,11 +1,12 @@
+import argparse
+
+from gexfpy import Gexf
+
+from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.language import LanguageGraph
+from maltoolbox.model import Model
 from maltoolbox.translators import attack_graph_to_gexf
 from maltoolbox.translators.gexf import save_gexf_to_file
-from maltoolbox.model import Model
-from maltoolbox.language import LanguageGraph
-from maltoolbox.attackgraph import AttackGraph
-import argparse
-from gexfpy import Gexf, stringify
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert a model to GEXF format")
