@@ -27,6 +27,6 @@ if __name__ == "__main__":
     AG = AttackGraph(lang_graph=lang_graph, model=model)
 
     # Convert the model to GEXF
-    gexf: Gexf = attack_graph_to_gexf(AG)
+    gexf: Gexf = attack_graph_to_gexf(AG, color_map="asset_type")
 
     save_gexf_to_file(gexf, args.output_file)

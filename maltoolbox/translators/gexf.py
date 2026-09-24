@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import colorsys
 import hashlib
+from typing import Literal
 
 from maltoolbox.attackgraph import AttackGraph
 from maltoolbox.model import Model
@@ -36,6 +37,26 @@ except ImportError:
         "The gexfpy package is required for GEXF export. Please install it using 'pip install \"mal-toolbox[gexf]\".'"
     )
 
+_DEFAULT_COLOR = Color(r=0, g=0, b=0, a=0.5)
+
+# Colors for the static AttackGraphNode types.
+_NODE_TYPE_COLORS: dict[str, Color] = {
+    "or": Color(r=31, g=119, b=180, a=0.8),
+    "and": Color(r=214, g=39, b=40, a=0.8),
+    "exist": Color(r=44, g=160, b=44, a=0.8),
+    "notExist": Color(r=255, g=127, b=14, a=0.8),
+    "defense": Color(r=148, g=103, b=189, a=0.8),
+}
+
+def _hash_color(value: str) -> Color:
+    """Deterministically derive a display color from a string"""
+
+    digest = hashlib.md5(value.encode("utf-8")).hexdigest()
+    hue = (int(digest[:8], 16) % 360) / 360.0
+    r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.85)
+    return Color(r=round(r * 255), g=round(g * 255), b=round(b * 255), a=0.8)
+
+
 def attack_graph_to_gexf(
     attack_graph: AttackGraph,
     node_type_shape_map: dict[str, NodeShapeContent] = {
@@ -45,15 +66,36 @@ def attack_graph_to_gexf(
         "notExist": NodeShapeContent(value=NodeShapeType.TRIANGLE),
         "defense": NodeShapeContent(value=NodeShapeType.SQUARE),
     },
-    color_map: dict[str, Color] | dict[int, Color] = {},
+    color_map: Literal["node_type", "asset_type", "asset"] | None = None,
     edge_thickness: Thickness = Thickness(value=3.0),
     edge_shape: EdgeShapeContent = EdgeShapeContent(value=EdgeShapeType.SOLID),
 ) -> Gexf:
-    """Export an attack graph to GEXF format"""
+    """Export an attack graph to GEXF format
+
+    color_map selects how node colors are generated automatically:
+      - "node_type": color by AttackGraphNode type (or/and/exist/notExist/defense)
+      - "asset_type": color by the underlying model asset's type
+      - "asset": color by the underlying model asset (each asset gets its own color)
+      - None: no automatic coloring
+    """
+
+    if color_map is not None and color_map not in ("node_type", "asset_type", "asset"):
+        raise ValueError(
+            f"color_map must be one of 'node_type', 'asset_type', 'asset' or None, "
+            f"got {color_map!r}"
+        )
 
     node_list: list[Node] = []
     edge_list: list[Edge] = []
     for node_id, node in attack_graph.nodes.items():
+        color = _DEFAULT_COLOR
+        if color_map == "node_type":
+            color = _NODE_TYPE_COLORS.get(node.type, _DEFAULT_COLOR)
+        elif color_map == "asset_type" and node.model_asset is not None:
+            color = _hash_color(node.model_asset.type)
+        elif color_map == "asset" and node.model_asset is not None:
+            color = _hash_color(node.model_asset.name)
+
         node_list.append(
             Node(
                 id=node_id,
@@ -68,7 +110,7 @@ def attack_graph_to_gexf(
                         if key not in {"children", "parents"}
                     ]
                 ),
-                color=[color_map.get(node_id, Color(r=0, g=0, b=0, a=0.5))],
+                color=[color],
                 shape=[
                     node_type_shape_map.get(
                         node.type, NodeShapeContent(value=NodeShapeType.DISC)
@@ -127,27 +169,21 @@ def attack_graph_to_gexf(
     return Gexf(graph=graph)
 
 
-def _color_for_asset_type(asset_type: str) -> Color:
-    """Deterministically derive a display color from an asset type name"""
-
-    digest = hashlib.md5(asset_type.encode("utf-8")).hexdigest()
-    hue = (int(digest[:8], 16) % 360) / 360.0
-    r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.85)
-    return Color(r=round(r * 255), g=round(g * 255), b=round(b * 255), a=0.8)
-
-
 def model_to_gexf(
     model: Model,
     color_map: dict[str, Color] | dict[int, Color] | None = None,
     edge_thickness: Thickness = Thickness(value=8.0),
     edge_shape: EdgeShapeContent = EdgeShapeContent(value=EdgeShapeType.SOLID),
 ) -> Gexf:
-    """Export a model to GEXF format"""
+    """Export a model to GEXF format
+
+    If color_map is not provided, colors are generated automatically based on
+    each asset's type. Pass an explicit dict (keyed by asset id) to override.
+    """
 
     if not color_map:
         type_colors = {
-            asset.type: _color_for_asset_type(asset.type)
-            for asset in model.assets.values()
+            asset.type: _hash_color(asset.type) for asset in model.assets.values()
         }
         color_map = {
             asset_id: type_colors[asset.type]
@@ -182,7 +218,7 @@ def model_to_gexf(
                         for defense_name, defense_value in asset.defenses.items()
                     ]
                 ),
-                color=[color_map.get(asset_id, Color(r=0, g=0, b=0, a=0.5))],
+                color=[color_map.get(asset_id, _DEFAULT_COLOR)],
                 shape=[NodeShapeContent(value=NodeShapeType.SQUARE)],
             )
         )
