@@ -3,30 +3,34 @@ from __future__ import annotations
 from maltoolbox.attackgraph import AttackGraph
 from maltoolbox.model import Model
 
-from gexfpy import stringify
-from gexfpy import (
-    Gexf,
-    Graph,
-    Nodes,
-    Edges,
-    Node,
-    Edge,
-    Color,
-    Attvalues,
-    Attvalue,
-    Thickness,
-    NodeShapeContent,
-    NodeShapeType,
-    EdgeShapeContent,
-    EdgeShapeType,
-    IdtypeType,
-    ModeType,
-    DefaultedgetypeType,
-    Attribute,
-    AttrtypeType,
-    Attributes,
-)
-
+try:
+    from gexfpy import (
+        Attribute,
+        Attributes,
+        AttrtypeType,
+        Attvalue,
+        Attvalues,
+        Color,
+        DefaultedgetypeType,
+        Edge,
+        Edges,
+        EdgeShapeContent,
+        EdgeShapeType,
+        Gexf,
+        Graph,
+        IdtypeType,
+        ModeType,
+        Node,
+        Nodes,
+        NodeShapeContent,
+        NodeShapeType,
+        Thickness,
+        stringify,
+    )
+except ImportError:
+    raise ImportError(
+        "The gexfpy package is required for GEXF export. Please install it using 'pip install \"mal-toolbox[gexf]\".'"
+    )
 
 def attack_graph_to_gexf(
     attack_graph: AttackGraph,

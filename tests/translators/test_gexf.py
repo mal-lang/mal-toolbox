@@ -1,9 +1,12 @@
-from maltoolbox.model import Model
-from maltoolbox.translators import attack_graph_to_gexf, model_to_gexf
-from maltoolbox.attackgraph import AttackGraph
+import xml.etree.ElementTree as ET
+
 import pytest
 from gexfpy import stringify
-import xml.etree.ElementTree as ET
+
+from maltoolbox.attackgraph import AttackGraph
+from maltoolbox.model import Model
+from maltoolbox.translators import attack_graph_to_gexf, model_to_gexf
+
 
 def test_attack_graph_to_gexf(example_attackgraph: AttackGraph):
     """Test conversion of attack graph to GEXF format"""
@@ -24,8 +27,8 @@ def test_attack_graph_to_gexf(example_attackgraph: AttackGraph):
     assert gexf.graph.edges.count == number_of_edges(example_attackgraph)
 
     for node in example_attackgraph.nodes.values():
-        assert gexf.graph.nodes.node[node.id].id == node.id, f"Node id mismatch"
-        assert gexf.graph.nodes.node[node.id].label == node.full_name, f"Node label mismatch"
+        assert gexf.graph.nodes.node[node.id].id == node.id, "Node id mismatch"
+        assert gexf.graph.nodes.node[node.id].label == node.full_name, "Node label mismatch"
         node_dict = node.to_dict()
         for attvalue in gexf.graph.nodes.node[node.id].attvalues.attvalue:
             assert str(node_dict[attvalue.for_value]) == attvalue.value, f"Attribute {attvalue.for_value} value mismatch"
@@ -52,8 +55,8 @@ def test_model_to_gexf(example_model: Model):
     assert gexf.graph.edges.count == number_of_edges(example_model)
 
     for asset in example_model.assets.values():
-        assert gexf.graph.nodes.node[asset.id].id == asset.id, f"Node id mismatch"
-        assert gexf.graph.nodes.node[asset.id].label == asset.name, f"Node label mismatch"
+        assert gexf.graph.nodes.node[asset.id].id == asset.id, "Node id mismatch"
+        assert gexf.graph.nodes.node[asset.id].label == asset.name, "Node label mismatch"
         asset_dict = asset._to_dict()[asset.id]
         for attvalue in gexf.graph.nodes.node[asset.id].attvalues.attvalue:
             assert str(asset_dict[attvalue.for_value]) == attvalue.value, f"Attribute {attvalue.for_value} value mismatch"
