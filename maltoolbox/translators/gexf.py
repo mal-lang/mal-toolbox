@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import colorsys
+import hashlib
+
 from maltoolbox.attackgraph import AttackGraph
 from maltoolbox.model import Model
 
@@ -10,6 +13,7 @@ try:
         AttrtypeType,
         Attvalue,
         Attvalues,
+        ClassType,
         Color,
         DefaultedgetypeType,
         Edge,
@@ -85,6 +89,7 @@ def attack_graph_to_gexf(
 
     graph = Graph(
         attributes=Attributes(
+            class_value=ClassType.NODE,
             attribute=[
                 Attribute(
                     default=[attack_graph.model.name],
@@ -122,13 +127,32 @@ def attack_graph_to_gexf(
     return Gexf(graph=graph)
 
 
+def _color_for_asset_type(asset_type: str) -> Color:
+    """Deterministically derive a display color from an asset type name"""
+
+    digest = hashlib.md5(asset_type.encode("utf-8")).hexdigest()
+    hue = (int(digest[:8], 16) % 360) / 360.0
+    r, g, b = colorsys.hsv_to_rgb(hue, 0.65, 0.85)
+    return Color(r=round(r * 255), g=round(g * 255), b=round(b * 255), a=0.8)
+
+
 def model_to_gexf(
     model: Model,
-    color_map: dict[str, Color] | dict[int, Color] = {},
+    color_map: dict[str, Color] | dict[int, Color] | None = None,
     edge_thickness: Thickness = Thickness(value=8.0),
     edge_shape: EdgeShapeContent = EdgeShapeContent(value=EdgeShapeType.SOLID),
 ) -> Gexf:
     """Export a model to GEXF format"""
+
+    if not color_map:
+        type_colors = {
+            asset.type: _color_for_asset_type(asset.type)
+            for asset in model.assets.values()
+        }
+        color_map = {
+            asset_id: type_colors[asset.type]
+            for asset_id, asset in model.assets.items()
+        }
 
     node_list: list[Node] = []
     edge_list: list[Edge] = []
@@ -178,6 +202,7 @@ def model_to_gexf(
 
     graph = Graph(
         attributes=Attributes(
+            class_value=ClassType.NODE,
             attribute=[
                 Attribute(
                     default=[model.name],
@@ -213,3 +238,15 @@ def model_to_gexf(
     )
 
     return Gexf(graph=graph)
+
+
+def save_gexf_to_file(
+    gexf: Gexf, filename: str, pretty_print: bool = True
+) -> None:
+    """Write a GEXF object to a file"""
+
+    if not filename.endswith(".gexf"):
+        filename += ".gexf"
+
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(stringify(gexf, pretty_print=pretty_print))
