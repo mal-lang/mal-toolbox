@@ -1,0 +1,60 @@
+{
+  "assets": {
+    "0": {
+      "associated_assets": {
+        "hosts": {
+          "1": "device1"
+        }
+      },
+      "name": "internet1",
+      "type": "Internet"
+    },
+    "1": {
+      "associated_assets": {
+        "data": {
+          "2": "data1"
+        },
+        "inet": {
+          "0": "internet1"
+        },
+        "malware": {
+          "3": "wiper1"
+        }
+      },
+      "defenses": {
+        "someDefense": 0.5
+      },
+      "extras": {
+        "note": "test"
+      },
+      "name": "device1",
+      "type": "Device"
+    },
+    "2": {
+      "associated_assets": {
+        "node": {
+          "1": "device1"
+        }
+      },
+      "name": "data1",
+      "type": "Data"
+    },
+    "3": {
+      "associated_assets": {
+        "victim": {
+          "1": "device1"
+        }
+      },
+      "name": "wiper1",
+      "type": "Wiper"
+    }
+  },
+  "metadata": {
+    "MAL-Toolbox Version": "2.11.0",
+    "info": "Created by the mal-toolbox model python module.",
+    "langID": "org.mal-lang.wiperLang",
+    "langVersion": "1.0.0",
+    "malVersion": "0.1.0-SNAPSHOT",
+    "name": "Test Model"
+  }
+}

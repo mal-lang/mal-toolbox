@@ -1,0 +1,29 @@
+#id: "org.mal-lang.multiplicityLang"
+#version: "1.0.0"
+
+category Main {
+
+    asset Host {
+        | access
+            ->  createRandomFiles,
+                files.read
+
+        | createRandomFiles
+            A> self / files:4..10
+    }
+
+    asset Proc {
+        | createFile
+            A>  onHost / files,
+                self / ~(openFiles - onHost.procs.openFiles):1
+    }
+    asset File {
+        | read
+    }
+}
+
+associations {
+    Host [onHost] 1 <-- running --> * [procs] Proc
+    Host [onHost] 1 <-- disk --> * [files] File
+    Proc [modifyingProcs] * <-- modifies --> * [openFiles] File
+}

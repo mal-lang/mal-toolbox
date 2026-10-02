@@ -1,0 +1,324 @@
+{
+  "Hub": {
+    "associations": {
+      "setA": {
+        "info": {},
+        "left": {
+          "asset": "Hub",
+          "fieldname": "inSetA",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetA",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setA",
+          "max": null,
+          "min": 0
+        }
+      },
+      "setB": {
+        "info": {},
+        "left": {
+          "asset": "Hub",
+          "fieldname": "inSetB",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetB",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setB",
+          "max": null,
+          "min": 0
+        }
+      },
+      "siblingOf": {
+        "info": {},
+        "left": {
+          "asset": "Hub",
+          "fieldname": "siblingOf",
+          "max": null,
+          "min": 0
+        },
+        "name": "HubSibling",
+        "right": {
+          "asset": "Hub",
+          "fieldname": "siblings",
+          "max": null,
+          "min": 0
+        }
+      },
+      "siblings": {
+        "info": {},
+        "left": {
+          "asset": "Hub",
+          "fieldname": "siblingOf",
+          "max": null,
+          "min": 0
+        },
+        "name": "HubSibling",
+        "right": {
+          "asset": "Hub",
+          "fieldname": "siblings",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "innerIntersection": {
+        "asset": "Hub",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "innerIntersection",
+        "overrides": true,
+        "own_children": {
+          "Target:intersectionResult": [
+            {
+              "collect": {
+                "left": {
+                  "HubSibling": {
+                    "asset type": "Hub",
+                    "fieldname": "siblings"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "intersection": {
+                    "left": {
+                      "HasSetA": {
+                        "asset type": "Target",
+                        "fieldname": "setA"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HasSetB": {
+                        "asset type": "Target",
+                        "fieldname": "setB"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "intersection"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "outerIntersection": {
+        "asset": "Hub",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "outerIntersection",
+        "overrides": true,
+        "own_children": {
+          "Target:intersectionResult": [
+            {
+              "intersection": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "HubSibling": {
+                        "asset type": "Hub",
+                        "fieldname": "siblings"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HasSetA": {
+                        "asset type": "Target",
+                        "fieldname": "setA"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "HubSibling": {
+                        "asset type": "Hub",
+                        "fieldname": "siblings"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HasSetB": {
+                        "asset type": "Target",
+                        "fieldname": "setB"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "intersection"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Hub",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Target": {
+    "associations": {
+      "inSetA": {
+        "info": {},
+        "left": {
+          "asset": "Hub",
+          "fieldname": "inSetA",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetA",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setA",
+          "max": null,
+          "min": 0
+        }
+      },
+      "inSetB": {
+        "info": {},
+        "left": {
+          "asset": "Hub",
+          "fieldname": "inSetB",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetB",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setB",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "intersectionResult": {
+        "asset": "Target",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "intersectionResult",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Hub:innerIntersection": [
+            {
+              "collect": {
+                "left": {
+                  "intersection": {
+                    "left": {
+                      "HasSetA": {
+                        "asset type": "Hub",
+                        "fieldname": "inSetA"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HasSetB": {
+                        "asset type": "Hub",
+                        "fieldname": "inSetB"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "intersection"
+                },
+                "right": {
+                  "HubSibling": {
+                    "asset type": "Hub",
+                    "fieldname": "siblingOf"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "Hub:outerIntersection": [
+            {
+              "intersection": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "HasSetA": {
+                        "asset type": "Hub",
+                        "fieldname": "inSetA"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HubSibling": {
+                        "asset type": "Hub",
+                        "fieldname": "siblingOf"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "HasSetB": {
+                        "asset type": "Hub",
+                        "fieldname": "inSetB"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HubSibling": {
+                        "asset type": "Hub",
+                        "fieldname": "siblingOf"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "intersection"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Target",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

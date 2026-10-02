@@ -1,0 +1,291 @@
+{
+  "Dummy": {
+    "associations": {},
+    "attack_steps": {
+      "berni": {
+        "asset": "Dummy",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "berni",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": {
+          "arguments": [
+            0.5
+          ],
+          "name": "Bernoulli",
+          "type": "function"
+        },
+        "type": "or"
+      },
+      "composite": {
+        "asset": "Dummy",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "composite",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": {
+          "lhs": {
+            "arguments": [
+              0.1
+            ],
+            "name": "Exponential",
+            "type": "function"
+          },
+          "rhs": {
+            "arguments": [
+              0.5
+            ],
+            "name": "Bernoulli",
+            "type": "function"
+          },
+          "type": "multiplication"
+        },
+        "type": "or"
+      },
+      "compositeComplex": {
+        "asset": "Dummy",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "compositeComplex",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": {
+          "lhs": {
+            "arguments": [
+              0.5
+            ],
+            "name": "Bernoulli",
+            "type": "function"
+          },
+          "rhs": {
+            "lhs": {
+              "lhs": {
+                "lhs": {
+                  "arguments": [
+                    10.0,
+                    0.1
+                  ],
+                  "name": "Binomial",
+                  "type": "function"
+                },
+                "rhs": {
+                  "arguments": [
+                    0.2
+                  ],
+                  "name": "Exponential",
+                  "type": "function"
+                },
+                "type": "addition"
+              },
+              "rhs": {
+                "lhs": {
+                  "lhs": {
+                    "arguments": [
+                      0.1,
+                      0.2
+                    ],
+                    "name": "Gamma",
+                    "type": "function"
+                  },
+                  "rhs": {
+                    "arguments": [
+                      5.0,
+                      0.5
+                    ],
+                    "name": "LogNormal",
+                    "type": "function"
+                  },
+                  "type": "multiplication"
+                },
+                "rhs": {
+                  "lhs": {
+                    "arguments": [
+                      7.0,
+                      0.25
+                    ],
+                    "name": "Pareto",
+                    "type": "function"
+                  },
+                  "rhs": {
+                    "arguments": [
+                      6.0,
+                      0.3
+                    ],
+                    "name": "TruncatedNormal",
+                    "type": "function"
+                  },
+                  "type": "exponentiation"
+                },
+                "type": "division"
+              },
+              "type": "subtraction"
+            },
+            "rhs": {
+              "arguments": [
+                0.1,
+                0.9
+              ],
+              "name": "Uniform",
+              "type": "function"
+            },
+            "type": "addition"
+          },
+          "type": "multiplication"
+        },
+        "type": "or"
+      },
+      "compositeComplex2": {
+        "asset": "Dummy",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "compositeComplex2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": {
+          "lhs": {
+            "arguments": [
+              0.5
+            ],
+            "name": "Bernoulli",
+            "type": "function"
+          },
+          "rhs": {
+            "lhs": {
+              "lhs": {
+                "lhs": {
+                  "lhs": {
+                    "arguments": [
+                      10.0,
+                      0.1
+                    ],
+                    "name": "Binomial",
+                    "type": "function"
+                  },
+                  "rhs": {
+                    "arguments": [
+                      0.2
+                    ],
+                    "name": "Exponential",
+                    "type": "function"
+                  },
+                  "type": "addition"
+                },
+                "rhs": {
+                  "lhs": {
+                    "arguments": [
+                      0.1,
+                      0.2
+                    ],
+                    "name": "Gamma",
+                    "type": "function"
+                  },
+                  "rhs": {
+                    "arguments": [
+                      5.0,
+                      0.5
+                    ],
+                    "name": "LogNormal",
+                    "type": "function"
+                  },
+                  "type": "multiplication"
+                },
+                "type": "subtraction"
+              },
+              "rhs": {
+                "lhs": {
+                  "arguments": [
+                    7.0,
+                    0.25
+                  ],
+                  "name": "Pareto",
+                  "type": "function"
+                },
+                "rhs": {
+                  "arguments": [
+                    6.0,
+                    0.3
+                  ],
+                  "name": "TruncatedNormal",
+                  "type": "function"
+                },
+                "type": "exponentiation"
+              },
+              "type": "addition"
+            },
+            "rhs": {
+              "arguments": [
+                0.1,
+                0.9
+              ],
+              "name": "Uniform",
+              "type": "function"
+            },
+            "type": "addition"
+          },
+          "type": "multiplication"
+        },
+        "type": "or"
+      },
+      "expo": {
+        "asset": "Dummy",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "expo",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": {
+          "arguments": [
+            0.1
+          ],
+          "name": "Exponential",
+          "type": "function"
+        },
+        "type": "or"
+      },
+      "hardAndUncertain": {
+        "asset": "Dummy",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "hardAndUncertain",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": {
+          "arguments": [],
+          "name": "HardAndUncertain",
+          "type": "function"
+        },
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Dummy",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

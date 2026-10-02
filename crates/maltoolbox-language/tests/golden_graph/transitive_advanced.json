@@ -1,0 +1,145 @@
+{
+  "TestAsset": {
+    "associations": {
+      "fieldA1": {
+        "info": {},
+        "left": {
+          "asset": "TestAsset",
+          "fieldname": "fieldA1",
+          "max": null,
+          "min": 0
+        },
+        "name": "TransitiveTestAssocA",
+        "right": {
+          "asset": "TestAsset",
+          "fieldname": "fieldA2",
+          "max": null,
+          "min": 0
+        }
+      },
+      "fieldA2": {
+        "info": {},
+        "left": {
+          "asset": "TestAsset",
+          "fieldname": "fieldA1",
+          "max": null,
+          "min": 0
+        },
+        "name": "TransitiveTestAssocA",
+        "right": {
+          "asset": "TestAsset",
+          "fieldname": "fieldA2",
+          "max": null,
+          "min": 0
+        }
+      },
+      "fieldB1": {
+        "info": {},
+        "left": {
+          "asset": "TestAsset",
+          "fieldname": "fieldB1",
+          "max": null,
+          "min": 0
+        },
+        "name": "TransitiveTestAssocB",
+        "right": {
+          "asset": "TestAsset",
+          "fieldname": "fieldB2",
+          "max": null,
+          "min": 0
+        }
+      },
+      "fieldB2": {
+        "info": {},
+        "left": {
+          "asset": "TestAsset",
+          "fieldname": "fieldB1",
+          "max": null,
+          "min": 0
+        },
+        "name": "TransitiveTestAssocB",
+        "right": {
+          "asset": "TestAsset",
+          "fieldname": "fieldB2",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "test_step": {
+        "asset": "TestAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "test_step",
+        "overrides": true,
+        "own_children": {
+          "TestAsset:test_step": [
+            {
+              "transitive": {
+                "intersection": {
+                  "left": {
+                    "TransitiveTestAssocA": {
+                      "asset type": "TestAsset",
+                      "fieldname": "fieldA2"
+                    },
+                    "type": "field"
+                  },
+                  "right": {
+                    "TransitiveTestAssocB": {
+                      "asset type": "TestAsset",
+                      "fieldname": "fieldB2"
+                    },
+                    "type": "field"
+                  }
+                },
+                "type": "intersection"
+              },
+              "type": "transitive"
+            }
+          ]
+        },
+        "own_parents": {
+          "TestAsset:test_step": [
+            {
+              "transitive": {
+                "intersection": {
+                  "left": {
+                    "TransitiveTestAssocA": {
+                      "asset type": "TestAsset",
+                      "fieldname": "fieldA1"
+                    },
+                    "type": "field"
+                  },
+                  "right": {
+                    "TransitiveTestAssocB": {
+                      "asset type": "TestAsset",
+                      "fieldname": "fieldB1"
+                    },
+                    "type": "field"
+                  }
+                },
+                "type": "intersection"
+              },
+              "type": "transitive"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "TestAsset",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

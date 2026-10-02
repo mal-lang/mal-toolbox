@@ -1,0 +1,346 @@
+{
+  "Application": {
+    "associations": {
+      "computerOfApp": {
+        "info": {},
+        "left": {
+          "asset": "Computer",
+          "fieldname": "computerOfApp",
+          "max": null,
+          "min": 0
+        },
+        "name": "appExecution",
+        "right": {
+          "asset": "Application",
+          "fieldname": "computerApps",
+          "max": null,
+          "min": 0
+        }
+      },
+      "dataOnApp": {
+        "info": {},
+        "left": {
+          "asset": "Data",
+          "fieldname": "dataOnApp",
+          "max": null,
+          "min": 0
+        },
+        "name": "AppData",
+        "right": {
+          "asset": "Application",
+          "fieldname": "appWithData",
+          "max": null,
+          "min": 0
+        }
+      },
+      "fromApplications": {
+        "info": {},
+        "left": {
+          "asset": "Application",
+          "fieldname": "fromApplications",
+          "max": null,
+          "min": 0
+        },
+        "name": "AppToAppCommunication",
+        "right": {
+          "asset": "Application",
+          "fieldname": "toApplications",
+          "max": null,
+          "min": 0
+        }
+      },
+      "toApplications": {
+        "info": {},
+        "left": {
+          "asset": "Application",
+          "fieldname": "fromApplications",
+          "max": null,
+          "min": 0
+        },
+        "name": "AppToAppCommunication",
+        "right": {
+          "asset": "Application",
+          "fieldname": "toApplications",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "attemptExploit": {
+        "asset": "Application",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "attemptExploit",
+        "overrides": true,
+        "own_children": {
+          "Application:exploit": [
+            null
+          ]
+        },
+        "own_parents": {
+          "Application:exploit": [
+            {
+              "AppToAppCommunication": {
+                "asset type": "Application",
+                "fieldname": "fromApplications"
+              },
+              "type": "field"
+            }
+          ],
+          "Computer:authenticate": [
+            {
+              "appExecution": {
+                "asset type": "Computer",
+                "fieldname": "computerOfApp"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": {
+          "arguments": [],
+          "name": "HardAndCertain",
+          "type": "function"
+        },
+        "type": "or"
+      },
+      "exploit": {
+        "asset": "Application",
+        "detectors": {
+          "logExploit": {
+            "context": {
+              "comp": {
+                "asset_type": "Computer",
+                "attack_step_name": "authenticate",
+                "expr": {
+                  "appExecution": {
+                    "asset type": "Computer",
+                    "fieldname": "computerOfApp"
+                  },
+                  "type": "field"
+                },
+                "label": "comp"
+              }
+            },
+            "name": "logExploit",
+            "tprate": 0.9,
+            "type": null
+          }
+        },
+        "info": {},
+        "inherits": null,
+        "name": "exploit",
+        "overrides": true,
+        "own_children": {
+          "Application:attemptExploit": [
+            {
+              "AppToAppCommunication": {
+                "asset type": "Application",
+                "fieldname": "toApplications"
+              },
+              "type": "field"
+            }
+          ],
+          "Data:read": [
+            {
+              "AppData": {
+                "asset type": "Data",
+                "fieldname": "dataOnApp"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {
+          "Application:attemptExploit": [
+            null
+          ],
+          "Application:shutDown": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "and"
+      },
+      "shutDown": {
+        "asset": "Application",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "shutDown",
+        "overrides": true,
+        "own_children": {
+          "Application:exploit": [
+            null
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "defense"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Application",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Computer": {
+    "associations": {
+      "computerApps": {
+        "info": {},
+        "left": {
+          "asset": "Computer",
+          "fieldname": "computerOfApp",
+          "max": null,
+          "min": 0
+        },
+        "name": "appExecution",
+        "right": {
+          "asset": "Application",
+          "fieldname": "computerApps",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "attemptAuthenticate": {
+        "asset": "Computer",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "attemptAuthenticate",
+        "overrides": true,
+        "own_children": {
+          "Computer:authenticate": [
+            null
+          ]
+        },
+        "own_parents": {
+          "Computer:physicalAccess": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": {
+          "arguments": [],
+          "name": "HardAndCertain",
+          "type": "function"
+        },
+        "type": "or"
+      },
+      "authenticate": {
+        "asset": "Computer",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "authenticate",
+        "overrides": true,
+        "own_children": {
+          "Application:attemptExploit": [
+            {
+              "appExecution": {
+                "asset type": "Application",
+                "fieldname": "computerApps"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {
+          "Computer:attemptAuthenticate": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "and"
+      },
+      "physicalAccess": {
+        "asset": "Computer",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "physicalAccess",
+        "overrides": true,
+        "own_children": {
+          "Computer:attemptAuthenticate": [
+            null
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "and"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Computer",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Data": {
+    "associations": {
+      "appWithData": {
+        "info": {},
+        "left": {
+          "asset": "Data",
+          "fieldname": "dataOnApp",
+          "max": null,
+          "min": 0
+        },
+        "name": "AppData",
+        "right": {
+          "asset": "Application",
+          "fieldname": "appWithData",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "read": {
+        "asset": "Data",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "read",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Application:exploit": [
+            {
+              "AppData": {
+                "asset type": "Application",
+                "fieldname": "appWithData"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Data",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test-actions-effects",
+    "version": "0.0.0"
+  }
+}

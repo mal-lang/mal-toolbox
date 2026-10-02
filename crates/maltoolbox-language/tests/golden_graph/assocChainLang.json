@@ -1,0 +1,4004 @@
+{
+  "A": {
+    "associations": {
+      "b": {
+        "info": {},
+        "left": {
+          "asset": "A",
+          "fieldname": "a",
+          "max": null,
+          "min": 0
+        },
+        "name": "A2B",
+        "right": {
+          "asset": "B",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "access": {
+        "asset": "A",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "access",
+        "overrides": true,
+        "own_children": {
+          "A:reach": [
+            null
+          ],
+          "B:reach": [
+            {
+              "A2B": {
+                "asset type": "B",
+                "fieldname": "b"
+              },
+              "type": "field"
+            }
+          ],
+          "C:reach": [
+            {
+              "collect": {
+                "left": {
+                  "A2B": {
+                    "asset type": "B",
+                    "fieldname": "b"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "B2C": {
+                    "asset type": "C",
+                    "fieldname": "c"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "D:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "A2B": {
+                        "asset type": "B",
+                        "fieldname": "b"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "B2C": {
+                        "asset type": "C",
+                        "fieldname": "c"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "C2D": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "E:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "A2B": {
+                            "asset type": "B",
+                            "fieldname": "b"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "B2C": {
+                            "asset type": "C",
+                            "fieldname": "c"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "C2D": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "D2E": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "F:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "A2B": {
+                                "asset type": "B",
+                                "fieldname": "b"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "B2C": {
+                                "asset type": "C",
+                                "fieldname": "c"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "C2D": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "D2E": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "E2F": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "G:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "A2B": {
+                                    "asset type": "B",
+                                    "fieldname": "b"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "B2C": {
+                                    "asset type": "C",
+                                    "fieldname": "c"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "C2D": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "D2E": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "E2F": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "F2G": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "H:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "collect": {
+                                    "left": {
+                                      "A2B": {
+                                        "asset type": "B",
+                                        "fieldname": "b"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "B2C": {
+                                        "asset type": "C",
+                                        "fieldname": "c"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                },
+                                "right": {
+                                  "C2D": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "D2E": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "E2F": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "F2G": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "collect": {
+                                    "left": {
+                                      "collect": {
+                                        "left": {
+                                          "A2B": {
+                                            "asset type": "B",
+                                            "fieldname": "b"
+                                          },
+                                          "type": "field"
+                                        },
+                                        "right": {
+                                          "B2C": {
+                                            "asset type": "C",
+                                            "fieldname": "c"
+                                          },
+                                          "type": "field"
+                                        }
+                                      },
+                                      "type": "collect"
+                                    },
+                                    "right": {
+                                      "C2D": {
+                                        "asset type": "D",
+                                        "fieldname": "d"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                },
+                                "right": {
+                                  "D2E": {
+                                    "asset type": "E",
+                                    "fieldname": "e"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "E2F": {
+                                "asset type": "F",
+                                "fieldname": "f"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "F2G": {
+                            "asset type": "G",
+                            "fieldname": "g"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "G2H": {
+                        "asset type": "H",
+                        "fieldname": "h"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "reach": {
+        "asset": "A",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "B:reach": [
+            {
+              "A2B": {
+                "asset type": "B",
+                "fieldname": "b"
+              },
+              "type": "field"
+            }
+          ],
+          "C:reach": [
+            {
+              "collect": {
+                "left": {
+                  "A2B": {
+                    "asset type": "B",
+                    "fieldname": "b"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "B2C": {
+                    "asset type": "C",
+                    "fieldname": "c"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "D:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "A2B": {
+                        "asset type": "B",
+                        "fieldname": "b"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "B2C": {
+                        "asset type": "C",
+                        "fieldname": "c"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "C2D": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "E:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "A2B": {
+                            "asset type": "B",
+                            "fieldname": "b"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "B2C": {
+                            "asset type": "C",
+                            "fieldname": "c"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "C2D": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "D2E": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "F:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "A2B": {
+                                "asset type": "B",
+                                "fieldname": "b"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "B2C": {
+                                "asset type": "C",
+                                "fieldname": "c"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "C2D": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "D2E": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "E2F": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "G:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "A2B": {
+                                    "asset type": "B",
+                                    "fieldname": "b"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "B2C": {
+                                    "asset type": "C",
+                                    "fieldname": "c"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "C2D": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "D2E": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "E2F": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "F2G": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "H:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "collect": {
+                                    "left": {
+                                      "A2B": {
+                                        "asset type": "B",
+                                        "fieldname": "b"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "B2C": {
+                                        "asset type": "C",
+                                        "fieldname": "c"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                },
+                                "right": {
+                                  "C2D": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "D2E": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "E2F": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "F2G": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "collect": {
+                                    "left": {
+                                      "collect": {
+                                        "left": {
+                                          "A2B": {
+                                            "asset type": "B",
+                                            "fieldname": "b"
+                                          },
+                                          "type": "field"
+                                        },
+                                        "right": {
+                                          "B2C": {
+                                            "asset type": "C",
+                                            "fieldname": "c"
+                                          },
+                                          "type": "field"
+                                        }
+                                      },
+                                      "type": "collect"
+                                    },
+                                    "right": {
+                                      "C2D": {
+                                        "asset type": "D",
+                                        "fieldname": "d"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                },
+                                "right": {
+                                  "D2E": {
+                                    "asset type": "E",
+                                    "fieldname": "e"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "E2F": {
+                                "asset type": "F",
+                                "fieldname": "f"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "F2G": {
+                            "asset type": "G",
+                            "fieldname": "g"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "G2H": {
+                        "asset type": "H",
+                        "fieldname": "h"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "A",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "B": {
+    "associations": {
+      "a": {
+        "info": {},
+        "left": {
+          "asset": "A",
+          "fieldname": "a",
+          "max": null,
+          "min": 0
+        },
+        "name": "A2B",
+        "right": {
+          "asset": "B",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        }
+      },
+      "c": {
+        "info": {},
+        "left": {
+          "asset": "B",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        },
+        "name": "B2C",
+        "right": {
+          "asset": "C",
+          "fieldname": "c",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "B",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "C:reach": [
+            {
+              "B2C": {
+                "asset type": "C",
+                "fieldname": "c"
+              },
+              "type": "field"
+            }
+          ],
+          "D:reach": [
+            {
+              "collect": {
+                "left": {
+                  "B2C": {
+                    "asset type": "C",
+                    "fieldname": "c"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "C2D": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "E:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "B2C": {
+                        "asset type": "C",
+                        "fieldname": "c"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "C2D": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "D2E": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "F:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "B2C": {
+                            "asset type": "C",
+                            "fieldname": "c"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "C2D": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "D2E": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "E2F": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "G:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "B2C": {
+                                "asset type": "C",
+                                "fieldname": "c"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "C2D": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "D2E": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "E2F": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "F2G": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "H:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "B2C": {
+                                    "asset type": "C",
+                                    "fieldname": "c"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "C2D": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "D2E": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "E2F": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "F2G": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "collect": {
+                                    "left": {
+                                      "B2C": {
+                                        "asset type": "C",
+                                        "fieldname": "c"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "C2D": {
+                                        "asset type": "D",
+                                        "fieldname": "d"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                },
+                                "right": {
+                                  "D2E": {
+                                    "asset type": "E",
+                                    "fieldname": "e"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "E2F": {
+                                "asset type": "F",
+                                "fieldname": "f"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "F2G": {
+                            "asset type": "G",
+                            "fieldname": "g"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "G2H": {
+                        "asset type": "H",
+                        "fieldname": "h"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            {
+              "A2B": {
+                "asset type": "A",
+                "fieldname": "a"
+              },
+              "type": "field"
+            }
+          ],
+          "A:reach": [
+            {
+              "A2B": {
+                "asset type": "A",
+                "fieldname": "a"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "B",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "C": {
+    "associations": {
+      "b": {
+        "info": {},
+        "left": {
+          "asset": "B",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        },
+        "name": "B2C",
+        "right": {
+          "asset": "C",
+          "fieldname": "c",
+          "max": null,
+          "min": 0
+        }
+      },
+      "d": {
+        "info": {},
+        "left": {
+          "asset": "C",
+          "fieldname": "c",
+          "max": null,
+          "min": 0
+        },
+        "name": "C2D",
+        "right": {
+          "asset": "D",
+          "fieldname": "d",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "C",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "D:reach": [
+            {
+              "C2D": {
+                "asset type": "D",
+                "fieldname": "d"
+              },
+              "type": "field"
+            }
+          ],
+          "E:reach": [
+            {
+              "collect": {
+                "left": {
+                  "C2D": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "D2E": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "F:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "C2D": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "D2E": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "E2F": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "G:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "C2D": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "D2E": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "E2F": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "F2G": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "H:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "C2D": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "D2E": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "E2F": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "F2G": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "collect": {
+                                "left": {
+                                  "C2D": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "D2E": {
+                                    "asset type": "E",
+                                    "fieldname": "e"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            },
+                            "right": {
+                              "E2F": {
+                                "asset type": "F",
+                                "fieldname": "f"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "F2G": {
+                            "asset type": "G",
+                            "fieldname": "g"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "G2H": {
+                        "asset type": "H",
+                        "fieldname": "h"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            {
+              "collect": {
+                "left": {
+                  "B2C": {
+                    "asset type": "B",
+                    "fieldname": "b"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "A2B": {
+                    "asset type": "A",
+                    "fieldname": "a"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "A:reach": [
+            {
+              "collect": {
+                "left": {
+                  "B2C": {
+                    "asset type": "B",
+                    "fieldname": "b"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "A2B": {
+                    "asset type": "A",
+                    "fieldname": "a"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "B:reach": [
+            {
+              "B2C": {
+                "asset type": "B",
+                "fieldname": "b"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "C",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "D": {
+    "associations": {
+      "c": {
+        "info": {},
+        "left": {
+          "asset": "C",
+          "fieldname": "c",
+          "max": null,
+          "min": 0
+        },
+        "name": "C2D",
+        "right": {
+          "asset": "D",
+          "fieldname": "d",
+          "max": null,
+          "min": 0
+        }
+      },
+      "e": {
+        "info": {},
+        "left": {
+          "asset": "D",
+          "fieldname": "d",
+          "max": null,
+          "min": 0
+        },
+        "name": "D2E",
+        "right": {
+          "asset": "E",
+          "fieldname": "e",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "D",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "E:reach": [
+            {
+              "D2E": {
+                "asset type": "E",
+                "fieldname": "e"
+              },
+              "type": "field"
+            }
+          ],
+          "F:reach": [
+            {
+              "collect": {
+                "left": {
+                  "D2E": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "E2F": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "G:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "D2E": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "E2F": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "F2G": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "H:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "D2E": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "E2F": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "F2G": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "collect": {
+                            "left": {
+                              "D2E": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "E2F": {
+                                "asset type": "F",
+                                "fieldname": "f"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        },
+                        "right": {
+                          "F2G": {
+                            "asset type": "G",
+                            "fieldname": "g"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "G2H": {
+                        "asset type": "H",
+                        "fieldname": "h"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            {
+              "collect": {
+                "left": {
+                  "C2D": {
+                    "asset type": "C",
+                    "fieldname": "c"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "B2C": {
+                        "asset type": "B",
+                        "fieldname": "b"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "A2B": {
+                        "asset type": "A",
+                        "fieldname": "a"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "A:reach": [
+            {
+              "collect": {
+                "left": {
+                  "C2D": {
+                    "asset type": "C",
+                    "fieldname": "c"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "B2C": {
+                        "asset type": "B",
+                        "fieldname": "b"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "A2B": {
+                        "asset type": "A",
+                        "fieldname": "a"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "B:reach": [
+            {
+              "collect": {
+                "left": {
+                  "C2D": {
+                    "asset type": "C",
+                    "fieldname": "c"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "B2C": {
+                    "asset type": "B",
+                    "fieldname": "b"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "C:reach": [
+            {
+              "C2D": {
+                "asset type": "C",
+                "fieldname": "c"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "D",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "E": {
+    "associations": {
+      "d": {
+        "info": {},
+        "left": {
+          "asset": "D",
+          "fieldname": "d",
+          "max": null,
+          "min": 0
+        },
+        "name": "D2E",
+        "right": {
+          "asset": "E",
+          "fieldname": "e",
+          "max": null,
+          "min": 0
+        }
+      },
+      "f": {
+        "info": {},
+        "left": {
+          "asset": "E",
+          "fieldname": "e",
+          "max": null,
+          "min": 0
+        },
+        "name": "E2F",
+        "right": {
+          "asset": "F",
+          "fieldname": "f",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "E",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "F:reach": [
+            {
+              "E2F": {
+                "asset type": "F",
+                "fieldname": "f"
+              },
+              "type": "field"
+            }
+          ],
+          "G:reach": [
+            {
+              "collect": {
+                "left": {
+                  "E2F": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "F2G": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "H:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "E2F": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "F2G": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "collect": {
+                        "left": {
+                          "E2F": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "F2G": {
+                            "asset type": "G",
+                            "fieldname": "g"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    },
+                    "right": {
+                      "G2H": {
+                        "asset type": "H",
+                        "fieldname": "h"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            {
+              "collect": {
+                "left": {
+                  "D2E": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "C2D": {
+                        "asset type": "C",
+                        "fieldname": "c"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "B2C": {
+                            "asset type": "B",
+                            "fieldname": "b"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "A2B": {
+                            "asset type": "A",
+                            "fieldname": "a"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "A:reach": [
+            {
+              "collect": {
+                "left": {
+                  "D2E": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "C2D": {
+                        "asset type": "C",
+                        "fieldname": "c"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "B2C": {
+                            "asset type": "B",
+                            "fieldname": "b"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "A2B": {
+                            "asset type": "A",
+                            "fieldname": "a"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "B:reach": [
+            {
+              "collect": {
+                "left": {
+                  "D2E": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "C2D": {
+                        "asset type": "C",
+                        "fieldname": "c"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "B2C": {
+                        "asset type": "B",
+                        "fieldname": "b"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "C:reach": [
+            {
+              "collect": {
+                "left": {
+                  "D2E": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "C2D": {
+                    "asset type": "C",
+                    "fieldname": "c"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "D:reach": [
+            {
+              "D2E": {
+                "asset type": "D",
+                "fieldname": "d"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "E",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "F": {
+    "associations": {
+      "e": {
+        "info": {},
+        "left": {
+          "asset": "E",
+          "fieldname": "e",
+          "max": null,
+          "min": 0
+        },
+        "name": "E2F",
+        "right": {
+          "asset": "F",
+          "fieldname": "f",
+          "max": null,
+          "min": 0
+        }
+      },
+      "g": {
+        "info": {},
+        "left": {
+          "asset": "F",
+          "fieldname": "f",
+          "max": null,
+          "min": 0
+        },
+        "name": "F2G",
+        "right": {
+          "asset": "G",
+          "fieldname": "g",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "F",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "G:reach": [
+            {
+              "F2G": {
+                "asset type": "G",
+                "fieldname": "g"
+              },
+              "type": "field"
+            }
+          ],
+          "H:reach": [
+            {
+              "collect": {
+                "left": {
+                  "F2G": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "F2G": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "G2H": {
+                        "asset type": "H",
+                        "fieldname": "h"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            {
+              "collect": {
+                "left": {
+                  "E2F": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "D2E": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "C2D": {
+                            "asset type": "C",
+                            "fieldname": "c"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "B2C": {
+                                "asset type": "B",
+                                "fieldname": "b"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "A2B": {
+                                "asset type": "A",
+                                "fieldname": "a"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "A:reach": [
+            {
+              "collect": {
+                "left": {
+                  "E2F": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "D2E": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "C2D": {
+                            "asset type": "C",
+                            "fieldname": "c"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "B2C": {
+                                "asset type": "B",
+                                "fieldname": "b"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "A2B": {
+                                "asset type": "A",
+                                "fieldname": "a"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "B:reach": [
+            {
+              "collect": {
+                "left": {
+                  "E2F": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "D2E": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "C2D": {
+                            "asset type": "C",
+                            "fieldname": "c"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "B2C": {
+                            "asset type": "B",
+                            "fieldname": "b"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "C:reach": [
+            {
+              "collect": {
+                "left": {
+                  "E2F": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "D2E": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "C2D": {
+                        "asset type": "C",
+                        "fieldname": "c"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "D:reach": [
+            {
+              "collect": {
+                "left": {
+                  "E2F": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "D2E": {
+                    "asset type": "D",
+                    "fieldname": "d"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "E:reach": [
+            {
+              "E2F": {
+                "asset type": "E",
+                "fieldname": "e"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "F",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "G": {
+    "associations": {
+      "f": {
+        "info": {},
+        "left": {
+          "asset": "F",
+          "fieldname": "f",
+          "max": null,
+          "min": 0
+        },
+        "name": "F2G",
+        "right": {
+          "asset": "G",
+          "fieldname": "g",
+          "max": null,
+          "min": 0
+        }
+      },
+      "h": {
+        "info": {},
+        "left": {
+          "asset": "G",
+          "fieldname": "g",
+          "max": null,
+          "min": 0
+        },
+        "name": "G2H",
+        "right": {
+          "asset": "H",
+          "fieldname": "h",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "G",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "H:reach": [
+            {
+              "G2H": {
+                "asset type": "H",
+                "fieldname": "h"
+              },
+              "type": "field"
+            }
+          ],
+          "I:reach": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "H2I": {
+                    "asset type": "I",
+                    "fieldname": "i"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            {
+              "collect": {
+                "left": {
+                  "F2G": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "E2F": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "D2E": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "C2D": {
+                                "asset type": "C",
+                                "fieldname": "c"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "B2C": {
+                                    "asset type": "B",
+                                    "fieldname": "b"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "A2B": {
+                                    "asset type": "A",
+                                    "fieldname": "a"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "A:reach": [
+            {
+              "collect": {
+                "left": {
+                  "F2G": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "E2F": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "D2E": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "C2D": {
+                                "asset type": "C",
+                                "fieldname": "c"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "B2C": {
+                                    "asset type": "B",
+                                    "fieldname": "b"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "A2B": {
+                                    "asset type": "A",
+                                    "fieldname": "a"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "B:reach": [
+            {
+              "collect": {
+                "left": {
+                  "F2G": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "E2F": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "D2E": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "C2D": {
+                                "asset type": "C",
+                                "fieldname": "c"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "B2C": {
+                                "asset type": "B",
+                                "fieldname": "b"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "C:reach": [
+            {
+              "collect": {
+                "left": {
+                  "F2G": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "E2F": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "D2E": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "C2D": {
+                            "asset type": "C",
+                            "fieldname": "c"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "D:reach": [
+            {
+              "collect": {
+                "left": {
+                  "F2G": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "E2F": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "D2E": {
+                        "asset type": "D",
+                        "fieldname": "d"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "E:reach": [
+            {
+              "collect": {
+                "left": {
+                  "F2G": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "E2F": {
+                    "asset type": "E",
+                    "fieldname": "e"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "F:reach": [
+            {
+              "F2G": {
+                "asset type": "F",
+                "fieldname": "f"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "G",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "H": {
+    "associations": {
+      "g": {
+        "info": {},
+        "left": {
+          "asset": "G",
+          "fieldname": "g",
+          "max": null,
+          "min": 0
+        },
+        "name": "G2H",
+        "right": {
+          "asset": "H",
+          "fieldname": "h",
+          "max": null,
+          "min": 0
+        }
+      },
+      "i": {
+        "info": {},
+        "left": {
+          "asset": "H",
+          "fieldname": "h",
+          "max": null,
+          "min": 0
+        },
+        "name": "H2I",
+        "right": {
+          "asset": "I",
+          "fieldname": "i",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "H",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": true,
+        "own_children": {
+          "I:reach": [
+            {
+              "H2I": {
+                "asset type": "I",
+                "fieldname": "i"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {
+          "A:access": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "F2G": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "E2F": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "D2E": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "C2D": {
+                                    "asset type": "C",
+                                    "fieldname": "c"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "collect": {
+                                    "left": {
+                                      "B2C": {
+                                        "asset type": "B",
+                                        "fieldname": "b"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "A2B": {
+                                        "asset type": "A",
+                                        "fieldname": "a"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "A:reach": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "F2G": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "E2F": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "D2E": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "C2D": {
+                                    "asset type": "C",
+                                    "fieldname": "c"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "collect": {
+                                    "left": {
+                                      "B2C": {
+                                        "asset type": "B",
+                                        "fieldname": "b"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "A2B": {
+                                        "asset type": "A",
+                                        "fieldname": "a"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "B:reach": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "F2G": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "E2F": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "D2E": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "C2D": {
+                                    "asset type": "C",
+                                    "fieldname": "c"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "B2C": {
+                                    "asset type": "B",
+                                    "fieldname": "b"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "C:reach": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "F2G": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "E2F": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "D2E": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "C2D": {
+                                "asset type": "C",
+                                "fieldname": "c"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "D:reach": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "F2G": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "E2F": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "D2E": {
+                            "asset type": "D",
+                            "fieldname": "d"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "E:reach": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "F2G": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "E2F": {
+                        "asset type": "E",
+                        "fieldname": "e"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "F:reach": [
+            {
+              "collect": {
+                "left": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "F2G": {
+                    "asset type": "F",
+                    "fieldname": "f"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "G:reach": [
+            {
+              "G2H": {
+                "asset type": "G",
+                "fieldname": "g"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "H",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "I": {
+    "associations": {
+      "h": {
+        "info": {},
+        "left": {
+          "asset": "H",
+          "fieldname": "h",
+          "max": null,
+          "min": 0
+        },
+        "name": "H2I",
+        "right": {
+          "asset": "I",
+          "fieldname": "i",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "I",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "A:access": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "G2H": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "F2G": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "E2F": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "D2E": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "collect": {
+                                    "left": {
+                                      "C2D": {
+                                        "asset type": "C",
+                                        "fieldname": "c"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "collect": {
+                                        "left": {
+                                          "B2C": {
+                                            "asset type": "B",
+                                            "fieldname": "b"
+                                          },
+                                          "type": "field"
+                                        },
+                                        "right": {
+                                          "A2B": {
+                                            "asset type": "A",
+                                            "fieldname": "a"
+                                          },
+                                          "type": "field"
+                                        }
+                                      },
+                                      "type": "collect"
+                                    }
+                                  },
+                                  "type": "collect"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "A:reach": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "G2H": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "F2G": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "E2F": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "D2E": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "collect": {
+                                    "left": {
+                                      "C2D": {
+                                        "asset type": "C",
+                                        "fieldname": "c"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "collect": {
+                                        "left": {
+                                          "B2C": {
+                                            "asset type": "B",
+                                            "fieldname": "b"
+                                          },
+                                          "type": "field"
+                                        },
+                                        "right": {
+                                          "A2B": {
+                                            "asset type": "A",
+                                            "fieldname": "a"
+                                          },
+                                          "type": "field"
+                                        }
+                                      },
+                                      "type": "collect"
+                                    }
+                                  },
+                                  "type": "collect"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "B:reach": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "G2H": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "F2G": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "E2F": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "D2E": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "collect": {
+                                    "left": {
+                                      "C2D": {
+                                        "asset type": "C",
+                                        "fieldname": "c"
+                                      },
+                                      "type": "field"
+                                    },
+                                    "right": {
+                                      "B2C": {
+                                        "asset type": "B",
+                                        "fieldname": "b"
+                                      },
+                                      "type": "field"
+                                    }
+                                  },
+                                  "type": "collect"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "C:reach": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "G2H": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "F2G": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "E2F": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "collect": {
+                                "left": {
+                                  "D2E": {
+                                    "asset type": "D",
+                                    "fieldname": "d"
+                                  },
+                                  "type": "field"
+                                },
+                                "right": {
+                                  "C2D": {
+                                    "asset type": "C",
+                                    "fieldname": "c"
+                                  },
+                                  "type": "field"
+                                }
+                              },
+                              "type": "collect"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "D:reach": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "G2H": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "F2G": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "collect": {
+                            "left": {
+                              "E2F": {
+                                "asset type": "E",
+                                "fieldname": "e"
+                              },
+                              "type": "field"
+                            },
+                            "right": {
+                              "D2E": {
+                                "asset type": "D",
+                                "fieldname": "d"
+                              },
+                              "type": "field"
+                            }
+                          },
+                          "type": "collect"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "E:reach": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "G2H": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "collect": {
+                        "left": {
+                          "F2G": {
+                            "asset type": "F",
+                            "fieldname": "f"
+                          },
+                          "type": "field"
+                        },
+                        "right": {
+                          "E2F": {
+                            "asset type": "E",
+                            "fieldname": "e"
+                          },
+                          "type": "field"
+                        }
+                      },
+                      "type": "collect"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "F:reach": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "G2H": {
+                        "asset type": "G",
+                        "fieldname": "g"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "F2G": {
+                        "asset type": "F",
+                        "fieldname": "f"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "G:reach": [
+            {
+              "collect": {
+                "left": {
+                  "H2I": {
+                    "asset type": "H",
+                    "fieldname": "h"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "G2H": {
+                    "asset type": "G",
+                    "fieldname": "g"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "H:reach": [
+            {
+              "H2I": {
+                "asset type": "H",
+                "fieldname": "h"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "I",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "org.mal-lang.assocChainLang",
+    "version": "1.0.0"
+  }
+}

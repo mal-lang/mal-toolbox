@@ -65,6 +65,17 @@ nosetests.xml
 !.github/workflows/*.yml
 !examples/resources/*
 
+# Rust crate test fixtures/golden files (.json/.yml), not covered by the
+# blanket Python-oriented *.json/*.yaml/*.yml ignores above
+!crates/**/*.json
+!crates/**/*.yml
+!crates/**/*.yaml
+
+# Rust
+/target
+**/*.rs.bk
+*.pdb
+
 # uv lock file
 uv.lock
 
