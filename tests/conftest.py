@@ -5,11 +5,7 @@ import os
 import pytest
 
 from maltoolbox.attackgraph import AttackGraph
-from maltoolbox.language import (
-    LanguageGraph,
-    LanguageGraphAsset,
-    LanguageGraphAttackStep,
-)
+from maltoolbox.language import LanguageGraph
 from maltoolbox.model import Model
 
 # Helpers
@@ -54,38 +50,18 @@ def model(corelang_lang_graph):
 
 
 @pytest.fixture
-def dummy_lang_graph(corelang_lang_graph):
+def dummy_lang_graph():
     """Fixture that generates a dummy LanguageGraph with a dummy
-    LanguageGraphAsset and LanguageGraphAttackStep
+    LanguageGraphAsset ('DummyAsset') and one LanguageGraphAttackStep of
+    each type ('DummyOrAttackStep'/'DummyAndAttackStep'/
+    'DummyDefenseAttackStep'/'DummyExistAttackStep'/
+    'DummyNotExistAttackStep'), compiled from a real minimal .mal spec
+    (testdata/dummy_lang.mal) rather than hand-built dataclass instances -
+    the latter has no backing LanguageGraph, which the Rust-backed
+    bindings' owner+id handle design can't represent (see
+    PYTHON_BINDINGS_IMPLEMENTATION.md).
     """
-    lang_graph = LanguageGraph()
-    dummy_asset = LanguageGraphAsset(name='DummyAsset')
-    lang_graph.assets['DummyAsset'] = dummy_asset
-    dummy_or_attack_step_node = LanguageGraphAttackStep(
-        name='DummyOrAttackStep', type='or', asset=dummy_asset
-    )
-    dummy_asset.attack_steps['DummyOrAttackStep'] = dummy_or_attack_step_node
-
-    dummy_and_attack_step_node = LanguageGraphAttackStep(
-        name='DummyAndAttackStep', type='and', asset=dummy_asset
-    )
-    dummy_asset.attack_steps['DummyAndAttackStep'] = dummy_and_attack_step_node
-
-    dummy_defense_attack_step_node = LanguageGraphAttackStep(
-        name='DummyDefenseAttackStep', type='defense', asset=dummy_asset
-    )
-    dummy_asset.attack_steps['DummyDefenseAttackStep'] = dummy_defense_attack_step_node
-
-    dummy_exist_attack_step_node = LanguageGraphAttackStep(
-        name='DummyExistAttackStep', type='exist', asset=dummy_asset
-    )
-    dummy_asset.attack_steps['DummyExistAttackStep'] = dummy_exist_attack_step_node
-
-    dummy_exist_attack_step_node = LanguageGraphAttackStep(
-        name='DummyNotExistAttackStep', type='notExist', asset=dummy_asset
-    )
-    dummy_asset.attack_steps['DummyNotExistAttackStep'] = dummy_exist_attack_step_node
-    return lang_graph
+    return LanguageGraph.from_mal_spec(path_testdata('dummy_lang.mal'))
 
 
 @pytest.fixture
