@@ -85,23 +85,24 @@ impl AttackGraph {
     /// the Python original's `(ModelAsset, str, ModelAsset)` tuples.
     /// Returns the newly created attack/defense step nodes.
     ///
-    /// **Ordering contract for `removed_assets`** (this one differs from
-    /// the Python original, and is the reason it's a contract rather
-    /// than something that "just works" like it does there): this method
-    /// looks removed assets up by id in `model` to resolve their language
-    /// type and name, since nodes only ever store a `model_asset: i64`,
-    /// not a live asset reference the way Python's `ModelAsset` objects
-    /// stay readable even after being unlinked from `model.assets`. So
-    /// the asset must still be present in `model` when this is called -
-    /// call order must be: (1) remove its associations from the model,
-    /// (2) call this method with it in `removed_assets`, (3) only then
-    /// call `model.remove_asset` on it.
+    /// Unlike the Python original, `removed_assets` carries a
+    /// [`maltoolbox_model::RemovedAssetSnapshot`] per id (returned by
+    /// `Model::remove_asset`) rather than a bare id: nodes only ever store
+    /// a `model_asset: i64`, not a live asset reference the way Python's
+    /// `ModelAsset` objects stay readable even after being unlinked from
+    /// `model.assets`, so this needs *some* way to recover a removed
+    /// asset's language type and name without `model` still containing
+    /// it. Carrying the snapshot (rather than re-deriving it with a
+    /// `model.get_asset_by_id` call, which would only work if this is
+    /// called *before* `model.remove_asset`) means `model.remove_asset`
+    /// and this method can now be called in either order - there's no
+    /// ordering contract between them.
     pub fn partially_regenerate_graph(
         &mut self,
         model: &Model,
         new_assets: &HashSet<i64>,
         new_associations: &HashSet<(i64, String, i64)>,
-        removed_assets: &HashSet<i64>,
+        removed_assets: &HashMap<i64, maltoolbox_model::RemovedAssetSnapshot>,
         removed_associations: &HashSet<(i64, String, i64)>,
     ) -> Result<HashSet<AttackGraphNodeId>, GraphError> {
         let created = generate::create_nodes_from_assets(
@@ -129,7 +130,15 @@ impl AttackGraph {
                 .entry(fieldname.clone())
                 .or_default()
                 .insert(*right_id);
-            let opposite = partially_generate::switch_fieldname(model, *left_id, fieldname)?;
+            // `left_id` may already be gone from `model` (removed_assets
+            // is processed below, independent of order), hence the
+            // snapshot-aware lookup rather than a plain `switch_fieldname`.
+            let opposite = partially_generate::switch_fieldname_possibly_removed(
+                model,
+                *left_id,
+                fieldname,
+                removed_assets,
+            )?;
             removed_assoc_dict
                 .entry(*right_id)
                 .or_default()

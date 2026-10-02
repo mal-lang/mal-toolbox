@@ -67,7 +67,7 @@ fn matches_python_oracle_for_partial_regeneration() {
             &model,
             &HashSet::from([wiper2]),
             &HashSet::from([(device, "malware".to_string(), wiper2)]),
-            &HashSet::new(),
+            &HashMap::new(),
             &HashSet::new(),
         )
         .expect("partial regeneration");

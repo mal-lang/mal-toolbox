@@ -5,8 +5,8 @@
 use std::collections::{HashMap, HashSet};
 
 use maltoolbox_language::graph::step_expr::reverse_expr_chain;
-use maltoolbox_language::graph::{ExprType, ExpressionsChain};
-use maltoolbox_model::Model;
+use maltoolbox_language::graph::{AssetId, ExprType, ExpressionsChain};
+use maltoolbox_model::{Model, RemovedAssetSnapshot};
 use slotmap::SlotMap;
 
 use crate::expr_follow::follow_expr_chain;
@@ -22,15 +22,29 @@ pub fn switch_fieldname(model: &Model, asset_id: i64, fieldname: &str) -> Result
     let asset = model
         .get_asset_by_id(asset_id)
         .ok_or_else(|| GraphError::Malformed(format!("Unknown asset id {asset_id}")))?;
+    switch_fieldname_for_lg_asset(model, asset.lg_asset, &asset.name, fieldname)
+}
+
+/// Same lookup `switch_fieldname` does, but keyed off an already-known
+/// language-graph asset type + name instead of an instance id that needs
+/// resolving via `model.get_asset_by_id`. This is what makes it possible
+/// to resolve the opposite fieldname of a *removed* association without
+/// the removed asset still being present in `model` - the caller supplies
+/// the type/name straight from a [`RemovedAssetSnapshot`] instead.
+fn switch_fieldname_for_lg_asset(
+    model: &Model,
+    lg_asset: AssetId,
+    asset_name: &str,
+    fieldname: &str,
+) -> Result<String, GraphError> {
     let assoc = model
         .lang_graph
-        .associations(asset.lg_asset)
+        .associations(lg_asset)
         .get(fieldname)
         .cloned()
         .ok_or_else(|| {
             GraphError::Malformed(format!(
-                "Fieldname {fieldname} not found in associations of asset {}",
-                asset.name
+                "Fieldname {fieldname} not found in associations of asset {asset_name}"
             ))
         })?;
     if fieldname == assoc.left_field.fieldname {
@@ -42,6 +56,24 @@ pub fn switch_fieldname(model: &Model, asset_id: i64, fieldname: &str) -> Result
             "Fieldname {fieldname} not found in association {}",
             assoc.name
         )))
+    }
+}
+
+/// Resolves the opposite fieldname for `(asset_id, fieldname)`, where
+/// `asset_id` may already have been removed from `model` - in which case
+/// `removed` must contain its snapshot. Used for `removed_associations`
+/// in `AttackGraph::partially_regenerate_graph`, where either side of a
+/// severed association might be the one that's gone.
+pub fn switch_fieldname_possibly_removed(
+    model: &Model,
+    asset_id: i64,
+    fieldname: &str,
+    removed: &HashMap<i64, RemovedAssetSnapshot>,
+) -> Result<String, GraphError> {
+    if let Some(snapshot) = removed.get(&asset_id) {
+        switch_fieldname_for_lg_asset(model, snapshot.lg_asset, &snapshot.name, fieldname)
+    } else {
+        switch_fieldname(model, asset_id, fieldname)
     }
 }
 
@@ -106,25 +138,27 @@ pub fn correct_node_children_on_modified_assoc(
     Ok(())
 }
 
+/// `removed_assets` carries a [`RemovedAssetSnapshot`] per id rather than
+/// a bare `HashSet<i64>`, specifically so this never needs
+/// `model.get_asset_by_id` to still succeed for an id that may already be
+/// gone from `model` - only `model.lang_graph` (the compiled language,
+/// untouched by instance-model mutation) is used here.
 pub fn nodes_to_be_removed(
-    removed_assets: &HashSet<i64>,
+    removed_assets: &HashMap<i64, RemovedAssetSnapshot>,
     model: &Model,
     full_name_to_node: &HashMap<String, AttackGraphNodeId>,
 ) -> Result<HashSet<AttackGraphNodeId>, GraphError> {
     let mut removal_candidates = HashSet::new();
-    for &asset_id in removed_assets {
-        let asset = model
-            .get_asset_by_id(asset_id)
-            .ok_or_else(|| GraphError::Malformed(format!("Unknown asset id {asset_id}")))?;
-        let lg_step_ids: Vec<_> = model.lang_graph.asset(asset.lg_asset).attack_steps.values().copied().collect();
+    for snapshot in removed_assets.values() {
+        let lg_step_ids: Vec<_> = model.lang_graph.asset(snapshot.lg_asset).attack_steps.values().copied().collect();
         for lg_step_id in lg_step_ids {
             let lg_step = model.lang_graph.step(lg_step_id);
-            let full_name = format!("{}:{}", asset.name, lg_step.name);
+            let full_name = format!("{}:{}", snapshot.name, lg_step.name);
             let node_key = full_name_to_node.get(&full_name).copied().ok_or_else(|| {
                 GraphError::Malformed(format!(
                     "Failed to find {} for removed asset {}.",
                     lg_step.full_name(&model.lang_graph),
-                    asset.name
+                    snapshot.name
                 ))
             })?;
             removal_candidates.insert(node_key);

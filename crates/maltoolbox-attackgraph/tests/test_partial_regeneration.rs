@@ -47,6 +47,26 @@ fn compile_lang(name: &str) -> Rc<LanguageGraph> {
     Rc::new(maltoolbox_language::generate_graph(spec).unwrap())
 }
 
+/// Captures a [`maltoolbox_model::RemovedAssetSnapshot`] per id from the
+/// still-live `model`, for tests that call `partially_regenerate_graph`
+/// before `model.remove_asset` (both orders are valid; `snapshot` just
+/// captures from wherever the asset currently lives instead of from
+/// `remove_asset`'s return value).
+fn snapshot(model: &Model, ids: &HashSet<i64>) -> HashMap<i64, maltoolbox_model::RemovedAssetSnapshot> {
+    ids.iter()
+        .map(|&id| {
+            let asset = model.get_asset_by_id(id).unwrap();
+            (
+                id,
+                maltoolbox_model::RemovedAssetSnapshot {
+                    name: asset.name.clone(),
+                    lg_asset: asset.lg_asset,
+                },
+            )
+        })
+        .collect()
+}
+
 /// Port of `check_graph_equivalence`: asserts two attack graphs have the
 /// same node set and the same children/parents relationships, by full
 /// name (ids are allowed to differ between an incrementally-updated
@@ -105,30 +125,30 @@ fn partial_regeneration_training_lang() {
 
     let host0 = model.add_asset("Host", Some("Host0".into()), None, None, None, true).unwrap();
     model.add_associated_assets(network, "hosts", HashSet::from([host0])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([host0]), &HashSet::from([(network, "hosts".to_string(), host0)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([host0]), &HashSet::from([(network, "hosts".to_string(), host0)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     let user0 = model.add_asset("User", Some("User0".into()), None, None, None, true).unwrap();
     model.add_associated_assets(host0, "users", HashSet::from([user0])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([user0]), &HashSet::from([(host0, "users".to_string(), user0)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([user0]), &HashSet::from([(host0, "users".to_string(), user0)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     let data0 = model.add_asset("Data", Some("Data0".into()), None, None, None, true).unwrap();
     model.add_associated_assets(host0, "data", HashSet::from([data0])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([data0]), &HashSet::from([(host0, "data".to_string(), data0)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([data0]), &HashSet::from([(host0, "data".to_string(), data0)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     // Add a second host to the already existing network: requires
     // relinking of the pre-existing Network:LAN:access node's children.
     let host1 = model.add_asset("Host", Some("Host1".into()), None, None, None, true).unwrap();
     model.add_associated_assets(network, "hosts", HashSet::from([host1])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([host1]), &HashSet::from([(network, "hosts".to_string(), host1)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([host1]), &HashSet::from([(network, "hosts".to_string(), host1)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     // Associate the same user with the second host: relinking of an
     // existing node (User0:compromise) to a new child.
     model.add_associated_assets(host1, "users", HashSet::from([user0])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(host1, "users".to_string(), user0)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(host1, "users".to_string(), user0)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     // A second Data asset on Host1, and another on Host0 (already has
@@ -141,59 +161,58 @@ fn partial_regeneration_training_lang() {
         &model,
         &HashSet::from([data1, data2]),
         &HashSet::from([(host1, "data".to_string(), data1), (host0, "data".to_string(), data2)]),
-        &HashSet::new(),
-        &HashSet::new(),
-    ).unwrap();
+        &HashMap::new(),
+        &HashSet::new()).unwrap();
     check!();
 
     let network2 = model.add_asset("Network", Some("WAN".into()), None, None, None, true).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([network2]), &HashSet::new(), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([network2]), &HashSet::new(), &HashMap::new(), &HashSet::new()).unwrap();
     model.add_associated_assets(network, "toNetworks", HashSet::from([network2])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(network, "toNetworks".to_string(), network2)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(network, "toNetworks".to_string(), network2)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     // Now tear everything back down.
     model.remove_associated_assets(network, "toNetworks", &HashSet::from([network2])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(network, "toNetworks".to_string(), network2)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(network, "toNetworks".to_string(), network2)])).unwrap();
     check!();
 
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::from([network2]), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &HashSet::from([network2])), &HashSet::new()).unwrap();
     model.remove_asset(network2).unwrap();
     check!();
 
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::from([data1]), &HashSet::from([(host1, "data".to_string(), data1)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &HashSet::from([data1])), &HashSet::from([(host1, "data".to_string(), data1)])).unwrap();
     model.remove_asset(data1).unwrap();
     check!();
 
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::from([data2]), &HashSet::from([(host0, "data".to_string(), data2)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &HashSet::from([data2])), &HashSet::from([(host0, "data".to_string(), data2)])).unwrap();
     model.remove_asset(data2).unwrap();
     check!();
 
     model.remove_associated_assets(host1, "users", &HashSet::from([user0])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(host1, "users".to_string(), user0)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(host1, "users".to_string(), user0)])).unwrap();
     check!();
 
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::from([host1]), &HashSet::from([(network, "hosts".to_string(), host1)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &HashSet::from([host1])), &HashSet::from([(network, "hosts".to_string(), host1)])).unwrap();
     model.remove_asset(host1).unwrap();
     check!();
 
     model.remove_associated_assets(host0, "data", &HashSet::from([data0])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(host0, "data".to_string(), data0)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(host0, "data".to_string(), data0)])).unwrap();
     check!();
 
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::from([data0]), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &HashSet::from([data0])), &HashSet::new()).unwrap();
     model.remove_asset(data0).unwrap();
     check!();
 
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::from([user0]), &HashSet::from([(host0, "users".to_string(), user0)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &HashSet::from([user0])), &HashSet::from([(host0, "users".to_string(), user0)])).unwrap();
     model.remove_asset(user0).unwrap();
     check!();
 
     model.remove_associated_assets(network, "hosts", &HashSet::from([host0])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(network, "hosts".to_string(), host0)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(network, "hosts".to_string(), host0)])).unwrap();
     check!();
 
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::from([host0]), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &HashSet::from([host0])), &HashSet::new()).unwrap();
     model.remove_asset(host0).unwrap();
     check!();
 
@@ -225,12 +244,12 @@ fn partial_regeneration_with_assoc_chain_lang() {
         let child_id = model.get_asset_by_name(&format!("{}:0", fieldname.to_uppercase())).unwrap().id;
 
         model.remove_associated_assets(parent_id, fieldname, &HashSet::from([child_id])).unwrap();
-        ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(parent_id, fieldname.to_string(), child_id)])).unwrap();
+        ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(parent_id, fieldname.to_string(), child_id)])).unwrap();
         let regenerated = AttackGraph::from_model(&model).unwrap();
         check_graph_equivalence(&model, &regenerated, &ag);
 
         model.add_associated_assets(parent_id, fieldname, HashSet::from([child_id])).unwrap();
-        ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(parent_id, fieldname.to_string(), child_id)]), &HashSet::new(), &HashSet::new()).unwrap();
+        ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(parent_id, fieldname.to_string(), child_id)]), &HashMap::new(), &HashSet::new()).unwrap();
         let regenerated = AttackGraph::from_model(&model).unwrap();
         check_graph_equivalence(&model, &regenerated, &ag);
     }
@@ -248,7 +267,7 @@ fn partial_regeneration_transitive() {
     for i in 0..20 {
         let next = model.add_asset("TestAsset", Some(format!("TestAsset:{i}")), None, None, None, true).unwrap();
         model.add_associated_assets(root, "field2", HashSet::from([next])).unwrap();
-        ag.partially_regenerate_graph(&model, &HashSet::from([next]), &HashSet::from([(root, "field2".to_string(), next)]), &HashSet::new(), &HashSet::new()).unwrap();
+        ag.partially_regenerate_graph(&model, &HashSet::from([next]), &HashSet::from([(root, "field2".to_string(), next)]), &HashMap::new(), &HashSet::new()).unwrap();
         let regenerated = AttackGraph::from_model(&model).unwrap();
         check_graph_equivalence(&model, &regenerated, &ag);
         root = next;
@@ -265,7 +284,7 @@ fn partial_regeneration_transitive() {
             .next()
             .unwrap();
         model.remove_associated_assets(parent_id, "field2", &HashSet::from([child_id])).unwrap();
-        ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(parent_id, "field2".to_string(), child_id)])).unwrap();
+        ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(parent_id, "field2".to_string(), child_id)])).unwrap();
         let regenerated = AttackGraph::from_model(&model).unwrap();
         check_graph_equivalence(&model, &regenerated, &ag);
     }
@@ -290,22 +309,22 @@ fn partial_regeneration_set_ops_adv() {
     let mut ag = AttackGraph::from_model(&model).unwrap();
 
     model.remove_associated_assets(hub3, "setB", &HashSet::from([t2])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(hub3, "setB".to_string(), t2)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(hub3, "setB".to_string(), t2)])).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 
     model.add_associated_assets(hub3, "setB", HashSet::from([t2])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(hub3, "setB".to_string(), t2)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(hub3, "setB".to_string(), t2)]), &HashMap::new(), &HashSet::new()).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 
     model.remove_associated_assets(hub1, "siblings", &HashSet::from([hub3])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(hub1, "siblings".to_string(), hub3)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(hub1, "siblings".to_string(), hub3)])).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 
     model.add_associated_assets(hub1, "siblings", HashSet::from([hub3])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(hub1, "siblings".to_string(), hub3)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(hub1, "siblings".to_string(), hub3)]), &HashMap::new(), &HashSet::new()).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 }
@@ -341,9 +360,8 @@ fn partial_regeneration_set_ops_collect_left() {
         &model,
         &HashSet::new(),
         &HashSet::new(),
-        &HashSet::new(),
-        &HashSet::from([(node1, "next".to_string(), target1), (node2, "next".to_string(), target2)]),
-    ).unwrap();
+        &HashMap::new(),
+        &HashSet::from([(node1, "next".to_string(), target1), (node2, "next".to_string(), target2)])).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 
@@ -353,9 +371,8 @@ fn partial_regeneration_set_ops_collect_left() {
         &model,
         &HashSet::new(),
         &HashSet::from([(node1, "next".to_string(), target1), (node2, "next".to_string(), target2)]),
-        &HashSet::new(),
-        &HashSet::new(),
-    ).unwrap();
+        &HashMap::new(),
+        &HashSet::new()).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 }
@@ -375,17 +392,17 @@ fn partial_regeneration_shared_assoc_sibling() {
     let mut ag = AttackGraph::from_model(&model).unwrap();
 
     model.remove_associated_assets(b, "target", &HashSet::from([t1])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(b, "target".to_string(), t1)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(b, "target".to_string(), t1)])).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 
     model.add_associated_assets(b, "target", HashSet::from([t1])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(b, "target".to_string(), t1)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(b, "target".to_string(), t1)]), &HashMap::new(), &HashSet::new()).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 
     model.add_associated_assets(a, "target", HashSet::from([t1])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(a, "target".to_string(), t1)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(a, "target".to_string(), t1)]), &HashMap::new(), &HashSet::new()).unwrap();
     let regenerated = AttackGraph::from_model(&model).unwrap();
     check_graph_equivalence(&model, &regenerated, &ag);
 }
@@ -406,26 +423,26 @@ fn partial_regeneration_corelang() {
 
     let webapp = model.add_asset("Application", Some("WebApp".into()), None, None, None, true).unwrap();
     model.add_associated_assets(corpnet, "applications", HashSet::from([webapp])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([webapp]), &HashSet::from([(corpnet, "applications".to_string(), webapp)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([webapp]), &HashSet::from([(corpnet, "applications".to_string(), webapp)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     let webhw = model.add_asset("Hardware", Some("WebServer".into()), None, None, None, true).unwrap();
     model.add_associated_assets(webhw, "sysExecutedApps", HashSet::from([webapp])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([webhw]), &HashSet::from([(webhw, "sysExecutedApps".to_string(), webapp)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([webhw]), &HashSet::from([(webhw, "sysExecutedApps".to_string(), webapp)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     let webdata = model.add_asset("Data", Some("WebAppData".into()), None, None, None, true).unwrap();
     model.add_associated_assets(webapp, "containedData", HashSet::from([webdata])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([webdata]), &HashSet::from([(webapp, "containedData".to_string(), webdata)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([webdata]), &HashSet::from([(webapp, "containedData".to_string(), webdata)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     let dbapp = model.add_asset("Application", Some("DBApp".into()), None, None, None, true).unwrap();
     model.add_associated_assets(corpnet, "applications", HashSet::from([dbapp])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::from([dbapp]), &HashSet::from([(corpnet, "applications".to_string(), dbapp)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::from([dbapp]), &HashSet::from([(corpnet, "applications".to_string(), dbapp)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     model.add_associated_assets(webapp, "appExecutedApps", HashSet::from([dbapp])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(webapp, "appExecutedApps".to_string(), dbapp)]), &HashSet::new(), &HashSet::new()).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::from([(webapp, "appExecutedApps".to_string(), dbapp)]), &HashMap::new(), &HashSet::new()).unwrap();
     check!();
 
     let dbhw = model.add_asset("Hardware", Some("DBServer".into()), None, None, None, true).unwrap();
@@ -441,9 +458,8 @@ fn partial_regeneration_corelang() {
             (dbhw, "hostedData".to_string(), dbdata),
             (dbapp, "containedData".to_string(), dbdata),
         ]),
-        &HashSet::new(),
-        &HashSet::new(),
-    ).unwrap();
+        &HashMap::new(),
+        &HashSet::new()).unwrap();
     check!();
 
     let netidps = model.add_asset("IDPS", Some("NetIDPS".into()), None, None, None, true).unwrap();
@@ -452,9 +468,8 @@ fn partial_regeneration_corelang() {
         &model,
         &HashSet::from([netidps]),
         &HashSet::from([(netidps, "protectedApps".to_string(), webapp), (netidps, "protectedApps".to_string(), dbapp)]),
-        &HashSet::new(),
-        &HashSet::new(),
-    ).unwrap();
+        &HashMap::new(),
+        &HashSet::new()).unwrap();
     check!();
 
     let svcidentity = model.add_asset("Identity", Some("SvcIdentity".into()), None, None, None, true).unwrap();
@@ -471,9 +486,8 @@ fn partial_regeneration_corelang() {
             (alice, "userIds".to_string(), svcidentity),
             (svcidentity, "readPrivData".to_string(), webdata),
         ]),
-        &HashSet::new(),
-        &HashSet::new(),
-    ).unwrap();
+        &HashMap::new(),
+        &HashSet::new()).unwrap();
     check!();
 
     // --- Phase 2: change model (almost) completely ---
@@ -492,13 +506,14 @@ fn partial_regeneration_corelang() {
         }
     }
     // Strip the associations now (so partially_regenerate_graph sees the
-    // post-removal truth when relinking), but defer actually deleting
-    // the assets themselves until after that call runs - per
-    // `partially_regenerate_graph`'s ordering contract, it still needs
-    // to look removed assets up by id. `removed_associations` contains
-    // both directions of each link; the second attempt at either
-    // direction is expected to report "not associated" since the first
-    // already cleared both sides - ignored here.
+    // post-removal truth when relinking), but defer actually deleting the
+    // assets themselves until after that call runs - no ordering
+    // contract requires this any more (`snapshot` below captures what's
+    // needed regardless of order), it just keeps this test's structure
+    // close to the Python original. `removed_associations` contains both
+    // directions of each link; the second attempt at either direction is
+    // expected to report "not associated" since the first already
+    // cleared both sides - ignored here.
     for (asset_id, fieldname, other_id) in &removed_associations {
         let _ = model.remove_associated_assets(*asset_id, fieldname, &HashSet::from([*other_id]));
     }
@@ -570,7 +585,7 @@ fn partial_regeneration_corelang() {
         (edgeidps, "protectedApps".to_string(), dmzapp),
     ]);
 
-    ag.partially_regenerate_graph(&model, &new_assets, &new_associations, &removed_assets, &removed_associations).unwrap();
+    ag.partially_regenerate_graph(&model, &new_assets, &new_associations, &snapshot(&model, &removed_assets), &removed_associations).unwrap();
     for &asset_id in &removed_assets {
         model.remove_asset(asset_id).unwrap();
     }
@@ -578,15 +593,15 @@ fn partial_regeneration_corelang() {
 
     // --- Phase 3: teardown ---
     model.remove_associated_assets(edgeidps, "protectedApps", &HashSet::from([dmzapp])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(edgeidps, "protectedApps".to_string(), dmzapp)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(edgeidps, "protectedApps".to_string(), dmzapp)])).unwrap();
     check!();
 
     model.remove_associated_assets(svcidentity2, "readPrivData", &HashSet::from([shareddata])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(svcidentity2, "readPrivData".to_string(), shareddata)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(svcidentity2, "readPrivData".to_string(), shareddata)])).unwrap();
     check!();
 
     model.remove_associated_assets(shareddata, "hardware", &HashSet::from([proxyhw])).unwrap();
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashSet::new(), &HashSet::from([(shareddata, "hardware".to_string(), proxyhw)])).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &HashMap::new(), &HashSet::from([(shareddata, "hardware".to_string(), proxyhw)])).unwrap();
     check!();
 
     let mut removed_assets = HashSet::new();
@@ -604,7 +619,7 @@ fn partial_regeneration_corelang() {
     for &asset_id in &[backup, backupapp, cr2] {
         removed_assets.insert(asset_id);
     }
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &removed_assets, &removed_associations).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &removed_assets), &removed_associations).unwrap();
     for &asset_id in &[backup, backupapp, cr2] {
         model.remove_asset(asset_id).unwrap();
     }
@@ -628,7 +643,7 @@ fn partial_regeneration_corelang() {
     for (asset_id, fieldname, other_id) in &removed_associations {
         let _ = model.remove_associated_assets(*asset_id, fieldname, &HashSet::from([*other_id]));
     }
-    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &removed_assets, &removed_associations).unwrap();
+    ag.partially_regenerate_graph(&model, &HashSet::new(), &HashSet::new(), &snapshot(&model, &removed_assets), &removed_associations).unwrap();
     for &asset_id in &removed_assets {
         model.remove_asset(asset_id).unwrap();
     }
@@ -655,7 +670,7 @@ fn nodes_to_be_removed_missing_node_raises() {
     let network = model.add_asset("Network", Some("LAN".into()), None, None, None, true).unwrap();
 
     let err = maltoolbox_attackgraph::partially_generate::nodes_to_be_removed(
-        &HashSet::from([network]),
+        &snapshot(&model, &HashSet::from([network])),
         &model,
         &HashMap::new(),
     )

@@ -44,38 +44,42 @@ each crate's module docs for the full rationale.
   "duplicate CIA classification" (`mod.rs::visit_cias`) - are ported, but
   printed with plain `eprintln!` rather than routed through a logging
   crate, since this project doesn't port Python's `logging`/
-  `maltoolbox.yml` config subsystem (see §8). Neither warning affects
+  `maltoolbox.yml` config subsystem (see §7). Neither warning affects
   compilation success or serialized output in either implementation; the
   duplicate-CIA one in particular is detected during the raw tree-sitter
   walk in `mod.rs`, not in `semantic.rs`'s later pass over the compiled
   langspec, since by that point the `risk` flags are already deduplicated
   booleans and the repeated letter is no longer visible.
-
-## 3. Behavioral divergences from Python — ported faithfully, not "fixed"
-
-This project's mandate is wire/behavior compatibility, so where the real
-Python implementation has a quirk or a bug, it was reproduced rather than
-corrected, and documented at the site:
-
-- **Partial-regeneration asset-removal ordering contract**
-  (`maltoolbox-attackgraph`): Python's object-reference model lets
-  `Model.remove_asset` happen before or after
+- **`RemovedAssetSnapshot` avoids a dangling-id trap in partial
+  regeneration** (`maltoolbox-model/src/model.rs`,
+  `maltoolbox-attackgraph/src/{graph.rs,partially_generate.rs}`):
+  Python's object-reference model (see the "Graph storage" row above)
+  lets `Model.remove_asset` run before or after
   `AttackGraph.partially_regenerate_graph` interchangeably, because a
   removed `ModelAsset` object is still fully readable even after being
   dropped from `Model.assets`. This port's `AttackGraphNode.model_asset`
-  stores only an `i64` id, so the order is now load-bearing: associations
-  must be disconnected, then `partially_regenerate_graph` called, and
-  only *then* should `Model.remove_asset` run. Self-documented at the
-  call site, not inherited for free the way it was in Python.
+  stores only an `i64` id, so naively porting this would make call order
+  load-bearing: `partially_regenerate_graph` would need to look a removed
+  asset up by id in `model` to resolve its language type/name, which only
+  works *before* `Model.remove_asset` deletes it. Rather than document
+  that as a contract, `Model.remove_asset` now returns a
+  `RemovedAssetSnapshot { name, lg_asset }` - captured at the one moment
+  this port can still cheaply answer "what was this asset" - and
+  `partially_regenerate_graph`'s `removed_assets` parameter carries one
+  per id instead of a bare `HashSet<i64>`. Every lookup that used to need
+  `model.get_asset_by_id` for a possibly-removed id now reads the
+  snapshot instead, so the two methods can be called in either order with
+  no efficiency cost (no scanning; same O(1) lookups as before, just
+  sourced from the snapshot instead of a live `model` query).
 
+## 3. Confirmed upstream bugs fixed, not reproduced
 
-## 4. Confirmed upstream bugs fixed, not reproduced
-
-Unlike §3, these are cases where an upstream dependency or the Python
-oracle's behavior was confirmed buggy and this project fixed it rather
-than working around or reproducing it, since silently under-resolving or
-dropping data (or staying pinned to a broken parser) seemed worse than
-wire-compatibility here. Documented at the site in both implementations:
+Unlike the deliberate design differences in §2, these are cases where an
+upstream dependency or the Python oracle's behavior was confirmed buggy
+and this project fixed it rather than working around or reproducing it,
+since silently under-resolving or dropping data (or staying pinned to a
+broken parser) seemed worse than wire-compatibility here. Documented at
+the site in both implementations:
 
 - **`tree-sitter-mal` 1.3.0 can't parse unlabeled detector context —
   fixed upstream in 1.3.1.** `! logExploit (step) [tpr: 0.1]` (no label
@@ -121,7 +125,7 @@ wire-compatibility here. Documented at the site in both implementations:
   (a "diamond": both B and C include A) to compile once and short-circuit
   on the repeat, same as before.
 
-## 5. Two real porting bugs caught before landing (for context)
+## 4. Two real porting bugs caught before landing (for context)
 
 Not divergences — these were mistakes in the Rust translation itself,
 caught by diffing against the running Python oracle before being
@@ -139,7 +143,7 @@ committed:
   silently; an early draft assumed already-numeric JSON and silently
   dropped the filter.
 
-## 6. Testing methodology
+## 5. Testing methodology
 
 Every ported component was verified against a real, running Python
 mal-toolbox (installed in a scratch venv), not hand-asserted from reading
@@ -147,15 +151,15 @@ the source: either by diffing serialized output directly
 (`serde_json::Value` equality against Python-generated golden JSON — see
 `*_golden.rs` in each crate), or by running small hand-written `.mal`
 snippets through both implementations and checking they agree on
-success/failure. This caught every divergence and bug listed in §3–§5.
-Note that §4's fixes (`glob_assoc_traversal`, model-metadata round-
+success/failure. This caught every divergence and bug listed in §2–§4.
+Note that §3's fixes (`glob_assoc_traversal`, model-metadata round-
 tripping, and include-cycle detection) make this port genuinely
 *intentionally* diverge from the Python oracle's output for those three
 cases — they'll disagree with Python by design.
 
 Current status: **114 passing tests, 0 `#[ignore]`d**.
 
-## 7. What's left to do
+## 6. What's left to do
 
 - **`AttackGraph` deserialization** (`load_from_file`/`from_dict`) is not
   implemented — only `save_to_file`/`to_dict` were ported. Not needed by
@@ -170,7 +174,7 @@ Current status: **114 passing tests, 0 `#[ignore]`d**.
   finder, file I/O (`.mar`/JSON/YAML), and the `maltoolbox` CLI
   (`compile`, `generate-attack-graph`).
 
-## 8. Minor CLI differences worth knowing about
+## 7. Minor CLI differences worth knowing about
 
 - `generate-attack-graph` takes an explicit `<output_file>` argument.
   The Python original instead wrote to a `maltoolbox.yml`-configured

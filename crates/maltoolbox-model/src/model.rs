@@ -66,6 +66,19 @@ pub enum ModelError {
     Malformed(String),
 }
 
+/// What's needed to resolve language-level facts (attack step names, the
+/// opposite fieldname of an association) about an asset *after* it has
+/// been removed from the model - the Rust-port equivalent of the fact
+/// that Python's `ModelAsset` objects stay fully readable even once
+/// unlinked from `Model.assets`. Returned by [`Model::remove_asset`] so
+/// callers (e.g. `AttackGraph::partially_regenerate_graph`) never need
+/// `model.get_asset_by_id` to still succeed for a removed id.
+#[derive(Debug, Clone)]
+pub struct RemovedAssetSnapshot {
+    pub name: String,
+    pub lg_asset: maltoolbox_language::graph::AssetId,
+}
+
 #[derive(Debug, Clone)]
 pub struct ModelAsset {
     pub name: String,
@@ -185,13 +198,16 @@ impl Model {
         Ok(asset_id)
     }
 
-    pub fn remove_asset(&mut self, asset_id: i64) -> Result<(), ModelError> {
+    pub fn remove_asset(&mut self, asset_id: i64) -> Result<RemovedAssetSnapshot, ModelError> {
         let asset = self.assets.get(&asset_id).ok_or_else(|| ModelError::AssetNotFound {
             name: String::new(),
             id: asset_id,
             model: self.name.clone(),
         })?;
-        let name = asset.name.clone();
+        let snapshot = RemovedAssetSnapshot {
+            name: asset.name.clone(),
+            lg_asset: asset.lg_asset,
+        };
 
         let associated_fieldnames: Vec<(String, HashSet<i64>)> = asset
             .associated_assets
@@ -203,9 +219,9 @@ impl Model {
         }
 
         self.assets.remove(&asset_id);
-        self.name_to_asset_id.remove(&name);
+        self.name_to_asset_id.remove(&snapshot.name);
         self.asset_order.retain(|&id| id != asset_id);
-        Ok(())
+        Ok(snapshot)
     }
 
     pub fn get_asset_by_id(&self, asset_id: i64) -> Option<&ModelAsset> {

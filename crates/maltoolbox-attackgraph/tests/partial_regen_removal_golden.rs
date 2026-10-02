@@ -58,23 +58,22 @@ fn matches_python_oracle_for_partial_regeneration_removal() {
 
     let mut attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
 
-    // Ordering contract (see `AttackGraph::partially_regenerate_graph`
-    // docs): disconnect associations, call partial regeneration (which
-    // still needs to look the asset up by id), *then* remove the asset
-    // from the model itself.
-    model.remove_associated_assets(device, "malware", &HashSet::from([wiper2])).unwrap();
+    // No ordering contract any more (see `AttackGraph::partially_regenerate_graph`
+    // docs): `model.remove_asset` - which already disconnects associations
+    // itself - can now run *before* partial regeneration. Its returned
+    // `RemovedAssetSnapshot` carries everything partial regeneration needs
+    // to resolve the now-gone asset.
+    let snapshot = model.remove_asset(wiper2).unwrap();
 
     attack_graph
         .partially_regenerate_graph(
             &model,
             &HashSet::new(),
             &HashSet::new(),
-            &HashSet::from([wiper2]),
+            &HashMap::from([(wiper2, snapshot)]),
             &HashSet::from([(device, "malware".to_string(), wiper2)]),
         )
         .expect("partial regeneration");
-
-    model.remove_asset(wiper2).unwrap();
 
     let actual_full = attack_graph.to_dict(Some(&model));
     let actual = canonicalize(&actual_full["attack_steps"]);
