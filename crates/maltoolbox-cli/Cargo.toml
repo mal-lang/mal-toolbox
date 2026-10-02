@@ -1,0 +1,20 @@
+[package]
+name = "maltoolbox-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "maltoolbox"
+path = "src/main.rs"
+
+[dependencies]
+maltoolbox-fileutil = { workspace = true }
+maltoolbox-language = { workspace = true }
+maltoolbox-model = { workspace = true }
+maltoolbox-attackgraph = { workspace = true }
+maltoolbox-patternfinder = { workspace = true }
+clap = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }

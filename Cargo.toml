@@ -1,0 +1,34 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/maltoolbox-fileutil",
+    "crates/maltoolbox-language",
+    "crates/maltoolbox-model",
+    "crates/maltoolbox-attackgraph",
+    "crates/maltoolbox-patternfinder",
+    "crates/maltoolbox-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/mal-lang/mal-toolbox"
+
+[workspace.dependencies]
+maltoolbox-fileutil = { path = "crates/maltoolbox-fileutil" }
+maltoolbox-language = { path = "crates/maltoolbox-language" }
+maltoolbox-model = { path = "crates/maltoolbox-model" }
+maltoolbox-attackgraph = { path = "crates/maltoolbox-attackgraph" }
+maltoolbox-patternfinder = { path = "crates/maltoolbox-patternfinder" }
+maltoolbox-cli = { path = "crates/maltoolbox-cli" }
+
+tree-sitter = "0.25"
+tree-sitter-mal = "1.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+serde_yaml = "0.9"
+slotmap = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }

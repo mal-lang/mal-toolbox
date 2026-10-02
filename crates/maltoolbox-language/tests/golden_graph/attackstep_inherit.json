@@ -1,0 +1,186 @@
+{
+  "AA": {
+    "associations": {
+      "c_of_A": {
+        "info": {},
+        "left": {
+          "asset": "AA",
+          "fieldname": "a",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc1",
+        "right": {
+          "asset": "CC",
+          "fieldname": "c_of_A",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "s1": {
+        "asset": "AA",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "s1",
+        "overrides": true,
+        "own_children": {
+          "CC:s2": [
+            {
+              "Assoc1": {
+                "asset type": "CC",
+                "fieldname": "c_of_A"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "AA",
+    "sub_assets": [
+      "BB"
+    ],
+    "super_asset": "",
+    "variables": {}
+  },
+  "BB": {
+    "associations": {
+      "c_of_B": {
+        "info": {},
+        "left": {
+          "asset": "BB",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc2",
+        "right": {
+          "asset": "CC",
+          "fieldname": "c_of_B",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "s1": {
+        "asset": "BB",
+        "detectors": {},
+        "info": {},
+        "inherits": "AA:s1",
+        "name": "s1",
+        "overrides": false,
+        "own_children": {
+          "CC:s2": [
+            {
+              "Assoc2": {
+                "asset type": "CC",
+                "fieldname": "c_of_B"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "BB",
+    "sub_assets": [],
+    "super_asset": "AA",
+    "variables": {}
+  },
+  "CC": {
+    "associations": {
+      "a": {
+        "info": {},
+        "left": {
+          "asset": "AA",
+          "fieldname": "a",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc1",
+        "right": {
+          "asset": "CC",
+          "fieldname": "c_of_A",
+          "max": null,
+          "min": 0
+        }
+      },
+      "b": {
+        "info": {},
+        "left": {
+          "asset": "BB",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc2",
+        "right": {
+          "asset": "CC",
+          "fieldname": "c_of_B",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "s2": {
+        "asset": "CC",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "s2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "AA:s1": [
+            {
+              "Assoc1": {
+                "asset type": "AA",
+                "fieldname": "a"
+              },
+              "type": "field"
+            }
+          ],
+          "BB:s1": [
+            {
+              "Assoc2": {
+                "asset type": "BB",
+                "fieldname": "b"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "CC",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

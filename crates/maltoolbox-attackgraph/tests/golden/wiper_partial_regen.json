@@ -1,0 +1,141 @@
+{
+  "attack_steps": {
+    "device1:infect": {
+      "asset": "device1",
+      "children": {
+        "1": "wiper1:activate",
+        "6": "wiper2:activate"
+      },
+      "id": 0,
+      "lang_graph_attack_step": "Device:infect",
+      "name": "infect",
+      "parents": {},
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper1:activate": {
+      "asset": "wiper1",
+      "children": {
+        "2": "wiper1:exfiltrate",
+        "3": "wiper1:propagate",
+        "4": "wiper1:trigger"
+      },
+      "id": 1,
+      "lang_graph_attack_step": "Wiper:activate",
+      "name": "activate",
+      "parents": {
+        "0": "device1:infect"
+      },
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper1:exfiltrate": {
+      "asset": "wiper1",
+      "children": {},
+      "id": 2,
+      "lang_graph_attack_step": "Wiper:exfiltrate",
+      "name": "exfiltrate",
+      "parents": {
+        "1": "wiper1:activate"
+      },
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper1:propagate": {
+      "asset": "wiper1",
+      "children": {},
+      "id": 3,
+      "lang_graph_attack_step": "Wiper:propagate",
+      "name": "propagate",
+      "parents": {
+        "1": "wiper1:activate"
+      },
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper1:test": {
+      "asset": "wiper1",
+      "children": {},
+      "id": 5,
+      "lang_graph_attack_step": "Wiper:test",
+      "name": "test",
+      "parents": {},
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper1:trigger": {
+      "asset": "wiper1",
+      "children": {},
+      "id": 4,
+      "lang_graph_attack_step": "Wiper:trigger",
+      "name": "trigger",
+      "parents": {
+        "1": "wiper1:activate"
+      },
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper2:activate": {
+      "asset": "wiper2",
+      "children": {
+        "7": "wiper2:exfiltrate",
+        "8": "wiper2:propagate",
+        "9": "wiper2:trigger"
+      },
+      "id": 6,
+      "lang_graph_attack_step": "Wiper:activate",
+      "name": "activate",
+      "parents": {
+        "0": "device1:infect"
+      },
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper2:exfiltrate": {
+      "asset": "wiper2",
+      "children": {},
+      "id": 7,
+      "lang_graph_attack_step": "Wiper:exfiltrate",
+      "name": "exfiltrate",
+      "parents": {
+        "6": "wiper2:activate"
+      },
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper2:propagate": {
+      "asset": "wiper2",
+      "children": {},
+      "id": 8,
+      "lang_graph_attack_step": "Wiper:propagate",
+      "name": "propagate",
+      "parents": {
+        "6": "wiper2:activate"
+      },
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper2:test": {
+      "asset": "wiper2",
+      "children": {},
+      "id": 10,
+      "lang_graph_attack_step": "Wiper:test",
+      "name": "test",
+      "parents": {},
+      "ttc": null,
+      "type": "or"
+    },
+    "wiper2:trigger": {
+      "asset": "wiper2",
+      "children": {},
+      "id": 9,
+      "lang_graph_attack_step": "Wiper:trigger",
+      "name": "trigger",
+      "parents": {
+        "6": "wiper2:activate"
+      },
+      "ttc": null,
+      "type": "or"
+    }
+  }
+}

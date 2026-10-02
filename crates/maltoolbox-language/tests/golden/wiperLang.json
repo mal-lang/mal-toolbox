@@ -1,0 +1,508 @@
+{
+  "assets": [
+    {
+      "attackSteps": [],
+      "category": "WiperLang",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Internet",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [],
+      "category": "WiperLang",
+      "isAbstract": true,
+      "meta": {},
+      "name": "Host",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [],
+      "category": "WiperLang",
+      "isAbstract": false,
+      "meta": {},
+      "name": "C2Server",
+      "superAsset": "Host",
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "base": {
+                  "name": "self",
+                  "type": "field"
+                },
+                "targets": [
+                  {
+                    "stepExpression": {
+                      "name": "malware",
+                      "type": "field"
+                    },
+                    "subType": "Wiper",
+                    "type": "subType"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "infect",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "malware",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "activate",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "WiperLang",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Device",
+      "superAsset": "Host",
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "activate",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "trigger",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "trigger",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "base": {
+                  "name": "self",
+                  "type": "field"
+                },
+                "targets": [
+                  {
+                    "stepExpression": {
+                      "name": "victim",
+                      "type": "field"
+                    },
+                    "subType": "Device",
+                    "type": "subType"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "test",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "WiperLang",
+      "isAbstract": true,
+      "meta": {},
+      "name": "Malware",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "activate",
+          "reaches": {
+            "overrides": false,
+            "stepExpressions": [
+              {
+                "name": "exfiltrate",
+                "type": "attackStep"
+              },
+              {
+                "name": "propagate",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "base": {
+                  "lhs": {
+                    "name": "victim",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "data",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "targets": [
+                  {
+                    "operand": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "name": "victim",
+                            "type": "field"
+                          },
+                          "rhs": {
+                            "name": "inet",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "stepExpression": {
+                            "name": "hosts",
+                            "type": "field"
+                          },
+                          "subType": "C2Server",
+                          "type": "subType"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "data",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "type": "assoc_op"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "exfiltrate",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "base": {
+                  "lhs": {
+                    "name": "victim",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "sendTo",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "targets": [
+                  {
+                    "stepExpression": {
+                      "name": "malware",
+                      "type": "field"
+                    },
+                    "subType": "Wiper",
+                    "type": "subType"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "propagate",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "victim",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "sendTo",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "stepExpression": {
+                      "name": "malware",
+                      "type": "field"
+                    },
+                    "subType": "Wiper",
+                    "type": "subType"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "activate",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "trigger",
+          "reaches": null,
+          "remove_reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "base": {
+                  "name": "victim",
+                  "type": "field"
+                },
+                "targets": [
+                  {
+                    "name": "malware",
+                    "type": "field"
+                  },
+                  {
+                    "operand": {
+                      "name": "data",
+                      "type": "field"
+                    },
+                    "type": "assoc_op"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": {
+            "overrides": false,
+            "stepExpressions": [
+              {
+                "base": {
+                  "name": "self",
+                  "type": "field"
+                },
+                "targets": [
+                  {
+                    "stepExpression": {
+                      "name": "victim",
+                      "type": "field"
+                    },
+                    "subType": "C2Server",
+                    "type": "subType"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "test",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "WiperLang",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Wiper",
+      "superAsset": "Malware",
+      "variables": []
+    },
+    {
+      "attackSteps": [],
+      "category": "WiperLang",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Data",
+      "superAsset": null,
+      "variables": []
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "Internet",
+      "leftField": "inet",
+      "leftMultiplicity": {
+        "max": 1,
+        "min": 1
+      },
+      "meta": {},
+      "name": "contains",
+      "rightAsset": "Host",
+      "rightField": "hosts",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Host",
+      "leftField": "receiveFrom",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "neighbor",
+      "rightAsset": "Host",
+      "rightField": "sendTo",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Host",
+      "leftField": "node",
+      "leftMultiplicity": {
+        "max": 1,
+        "min": 1
+      },
+      "meta": {},
+      "name": "store",
+      "rightAsset": "Data",
+      "rightField": "data",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Host",
+      "leftField": "victim",
+      "leftMultiplicity": {
+        "max": 1,
+        "min": 1
+      },
+      "meta": {},
+      "name": "infect",
+      "rightAsset": "Malware",
+      "rightField": "malware",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "WiperLang"
+    }
+  ],
+  "defines": {
+    "id": "org.mal-lang.wiperLang",
+    "version": "1.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

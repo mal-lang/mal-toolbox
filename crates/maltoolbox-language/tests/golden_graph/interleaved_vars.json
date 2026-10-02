@@ -1,0 +1,278 @@
+{
+  "AssetA": {
+    "associations": {
+      "fieldB": {
+        "info": {},
+        "left": {
+          "asset": "AssetA",
+          "fieldname": "fieldA",
+          "max": null,
+          "min": 0
+        },
+        "name": "InterleaveVarsAssoc",
+        "right": {
+          "asset": "AssetB",
+          "fieldname": "fieldB",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "testStepA": {
+        "asset": "AssetA",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "testStepA",
+        "overrides": true,
+        "own_children": {
+          "AssetA:testStepA": [
+            {
+              "collect": {
+                "left": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetB",
+                    "fieldname": "fieldB"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetA",
+                    "fieldname": "fieldA"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "AssetB:testStepB": [
+            {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetB",
+                "fieldname": "fieldB"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {
+          "AssetA:testStepA": [
+            {
+              "collect": {
+                "left": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetB",
+                    "fieldname": "fieldB"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetA",
+                    "fieldname": "fieldA"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ],
+          "AssetB:testStepB": [
+            {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetB",
+                "fieldname": "fieldB"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "AssetA",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {
+      "A1": [
+        "AssetB",
+        {
+          "InterleaveVarsAssoc": {
+            "asset type": "AssetB",
+            "fieldname": "fieldB"
+          },
+          "type": "field"
+        }
+      ],
+      "A2": [
+        "AssetA",
+        {
+          "collect": {
+            "left": {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetB",
+                "fieldname": "fieldB"
+              },
+              "type": "field"
+            },
+            "right": {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetA",
+                "fieldname": "fieldA"
+              },
+              "type": "field"
+            }
+          },
+          "type": "collect"
+        }
+      ]
+    }
+  },
+  "AssetB": {
+    "associations": {
+      "fieldA": {
+        "info": {},
+        "left": {
+          "asset": "AssetA",
+          "fieldname": "fieldA",
+          "max": null,
+          "min": 0
+        },
+        "name": "InterleaveVarsAssoc",
+        "right": {
+          "asset": "AssetB",
+          "fieldname": "fieldB",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "testStepB": {
+        "asset": "AssetB",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "testStepB",
+        "overrides": true,
+        "own_children": {
+          "AssetA:testStepA": [
+            {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetA",
+                "fieldname": "fieldA"
+              },
+              "type": "field"
+            }
+          ],
+          "AssetB:testStepB": [
+            {
+              "collect": {
+                "left": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetA",
+                    "fieldname": "fieldA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetB",
+                    "fieldname": "fieldB"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "AssetA:testStepA": [
+            {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetA",
+                "fieldname": "fieldA"
+              },
+              "type": "field"
+            }
+          ],
+          "AssetB:testStepB": [
+            {
+              "collect": {
+                "left": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetA",
+                    "fieldname": "fieldA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "InterleaveVarsAssoc": {
+                    "asset type": "AssetB",
+                    "fieldname": "fieldB"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "AssetB",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {
+      "B1": [
+        "AssetA",
+        {
+          "InterleaveVarsAssoc": {
+            "asset type": "AssetA",
+            "fieldname": "fieldA"
+          },
+          "type": "field"
+        }
+      ],
+      "B2": [
+        "AssetB",
+        {
+          "collect": {
+            "left": {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetA",
+                "fieldname": "fieldA"
+              },
+              "type": "field"
+            },
+            "right": {
+              "InterleaveVarsAssoc": {
+                "asset type": "AssetB",
+                "fieldname": "fieldB"
+              },
+              "type": "field"
+            }
+          },
+          "type": "collect"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

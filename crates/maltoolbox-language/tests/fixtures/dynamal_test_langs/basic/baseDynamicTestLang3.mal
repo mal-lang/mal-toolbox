@@ -1,0 +1,28 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "baseDynamicTestLang3"
+#version: "0.1.0"
+category baseDynamicTestLang3 {
+	asset Bowl {
+		| access
+			-> addApple, removeApple
+
+		| addApple
+			A> self / apples
+
+		| removeApple
+			R> self / apples
+	}
+
+	asset Apple {}
+
+}
+
+associations {
+	Bowl [container] 1 <-- contains --> * [apples] Apple
+
+}

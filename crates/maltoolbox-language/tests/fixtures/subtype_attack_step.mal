@@ -1,0 +1,27 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset BaseAsset {
+
+    | base_step1
+
+    | base_step2
+  }
+
+  asset SubAsset extends BaseAsset{
+    | subasset_step1
+  }
+
+  asset OtherAsset {
+    | other_step1
+      -> field1[SubAsset].subasset_step1,
+         field1[SubAsset].base_step2,
+         field1.base_step1
+  }
+}
+
+associations {
+  BaseAsset [field1] * <-- SubtypeTestAssoc --> * [field2] OtherAsset
+}

@@ -1,0 +1,1683 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "access",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "reach",
+                "type": "attackStep"
+              },
+              {
+                "lhs": {
+                  "name": "b",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "b",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "c",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "b",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "c",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "d",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "name": "b",
+                        "type": "field"
+                      },
+                      "rhs": {
+                        "name": "c",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "d",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "e",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "name": "b",
+                          "type": "field"
+                        },
+                        "rhs": {
+                          "name": "c",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "d",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "e",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "f",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "name": "b",
+                            "type": "field"
+                          },
+                          "rhs": {
+                            "name": "c",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "d",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "e",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "f",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "g",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "lhs": {
+                              "name": "b",
+                              "type": "field"
+                            },
+                            "rhs": {
+                              "name": "c",
+                              "type": "field"
+                            },
+                            "type": "collect"
+                          },
+                          "rhs": {
+                            "name": "d",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "e",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "f",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "g",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "lhs": {
+                              "lhs": {
+                                "name": "b",
+                                "type": "field"
+                              },
+                              "rhs": {
+                                "name": "c",
+                                "type": "field"
+                              },
+                              "type": "collect"
+                            },
+                            "rhs": {
+                              "name": "d",
+                              "type": "field"
+                            },
+                            "type": "collect"
+                          },
+                          "rhs": {
+                            "name": "e",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "f",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "g",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "h",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "b",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "b",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "c",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "b",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "c",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "d",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "name": "b",
+                        "type": "field"
+                      },
+                      "rhs": {
+                        "name": "c",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "d",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "e",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "name": "b",
+                          "type": "field"
+                        },
+                        "rhs": {
+                          "name": "c",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "d",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "e",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "f",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "name": "b",
+                            "type": "field"
+                          },
+                          "rhs": {
+                            "name": "c",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "d",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "e",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "f",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "g",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "lhs": {
+                              "name": "b",
+                              "type": "field"
+                            },
+                            "rhs": {
+                              "name": "c",
+                              "type": "field"
+                            },
+                            "type": "collect"
+                          },
+                          "rhs": {
+                            "name": "d",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "e",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "f",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "g",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "lhs": {
+                              "lhs": {
+                                "name": "b",
+                                "type": "field"
+                              },
+                              "rhs": {
+                                "name": "c",
+                                "type": "field"
+                              },
+                              "type": "collect"
+                            },
+                            "rhs": {
+                              "name": "d",
+                              "type": "field"
+                            },
+                            "type": "collect"
+                          },
+                          "rhs": {
+                            "name": "e",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "f",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "g",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "h",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "A",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "c",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "c",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "d",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "c",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "d",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "e",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "name": "c",
+                        "type": "field"
+                      },
+                      "rhs": {
+                        "name": "d",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "e",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "f",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "name": "c",
+                          "type": "field"
+                        },
+                        "rhs": {
+                          "name": "d",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "e",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "f",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "g",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "name": "c",
+                            "type": "field"
+                          },
+                          "rhs": {
+                            "name": "d",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "e",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "f",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "g",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "lhs": {
+                              "name": "c",
+                              "type": "field"
+                            },
+                            "rhs": {
+                              "name": "d",
+                              "type": "field"
+                            },
+                            "type": "collect"
+                          },
+                          "rhs": {
+                            "name": "e",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "f",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "g",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "h",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "B",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "d",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "d",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "e",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "d",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "e",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "f",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "name": "d",
+                        "type": "field"
+                      },
+                      "rhs": {
+                        "name": "e",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "f",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "g",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "name": "d",
+                          "type": "field"
+                        },
+                        "rhs": {
+                          "name": "e",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "f",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "g",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "lhs": {
+                            "name": "d",
+                            "type": "field"
+                          },
+                          "rhs": {
+                            "name": "e",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "rhs": {
+                          "name": "f",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "g",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "h",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "C",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "e",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "e",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "f",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "e",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "f",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "g",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "name": "e",
+                        "type": "field"
+                      },
+                      "rhs": {
+                        "name": "f",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "g",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "lhs": {
+                          "name": "e",
+                          "type": "field"
+                        },
+                        "rhs": {
+                          "name": "f",
+                          "type": "field"
+                        },
+                        "type": "collect"
+                      },
+                      "rhs": {
+                        "name": "g",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "h",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "D",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "f",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "f",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "g",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "f",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "g",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "lhs": {
+                        "name": "f",
+                        "type": "field"
+                      },
+                      "rhs": {
+                        "name": "g",
+                        "type": "field"
+                      },
+                      "type": "collect"
+                    },
+                    "rhs": {
+                      "name": "h",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "E",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "g",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "g",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "g",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "h",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "F",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "h",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "h",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "i",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "G",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "i",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "H",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "LongAssocChains",
+      "isAbstract": false,
+      "meta": {},
+      "name": "I",
+      "superAsset": null,
+      "variables": []
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "A",
+      "leftField": "a",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "A2B",
+      "rightAsset": "B",
+      "rightField": "b",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "B",
+      "leftField": "b",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "B2C",
+      "rightAsset": "C",
+      "rightField": "c",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "C",
+      "leftField": "c",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "C2D",
+      "rightAsset": "D",
+      "rightField": "d",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "D",
+      "leftField": "d",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "D2E",
+      "rightAsset": "E",
+      "rightField": "e",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "E",
+      "leftField": "e",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "E2F",
+      "rightAsset": "F",
+      "rightField": "f",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "F",
+      "leftField": "f",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "F2G",
+      "rightAsset": "G",
+      "rightField": "g",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "G",
+      "leftField": "g",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "G2H",
+      "rightAsset": "H",
+      "rightField": "h",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "H",
+      "leftField": "h",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "H2I",
+      "rightAsset": "I",
+      "rightField": "i",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "LongAssocChains"
+    }
+  ],
+  "defines": {
+    "id": "org.mal-lang.assocChainLang",
+    "version": "1.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

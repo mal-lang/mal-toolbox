@@ -1,0 +1,205 @@
+{
+  "AssetA": {
+    "associations": {
+      "b_of_A": {
+        "info": {},
+        "left": {
+          "asset": "AssetA",
+          "fieldname": "a",
+          "max": null,
+          "min": 0
+        },
+        "name": "AssocAB",
+        "right": {
+          "asset": "AssetB",
+          "fieldname": "b_of_A",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "attack": {
+        "asset": "AssetA",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "attack",
+        "overrides": true,
+        "own_children": {
+          "AssetB:attack": [
+            {
+              "AssocAB": {
+                "asset type": "AssetB",
+                "fieldname": "b_of_A"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "AssetA",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "AssetB": {
+    "associations": {
+      "a": {
+        "info": {},
+        "left": {
+          "asset": "AssetA",
+          "fieldname": "a",
+          "max": null,
+          "min": 0
+        },
+        "name": "AssocAB",
+        "right": {
+          "asset": "AssetB",
+          "fieldname": "b_of_A",
+          "max": null,
+          "min": 0
+        }
+      },
+      "b": {
+        "info": {},
+        "left": {
+          "asset": "AssetB",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        },
+        "name": "AssocBB",
+        "right": {
+          "asset": "AssetB",
+          "fieldname": "b_of_B",
+          "max": null,
+          "min": 0
+        }
+      },
+      "b_of_B": {
+        "info": {},
+        "left": {
+          "asset": "AssetB",
+          "fieldname": "b",
+          "max": null,
+          "min": 0
+        },
+        "name": "AssocBB",
+        "right": {
+          "asset": "AssetB",
+          "fieldname": "b_of_B",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "attack": {
+        "asset": "AssetB",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "attack",
+        "overrides": true,
+        "own_children": {
+          "AssetB:attack": [
+            {
+              "AssocBB": {
+                "asset type": "AssetB",
+                "fieldname": "b_of_B"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {
+          "AssetA:attack": [
+            {
+              "AssocAB": {
+                "asset type": "AssetA",
+                "fieldname": "a"
+              },
+              "type": "field"
+            }
+          ],
+          "AssetB:attack": [
+            {
+              "AssocBB": {
+                "asset type": "AssetB",
+                "fieldname": "b"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "hack": {
+        "asset": "AssetB",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "hack",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "test": {
+        "asset": "AssetB",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "test",
+        "overrides": true,
+        "own_children": {
+          "AssetB:test": [
+            {
+              "AssocBB": {
+                "asset type": "AssetB",
+                "fieldname": "b_of_B"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {
+          "AssetB:test": [
+            {
+              "AssocBB": {
+                "asset type": "AssetB",
+                "fieldname": "b"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "AssetB",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test-actions-effects",
+    "version": "0.0.0"
+  }
+}
