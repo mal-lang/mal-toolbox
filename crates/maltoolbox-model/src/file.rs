@@ -29,19 +29,21 @@ pub fn load_from_file(path: impl AsRef<Path>, lang_graph: Rc<LanguageGraph>) -> 
     from_dict(&dict, lang_graph).map_err(|e| LoadError::Malformed(e.to_string()))
 }
 
-/// Port of `Model._from_dict`. Note: deliberately replicates the Python
-/// original's metadata key mismatch - `to_dict` writes
+/// Port of `Model._from_dict`.
+///
+/// NOTE: the Python oracle has a confirmed bug here - `to_dict` writes
 /// `"MAL-Toolbox Version"` (hyphenated) but `_from_dict` reads
 /// `"MAL Toolbox Version"` (spaced), so the field never actually
-/// round-trips and always falls back to the running tool's own
-/// version. Reproduced here rather than "fixed" since this is about
-/// matching observable behavior, not the literal (buggy) code path.
+/// round-trips there and always falls back to the running tool's own
+/// version. This Rust port intentionally diverges and reads the same
+/// hyphenated key `to_dict` (`model.rs`) actually writes, so the field
+/// round-trips correctly here instead of silently losing data.
 pub fn from_dict(serialized: &Value, lang_graph: Rc<LanguageGraph>) -> Result<Model, LoadError> {
     let metadata = &serialized["metadata"];
     let name = metadata["name"]
         .as_str()
         .ok_or_else(|| LoadError::Malformed("metadata.name missing".into()))?;
-    let maltoolbox_version = metadata["MAL Toolbox Version"]
+    let maltoolbox_version = metadata["MAL-Toolbox Version"]
         .as_str()
         .unwrap_or(crate::model::MALTOOLBOX_VERSION)
         .to_string();

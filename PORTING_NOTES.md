@@ -43,10 +43,6 @@ This project's mandate is wire/behavior compatibility, so where the real
 Python implementation has a quirk or a bug, it was reproduced rather than
 corrected, and documented at the site:
 
-- **Model metadata key mismatch** (`maltoolbox-model/src/file.rs`):
-  `to_dict` writes `"MAL-Toolbox Version"` (hyphenated); `_from_dict`
-  reads `"MAL Toolbox Version"` (spaced). The field never actually
-  round-trips in the real Python package either — replicated as-is.
 - **Mutual two-file `include` doesn't raise** (`maltoolbox-language/src/
   compiler/mod.rs`): `mal_compiler.py`'s own `visited_files` dedup
   intercepts a repeated include *before* `mal_analyzer.py`'s
@@ -59,8 +55,6 @@ corrected, and documented at the site:
   both pure `logger.warning` calls with no effect on whether compilation
   succeeds or on any serialized output, so they were left out rather than
   built as dead weight.
-- **`*` transitive-closure operator doesn't actually iterate** (upstream
-  bug, not ported as a fix — see §4 below).
 - **Partial-regeneration asset-removal ordering contract**
   (`maltoolbox-attackgraph`): Python's object-reference model lets
   `Model.remove_asset` happen before or after
@@ -72,34 +66,42 @@ corrected, and documented at the site:
   only *then* should `Model.remove_asset` run. Self-documented at the
   call site, not inherited for free the way it was in Python.
 
-## 4. Known upstream findings (reported, not silently patched)
 
-Two issues were found in the *Python original* while porting, both
-confirmed by running the real implementation rather than inferred from
-source alone:
+## 4. Confirmed upstream bugs fixed, not reproduced
 
-1. **`tree-sitter-mal` 1.3.0 can't parse unlabeled detector context —
-   fixed upstream in 1.3.1.** `! logExploit (step) [tpr: 0.1]` (no label
-   before the rate clause) parsed under the PyPI `tree_sitter_mal` 1.3.0
-   wheel but failed — a missing/error node — under both the crates.io
-   `tree-sitter-mal` 1.3.0 crate and a from-source build of the `v1.3.0`
-   git tag itself. Four tests in `maltoolbox-language/tests/
-   test_detectors.rs` were `#[ignore]`d with this reason rather than
-   deleted; the workspace now pins `tree-sitter-mal = "1.3.1"`, the four
-   tests pass unmodified, and the `#[ignore]` attributes have been
-   removed.
-2. **`assoc_traversal_processor.py`'s `_glob_assoc_traversal` (MAL's `*`
-   operator in dynamic sentences) never actually computes a transitive
-   closure.** Its `while` loop recomputes both `next_assets` and every
-   iteration's `new_assets` from the same unchanging
-   `instigating_assets` parameter instead of feeding the growing result
-   back in, so despite the loop shape it always resolves to exactly one
-   application of the pattern. Ported bug-for-bug in
-   `maltoolbox-language/src/graph/assoc_traversal.rs` as a single
-   direct call with a comment explaining why, rather than reproducing a
-   dead loop that would look like a mistake in *this* port.
+Unlike §3, these are cases where an upstream dependency or the Python
+oracle's behavior was confirmed buggy and this project fixed it rather
+than working around or reproducing it, since silently under-resolving or
+dropping data (or staying pinned to a broken parser) seemed worse than
+wire-compatibility here. Documented at the site in both implementations:
 
-Item 2 is still a good candidate to report upstream.
+- **`tree-sitter-mal` 1.3.0 can't parse unlabeled detector context —
+  fixed upstream in 1.3.1.** `! logExploit (step) [tpr: 0.1]` (no label
+  before the rate clause) parsed under the PyPI `tree_sitter_mal` 1.3.0
+  wheel but failed — a missing/error node — under both the crates.io
+  `tree-sitter-mal` 1.3.0 crate and a from-source build of the `v1.3.0`
+  git tag itself. Four tests in `maltoolbox-language/tests/
+  test_detectors.rs` were `#[ignore]`d with this reason rather than
+  deleted; the workspace now pins `tree-sitter-mal = "1.3.1"`, the four
+  tests pass unmodified, and the `#[ignore]` attributes have been
+  removed.
+- **`*` transitive-closure operator didn't actually iterate**
+  (`maltoolbox-language/src/graph/assoc_traversal.rs`,
+  `glob_assoc_traversal`): `assoc_traversal_processor.py`'s
+  `_glob_assoc_traversal` recomputes both its seed and every loop
+  iteration from the same unchanging `instigating_assets` instead of the
+  growing result, so despite the while-loop shape it always resolves to
+  exactly one application of the pattern rather than a real closure.
+  Confirmed against the running Python oracle. The Rust port implements
+  an actual fixed-point closure, feeding the growing result back into the
+  pattern traversal each iteration.
+- **Model metadata key mismatch** (`maltoolbox-model/src/file.rs`):
+  `to_dict` (`model.rs`) writes `"MAL-Toolbox Version"` (hyphenated), but
+  `_from_dict` in the Python original reads `"MAL Toolbox Version"`
+  (spaced), so the field never actually round-trips there and silently
+  falls back to the running tool's own version. The Rust port's
+  `from_dict` reads the same hyphenated key `to_dict` writes, so the
+  field round-trips correctly.
 
 ## 5. Two real porting bugs caught before landing (for context)
 
@@ -128,6 +130,9 @@ the source: either by diffing serialized output directly
 `*_golden.rs` in each crate), or by running small hand-written `.mal`
 snippets through both implementations and checking they agree on
 success/failure. This caught every divergence and bug listed in §3–§5.
+Note that §4's two fixes make `glob_assoc_traversal` and model-metadata
+round-tripping genuine *intentional* divergences from the Python oracle's
+output — those two cases will disagree with Python by design.
 
 Current status: **113 passing tests, 0 `#[ignore]`d**.
 
