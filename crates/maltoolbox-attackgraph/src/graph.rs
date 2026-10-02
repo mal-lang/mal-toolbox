@@ -1,12 +1,29 @@
-//! Port of `maltoolbox/attackgraph/attackgraph.py`'s `AttackGraph` class.
-//! `attack_graph_from_dict`/`attack_graph_from_file` (deserialization)
-//! are *not* ported - only `to_dict`/`save_to_file` are - since neither
-//! CLI subcommand (`compile`, `generate-attack-graph`) ever reads an
-//! attack graph back in; see `PORTING_NOTES.md` at the repo root.
+//! Port of `maltoolbox/attackgraph/attackgraph.py`'s `AttackGraph` class,
+//! including `attack_graph_from_dict`/`attack_graph_from_file`
+//! (`AttackGraph::from_dict`/`AttackGraph::load_from_file` here). Neither
+//! CLI subcommand (`compile`, `generate-attack-graph`) actually reads an
+//! attack graph back in, but the deserialization path is kept at parity
+//! with the Python original for downstream consumers (e.g.
+//! mal-simulator) that may; see `PORTING_NOTES.md` at the repo root.
 //!
 //! Holds `lang_graph` persistently (compiled once, never mutated, so an
 //! `Rc` is safe to share) but *not* `model` - see the crate-level docs
 //! for why methods that need the model take `&Model` explicitly instead.
+//! Unlike Python, where `attack_graph_from_dict` stashes `model` directly
+//! on the returned `AttackGraph` (`attack_graph.model = model`), this
+//! port never stores it: callers that loaded with a model back in hand
+//! simply keep passing `Some(&model)` to `to_dict`/`full_name_of`/etc.,
+//! same as every other method here.
+//!
+//! Two behaviors are intentionally *not* reconstructed, matching what
+//! the Python original effectively discards too:
+//! - `Detector`s: `node_dict['detectors']` is read by nothing in
+//!   `attack_graph_from_dict` - only `tags`/`extras`/the topology fields
+//!   are. A loaded graph's `detectors` are always empty.
+//! - `ModelAsset.attack_step_nodes`: a `# TODO: deprecate this` Python-only
+//!   back-reference list `attack_graph_from_dict` populates on the model
+//!   asset as a side effect; this port's `ModelAsset` never had this
+//!   field to begin with, so there is nothing to populate.
 
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -329,6 +346,139 @@ impl AttackGraph {
         path: impl AsRef<std::path::Path>,
     ) -> Result<(), maltoolbox_fileutil::FileUtilError> {
         maltoolbox_fileutil::save_dict_to_file(path, &self.to_dict(model))
+    }
+
+    /// Port of `attack_graph_from_dict`: rebuild an [`AttackGraph`] from
+    /// the shape produced by [`AttackGraph::to_dict`]. `model` is
+    /// optional, same as the Python original - when absent, nodes keep
+    /// the full name recorded in `serialized` verbatim
+    /// (`full_name_override`) rather than recomputing one from a model
+    /// asset that isn't available.
+    pub fn from_dict(
+        serialized: &Value,
+        lang_graph: Rc<LanguageGraph>,
+        model: Option<&Model>,
+    ) -> Result<Self, GraphError> {
+        let mut attack_graph = AttackGraph::empty(lang_graph.clone());
+        let serialized_steps = serialized["attack_steps"].as_object().ok_or_else(|| {
+            GraphError::Malformed("attack graph dict missing \"attack_steps\"".to_string())
+        })?;
+
+        for (node_full_name, node_dict) in serialized_steps {
+            let node_asset_id = match (model, node_dict.get("asset").and_then(Value::as_str)) {
+                (Some(model), Some(asset_name)) => {
+                    let asset = model.get_asset_by_name(asset_name).ok_or_else(|| {
+                        GraphError::Malformed(format!(
+                            "Failed to find asset with name \"{asset_name}\" when loading from attack graph dict"
+                        ))
+                    })?;
+                    Some(asset.id)
+                }
+                _ => None,
+            };
+
+            let lg_full_name = node_dict["lang_graph_attack_step"].as_str().ok_or_else(|| {
+                GraphError::Malformed(format!(
+                    "attack graph node \"{node_full_name}\" missing \"lang_graph_attack_step\""
+                ))
+            })?;
+            let (lg_asset_name, lg_step_name) = lg_full_name.split_once(':').ok_or_else(|| {
+                GraphError::Malformed(format!("malformed lang_graph_attack_step \"{lg_full_name}\""))
+            })?;
+            let lg_asset_id = lang_graph.asset_id(lg_asset_name).ok_or_else(|| {
+                GraphError::Malformed(format!(
+                    "Failed to find asset type \"{lg_asset_name}\" in language graph"
+                ))
+            })?;
+            let lg_step_id = *lang_graph
+                .asset(lg_asset_id)
+                .attack_steps
+                .get(lg_step_name)
+                .ok_or_else(|| {
+                    GraphError::Malformed(format!(
+                        "Failed to find attack step \"{lg_step_name}\" on asset type \"{lg_asset_name}\""
+                    ))
+                })?;
+
+            let node_id = node_dict["id"].as_i64().ok_or_else(|| {
+                GraphError::Malformed(format!("attack graph node \"{node_full_name}\" missing \"id\""))
+            })?;
+            let ttc_dist = match node_dict.get("ttc") {
+                Some(Value::Null) | None => None,
+                Some(v) => Some(v.clone()),
+            };
+            let existence_status = node_dict.get("existence_status").and_then(Value::as_bool);
+
+            let key = attack_graph.add_node(
+                lg_step_id,
+                model,
+                Some(node_id),
+                node_asset_id,
+                ttc_dist,
+                existence_status,
+                if model.is_none() { Some(node_full_name.clone()) } else { None },
+            )?;
+
+            attack_graph.nodes[key].tags = node_dict
+                .get("tags")
+                .and_then(Value::as_array)
+                .map(|tags| tags.iter().filter_map(|t| t.as_str().map(str::to_string)).collect())
+                .unwrap_or_default();
+            attack_graph.nodes[key].extras = node_dict
+                .get("extras")
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default();
+        }
+
+        // Re-establish links between nodes, now that every node exists.
+        let resolve_relation = |id_to_node: &HashMap<i64, AttackGraphNodeId>,
+                                 node_dict: &Value,
+                                 relation: &'static str|
+         -> Result<HashSet<AttackGraphNodeId>, GraphError> {
+            let mut resolved = HashSet::new();
+            if let Some(entries) = node_dict.get(relation).and_then(Value::as_object) {
+                for id_str in entries.keys() {
+                    let id: i64 = id_str
+                        .parse()
+                        .map_err(|_| GraphError::Malformed(format!("malformed {relation} id \"{id_str}\"")))?;
+                    let related_key = *id_to_node.get(&id).ok_or_else(|| {
+                        GraphError::Malformed(format!(
+                            "Failed to find {relation} node with id {id} when loading from attack graph from dict"
+                        ))
+                    })?;
+                    resolved.insert(related_key);
+                }
+            }
+            Ok(resolved)
+        };
+
+        for node_dict in serialized_steps.values() {
+            let node_id = node_dict["id"].as_i64().expect("validated above");
+            let key = *attack_graph.id_to_node.get(&node_id).ok_or_else(|| {
+                GraphError::Malformed(format!(
+                    "Failed to find node with id {node_id} when loading attack graph from dict"
+                ))
+            })?;
+
+            let children = resolve_relation(&attack_graph.id_to_node, node_dict, "children")?;
+            let parents = resolve_relation(&attack_graph.id_to_node, node_dict, "parents")?;
+            attack_graph.nodes[key].children = children;
+            attack_graph.nodes[key].parents = parents;
+        }
+
+        Ok(attack_graph)
+    }
+
+    /// Port of `AttackGraph.load_from_file`: `from_dict` over a
+    /// JSON/YAML file, dispatching on the file extension.
+    pub fn load_from_file(
+        path: impl AsRef<std::path::Path>,
+        lang_graph: Rc<LanguageGraph>,
+        model: Option<&Model>,
+    ) -> Result<Self, GraphError> {
+        let serialized = maltoolbox_fileutil::load_dict_from_file(path)?;
+        Self::from_dict(&serialized, lang_graph, model)
     }
 
     fn node_to_dict(&self, key: AttackGraphNodeId, model: Option<&Model>) -> Value {

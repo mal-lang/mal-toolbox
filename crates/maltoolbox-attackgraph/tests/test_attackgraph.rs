@@ -3,10 +3,6 @@
 //! Not ported:
 //! - `test_attackgraph_init` (mocks Python internals, not a meaningful
 //!   check in Rust)
-//! - `test_load_attack_graph`/`test_attackgraph_save_load_no_model_given`/
-//!   `test_attackgraph_save_and_load_json_yml_model_given` (need
-//!   `AttackGraph` deserialization - `load_from_file`/`from_dict` were
-//!   never ported, only `save_to_file`; out of scope for the CLI too)
 //! - `test_attackgraph_generate_graph` (redundant with the oracle-verified
 //!   `graph_golden.rs`/`partial_regen_golden.rs`, which already check
 //!   full regeneration produces the right node set)
@@ -44,6 +40,14 @@ fn lang_fixtures_dir() -> &'static std::path::Path {
         env!("CARGO_MANIFEST_DIR"),
         "/../maltoolbox-language/tests/fixtures"
     ))
+}
+
+/// The repo-root `tests/testdata` dir, shared with the Python test suite -
+/// `attackgraph.json`/`.yml` there are real Python-oracle output for
+/// corelang, and `org.mal-lang.coreLang-1.0.0.mar` is byte-identical to
+/// the one in `lang_fixtures_dir()`.
+fn repo_testdata_dir() -> &'static std::path::Path {
+    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../tests/testdata"))
 }
 
 fn corelang() -> Rc<maltoolbox_language::graph::LanguageGraph> {
@@ -502,4 +506,92 @@ fn create_ag_step_lists() {
 
     assert_eq!(defenses, attack_graph.defense_steps.iter().copied().collect());
     assert_eq!(attacks, attack_graph.attack_steps.iter().copied().collect());
+}
+
+#[test]
+fn load_attack_graph_json_and_yaml_agree() {
+    let lang_graph = corelang();
+    let json_ag = AttackGraph::load_from_file(repo_testdata_dir().join("attackgraph.json"), lang_graph.clone(), None)
+        .expect("load attackgraph.json");
+    let yml_ag = AttackGraph::load_from_file(repo_testdata_dir().join("attackgraph.yml"), lang_graph, None)
+        .expect("load attackgraph.yml");
+
+    assert_eq!(json_ag.nodes.len(), 545);
+    assert_eq!(json_ag.to_dict(None), yml_ag.to_dict(None));
+
+    for node in json_ag.nodes.values() {
+        if node.step_type == maltoolbox_language::graph::attack_step::AttackStepType::Exist {
+            // Just needs to type-check as `Option<bool>` - already does in
+            // Rust - this only exercises that loading didn't panic on it.
+            let _: Option<bool> = node.existence_status;
+        }
+    }
+}
+
+#[test]
+fn attackgraph_save_load_round_trip_no_model() {
+    let mar = lang_fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar");
+    let model_path = fixtures_dir().join("simple_example_model.yml");
+    let (mut attack_graph, model) = maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
+
+    let node_with_reward = attack_graph.nodes.keys().next().unwrap();
+    attack_graph.nodes[node_with_reward]
+        .extras
+        .insert("reward".to_string(), serde_json::json!(1));
+    let node_with_reward_id = attack_graph.nodes[node_with_reward].id;
+
+    let dir = std::env::temp_dir().join(format!("maltoolbox-attackgraph-roundtrip-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("example_graph.yml");
+    attack_graph.save_to_file(Some(&model), &path).expect("save");
+
+    let loaded = AttackGraph::load_from_file(&path, attack_graph.lang_graph.clone(), None).expect("load");
+    std::fs::remove_dir_all(&dir).ok();
+
+    assert_eq!(attack_graph.nodes.len(), loaded.nodes.len());
+
+    let loaded_key = *loaded.id_to_node.get(&node_with_reward_id).expect("reloaded node by id");
+    assert_eq!(loaded.nodes[loaded_key].extras.get("reward"), Some(&serde_json::json!(1)));
+
+    // Loaded-without-model nodes have no "asset" key, so compare every
+    // other field: the saved dict (with model) minus "asset" should equal
+    // the reloaded dict (without model).
+    let mut original = attack_graph.to_dict(Some(&model));
+    for node in original["attack_steps"].as_object_mut().unwrap().values_mut() {
+        node.as_object_mut().unwrap().remove("asset");
+    }
+    assert_eq!(original, loaded.to_dict(None));
+}
+
+#[test]
+fn attackgraph_save_and_load_round_trip_with_model() {
+    let mar = lang_fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar");
+    let model_path = fixtures_dir().join("simple_example_model.yml");
+    let (attack_graph, model) = maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
+
+    let dir = std::env::temp_dir().join(format!("maltoolbox-attackgraph-roundtrip-model-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+
+    for ext in ["yml", "json"] {
+        let path = dir.join(format!("attackgraph.{ext}"));
+        attack_graph.save_to_file(Some(&model), &path).expect("save");
+        let loaded =
+            AttackGraph::load_from_file(&path, attack_graph.lang_graph.clone(), Some(&model)).expect("load");
+
+        assert_eq!(attack_graph.to_dict(Some(&model)), loaded.to_dict(Some(&model)));
+
+        for (loaded_key, loaded_node) in loaded.nodes.iter() {
+            let asset_id = loaded_node.model_asset.expect("node should get an asset when loaded with model");
+            let asset = model.get_asset_by_id(asset_id).unwrap();
+            let full_name = loaded.full_name_of(loaded_key, Some(&model));
+            assert_eq!(full_name, format!("{}:{}", asset.name, loaded_node.name));
+
+            let found_by_id = *loaded.id_to_node.get(&loaded_node.id).unwrap();
+            assert_eq!(found_by_id, loaded_key);
+            let found_by_name = loaded.get_node_by_full_name(&full_name).unwrap();
+            assert_eq!(found_by_name, loaded_key);
+        }
+    }
+
+    std::fs::remove_dir_all(&dir).ok();
 }

@@ -44,4 +44,6 @@ pub enum GraphError {
     Language(#[from] maltoolbox_language::graph::GraphError),
     #[error("{0}")]
     Model(#[from] maltoolbox_model::ModelError),
+    #[error("{0}")]
+    FileUtil(#[from] maltoolbox_fileutil::FileUtilError),
 }

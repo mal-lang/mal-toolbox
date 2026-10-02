@@ -71,6 +71,19 @@ each crate's module docs for the full rationale.
   snapshot instead, so the two methods can be called in either order with
   no efficiency cost (no scanning; same O(1) lookups as before, just
   sourced from the snapshot instead of a live `model` query).
+- **`AttackGraph` deserialization doesn't stash `model` on the graph**
+  (`maltoolbox-attackgraph/src/graph.rs`, `AttackGraph::from_dict`/
+  `load_from_file`): `attack_graph_from_dict` sets `attack_graph.model =
+  model` as a side effect, consistent with `AttackGraph.model` being a
+  persistent field in the first place (see the `AttackGraph` ↔ `Model`
+  row above). This port never had that field, so a caller that loads with
+  a model keeps it and passes `Some(&model)` to every method that needs
+  one, same as everywhere else. Two things `attack_graph_from_dict`
+  effectively discards are dropped here too, not ported: `Detector`s
+  (`node_dict['detectors']` is written by `to_dict` but never read back
+  by the Python original either) and `ModelAsset.attack_step_nodes` (a
+  `# TODO: deprecate this` Python-only back-reference list populated as a
+  side effect of loading; this port's `ModelAsset` never had the field).
 
 ## 3. Confirmed upstream bugs fixed, not reproduced
 
@@ -157,22 +170,18 @@ tripping, and include-cycle detection) make this port genuinely
 *intentionally* diverge from the Python oracle's output for those three
 cases — they'll disagree with Python by design.
 
-Current status: **114 passing tests, 0 `#[ignore]`d**.
+Current status: **117 passing tests, 0 `#[ignore]`d**.
 
 ## 6. What's left to do
 
-- **`AttackGraph` deserialization** (`load_from_file`/`from_dict`) is not
-  implemented — only `save_to_file`/`to_dict` were ported. Not needed by
-  either CLI subcommand (`compile`, `generate-attack-graph`), which only
-  ever *write* attack graphs, never read them back in.
 - **Python interop (PyO3 bindings)** — explicitly left undecided/deferred
   by the user. The core's public API shape is kept FFI-friendly in case
   bindings get added later, but none exist yet.
 - Everything else from the original scope is done: MAL compiler +
   semantic analyzer, `LanguageGraph` builder (including model effects),
-  `Model`, `AttackGraph` (full build + partial regeneration), pattern
-  finder, file I/O (`.mar`/JSON/YAML), and the `maltoolbox` CLI
-  (`compile`, `generate-attack-graph`).
+  `Model`, `AttackGraph` (full build + partial regeneration +
+  deserialization), pattern finder, file I/O (`.mar`/JSON/YAML), and the
+  `maltoolbox` CLI (`compile`, `generate-attack-graph`).
 
 ## 7. Minor CLI differences worth knowing about
 
