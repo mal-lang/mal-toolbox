@@ -37,6 +37,20 @@ each crate's module docs for the full rationale.
 | Expression chains | One dataclass (`ExpressionsChain`) with many `Optional` fields, validated post-hoc | A Rust `enum` with one variant per shape (`Binary`/`Field`/`Transitive`/`SubType`/`AssocOp`/`Multiplicity`), so each variant only carries the fields it needs |
 | Own + inherited accessors | Python `@property`/`@cached_property` on the object itself (e.g. `attack_step.children`) | Rust methods take `&LanguageGraph` explicitly (e.g. `step.children(&graph)`), since the step doesn't hold a reference to the graph it lives in |
 
+- **Cosmetic compiler warnings, surfaced without a logging framework**
+  (`maltoolbox-language/src/compiler/{mod.rs,semantic.rs}`):
+  `mal_analyzer.py`'s two advisory-only `logger.warning` calls - "abstract
+  asset never extended" (`semantic.rs::warn_abstract_never_extended`) and
+  "duplicate CIA classification" (`mod.rs::visit_cias`) - are ported, but
+  printed with plain `eprintln!` rather than routed through a logging
+  crate, since this project doesn't port Python's `logging`/
+  `maltoolbox.yml` config subsystem (see §8). Neither warning affects
+  compilation success or serialized output in either implementation; the
+  duplicate-CIA one in particular is detected during the raw tree-sitter
+  walk in `mod.rs`, not in `semantic.rs`'s later pass over the compiled
+  langspec, since by that point the `risk` flags are already deduplicated
+  booleans and the repeated letter is no longer visible.
+
 ## 3. Behavioral divergences from Python — ported faithfully, not "fixed"
 
 This project's mandate is wire/behavior compatibility, so where the real
@@ -50,11 +64,6 @@ corrected, and documented at the site:
   mutual-include cycle silently compiles in the real implementation.
   Confirmed by running the Python oracle, not assumed from reading the
   source.
-- **Two cosmetic `mal_analyzer.py` warnings deliberately not ported**:
-  "abstract asset never extended" and "duplicate CIA classification" are
-  both pure `logger.warning` calls with no effect on whether compilation
-  succeeds or on any serialized output, so they were left out rather than
-  built as dead weight.
 - **Partial-regeneration asset-removal ordering contract**
   (`maltoolbox-attackgraph`): Python's object-reference model lets
   `Model.remove_asset` happen before or after

@@ -1,7 +1,15 @@
 //! Port of `maltoolbox/language/compiler/mal_analyzer.py`'s semantic
-//! validation, minus its two purely-cosmetic warnings (abstract-asset-
-//! never-extended, duplicate-CIA-classification) which have no effect on
-//! compilation success or on any serialized output.
+//! validation, including its two purely-cosmetic warnings (abstract-
+//! asset-never-extended, duplicate-CIA-classification), which have no
+//! effect on compilation success or on any serialized output but are
+//! still useful diagnostics for language authors. Printed to stderr with
+//! `eprintln!` rather than routed through a logging framework, since no
+//! logging subsystem is ported in this project (see `PORTING_NOTES.md`
+//! §8). The abstract-asset check lives here, over the compiled langspec;
+//! the duplicate-CIA check lives in `visit_cias` in the sibling
+//! `compiler` module instead, since by the time a langspec reaches this
+//! pass its `risk` flags are already deduplicated booleans - the raw,
+//! possibly-repeated CIA letters only exist during that earlier walk.
 //!
 //! Unlike the Python original - a stateful visitor hooked into the same
 //! tree-sitter walk the compiler performs, accumulating state incrementally
@@ -57,6 +65,7 @@ pub fn analyze(langspec: &Value) -> Result<(), CompileError> {
     analyse_defines(langspec)?;
     analyse_extends(assets)?;
     analyse_parents(assets)?;
+    warn_abstract_never_extended(assets);
     analyse_association(associations, assets)?;
 
     let assets_by_name: HashMap<&str, &Value> = assets
@@ -174,6 +183,26 @@ fn analyse_extends(assets: &[Value]) -> Result<(), CompileError> {
         }
     }
     Ok(())
+}
+
+/// Port of `_analyse_abstract`'s warning: an abstract asset that no other
+/// asset extends is almost certainly dead weight in the language, but
+/// it's not an error - just worth flagging.
+fn warn_abstract_never_extended(assets: &[Value]) {
+    for asset in assets {
+        if asset["isAbstract"].as_bool() != Some(true) {
+            continue;
+        }
+        let Some(name) = asset["name"].as_str() else {
+            continue;
+        };
+        let extended = assets
+            .iter()
+            .any(|a| a["superAsset"].as_str() == Some(name));
+        if !extended {
+            eprintln!("warning: asset '{name}' is abstract but never extended to");
+        }
+    }
 }
 
 fn analyse_parents(assets: &[Value]) -> Result<(), CompileError> {

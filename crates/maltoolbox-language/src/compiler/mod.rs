@@ -351,7 +351,7 @@ fn visit_asset_declaration(node: Node, source: &[u8], category: &str) -> Result<
     let meta = visit_meta_fields(node, source, "meta")?;
 
     let (variables, attack_steps) = match node.child_by_field_name("body") {
-        Some(body) => visit_asset_definition(body, source)?,
+        Some(body) => visit_asset_definition(body, source, &name)?,
         None => (Vec::new(), Vec::new()),
     };
 
@@ -366,13 +366,17 @@ fn visit_asset_declaration(node: Node, source: &[u8], category: &str) -> Result<
     }))
 }
 
-fn visit_asset_definition(node: Node, source: &[u8]) -> Result<(Vec<Value>, Vec<Value>), CompileError> {
+fn visit_asset_definition(
+    node: Node,
+    source: &[u8],
+    asset_name: &str,
+) -> Result<(Vec<Value>, Vec<Value>), CompileError> {
     let mut variables = Vec::new();
     let mut steps = Vec::new();
     for child in named_children_no_comments(node) {
         match child.kind() {
             "asset_variable" => variables.push(visit_asset_variable(child, source)?),
-            "attack_step" => steps.push(visit_attack_step(child, source)?),
+            "attack_step" => steps.push(visit_attack_step(child, source, asset_name)?),
             other => {
                 return Err(CompileError::Malformed(format!(
                     "unexpected child of asset_definition: {other}"
@@ -404,7 +408,7 @@ fn step_type_name(raw: &str) -> String {
     }
 }
 
-fn visit_attack_step(node: Node, source: &[u8]) -> Result<Value, CompileError> {
+fn visit_attack_step(node: Node, source: &[u8], asset_name: &str) -> Result<Value, CompileError> {
     let step_type = step_type_name(text(required_field(node, "step_type")?, source));
 
     let causal_mode = node
@@ -425,7 +429,7 @@ fn visit_attack_step(node: Node, source: &[u8]) -> Result<Value, CompileError> {
     let mut cias_cursor = node.walk();
     for cias_field_node in node.children_by_field_name("cias", &mut cias_cursor) {
         if cias_field_node.is_named() && cias_field_node.kind() == "cias" {
-            risk = visit_cias(cias_field_node, source);
+            risk = visit_cias(cias_field_node, source, asset_name, &name);
         }
     }
 
@@ -482,22 +486,39 @@ fn visit_attack_step(node: Node, source: &[u8]) -> Result<Value, CompileError> {
     }))
 }
 
-fn visit_cias(node: Node, source: &[u8]) -> Value {
+/// Port of `visit_cias`, plus `mal_analyzer.py`'s `_validate_CIA`
+/// duplicate-classification warning (e.g. `C, C, I`), which Python emits
+/// as a side effect of the same walk. Only the first duplicate warns,
+/// matching the Python original's early `return` after it finds one -
+/// but unlike Python, finding a duplicate never skips building `risk`
+/// for the remaining letters, since that part of the original walk is
+/// not analyzer-gated and skipping it here would change serialized
+/// output.
+fn visit_cias(node: Node, source: &[u8], asset_name: &str, step_name: &str) -> Value {
     let mut risk = json!({
         "isConfidentiality": false,
         "isIntegrity": false,
         "isAvailability": false,
     });
+    let mut seen = HashSet::new();
+    let mut warned = false;
     for cia_node in named_children_no_comments(node) {
         if cia_node.kind() != "cia" {
             continue;
         }
-        let key = match text(cia_node, source) {
+        let letter = text(cia_node, source);
+        let key = match letter {
             "C" => "isConfidentiality",
             "I" => "isIntegrity",
             "A" => "isAvailability",
             _ => continue,
         };
+        if !warned && !seen.insert(letter) {
+            eprintln!(
+                "warning: attack step {asset_name}.{step_name} contains duplicate classification {letter}"
+            );
+            warned = true;
+        }
         risk[key] = Value::Bool(true);
     }
     risk
