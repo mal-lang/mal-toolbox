@@ -273,12 +273,14 @@ fn variable_not_pointing_to_asset_rejected() {
     );
 }
 
-/// Oracle-confirmed divergence: `mal_compiler.py`'s own `visited_files`
-/// dedup intercepts a repeated include *before* the analyzer's
-/// `_include_stack` cycle check can ever see it, so a simple two-file
-/// mutual include compiles successfully in the real implementation too.
+/// Intentional divergence from the Python oracle (see PORTING_NOTES.md
+/// §4): `mal_compiler.py`'s own `visited_files` dedup intercepts a
+/// repeated include *before* the analyzer's `_include_stack` cycle check
+/// can ever see it, so a simple two-file mutual include silently
+/// compiles in the real implementation. This Rust port implements real
+/// cycle detection instead and rejects it.
 #[test]
-fn mutual_include_does_not_error() {
+fn mutual_include_raises() {
     let dir = tmp_dir("include_cycle");
     let a_path = dir.join("cyc_a.mal");
     let b_path = dir.join("cyc_b.mal");
@@ -294,7 +296,43 @@ fn mutual_include_does_not_error() {
     .unwrap();
 
     let result = compile_file(&a_path);
-    assert!(result.is_ok(), "expected mutual include to compile, got {result:?}");
+    assert!(result.is_err(), "expected mutual include to be rejected, got {result:?}");
+    let message = result.unwrap_err().to_string();
+    assert!(message.contains("cycle"), "expected cycle error, got {message:?}");
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+/// Non-cyclic repeated includes (a "diamond": both B and C include A)
+/// must still compile - only an actual cycle through the active include
+/// stack should be rejected.
+#[test]
+fn diamond_include_does_not_error() {
+    let dir = tmp_dir("include_diamond");
+    let root_path = dir.join("diamond_root.mal");
+    let b_path = dir.join("diamond_b.mal");
+    let c_path = dir.join("diamond_c.mal");
+    let shared_path = dir.join("diamond_shared.mal");
+    std::fs::write(
+        &root_path,
+        format!(
+            "{HEADER}include \"diamond_b.mal\"\ninclude \"diamond_c.mal\"\ncategory C {{ asset Root {{ | s1 }} }}"
+        ),
+    )
+    .unwrap();
+    std::fs::write(
+        &b_path,
+        "include \"diamond_shared.mal\"\ncategory D { asset B { | s2 } }",
+    )
+    .unwrap();
+    std::fs::write(
+        &c_path,
+        "include \"diamond_shared.mal\"\ncategory E { asset C { | s3 } }",
+    )
+    .unwrap();
+    std::fs::write(&shared_path, "category F { asset Shared { | s4 } }").unwrap();
+
+    let result = compile_file(&root_path);
+    assert!(result.is_ok(), "expected diamond include to compile, got {result:?}");
     std::fs::remove_dir_all(&dir).ok();
 }
 

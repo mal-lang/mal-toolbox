@@ -55,16 +55,42 @@ pub enum CompileError {
 /// the fully-merged result.
 pub fn compile_file(path: impl AsRef<Path>) -> Result<Value, CompileError> {
     let mut visited = HashSet::new();
+    let mut active: Vec<PathBuf> = Vec::new();
     let mut path_stack: Vec<PathBuf> = Vec::new();
     let mut seen_custom_defines = HashSet::new();
-    let langspec = compile_inner(path.as_ref(), &mut visited, &mut path_stack, &mut seen_custom_defines)?;
+    let langspec = compile_inner(
+        path.as_ref(),
+        &mut visited,
+        &mut active,
+        &mut path_stack,
+        &mut seen_custom_defines,
+    )?;
     semantic::analyze(&langspec)?;
     Ok(langspec)
 }
 
+/// `active` holds the chain of files currently being compiled (the
+/// include "call stack"), used for real cycle detection: finding
+/// `current_file` in it means an include chain has looped back on
+/// itself, anywhere in the chain - including back to the root file.
+///
+/// NOTE: the Python oracle's cycle detection (`mal_analyzer.py`'s
+/// `_include_stack`) is confirmed buggy - it never raises for an include
+/// cycle that loops back to the root file specifically, because the root
+/// is never itself pushed as an "include" target (only files reached via
+/// an `include_declaration` are). `mal_compiler.py`'s own `visited_files`
+/// dedup also runs *before* the analyzer's per-include cycle check can
+/// fire for such a cycle, since the root is already marked visited by
+/// the time its own name is seen again. A genuine two-file mutual include
+/// (A includes B includes A) therefore silently compiles with no error
+/// in the real implementation. This Rust port intentionally diverges and
+/// implements real cycle detection, since silently accepting a
+/// structurally circular language spec seemed worse than matching that
+/// bug.
 fn compile_inner(
     malfile: &Path,
     visited: &mut HashSet<PathBuf>,
+    active: &mut Vec<PathBuf>,
     path_stack: &mut Vec<PathBuf>,
     seen_custom_defines: &mut HashSet<String>,
 ) -> Result<Value, CompileError> {
@@ -75,18 +101,26 @@ fn compile_inner(
         }
     }
 
+    if let Some(cycle_start) = active.iter().position(|f| f == &current_file) {
+        let mut chain: Vec<String> = active[cycle_start..]
+            .iter()
+            .map(|f| f.display().to_string())
+            .collect();
+        chain.push(current_file.display().to_string());
+        return Err(CompileError::Semantic(format!(
+            "Include sequence contains cycle: {}",
+            chain.join(" -> ")
+        )));
+    }
+
     if visited.contains(&current_file) {
-        // Already fully compiled via another include path - matches
-        // mal_compiler.py's own `visited_files` dedup, which runs before
-        // the analyzer ever sees a repeated include. As a consequence,
-        // a true mutual-include cycle (A includes B includes A) never
-        // reaches the analyzer's cycle-tracking logic either - confirmed
-        // against the Python oracle, which silently compiles such a
-        // cycle without error rather than raising. Ported as observed,
-        // not as a "fixed" stricter check.
+        // Already fully compiled via another, non-cyclic include path
+        // (e.g. a "diamond": both B and C include A) - safe to skip
+        // rather than recompile.
         return Ok(json!({}));
     }
     visited.insert(current_file.clone());
+    active.push(current_file.clone());
     path_stack.push(
         current_file
             .parent()
@@ -107,6 +141,7 @@ fn compile_inner(
 
     if let Some(err_node) = first_error_node(root) {
         path_stack.pop();
+        active.pop();
         return Err(CompileError::Syntax {
             path: current_file,
             line: err_node.start_position().row + 1,
@@ -114,8 +149,9 @@ fn compile_inner(
         });
     }
 
-    let result = visit_source_file(root, &source, visited, path_stack, seen_custom_defines);
+    let result = visit_source_file(root, &source, visited, active, path_stack, seen_custom_defines);
     path_stack.pop();
+    active.pop();
     result
 }
 
@@ -204,6 +240,7 @@ fn visit_source_file(
     root: Node,
     source: &[u8],
     visited: &mut HashSet<PathBuf>,
+    active: &mut Vec<PathBuf>,
     path_stack: &mut Vec<PathBuf>,
     seen_custom_defines: &mut HashSet<String>,
 ) -> Result<Value, CompileError> {
@@ -243,7 +280,13 @@ fn visit_source_file(
             }
             "include_declaration" => {
                 let included_path = visit_include_declaration(variant, source)?;
-                let included = compile_inner(Path::new(&included_path), visited, path_stack, seen_custom_defines)?;
+                let included = compile_inner(
+                    Path::new(&included_path),
+                    visited,
+                    active,
+                    path_stack,
+                    seen_custom_defines,
+                )?;
                 if let Some(defines) = included.get("defines").and_then(Value::as_object) {
                     for (k, v) in defines {
                         insert_object(&mut langspec, "defines", k.clone(), v.clone());

@@ -57,13 +57,6 @@ This project's mandate is wire/behavior compatibility, so where the real
 Python implementation has a quirk or a bug, it was reproduced rather than
 corrected, and documented at the site:
 
-- **Mutual two-file `include` doesn't raise** (`maltoolbox-language/src/
-  compiler/mod.rs`): `mal_compiler.py`'s own `visited_files` dedup
-  intercepts a repeated include *before* `mal_analyzer.py`'s
-  `_include_stack` cycle-detection logic ever runs, so a genuine
-  mutual-include cycle silently compiles in the real implementation.
-  Confirmed by running the Python oracle, not assumed from reading the
-  source.
 - **Partial-regeneration asset-removal ordering contract**
   (`maltoolbox-attackgraph`): Python's object-reference model lets
   `Model.remove_asset` happen before or after
@@ -111,6 +104,22 @@ wire-compatibility here. Documented at the site in both implementations:
   falls back to the running tool's own version. The Rust port's
   `from_dict` reads the same hyphenated key `to_dict` writes, so the
   field round-trips correctly.
+- **Mutual two-file `include` doesn't raise** (`maltoolbox-language/src/
+  compiler/mod.rs`): `mal_compiler.py`'s own `visited_files` dedup
+  intercepts a repeated include *before* `mal_analyzer.py`'s
+  `_include_stack` cycle-detection logic can see it, and that same
+  dedup also means a cycle looping back to the *root* file is never
+  caught even when `_include_stack` itself does run, since the root is
+  never pushed onto it as an include target in the first place - only
+  files reached via an `include_declaration` are. A genuine two-file
+  mutual include (A includes B includes A) therefore silently compiles
+  in the real implementation. Confirmed by running the Python oracle,
+  not assumed from reading the source. The Rust port tracks the active
+  include chain (`compile_inner`'s `active` parameter) and raises a
+  `CompileError::Semantic("Include sequence contains cycle: ...")` for
+  any real cycle, while still allowing non-cyclic repeated includes
+  (a "diamond": both B and C include A) to compile once and short-circuit
+  on the repeat, same as before.
 
 ## 5. Two real porting bugs caught before landing (for context)
 
@@ -139,11 +148,12 @@ the source: either by diffing serialized output directly
 `*_golden.rs` in each crate), or by running small hand-written `.mal`
 snippets through both implementations and checking they agree on
 success/failure. This caught every divergence and bug listed in §3–§5.
-Note that §4's two fixes make `glob_assoc_traversal` and model-metadata
-round-tripping genuine *intentional* divergences from the Python oracle's
-output — those two cases will disagree with Python by design.
+Note that §4's fixes (`glob_assoc_traversal`, model-metadata round-
+tripping, and include-cycle detection) make this port genuinely
+*intentionally* diverge from the Python oracle's output for those three
+cases — they'll disagree with Python by design.
 
-Current status: **113 passing tests, 0 `#[ignore]`d**.
+Current status: **114 passing tests, 0 `#[ignore]`d**.
 
 ## 7. What's left to do
 
