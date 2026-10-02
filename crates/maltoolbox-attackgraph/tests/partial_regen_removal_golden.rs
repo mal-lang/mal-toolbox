@@ -61,7 +61,7 @@ fn matches_python_oracle_for_partial_regeneration_removal() {
     // No ordering contract any more (see `AttackGraph::partially_regenerate_graph`
     // docs): `model.remove_asset` - which already disconnects associations
     // itself - can now run *before* partial regeneration. Its returned
-    // `RemovedAssetSnapshot` carries everything partial regeneration needs
+    // `AssetSnapshot` carries everything partial regeneration needs
     // to resolve the now-gone asset.
     let snapshot = model.remove_asset(wiper2).unwrap();
 

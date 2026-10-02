@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 use maltoolbox_language::graph::step_expr::reverse_expr_chain;
 use maltoolbox_language::graph::{AssetId, ExprType, ExpressionsChain};
-use maltoolbox_model::{Model, RemovedAssetSnapshot};
+use maltoolbox_model::{Model, AssetSnapshot};
 use slotmap::SlotMap;
 
 use crate::expr_follow::follow_expr_chain;
@@ -30,7 +30,7 @@ pub fn switch_fieldname(model: &Model, asset_id: i64, fieldname: &str) -> Result
 /// resolving via `model.get_asset_by_id`. This is what makes it possible
 /// to resolve the opposite fieldname of a *removed* association without
 /// the removed asset still being present in `model` - the caller supplies
-/// the type/name straight from a [`RemovedAssetSnapshot`] instead.
+/// the type/name straight from a [`AssetSnapshot`] instead.
 fn switch_fieldname_for_lg_asset(
     model: &Model,
     lg_asset: AssetId,
@@ -68,7 +68,7 @@ pub fn switch_fieldname_possibly_removed(
     model: &Model,
     asset_id: i64,
     fieldname: &str,
-    removed: &HashMap<i64, RemovedAssetSnapshot>,
+    removed: &HashMap<i64, AssetSnapshot>,
 ) -> Result<String, GraphError> {
     if let Some(snapshot) = removed.get(&asset_id) {
         switch_fieldname_for_lg_asset(model, snapshot.lg_asset, &snapshot.name, fieldname)
@@ -138,13 +138,13 @@ pub fn correct_node_children_on_modified_assoc(
     Ok(())
 }
 
-/// `removed_assets` carries a [`RemovedAssetSnapshot`] per id rather than
+/// `removed_assets` carries a [`AssetSnapshot`] per id rather than
 /// a bare `HashSet<i64>`, specifically so this never needs
 /// `model.get_asset_by_id` to still succeed for an id that may already be
 /// gone from `model` - only `model.lang_graph` (the compiled language,
 /// untouched by instance-model mutation) is used here.
 pub fn nodes_to_be_removed(
-    removed_assets: &HashMap<i64, RemovedAssetSnapshot>,
+    removed_assets: &HashMap<i64, AssetSnapshot>,
     model: &Model,
     full_name_to_node: &HashMap<String, AttackGraphNodeId>,
 ) -> Result<HashSet<AttackGraphNodeId>, GraphError> {

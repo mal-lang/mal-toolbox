@@ -103,7 +103,7 @@ impl AttackGraph {
     /// Returns the newly created attack/defense step nodes.
     ///
     /// Unlike the Python original, `removed_assets` carries a
-    /// [`maltoolbox_model::RemovedAssetSnapshot`] per id (returned by
+    /// [`maltoolbox_model::AssetSnapshot`] per id (returned by
     /// `Model::remove_asset`) rather than a bare id: nodes only ever store
     /// a `model_asset: i64`, not a live asset reference the way Python's
     /// `ModelAsset` objects stay readable even after being unlinked from
@@ -119,7 +119,7 @@ impl AttackGraph {
         model: &Model,
         new_assets: &HashSet<i64>,
         new_associations: &HashSet<(i64, String, i64)>,
-        removed_assets: &HashMap<i64, maltoolbox_model::RemovedAssetSnapshot>,
+        removed_assets: &HashMap<i64, maltoolbox_model::AssetSnapshot>,
         removed_associations: &HashSet<(i64, String, i64)>,
     ) -> Result<HashSet<AttackGraphNodeId>, GraphError> {
         let created = generate::create_nodes_from_assets(

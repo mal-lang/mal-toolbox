@@ -50,7 +50,7 @@ each crate's module docs for the full rationale.
   walk in `mod.rs`, not in `semantic.rs`'s later pass over the compiled
   langspec, since by that point the `risk` flags are already deduplicated
   booleans and the repeated letter is no longer visible.
-- **`RemovedAssetSnapshot` avoids a dangling-id trap in partial
+- **`AssetSnapshot` avoids a dangling-id trap in partial
   regeneration** (`maltoolbox-model/src/model.rs`,
   `maltoolbox-attackgraph/src/{graph.rs,partially_generate.rs}`):
   Python's object-reference model (see the "Graph storage" row above)
@@ -63,8 +63,8 @@ each crate's module docs for the full rationale.
   asset up by id in `model` to resolve its language type/name, which only
   works *before* `Model.remove_asset` deletes it. Rather than document
   that as a contract, `Model.remove_asset` now returns a
-  `RemovedAssetSnapshot { name, lg_asset }` - captured at the one moment
-  this port can still cheaply answer "what was this asset" - and
+  `AssetSnapshot { name, lg_asset, final_state }` - captured at the one
+  moment this port can still cheaply answer "what was this asset" - and
   `partially_regenerate_graph`'s `removed_assets` parameter carries one
   per id instead of a bare `HashSet<i64>`. Every lookup that used to need
   `model.get_asset_by_id` for a possibly-removed id now reads the

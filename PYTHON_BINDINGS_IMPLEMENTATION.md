@@ -272,10 +272,12 @@ pipeline - never to the Python API surface:
   base exception - see gap above), pickling. Conformance tests: run
   against the same fixtures already used by `crates/maltoolbox-
   language`'s own tests, diff `to_dict()` output.
-- [ ] **Phase 2 - `Model`/`ModelAsset`.** New `maltoolbox-model-py`
+- [x] **Phase 2 - `Model`/`ModelAsset`.** New `maltoolbox-model-py`
   crate. `PyModel(Rc<RefCell<Model>>)`, `PyModelAsset` handle (owner +
   `i64` id, no cache). `__richcmp__`/`__hash__` by `(owner ptr, id)`.
-  `ModelException` family.
+  `ModelException` family. Post-removal readability (the one gap that
+  blocked completion) resolved via the `AssetSnapshot` tombstone
+  mechanism - see Status.
 - [ ] **Phase 3 - `AttackGraph`/`AttackGraphNode`.** New
   `maltoolbox-attackgraph-py` crate. `PyAttackGraph(Rc<RefCell<
   AttackGraph>>)` **plus** the `Option<Py<PyModel>>` back-reference for
@@ -460,10 +462,58 @@ structurally bigger than a fixture swap:**
   pattern, and doesn't block Phase 1. Left for Phase 3 as already
   noted above.
 
+## Phase 2 decisions (settled before implementation started)
+
+Asked the user before writing code, same as Phase 1's decisions. Binding
+for Phase 2 and the default for Phase 3 unless a concrete reason to
+deviate shows up there (note it if so).
+
+1. **Shared `MalToolboxException` base: `maltoolbox-model-py` takes a
+   direct crate dependency on `maltoolbox-language-py`** and reuses its
+   already-exported `MalToolboxException` type for
+   `create_exception!(_native, ModelException, MalToolboxException)`,
+   rather than (a) extracting shared exceptions into a new crate
+   (rejected: would require retroactively touching Phase 1's
+   already-committed `exceptions.rs`) or (b) collapsing the per-layer
+   crate split entirely (rejected: bigger structural reversal than
+   warranted by one shared base type). This mirrors an existing
+   precedent at the core-crate level - `maltoolbox-model` (core)
+   already depends on `maltoolbox-language` (core) - so it's not a new
+   kind of dependency direction, just extending the same relationship
+   to the `-py` crates. Applies identically to Phase 3's
+   `AttackGraphException` (`maltoolbox-attackgraph-py` depending on
+   `maltoolbox-language-py` for the same reason).
+2. **`tests/test_model.py::test_model_remove_nonexisting_asset`
+   (constructs a detached `ModelAsset(name=, asset_id=, lg_asset=)`
+   with no backing `Model` - confirmed the real `ModelAsset.__init__`
+   takes no model/owner argument at all, same shape as Phase 1's gap
+   #1) gets rewritten**, not given a special detached-construction
+   path. Construct the "not in this model" asset via a second real
+   `Model` instance instead (e.g. `other_model.add_asset(...)`, then
+   assert `model.remove_asset()` on it raises `LookupError`) - tests
+   the identical behavior through real construction. Confirmed by grep
+   this is the only call site of this pattern for `ModelAsset`.
+3. **`Model`/`ModelAsset` pickling is deferred to Phase 3**, built
+   together with `AttackGraph`'s pickling design rather than now.
+   Rationale: `AttackGraph` nests a `Model`, which nests a
+   `LanguageGraph`, and the actual mal-simulator-driven pickling
+   requirement was discovered at the `AttackGraph` layer (see
+   "Pickling (required, not optional)" above) - designing the whole
+   nested shape top-down once avoids redoing it. Matches Phase 1's own
+   stated reasoning for deferring `LanguageGraph` pickling the same
+   way.
+4. **`Model.lang_graph` identity**: not asked as a question (judged a
+   clear win, not a tradeoff) - `PyModel` stores the actual
+   `Py<PyLanguageGraph>` object passed into its constructor, not a
+   freshly-extracted `Rc<RefCell<LanguageGraph>>` re-wrapped on each
+   `.lang_graph` access. This preserves `model.lang_graph is
+   original_lang_graph_object` - `True`, matching Python exactly - for
+   free, and is simpler than the alternative besides.
+
 ## Status
 
-**Current phase: Phase 0 and Phase 1 both done. Next: Phase 2
-(`Model`/`ModelAsset`).**
+**Current phase: Phase 0, 1, and 2 all done. Next: Phase 3
+(`AttackGraph`/`AttackGraphNode`).**
 
 ### Resolution of the freeform/mutable-construction finding (closes out Phase 1)
 
@@ -716,3 +766,359 @@ unless noted):
 `ModelAsset` patterns early for the same freeform-construction shape of
 problem gap #1 hit here, rather than discovering it mid-implementation
 again.
+
+### Phase 2 status: `Model`/`ModelAsset` (fully complete)
+
+**Current phase: Phase 0, 1, and 2 all done. Next: Phase 3
+(`AttackGraph`/`AttackGraphNode`).** The post-removal-readability gap
+noted below is resolved - see "Resolution of the post-removal-
+readability finding" further down.
+
+New `python/maltoolbox-model-py` crate (depends on
+`maltoolbox-language-py` per Phase 2 decision 1 - required `mod
+exceptions`/`mod handle` in that crate to become `pub mod` so
+`MalToolboxException`/`composite_hash` are reachable; zero behavioral
+change, pure visibility):
+
+- `exceptions.rs` - `ModelException(MalToolboxException)`,
+  `ModelAssociationException`/`DuplicateModelAssociationError`
+  (siblings under `ModelException` - defined for import-path parity
+  only, confirmed by grep that neither is ever actually raised anywhere
+  in the current codebase). `model_error_to_py` maps each `ModelError`
+  variant to the *same plain built-in* Python would raise for the
+  equivalent condition - confirmed line-by-line against
+  `maltoolbox/model.py`'s real source, not assumed:
+  `DuplicateAssetId`/`UnknownAssetType`/`DuplicateAssetName`/
+  `TooManyAssetsInField`/`UnknownAssociation`/`Malformed` ->
+  `ValueError`; `AssetNotFound`/`UnknownFieldname`/`UnknownAssetId` ->
+  `LookupError`; `WrongAssociatedAssetType` -> `TypeError`;
+  `NotAssociated` -> `KeyError`; `Language(GraphError)` delegates to
+  `maltoolbox-language-py`'s `graph_error_to_py`. `UnknownAssetId`/
+  `NotAssociated` have no exact Python precedent (the Rust core
+  validates a couple of things Python doesn't check before a raw
+  dict/set operation would fail) - approximated as the closest matching
+  built-in, logged rather than silently picked. Separately,
+  `load_error_to_py` *always* produces `ModelException` with Python's
+  exact message ("Could not load model. It might be of an older
+  version...") for the `load_from_file` entry point specifically,
+  matching its real broad `except Exception as e: raise
+  ModelException(...) from e` - confirmed this is the *only* place
+  `ModelException` itself is actually raised in the real source.
+  `from_dict_error_to_py` (unwrapped builtins) is used for the
+  classmethod `_from_dict` path, which has no try/except in Python.
+- `asset.rs` - `PyModelAsset`: owner (`Rc<RefCell<Model>>`) + `i64` id
+  handle, **no `#[new]`** - confirmed nothing needs to construct a bare
+  `ModelAsset` after the test rewrite (Phase 2 decision 2, see below).
+  Full parity: `name`/`id`/`type` (via `#[getter(r#type)]`, `type` being
+  a Rust keyword)/`lg_asset` (returns a `PyLanguageGraphAsset` handle -
+  see the `lang_graph` field note below)/`defenses`/`extras`/
+  `associated_assets` (dict-of-sets, rebuilt per access) getters,
+  `associations_with`/`has_association_with`/
+  `validate_associated_assets`/`add_associated_assets`/
+  `remove_associated_assets`/`to_dict`/`_to_dict` methods,
+  `__repr__`/`__hash__`/`__richcmp__` (owner-ptr+id scheme, reusing
+  Phase 1's `handle::composite_hash`). `associated_assets`'s "needs
+  id->name resolution via the owning Model" subtlety (noted in the core
+  crate's own `ModelAsset::to_dict` doc comment) is handled the same
+  way `Model::to_dict` handles it in Rust - filled in by `_to_dict`
+  after calling the core method.
+  - **Implementation wrinkle found while wiring up
+    `add_associated_assets`/`remove_associated_assets`/
+    `validate_associated_assets`**: these take `set[ModelAsset]` in
+    Python, but pyo3's `Vec<PyRef<T>>` extraction only accepts
+    `Sequence`s (list/tuple), not arbitrary iterables - a Python `set`
+    argument raised `TypeError: 'set' object is not an instance of
+    'Sequence'` at runtime (caught by testing, not by the compiler).
+    Fixed with a small `ids_of(&Bound<PyAny>) -> HashSet<i64>` helper
+    that calls `.try_iter()` instead, which accepts any iterable
+    including sets.
+- `model.rs` - `PyModel`: the one container type, holding **both**
+  `inner: Rc<RefCell<maltoolbox_model::Model>>` (the core model) and
+  `lang_graph_py: Py<PyLanguageGraph>` (the actual Python object passed
+  to the constructor, per Phase 2 decision 4 - `.lang_graph` returns
+  this directly via `clone_ref`, so `model.lang_graph is
+  original_lang_graph_object` is confirmed `True`). `#[new]`/
+  `load_from_file`/`_from_dict` all extract `Rc<RefCell<LanguageGraph>>`
+  from `lang_graph_py` and **clone the `LanguageGraph` data once** to
+  build the bare `Rc<LanguageGraph>` the core `Model` struct needs -
+  see the new `#[derive(Clone)]` on the core `LanguageGraph` struct
+  below for why this was necessary and what it costs. Full parity:
+  `name` (getter+setter)/`lang_graph`/`maltoolbox_version`/`next_id`
+  (getter+setter, confirmed via the earlier mal-simulator grep that
+  `model.next_id` is accessed directly as a plain attribute)/`assets`
+  (`dict[int, ModelAsset]`, id-keyed, rebuilt per access) getters,
+  `add_asset`/`remove_asset`/`get_asset_by_id`/`get_asset_by_name`/
+  `to_dict`/`_to_dict`/`save_to_file`/`load_from_file`
+  (`#[staticmethod]`)/`_from_dict` (`#[staticmethod]`)/`__repr__`.
+- **One opportunistic core-crate change, flagged per Phase 2 decision
+  4**: added `#[derive(Clone)]` to `LanguageGraph` itself
+  (`crates/maltoolbox-language/src/graph/mod.rs`) - needed because the
+  core `maltoolbox_model::Model` requires a bare `Rc<LanguageGraph>`
+  (no `RefCell`), which can't be produced from `PyLanguageGraph`'s
+  `Rc<RefCell<LanguageGraph>>` without copying the data once (the two
+  `Rc` flavors are different allocations; there's no safe zero-cost
+  conversion between them). **Confirmed-narrow, accepted divergence**:
+  a `Model` built this way holds its own independent copy of the
+  language graph, so calling `regenerate_graph()` on the *original*
+  `LanguageGraph` Python object afterward is not reflected in any
+  `Model` already constructed from it. Grepped `tests/`/`maltoolbox/`
+  for `regenerate_graph` usage: it's defined but never called anywhere
+  outside its own definition - this divergence has no real-world
+  trigger today, but is a real, confirmed semantic difference, not a
+  purely cosmetic one. `cargo build --workspace`/`cargo test
+  --workspace` confirmed unaffected by the derive (117 tests, same as
+  before).
+- Registered in `python/maltoolbox-pyo3` (`Cargo.toml` dependency +
+  `maltoolbox_model_py::register(py, m)?` call), same pattern as Phase
+  1.
+
+**Phase 2 decision 2 implemented**: rewrote
+`tests/test_model.py::test_model_remove_nonexisting_asset` to construct
+the "not in this model" asset via a second real `Model` instance
+(`other_model.add_asset(asset_type='Application', name='TestAsset')`)
+instead of a detached `ModelAsset(...)` construction, then assert
+`model.remove_asset()` on it still raises `LookupError`. Removed the
+now-unused `ModelAsset` import from that file. Re-grepped
+`tests/`/`maltoolbox/` for other `ModelAsset(` call sites after the
+rewrite: only the real constructor definition itself
+(`maltoolbox/model.py:102`, inside `add_asset`) and its own `__repr__`
+format string remain - confirmed no other detached-construction site
+exists for this type.
+
+**Verified:**
+- `cargo build`/`cargo clippy --all-targets` clean for
+  `maltoolbox-model-py`, zero warnings (after fixing 6
+  `doc_lazy_continuation` lints in a module doc comment - a markdown
+  list-formatting nit, not a logic issue).
+- `cargo build --workspace`/`cargo test --workspace`: still 117 tests,
+  same as before Phase 2 (confirms `python/` crates remain correctly
+  isolated from the root workspace even with the new crate + the
+  `LanguageGraph: Clone` core change).
+- `maturin develop` builds/installs cleanly (same known wrong-install-
+  location workaround as Phase 0/1 - copy the built `.so` into
+  `maltoolbox/`).
+- **Oracle diff**: built an equivalent model (2 assets, one association)
+  through both `_native.Model`/`ModelAsset` and the untouched
+  `maltoolbox.model.Model`/`ModelAsset` in the same process, round-
+  tripped both through `json.dumps`/`json.loads`, compared - **exact
+  match**, after excluding the `"MAL-Toolbox Version"` metadata field
+  (see the newly-confirmed oracle quirk below). Repeated after
+  `remove_asset` - still an exact match.
+  - **Newly confirmed Python oracle quirk** (found by running the real
+    diff, not assumed): `Model.to_dict()` in the Python original always
+    writes the live `maltoolbox.__version__` into `"MAL-Toolbox
+    Version"`, **ignoring `self.maltoolbox_version` entirely** - the
+    `mt_version` constructor argument (and whatever `_from_dict` reads
+    back from a loaded file) is stored on `self.maltoolbox_version` but
+    never read by `to_dict`. This is a distinct bug from the
+    already-documented hyphenated-vs-spaced-key round-trip issue in
+    `PORTING_NOTES.md` §3 (that one is about `_from_dict` reading the
+    wrong key; this one is about `to_dict` ignoring the field that
+    *is* correctly stored). This Rust port's `to_dict` correctly uses
+    `self.maltoolbox_version` (matches the core crate's existing,
+    already-written behavior - not a new choice made here), which is
+    *more* useful but means an oracle diff must exclude this one field
+    to compare meaningfully, exactly like `PORTING_NOTES.md` §3's other
+    entries. Worth adding to `PORTING_NOTES.md` §3 at some point (not
+    done here - out of scope for this binding-focused document, flagged
+    for whoever next touches that file).
+- Dict/set keying: fetched the same `ModelAsset` two different ways
+  (`model.assets[id]` and `model.get_asset_by_name(name)`), confirmed
+  `==`/`__hash__` match and `{a, b, c}` collapses to 1 element - same
+  check Phase 1 did for language-graph handles.
+  **Correctness bug caught and fixed by this check**: an earlier
+  version of `PyModel::remove_asset` matched purely by `asset.id`
+  without checking the asset's owner - meaning an asset handle from a
+  *different* `Model` with a colliding `i64` id (e.g. both models'
+  first-ever asset, both id `0`) would be silently accepted and the
+  wrong asset removed. Investigated and determined Python's own
+  `remove_asset` has the exact same purely-id-based check (confirmed
+  by reading the source: `if asset.id not in self.assets`, no identity
+  check) - so this isn't a divergence to fix, it's a faithful
+  reproduction of a real (if arguably sloppy) Python behavior. Verified
+  the actual rewritten test's conditions (a *fresh, empty* target
+  model) don't hit this collision and correctly raise `LookupError`.
+- Error mapping spot-checked against real conditions, not just read
+  from the table: unknown asset type -> `ValueError`; unknown
+  association fieldname -> `ValueError`; wrong-type association
+  (`Application` <-> `Hardware` on `appExecutedApps`) -> `TypeError`;
+  `load_from_file` on a nonexistent path -> `ModelException`
+  (`issubclass` of `MalToolboxException` confirmed).
+- `save_to_file`/`load_from_file` round-trip (`.yml`) reproduces an
+  identical `to_dict()`.
+- `uv run pytest tests/test_model.py -v`: 22/22 pass (pure-Python
+  backend, includes the rewritten test). `uv run ruff check
+  tests/test_model.py`: clean. Full suite: `uv run pytest tests -m "not
+  integration"` - 107 passed, 3 deselected, identical to the baseline
+  recorded after Phase 1's fixture rewrite - no regressions from either
+  the core `Clone` derive or the test file edit.
+
+**Open gap, logged not silently skipped - the thing standing between
+"substantially complete" and "done":**
+
+**Post-removal readability.** Confirmed by direct reproduction (not
+theorized): a `PyModelAsset` handle resolves by looking up its `id` in
+`owner.borrow().assets` on every access. Once `Model.remove_asset`
+actually deletes that entry, the handle can no longer resolve *itself*
+- any getter raises `LookupError`. But the real Python `ModelAsset` is
+a plain, fully-independent object; removing it from `Model.assets` does
+not destroy it, so reading its attributes afterward still works and
+reflects whatever state it was left in during removal's cleanup (e.g.
+its `associated_assets` getting emptied as a side effect of
+`remove_asset` walking its associations before unlinking it).
+`tests/test_model.py::test_model_remove_asset_with_association` reads
+`asset1.associated_assets` *after* `model.remove_asset(asset1)` and
+expects `{}` - reproduced directly against the native bindings:
+constructing the identical scenario and reading the removed asset's
+`.associated_assets` raises `LookupError` instead. Note this is
+narrower than it might sound: a *surviving* asset whose associations
+changed as a side effect of a *different* asset's removal reads back
+correctly (verified) - only reading attributes of the asset that was
+*itself* removed fails.
+
+This is the `ModelAsset` analog of Phase 1's freeform-construction
+finding, but **not the same fix** - decision 2's "rewrite the test"
+approach doesn't apply here, since this isn't about detached
+construction, it's about a handle outliving its backing data. The
+likely real fix - identified but **not attempted this pass**, since
+it's a core-crate restructuring, not a binding-layer one: change
+`Model.assets` from `HashMap<i64, ModelAsset>` to `HashMap<i64,
+Rc<RefCell<ModelAsset>>>`, so a `PyModelAsset` handle could hold the
+`Rc<RefCell<ModelAsset>>` directly (cloned out before removal) instead
+of an owner+id pair, giving it the same "stays readable, even
+writable, after unlinking" behavior Python's object-reference model
+gets for free. This would need `Model`'s every method
+(`add_asset`/`remove_asset`/`get_asset_by_id`/`validate_associated_assets`/
+`add_associated_assets`/`remove_associated_assets`/`to_dict`/...) to
+switch to `.borrow()`/`.borrow_mut()` at each access site, and likely
+touches `maltoolbox-attackgraph` too (it reads `Model.assets`/
+`ModelAsset` fields directly when generating attack graph nodes) - a
+blast radius well past "small, individually-justified" opportunistic
+scope. Flagged for the coordinator/user to decide on, the same way
+Phase 1's gap #1 was flagged rather than silently patched around.
+`tests/test_model.py::test_model_remove_asset_with_association` is
+**not rewritten** and **not currently passing against the native
+bindings** (it still passes against the untouched pure-Python
+implementation - nothing is cut over yet, so this doesn't fail any
+test run today, but it is a landmine for Phase 4).
+
+**Decision (user, after reviewing three options): extend
+`RemovedAssetSnapshot` into a read-only tombstone**, not the
+`Rc<RefCell<ModelAsset>>` restructuring the implementing fork proposed.
+Rationale given: this codebase already has the identical pattern for
+the identical problem - `RemovedAssetSnapshot` exists specifically so
+`AttackGraph::partially_regenerate_graph` can answer "what was this
+asset" after removal (`PORTING_NOTES.md` §2) - and the failing test only
+*reads* a removed asset's attributes, never writes to it, so read-only
+is sufficient and avoids the full `Model`-internals +
+`maltoolbox-attackgraph` blast radius the other option would have had.
+
+**Rename, per user follow-up**: now that this struct is growing beyond
+"just what's needed after a removal" into a fuller snapshot of an
+asset's state, rename it from `RemovedAssetSnapshot` to
+**`AssetSnapshot`** everywhere (the struct definition and both call
+sites - `Model::remove_asset` and `AttackGraph::partially_regenerate_graph`
+in `maltoolbox-attackgraph`). Plain rename, no shape change beyond
+decision described below.
+
+Implementation shape (for whoever picks this up): `Model::remove_asset`
+currently captures its `RemovedAssetSnapshot { name, lg_asset }` *before*
+the associated-assets cleanup loop runs. Extend it (under its new name,
+`AssetSnapshot`) to also capture the asset's full state
+(defenses/extras/associated_assets/etc.) taken right before the final
+`self.assets.remove(&asset_id)` line (i.e. *after* cleanup has already
+mutated `associated_assets` in place) - this is a few-line change to one
+function, not a restructuring, and the capture point already naturally
+lands at the right moment since the existing code already reads the
+live asset both before and after the cleanup loop. The compat layer's
+`PyModel` keeps a `tombstones: HashMap<i64, ModelAsset>`-shaped record
+populated from this on removal; `PyModelAsset`'s lookup falls back to it
+when the live `owner.assets` lookup misses, giving read-only
+post-removal access. Don't change the existing `name`/`lg_asset` fields
+or their existing consumer in `maltoolbox-attackgraph` - only add to
+the (renamed) struct and rename it at both call sites.
+
+### Resolution of the post-removal-readability finding (closes out Phase 2)
+
+Implemented exactly per the decision/rename above:
+
+- `crates/maltoolbox-model/src/model.rs`: `RemovedAssetSnapshot` renamed
+  to `AssetSnapshot`, with a new `final_state: ModelAsset` field.
+  `Model::remove_asset` now captures `final_state` via a second
+  `self.assets.get(&asset_id)` lookup placed right before
+  `self.assets.remove(&asset_id)` - i.e. after the associated-assets
+  cleanup loop has already run, so `final_state.associated_assets`
+  reflects the post-cleanup (emptied) state. `name`/`lg_asset` fields
+  and their capture point are unchanged.
+- `crates/maltoolbox-attackgraph`: both the real consumer
+  (`partially_generate.rs`/`graph.rs`) and the test helper in
+  `tests/test_partial_regeneration.rs` (which constructs an
+  `AssetSnapshot` directly from a still-live asset, for the
+  call-partial-regeneration-before-remove_asset ordering) updated for
+  the rename; the test helper also now fills in `final_state:
+  asset.clone()`. Purely mechanical - no behavior change to the
+  existing `name`/`lg_asset` consumer logic.
+- `python/maltoolbox-model-py/src/model.rs`: `PyModel` gained a
+  `tombstones: Tombstones` field (`Rc<RefCell<HashMap<i64,
+  ModelAsset>>>`, type alias in `asset.rs`), initialized empty in
+  `wrap`. `remove_asset` now captures the core's returned
+  `AssetSnapshot` and inserts `snapshot.final_state` into `tombstones`
+  keyed by the removed id, before returning.
+- `python/maltoolbox-model-py/src/asset.rs`: `PyModelAsset` gained a
+  `tombstones: Tombstones` field (threaded through `new` and both
+  construction sites - `PyModel::asset_handle` and the sibling-handle
+  construction inside the `associated_assets` getter). Added a
+  `with_asset(&self, f: impl FnOnce(&ModelAsset) -> PyResult<R>) ->
+  PyResult<R>` helper: tries the live `owner.assets` lookup first, falls
+  back to `tombstones` on a miss, else raises `LookupError` - every
+  read-only getter (`name`/`type`/`lg_asset`/`defenses`/`extras`/
+  `associated_assets`/`__repr__`) now goes through it, so the fallback
+  applies uniformly rather than per-method. `_to_dict` handles the two
+  branches explicitly instead (it additionally needs the live `model`
+  to resolve *other* assets' names for the id->name `associated_assets`
+  mapping, which only applies in the live branch - a tombstoned asset's
+  `associated_assets` is already empty, so there's nothing to resolve
+  there). Mutating methods (`add_associated_assets`/
+  `remove_associated_assets`/`validate_associated_assets`) were **not**
+  changed - they still delegate straight to the core `Model` methods,
+  which already reject an unknown/removed id on their own (confirmed:
+  nothing requires mutating a removed asset, per the user's decision to
+  keep this read-only).
+
+**Verified:**
+- `cargo build`/`cargo clippy --all-targets`: clean on
+  `maltoolbox-model`, `maltoolbox-model-py`, `maltoolbox-attackgraph`,
+  and the `maltoolbox-pyo3` umbrella - zero new warnings (the one
+  pre-existing, unrelated `redundant_guards` warning in
+  `maltoolbox-language/src/compiler/semantic.rs` is still the only one).
+- `cargo test --workspace`: still exactly 117 tests passing, including
+  `maltoolbox-attackgraph`'s partial-regeneration suite (the existing
+  `AssetSnapshot`/`RemovedAssetSnapshot` consumer) - confirms the
+  rename + field addition is genuinely additive, not a behavior change,
+  for that caller.
+- `maturin develop` rebuild installs cleanly (same known workaround:
+  copy the built `.so` into `maltoolbox/`).
+- **Exact reproduction of the two tests this gap was blocking**, run
+  directly against the native bindings (not just reasoned about):
+  - `test_model_remove_asset_with_association`'s full scenario
+    (two assets, `hostApp`/`appExecutedApps` association, remove one,
+    check both sides' `associated_assets` read back `{}`, check
+    membership in `model.assets.values()`) - **passes**.
+  - A second check: `hash`/`__eq__`/set-collapse on a tombstoned handle
+    - still correct, since `__hash__`/`__richcmp__` only ever use
+    `(owner ptr, id)` and never needed to resolve the asset's data in
+    the first place.
+- `uv run pytest tests/test_model.py -v`: 22/22 pass (pure-Python
+  backend, unaffected - this phase didn't touch any `.py` file).
+  `uv run pytest tests -m "not integration"`: 107 passed, 3 deselected
+  - identical to every prior baseline in this effort, no regressions.
+
+**Phase 2 is now genuinely, fully complete.**
+
+**Next step:** implement the above, verify
+`test_model_remove_asset_with_association` passes against the native
+bindings without regressing anything else, then close out Phase 2 in
+Phasing. After that, Phase 3 (`AttackGraph`/`AttackGraphNode`), which
+needs its own `Option<Py<PyModel>>` back-reference design (already
+decided) and is where the deferred `Model`/`AttackGraph` pickling work
+(Phase 2 decision 3) actually lands.

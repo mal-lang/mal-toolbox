@@ -73,10 +73,20 @@ pub enum ModelError {
 /// unlinked from `Model.assets`. Returned by [`Model::remove_asset`] so
 /// callers (e.g. `AttackGraph::partially_regenerate_graph`) never need
 /// `model.get_asset_by_id` to still succeed for a removed id.
+///
+/// `final_state` additionally carries a full clone of the asset's data
+/// as it stood immediately before removal from `Model.assets` - i.e.
+/// *after* the associated-assets cleanup loop in [`Model::remove_asset`]
+/// has already run, so `final_state.associated_assets` reflects the
+/// post-cleanup (typically empty) state, not the pre-removal one. This
+/// lets a binding layer (e.g. `maltoolbox-model-py`) keep a read-only
+/// "tombstone" per removed id, matching Python's `ModelAsset` objects
+/// staying fully readable after `Model.remove_asset`.
 #[derive(Debug, Clone)]
-pub struct RemovedAssetSnapshot {
+pub struct AssetSnapshot {
     pub name: String,
     pub lg_asset: maltoolbox_language::graph::AssetId,
+    pub final_state: ModelAsset,
 }
 
 #[derive(Debug, Clone)]
@@ -198,16 +208,14 @@ impl Model {
         Ok(asset_id)
     }
 
-    pub fn remove_asset(&mut self, asset_id: i64) -> Result<RemovedAssetSnapshot, ModelError> {
+    pub fn remove_asset(&mut self, asset_id: i64) -> Result<AssetSnapshot, ModelError> {
         let asset = self.assets.get(&asset_id).ok_or_else(|| ModelError::AssetNotFound {
             name: String::new(),
             id: asset_id,
             model: self.name.clone(),
         })?;
-        let snapshot = RemovedAssetSnapshot {
-            name: asset.name.clone(),
-            lg_asset: asset.lg_asset,
-        };
+        let name = asset.name.clone();
+        let lg_asset = asset.lg_asset;
 
         let associated_fieldnames: Vec<(String, HashSet<i64>)> = asset
             .associated_assets
@@ -217,6 +225,21 @@ impl Model {
         for (fieldname, assoc_assets) in associated_fieldnames {
             self.remove_associated_assets(asset_id, &fieldname, &assoc_assets)?;
         }
+
+        // Captured *after* the cleanup loop above, so `final_state`
+        // reflects the post-cleanup state (e.g. `associated_assets`
+        // already emptied), matching what a still-held Python
+        // `ModelAsset` reference would show post-removal.
+        let final_state = self
+            .assets
+            .get(&asset_id)
+            .expect("asset confirmed present above, not removed by cleanup loop")
+            .clone();
+        let snapshot = AssetSnapshot {
+            name,
+            lg_asset,
+            final_state,
+        };
 
         self.assets.remove(&asset_id);
         self.name_to_asset_id.remove(&snapshot.name);

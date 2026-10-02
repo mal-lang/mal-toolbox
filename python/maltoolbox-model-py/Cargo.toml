@@ -1,0 +1,21 @@
+[workspace]
+
+[package]
+name = "maltoolbox-model-py"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+name = "maltoolbox_model_py"
+path = "src/lib.rs"
+
+[dependencies]
+maltoolbox-model = { path = "../../crates/maltoolbox-model" }
+maltoolbox-language = { path = "../../crates/maltoolbox-language" }
+maltoolbox-language-py = { path = "../maltoolbox-language-py" }
+maltoolbox-fileutil = { path = "../../crates/maltoolbox-fileutil" }
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
+pyo3 = "0.29.3"
+pythonize = "0.29.0"

@@ -53,6 +53,16 @@ pub struct Metadata {
     pub id: String,
 }
 
+/// `Clone` added for `maltoolbox-model-py`'s `PyModel`: the core
+/// `maltoolbox_model::Model` needs a bare `Rc<LanguageGraph>` (no
+/// `RefCell`), but the PyO3 `PyLanguageGraph` wraps `Rc<RefCell<
+/// LanguageGraph>>` (so `regenerate_graph` can mutate it) - the two
+/// don't compose without copying the data once. See
+/// PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 2 status for the narrow,
+/// confirmed-unused-in-practice divergence this introduces
+/// (`regenerate_graph` on the original `LanguageGraph` object isn't
+/// reflected in a `Model` already built from it).
+#[derive(Clone)]
 pub struct LanguageGraph {
     pub assets: SlotMap<AssetId, LanguageGraphAsset>,
     pub steps: SlotMap<AttackStepId, LanguageGraphAttackStep>,

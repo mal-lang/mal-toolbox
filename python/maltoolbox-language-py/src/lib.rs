@@ -10,8 +10,8 @@
 mod asset;
 mod assoc;
 mod attack_step;
-mod exceptions;
-mod handle;
+pub mod exceptions;
+pub mod handle;
 mod language_graph;
 
 use pyo3::prelude::*;

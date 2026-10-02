@@ -47,20 +47,21 @@ fn compile_lang(name: &str) -> Rc<LanguageGraph> {
     Rc::new(maltoolbox_language::generate_graph(spec).unwrap())
 }
 
-/// Captures a [`maltoolbox_model::RemovedAssetSnapshot`] per id from the
+/// Captures a [`maltoolbox_model::AssetSnapshot`] per id from the
 /// still-live `model`, for tests that call `partially_regenerate_graph`
 /// before `model.remove_asset` (both orders are valid; `snapshot` just
 /// captures from wherever the asset currently lives instead of from
 /// `remove_asset`'s return value).
-fn snapshot(model: &Model, ids: &HashSet<i64>) -> HashMap<i64, maltoolbox_model::RemovedAssetSnapshot> {
+fn snapshot(model: &Model, ids: &HashSet<i64>) -> HashMap<i64, maltoolbox_model::AssetSnapshot> {
     ids.iter()
         .map(|&id| {
             let asset = model.get_asset_by_id(id).unwrap();
             (
                 id,
-                maltoolbox_model::RemovedAssetSnapshot {
+                maltoolbox_model::AssetSnapshot {
                     name: asset.name.clone(),
                     lg_asset: asset.lg_asset,
+                    final_state: asset.clone(),
                 },
             )
         })

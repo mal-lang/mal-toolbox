@@ -13,4 +13,5 @@ path = "src/lib.rs"
 
 [dependencies]
 maltoolbox-language-py = { path = "../maltoolbox-language-py" }
+maltoolbox-model-py = { path = "../maltoolbox-model-py" }
 pyo3 = { version = "0.29.3", features = ["extension-module"] }
