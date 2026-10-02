@@ -76,16 +76,18 @@ corrected, and documented at the site:
 
 Two issues were found in the *Python original* while porting, both
 confirmed by running the real implementation rather than inferred from
-source alone, and neither "fixed" in this port — see each for why:
+source alone:
 
-1. **`tree-sitter-mal` 1.3.0 can't parse unlabeled detector context.**
-   `! logExploit (step) [tpr: 0.1]` (no label before the rate clause)
-   parses under the PyPI `tree_sitter_mal` 1.3.0 wheel but fails — a
-   missing/error node — under both the crates.io `tree-sitter-mal` 1.3.0
-   crate and a from-source build of the `v1.3.0` git tag itself. Four
-   tests in `maltoolbox-language/tests/test_detectors.rs` are
-   `#[ignore]`d with this reason, not deleted, so they start passing the
-   moment the grammar is fixed.
+1. **`tree-sitter-mal` 1.3.0 can't parse unlabeled detector context —
+   fixed upstream in 1.3.1.** `! logExploit (step) [tpr: 0.1]` (no label
+   before the rate clause) parsed under the PyPI `tree_sitter_mal` 1.3.0
+   wheel but failed — a missing/error node — under both the crates.io
+   `tree-sitter-mal` 1.3.0 crate and a from-source build of the `v1.3.0`
+   git tag itself. Four tests in `maltoolbox-language/tests/
+   test_detectors.rs` were `#[ignore]`d with this reason rather than
+   deleted; the workspace now pins `tree-sitter-mal = "1.3.1"`, the four
+   tests pass unmodified, and the `#[ignore]` attributes have been
+   removed.
 2. **`assoc_traversal_processor.py`'s `_glob_assoc_traversal` (MAL's `*`
    operator in dynamic sentences) never actually computes a transitive
    closure.** Its `while` loop recomputes both `next_assets` and every
@@ -97,7 +99,7 @@ source alone, and neither "fixed" in this port — see each for why:
    direct call with a comment explaining why, rather than reproducing a
    dead loop that would look like a mistake in *this* port.
 
-Both are good candidates to report upstream.
+Item 2 is still a good candidate to report upstream.
 
 ## 5. Two real porting bugs caught before landing (for context)
 
@@ -127,8 +129,7 @@ the source: either by diffing serialized output directly
 snippets through both implementations and checking they agree on
 success/failure. This caught every divergence and bug listed in §3–§5.
 
-Current status: **109 passing tests, 4 `#[ignore]`d** (all four for the
-single upstream grammar gap in §4.1).
+Current status: **113 passing tests, 0 `#[ignore]`d**.
 
 ## 7. What's left to do
 

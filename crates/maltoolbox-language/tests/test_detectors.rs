@@ -1,19 +1,16 @@
 //! Port of `tests/language/test_detectors.py`.
 //!
 //! Four tests here (`detector_unlabeled_context`, `multiple_detectors`,
-//! `only_tpr`, `only_fpr`) are `#[ignore]`d: they all use an *unlabeled*
-//! detector context, e.g. `! logExploit (computerOfApp.authenticate)
-//! [tpr: 0.1]` with no label before `[tpr...]`. That construct parses
-//! cleanly under Python's `tree_sitter_mal` 1.3.0, but produces a parse
-//! error (a missing/error node between `)` and `[`) under *both* the
-//! `tree-sitter-mal` 1.3.0 crate from crates.io and a from-source build
-//! of the `v1.3.0` git tag itself - so it's not a crates.io packaging
-//! issue, the grammar checked into that tag already has the gap. The
-//! PyPI wheel tagged "1.3.0" appears to come from different source than
-//! the `v1.3.0` git tag. This is an upstream tree-sitter-mal grammar
-//! issue, not something to work around in this compiler port - these
-//! tests are kept (not deleted) so they start passing the moment the
-//! grammar is fixed/re-released.
+//! `only_tpr`, `only_fpr`) exercise an *unlabeled* detector context, e.g.
+//! `! logExploit (computerOfApp.authenticate) [tpr: 0.1]` with no label
+//! before `[tpr...]`. Under `tree-sitter-mal` 1.3.0 (both the crates.io
+//! release and a from-source build of the `v1.3.0` git tag) that construct
+//! produced a parse error (a missing/error node between `)` and `[`),
+//! despite parsing cleanly under Python's `tree_sitter_mal` 1.3.0 wheel -
+//! an upstream grammar gap, not something worked around in this compiler
+//! port. Fixed upstream in `tree-sitter-mal` 1.3.1; these tests were
+//! `#[ignore]`d against 1.3.0 and un-ignored once the workspace picked up
+//! 1.3.1.
 
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -65,7 +62,6 @@ fn detector_presence() {
 }
 
 #[test]
-#[ignore = "blocked on upstream tree-sitter-mal grammar gap: unlabeled detector context fails to parse (see module docs)"]
 fn detector_unlabeled_context() {
     let lang_str = r#"
     #id: "test-actions-effects"
@@ -131,7 +127,6 @@ fn detector_unlabeled_context() {
 }
 
 #[test]
-#[ignore = "blocked on upstream tree-sitter-mal grammar gap: unlabeled detector context fails to parse (see module docs)"]
 fn multiple_detectors() {
     let lang_str = r#"
     #id: "test-actions-effects"
@@ -247,7 +242,6 @@ fn single_rate_lang(rate_clause: &str) -> String {
 }
 
 #[test]
-#[ignore = "blocked on upstream tree-sitter-mal grammar gap: unlabeled detector context fails to parse (see module docs)"]
 fn only_tpr() {
     let path = tmp_lang_file("only-tpr", &single_rate_lang("tpr: 0.1"));
     let lang_graph = from_mal_spec(&path).expect("compile");
@@ -259,7 +253,6 @@ fn only_tpr() {
 }
 
 #[test]
-#[ignore = "blocked on upstream tree-sitter-mal grammar gap: unlabeled detector context fails to parse (see module docs)"]
 fn only_fpr() {
     let path = tmp_lang_file("only-fpr", &single_rate_lang("fpr: 0.1"));
     let lang_graph = from_mal_spec(&path).expect("compile");
