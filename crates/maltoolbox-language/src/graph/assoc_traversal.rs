@@ -38,26 +38,36 @@ fn assoc_traversal(
     Ok(next_assets)
 }
 
-/// Port of `_glob_assoc_traversal` *as written*, not as apparently
-/// intended: both the initial `next_assets` and every loop iteration's
-/// `new_assets` are recomputed from the same unchanging
-/// `instigating_assets`, never from the growing result - so despite the
-/// while-loop shape (which reads like it's building a transitive
-/// closure, matching the `*` operator it implements), this always
-/// resolves to exactly one application of `pattern`. Confirmed against
-/// the Python oracle, not just by reading the source. This is very
-/// likely an upstream bug worth reporting (the user co-maintains
-/// mal-toolbox) - ported bug-for-bug per this project's behavior-
-/// compatibility mandate rather than "fixed" into a real transitive
-/// closure, which would change what `X.field*` resolves to relative to
-/// the real implementation.
+/// Resolves MAL's `*` operator as an actual transitive closure of
+/// `pattern`: repeatedly re-applies the pattern to the assets reached so
+/// far, feeding the growing result back in, until a fixed point is
+/// reached (no new assets are discovered).
+///
+/// NOTE: the Python oracle (`assoc_traversal_processor.py`'s
+/// `_glob_assoc_traversal`) has a confirmed bug where it recomputes both
+/// the seed and every loop iteration from the same unchanging
+/// `instigating_assets` instead of the growing result, so it always
+/// resolves to exactly one application of `pattern` rather than a real
+/// closure. This Rust port intentionally diverges from that behavior and
+/// implements the closure correctly, since reproducing the bug here
+/// would silently under-resolve `X.field*` in language validation.
 fn glob_assoc_traversal(
     graph: &LanguageGraph,
     step: AttackStepId,
     instigating_assets: &HashSet<AssetId>,
     glob: &GlobAssocTraversal,
 ) -> Result<HashSet<AssetId>, GraphError> {
-    traverse_association_chain(graph, step, instigating_assets, &glob.pattern)
+    let mut next_assets = traverse_association_chain(graph, step, instigating_assets, &glob.pattern)?;
+    loop {
+        let applied = traverse_association_chain(graph, step, &next_assets, &glob.pattern)?;
+        let mut union = next_assets.clone();
+        union.extend(applied);
+        if union.len() == next_assets.len() {
+            break;
+        }
+        next_assets = union;
+    }
+    Ok(next_assets)
 }
 
 fn assoc_set_traversal(
