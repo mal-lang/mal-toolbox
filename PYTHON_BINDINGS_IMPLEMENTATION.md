@@ -54,8 +54,8 @@ plus one umbrella crate that is the actual `maturin` build target:
 ```
 python/
   maltoolbox-language-py/   - PyLanguageGraph (+ its exceptions)
-  maltoolbox-model-py/      - PyModel, PyModelAsset               (not started)
-  maltoolbox-attackgraph-py/- PyAttackGraph, PyAttackGraphNode     (not started)
+  maltoolbox-model-py/      - PyModel, PyModelAsset
+  maltoolbox-attackgraph-py/- PyAttackGraph, PyAttackGraphNode, PyDetector
   maltoolbox-pyo3/          - umbrella: assembles the above into
                               `maltoolbox._native`, the only crate
                               with pyo3's `extension-module` feature
@@ -278,7 +278,7 @@ pipeline - never to the Python API surface:
   `ModelException` family. Post-removal readability (the one gap that
   blocked completion) resolved via the `AssetSnapshot` tombstone
   mechanism - see Status.
-- [ ] **Phase 3 - `AttackGraph`/`AttackGraphNode`.** New
+- [x] **Phase 3 - `AttackGraph`/`AttackGraphNode`.** New
   `maltoolbox-attackgraph-py` crate. `PyAttackGraph(Rc<RefCell<
   AttackGraph>>)` **plus** the `Option<Py<PyModel>>` back-reference for
   `.model`. `PyAttackGraphNode` handle (owner + `AttackGraphNodeId`, no
@@ -510,10 +510,173 @@ deviate shows up there (note it if so).
    original_lang_graph_object` - `True`, matching Python exactly - for
    free, and is simpler than the alternative besides.
 
+## Phase 3 decisions (settled before implementation started)
+
+Asked the user before writing code, same as Phases 1-2. Two genuine
+architecture forks surfaced by grepping a fresh clone of
+mal-simulator's `main` branch (not assumed - see each decision for the
+exact call sites found); everything else below follows mechanically
+from decisions already made in Phases 1-2.
+
+1. **Detectors must be genuinely live, externally-mutable containers -
+   confirmed necessary, not assumed.** Cloned mal-simulator fresh and
+   found `tests/test_event_logger.py::test_logger_attacks_false_negative`
+   does `app1_exploit.detectors['logExploit'] = Detector(name=..., node=...,
+   potential_context=..., tprate=0.1)` (raw dict item-assignment on a
+   node) and `test_logger_attacks_false_positive` does
+   `scenario.attack_graph.detectors.remove(old); scenario.attack_graph
+   .detectors.append(mocked_detector)` (raw list mutation on the graph) -
+   and both tests then run a real simulation and assert on the resulting
+   logs, so the mutation must actually take effect, not just not-crash.
+   Also confirmed: `Detector` itself is imported and constructed directly
+   by mal-simulator (`from maltoolbox.attackgraph import Detector`), so
+   it needs a real public constructor, not just a to-dict-only value
+   type. Also confirmed via `grep`: the Rust core has **no graph-level
+   detectors list at all** - `AttackGraph` (graph.rs) has no `detectors`
+   field; `generate_graph`/`create_detectors` only ever populate each
+   node's own `detectors: HashMap<String, Detector>`, write-once at
+   generation time, never read back afterward by anything in the core.
+   Python's flat `AttackGraph.detectors: list[Detector]` is a separate,
+   redundant, independently-mutable list that happens to start out
+   containing the same `Detector` objects as every node's dict but is
+   **never kept in sync with it afterward** (confirmed by reading
+   `generate.py`: `detectors.extend(node_detectors.values())`, no link
+   back) - the two false-negative/false-positive tests above each
+   mutate only one of the two containers, never both, consistent with
+   this.
+   **Decision: compat-layer-owned live Python containers (not a
+   write-through wrapper over a new core field).** `PyAttackGraph`/
+   `PyAttackGraphNode` hold real, persistent `Py<PyDict>`
+   (per node, keyed by detector label) / `Py<PyList>` (graph-level)
+   objects, seeded once from the Rust core's generation-time detector
+   data (full `generate_graph` and the newly-created nodes from
+   `partially_regenerate_graph`) and from then on treated as the sole
+   source of truth - the Rust core's own per-node `HashMap` is never
+   consulted again after that initial seed. The two containers are
+   deliberately left unsynchronized with each other, exactly matching
+   Python's real (redundant) behavior confirmed above. Rejected
+   alternative: add a `detectors: Vec<Detector>` field to the Rust
+   core's `AttackGraph` struct and build custom Python Mapping/Sequence
+   write-through wrapper types over both core-side containers - this
+   would mean adding a field to the "clean" Rust core whose only purpose
+   is accommodating Python's own redundant/unsynchronized data model
+   (not a genuine Rust-side need), for substantially more implementation
+   work (two protocol types instead of plain Python containers) with no
+   behavioral difference. `PyDetector` itself needs a full `#[new]`
+   constructor (`name`, `node: &PyAttackGraphNode`, `potential_context:
+   dict[str, set[PyAttackGraphNode]]`, `tprate=None`, `fprate=None`) -
+   this is unproblematic (unlike Phase 1's freeform-construction
+   finding) since it only ever wraps a reference to an *existing* node
+   handle, never needs detached/self-contained construction.
+2. **`AttackGraph.nodes`/`.full_name_to_node` are real simulation
+   hot-path attributes - confirmed necessary, not assumed.** Grepped a
+   fresh mal-simulator clone: `sim_state.attack_graph.nodes[node.id]`
+   appears in per-step assertions in `attacker_step.py`/
+   `defender_step.py`/`dyna_mal_simulator/{attacker,defender}_step.py`
+   (four call sites, each on the hot per-agent-per-step path), and
+   `.nodes.values()` is iterated when building observation spaces
+   (`envs/graph/utils.py`, `envs/graph/mal_spaces.py`,
+   `policies/utils/path_finding.py`, `config/node_property_rule.py`).
+   Unlike `LanguageGraph.assets`/`Model.assets` (Phases 1-2's "rebuild a
+   real `dict` fresh on every access" precedent - fine there, since
+   those are small, read rarely, and never used for single-key lookups
+   in a loop), attack graphs can have thousands of nodes and this
+   attribute is read on every simulation step, including via plain
+   single-key indexing (`.nodes[id]`) that would otherwise pay an O(n)
+   handle-construction cost just to do one O(1) lookup.
+   **Decision: a custom, read-only, lazy Mapping-protocol pyclass**
+   (`__getitem__`/`__len__`/`__contains__`/`__iter__`/`values()`/
+   `keys()`/`items()`) backed directly by the Rust core's `id_to_node`
+   map, constructing a `PyAttackGraphNode` handle only for key(s)
+   actually touched rather than materializing the whole dict upfront on
+   every access. Behaves like `dict[int, AttackGraphNode]` for every
+   access pattern found in mal-toolbox's own tests and mal-simulator.
+   Rejected alternative: keep the simple rebuild-fresh-dict-every-access
+   pattern and defer to Phase 6's real run to reveal whether it's
+   actually a practical problem - rejected because the hot-path call
+   sites above are concrete and already confirmed, not speculative, so
+   there's no real uncertainty left to resolve by waiting.
+   `.full_name_to_node` (lower, non-hot-path usage - one test file reads
+   `.keys()`/`.items()` directly) and `.attack_steps`/`.defense_steps`
+   (3x/1x usage, always full iteration not indexed lookup) don't need
+   this treatment - left as the simple rebuild-fresh-collection pattern,
+   reusing the lazy wrapper only if it turns out to be free to do so.
+3. **Node/asset/step handle ownership: `owner_py: Py<PyAttackGraph>`,
+   not a bare `Rc<RefCell<AttackGraph>>`.** Not asked as a question
+   (judged a clear win on every axis, same category as Phase 2 decision
+   4). `PyAttackGraphNode.model_asset` needs to build a `PyModelAsset`
+   handle (requires reaching the owning `PyModel`) and `.lg_attack_step`
+   needs to build a `PyLanguageGraphAttackStep` handle (requires
+   reaching the owning `PyLanguageGraph`) - so the node handle needs
+   access to `PyAttackGraph`'s own `model_py`/`lang_graph_py` fields
+   regardless. Storing a single `owner_py: Py<PyAttackGraph>` (deriving
+   the core `Rc<RefCell<AttackGraph>>` via `owner_py.borrow(py).inner`
+   each access, same transient-borrow pattern as every other handle)
+   is simpler than separately threading three fields through node
+   construction, *and* it makes node pickling fall out almost for free
+   (see decision 4) - not a tradeoff worth asking about.
+4. **Pickling: dict-based `__getstate__`/`__setstate__`, reusing
+   `_to_dict`/`from_dict`, with handle pickling delegating to
+   `(owner_py, id)`.** This is the pickling design Phase 2 decision 3
+   deferred to this phase. Confirmed via a fresh mal-simulator clone
+   that the only real assertion any pickling test makes post-round-trip
+   is `_to_dict()`/`to_dict()` equality (`test_simulator_picklable`,
+   `test_scenario_pickle`) - never object identity - which is the bar
+   this design targets, not full object-graph fidelity.
+   - `PyLanguageGraph`/`PyModel`/`PyAttackGraph` each get
+     `__getstate__`/`__setstate__` built from their already-correct,
+     oracle-verified `_to_dict()`/`from_dict()` pair (`PyAttackGraph`'s
+     state bundles its own `_to_dict()` plus its nested `model`'s and
+     `lang_graph`'s, so unpickling can rebuild the whole chain
+     bottom-up with no on-disk file needed).
+   - Handle types (`PyAttackGraphNode`, and by the same mechanism
+     `PyModelAsset`/`PyLanguageGraphAsset`/`PyLanguageGraphAttackStep` -
+     confirmed via grep that mal-simulator pickles bare `AttackGraphNode`
+     instances directly as members of frozen-dataclass `Set`/`Mapping`
+     fields, e.g. `AttackerState.entry_points: Set[AttackGraphNode]`,
+     `DefenderState.compromised_nodes: Set[AttackGraphNode]`, both with
+     their own `__getstate__` that round-trips these sets as-is) pickle
+     via `__reduce__` returning `(rebuild_fn, (self.owner_py, self.id))`
+     rather than snapshotting their own data. This is not just simpler
+     than a standalone-snapshot design, it's *more correct*: because
+     `owner_py` is a real, identity-stable `Py<PyAttackGraph>` object,
+     pickling it is automatically memoized by Python's own pickle
+     protocol - if the same `AttackGraph` is reachable from multiple
+     places in one combined pickle call (e.g. `MalSimulator.sim_state
+     .attack_graph` *and* a `DefenderState.compromised_nodes` node's
+     `owner_py`, both present in the same `pickle.dump` call per
+     `test_simulator_picklable`'s `MALSimulatorStaticData`/
+     `MalSimulatorState` shapes), pickle serializes the graph once and
+     both references correctly restore pointing at the *same* object,
+     for free, with no bespoke identity-tracking code needed here.
+5. **Not a Phase 3 blocker, flagged for Phase 4**: `tests/attackgraph/
+   test_partial_regeneration.py` tests several *internal* module-level
+   functions directly (`assoc_affected_expr_chain`, `assoc_left_assets`,
+   `correct_node_children_on_modified_assoc`, `nodes_to_be_removed`,
+   each with hand-built `ExpressionsChain(...)`/detached
+   `AttackGraphNode(...)` instances, not going through any `AttackGraph`
+   container). These aren't part of the public `AttackGraph`/
+   `AttackGraphNode` API surface at all - they're
+   `maltoolbox/attackgraph/partially_generate.py`'s own private helpers,
+   which have no PyO3-bound equivalent (only the public
+   `AttackGraph.partially_regenerate_graph` method is bound; the Rust
+   core's own internal equivalents in `partially_generate.rs` are
+   already covered by the existing 117-test workspace suite). This
+   doesn't block Phase 3 - nothing here is cut over yet, so these tests
+   still run unmodified against the still-intact pure-Python module -
+   but it means these specific tests have no path to "keep passing"
+   once Phase 4 deletes `maltoolbox/attackgraph/partially_generate.py`
+   in favor of the native binding, and will need an explicit call
+   (delete, since the Rust-side logic they exercise is independently
+   tested already) when that phase starts.
+
 ## Status
 
-**Current phase: Phase 0, 1, and 2 all done. Next: Phase 3
-(`AttackGraph`/`AttackGraphNode`).**
+**Current phase: Phase 0, 1, 2, and 3 all done. Next: Phase 4 (cut
+over).** See "Phase 3 status" below for the full writeup; a handful of
+logged (not silently skipped) gaps remain, none of which block Phase 3
+or the mal-simulator acceptance surface - see that section's "Open
+gaps".
 
 ### Resolution of the freeform/mutable-construction finding (closes out Phase 1)
 
@@ -1122,3 +1285,359 @@ Phasing. After that, Phase 3 (`AttackGraph`/`AttackGraphNode`), which
 needs its own `Option<Py<PyModel>>` back-reference design (already
 decided) and is where the deferred `Model`/`AttackGraph` pickling work
 (Phase 2 decision 3) actually lands.
+
+### Phase 3 status: `AttackGraph`/`AttackGraphNode`/`Detector` (complete, several logged gaps)
+
+New `python/maltoolbox-attackgraph-py` crate (1,375 lines across 7
+files; depends on `maltoolbox-attackgraph`/`maltoolbox-model`/
+`maltoolbox-language` (core) and `maltoolbox-language-py`/
+`maltoolbox-model-py` (per the established cross-layer dependency
+pattern) - required `maltoolbox-model-py`'s `mod asset`/`mod exceptions`
+to become `pub mod` (same zero-behavior-change visibility-only pattern
+as Phase 2's `maltoolbox-language-py` change) so `Tombstones`/
+`model_error_to_py`/`PyModelAsset`'s fields are reachable):
+
+- `graph.rs` - `PyAttackGraph`: the container, `Rc<RefCell<
+  maltoolbox_attackgraph::AttackGraph>>` plus `lang_graph_py: Py<
+  PyLanguageGraph>` and `model_py: Option<Py<PyModel>>` (both the actual
+  Python objects passed in, identity-preserving - `.lang_graph`/`.model`
+  confirmed via `is` to return the same object every time, same pattern
+  as Phase 2 decision 4). Constructor matches Python exactly:
+  `AttackGraph(lang_graph, model=None)`. When `model` is given, reuses
+  `model.inner.borrow().lang_graph.clone()` (an `Rc` clone, no data copy)
+  rather than re-cloning `lang_graph_py`'s data - cheaper than `PyModel`'s
+  own constructor has to be, since here there's already a model in hand
+  with its own bare `Rc<LanguageGraph>` to borrow from. Full parity:
+  `lang_graph`/`model` (getter+setter, matching Python's plain mutable
+  `self.model` attribute - changing it doesn't retroactively change
+  already-built node handles' owner, which is correct, matching Python
+  since nodes don't hold `model` themselves either)/`next_node_id`/
+  `nodes` (Phase 3 decision 2's lazy view, see `node.rs`)/
+  `full_name_to_node`/`attack_steps`/`defense_steps` (plain rebuilt-fresh
+  dict/list, Phase 1/2's pattern - lower usage, not hot-path)/`detectors`
+  (Phase 3 decision 1's lazy live list, see below) getters,
+  `get_node_by_full_name`/`regenerate_graph`/`partially_regenerate_graph`/
+  `add_node`/`remove_node`/`to_dict`/`_to_dict`/`save_to_file`/
+  `load_from_file` (`#[staticmethod]`)/`__repr__`/`__reduce__`/
+  `_from_pickle_state` (`#[staticmethod]`) methods. `create_attack_graph`
+  lives in `factories.rs` instead (a module-level function in Python
+  too, not a method).
+- `node.rs` - `PyAttackGraphNode`: a handle - **per Phase 3 decision 3,
+  holds `owner_py: Py<PyAttackGraph>`, not a bare `Rc<RefCell<
+  AttackGraph>>`** - resolves the core's `AttackGraphNodeId` slotmap key
+  from the stable Python-facing `i64` id on every access (no cache, same
+  discipline as `PyModelAsset`). Mechanical consequence of this design
+  choice, confirmed while implementing: `Py<T>` is *not* plain `Clone`
+  in this pyo3 version (0.29.3) - it only has `clone_ref(py)`, which
+  needs a GIL token - so unlike every earlier handle type in this
+  project (which held a bare `Rc<RefCell<_>>`, always `Clone`),
+  `PyAttackGraphNode`/`PyDetector` can't `#[derive(Clone)]` and instead
+  get a manual `clone_ref(&self, py) -> Self` method; every call site
+  that used to just `.clone()` a handle (building a `set`/`dict` of
+  them, storing one in a `Detector`, etc.) was updated to thread `py`
+  through and call `.clone_ref(py)` instead - caught immediately by the
+  compiler (`Py<PyAttackGraph>: Clone` not satisfied), not a silent gap.
+  Full parity: `id`/`name`/`type` (`#[getter(r#type)]`)/`lg_attack_step`
+  (builds a `PyLanguageGraphAttackStep` via `owner.lang_graph_py`)/
+  `causal_mode`/`ttc`/`tags`/`model_asset` (builds a `PyModelAsset` via
+  `owner.model_py` - `None` if either is absent)/`existence_status`/
+  `children`/`parents` (sets of handles)/`extras`/`detectors` (Phase 3
+  decision 1, see below)/`full_name`/`info`/`additive_model_effects`/
+  `subtractive_model_effects` (see Open gaps) getters, `to_dict`/
+  `__repr__`/`__hash__`/`__richcmp__`/`__reduce__` methods. Also hosts
+  `PyAttackGraphNodesView` (Phase 3 decision 2's lazy, read-only
+  Mapping-protocol wrapper for `.nodes` - `__getitem__`/`__len__`/
+  `__contains__`/`__iter__`/`keys`/`values`/`items`/`get`, each
+  constructing a `PyAttackGraphNode` handle only for key(s) actually
+  touched; not `m.add_class`'d, not part of the public surface, only
+  ever handed out by `PyAttackGraph.nodes`) and the module-level
+  `_rebuild_attack_graph_node(owner, id)` pyfunction `__reduce__`
+  delegates to.
+- `detector.rs` - `PyDetector`: unlike every other type in this layer, a
+  real freely-constructible value (`#[new]`) - confirmed unproblematic
+  (not a Phase 1/2-style freeform-construction hazard) since it only
+  ever wraps a reference to an *existing* node handle, never needs
+  detached construction; confirmed necessary at all because
+  mal-simulator imports and constructs `Detector` directly
+  (`test_logger_attacks_false_negative`/`_false_positive`). Fields:
+  `name`/`node: PyAttackGraphNode`/`potential_context: Py<PyDict>`/
+  `tprate`/`fprate`. `__hash__` always raises `TypeError` (mirrors the
+  real runtime effect of Python's frozen-dataclass auto-`__hash__` here,
+  which would also raise at `hash()` time since `potential_context` is
+  an unhashable `dict` - not a divergence, a different mechanism
+  producing the same outcome). `to_dict` matches the core's own
+  simplified detector serialization (`name`/`tprate` only), not
+  Python's actually-broken `Detector.to_dict()` (confirmed broken by
+  testing - see Open gaps). `__reduce__` added after initially omitting
+  it: confirmed by direct testing that without it, `pickle.dumps(a_
+  detector)` raises `TypeError: cannot pickle` (pyo3's default protocol
+  needs `cls.__new__(cls)` with no args, but `#[new]` here requires
+  `node`/`potential_context`) - fixed by using `PyDetector`'s own class
+  as the `__reduce__` target directly (unlike the container types, it
+  *is* directly callable with exactly the right positional args, so no
+  separate `_from_pickle_state` indirection needed).
+- `detector_support.rs` - shared plumbing for Phase 3 decision 1:
+  `DetectorSnapshot` (owned, borrow-free: label, node id, name,
+  `potential_context: HashMap<String, Vec<i64>>`, tprate, fprate) and
+  `detector_snapshots_for(graph, keys)`/`build_py_detector(py, owner_py,
+  snapshot)`, used by both `graph.rs`'s flat-list seeding and `node.rs`'s
+  per-node-dict seeding so the "snapshot everything needed with no
+  outstanding core-graph borrow, then build Python objects" discipline
+  lives in one place.
+- `exceptions.rs` - `AttackGraphException(MalToolboxException)` +
+  `AttackGraphStepExpressionError`, same crate-dependency-reuse pattern
+  as `ModelException`. `graph_error_to_py` (context-free default
+  mapping: `DuplicateNodeId` -> `ValueError` matching `AttackGraph
+  .add_node`'s real `raise ValueError(...)`; `StepExpression` ->
+  `AttackGraphStepExpressionError`; `Malformed` -> the base
+  `AttackGraphException`; `Language`/`Model` delegate to the respective
+  layer's own mapper) plus `graph_error_to_lookup` (for call sites that
+  know, from reading the real Python source, that *any* failure there is
+  a `LookupError` - `get_node_by_full_name`, `from_dict`'s "Failed to
+  find ..." messages - since the core's `Malformed` variant is an
+  overloaded catch-all covering several distinct Python exception types,
+  not just one).
+- `factories.rs` - `create_attack_graph(lang, model)`: a module-level
+  function (registered directly on `_native`, not a method), matching
+  Python's real signature exactly (`lang`/`model` each accept either a
+  path string or an already-loaded object) - deliberately *not* reusing
+  the Rust core's own `maltoolbox_attackgraph::factories::create_attack_graph`
+  (path-only, returns `(AttackGraph, Model)` tuple since the core
+  doesn't store `model` on `AttackGraph`); this binding's version builds
+  the `PyLanguageGraph`/`PyModel` objects itself when given paths and
+  constructs a `PyAttackGraph` with the compat layer's own `.model`
+  back-reference, matching Python's actual return shape (just the
+  `AttackGraph`, with `.model`/`.lang_graph` already set).
+- **Two small opportunistic core-crate changes, flagged**: (1)
+  `crates/maltoolbox-attackgraph/src/graph.rs`'s `node_to_dict` made
+  `pub` (was private) so `AttackGraphNode.to_dict` in this layer can
+  reuse the exact same single-node serialization the graph's own
+  `to_dict` uses for each node - zero behavior change, visibility only.
+  (2) `PyLanguageGraph`/`PyModel` (Phase 1/2, already-committed files)
+  each gained `module = "maltoolbox._native"` on their `#[pyclass]`
+  attribute (previously unset, defaulting to pyo3's own fallback) and a
+  `__reduce__`/`_from_pickle_state` pair, closing out the pickling work
+  Phase 1/2 deferred to this phase (Phase 2 decision 3) - `PyAttackGraph`
+  needed both of its nested layers to be genuinely picklable first,
+  since its own pickled state bundles theirs.
+- Registered in `python/maltoolbox-pyo3` (`Cargo.toml` dependency +
+  `maltoolbox_attackgraph_py::register(py, m)?` call), same pattern as
+  Phases 1-2.
+
+**Phase 3 decision 1 (live detectors) implementation shape, as built:**
+`PyAttackGraph` holds `detectors_list: Rc<RefCell<Option<Py<PyList>>>>`
+(`None` until first `.detectors` access) and `node_detectors: Rc<RefCell<
+HashMap<i64, Py<PyDict>>>>` (populated lazily per node id). Both are
+seeded from `DetectorSnapshot`s read from the core's per-node `detectors:
+HashMap<String, Detector>` at the moment of first access, then never
+consulted again - confirmed this handles both orderings correctly
+(whether `.detectors` is first read before or after a
+`partially_regenerate_graph` call) since a first-ever access always
+seeds from *whatever the current full state is*, and a later access
+after the list already exists only appends the newly-created nodes'
+detectors (matching Python's `self.detectors.extend(new_detectors)`
+exactly - existing entries, including any external mutation of them,
+are left untouched). `regenerate_graph` resets both containers entirely
+(matches Python discarding every old node on a full rebuild).
+`remove_node` purges the removed id's `node_detectors` entry;
+`partially_regenerate_graph` additionally diffs node-id-sets
+before/after the core call to purge entries for any node removed as a
+*side effect* internally (the core's own `removal_candidates` handling,
+not directly surfaced back to this binding) - without this, a removed
+node's stale per-node detector dict would linger indefinitely.
+
+**Phase 3 decision 2 (lazy `.nodes` view) implementation note:**
+`PyAttackGraph.nodes`/`.detectors`/`.full_name_to_node`/`.attack_steps`/
+`.defense_steps` all needed a `Py<Self>` to hand out (to build node
+handles owned by *this* graph), which a method can't get from a plain
+`&self` receiver - pyo3 supports this via taking `self_: &Bound<'_,
+Self>` as the receiver instead and calling `self_.clone().unbind()`;
+used throughout this file rather than restructuring construction to
+pass `Py<Self>` down some other way.
+
+**Verified** (matching Phases 1-2's rigor):
+- `cargo build`/`cargo clippy --all-targets` clean on the new crate and
+  the `maltoolbox-pyo3` umbrella - zero warnings (three
+  `clippy::type_complexity` warnings on `__reduce__`-shaped tuple return
+  types fixed with `#[allow(clippy::type_complexity)]`, matching the
+  existing `#[allow(clippy::too_many_arguments)]` precedent for
+  pyo3-driven unavoidable complexity).
+- `cargo build --workspace`/`cargo test --workspace`: still exactly 117
+  tests passing (confirms `python/` crates, including the new one,
+  remain correctly isolated from the root workspace).
+- `maturin develop` (release profile) builds/installs cleanly; same
+  known wrong-install-location workaround as every prior phase.
+- **Oracle diff against the real pure-Python implementation**, with one
+  methodology refinement specific to attack graphs (see the first
+  "Newly confirmed, logged, pre-existing finding" below): built an
+  equivalent model (3 assets, 2 associations) through both
+  `_native.AttackGraph`/`AttackGraphNode` and the untouched
+  `maltoolbox.attackgraph.AttackGraph` in the same process, compared
+  `_to_dict()` **structurally** (by `full_name`, not raw numeric node
+  id) - exact match. Repeated after `partially_regenerate_graph` (add an
+  asset, then remove one) and after `regenerate_graph` - exact
+  structural match every time. `save_to_file`/`load_from_file`
+  round-trip compared by **exact** `_to_dict()` (ids *do* round-trip
+  exactly here, since `from_dict` reads them verbatim rather than
+  reassigning - confirmed, see the finding below for why this differs
+  from fresh generation).
+- Dict/set keying: fetched the same node two different ways
+  (`get_node_by_full_name` and `.nodes[id]`), confirmed `==`/`__hash__`
+  match and set-collapse - same check style as Phases 1-2.
+- **Confirmed-necessary mal-simulator patterns, reproduced directly**
+  (not just reasoned about), using the real `tests/testdata/
+  detector_lang.mal` fixture (the same one mal-simulator's own
+  `detector_lang_scenario.yml` test uses): built a graph with a real
+  language-level detector, then - `node.detectors['logExploit'] =
+  Detector(...)` followed by a *second, independent* `.detectors`
+  access on the same node confirmed the mutation persisted;
+  `attack_graph.detectors.remove(old)`/`.append(mocked)` followed by a
+  second independent `.detectors` access confirmed the same; confirmed
+  the per-node dict and flat list stayed independently mutable
+  (mutating one didn't affect the other) - matching the real,
+  confirmed-by-reading-Python-source redundant/unsynchronized behavior
+  from Phase 3 decision 1.
+- `.nodes` lazy mapping: `__getitem__`/`__len__`/`__contains__`/`in`/
+  `.values()`/`.keys()`/`.items()` all checked against a real generated
+  graph and matched the oracle's plain `dict` for every access pattern.
+- **Pickling** (Phase 3 decision 4), a real conformance test mirroring
+  `test_simulator_picklable` exactly: `LanguageGraph`/`Model`/
+  `AttackGraph` each pickle/unpickle with an exact `_to_dict()`/
+  `to_dict()` match; a single bare `AttackGraphNode` pickles/unpickles
+  standalone without crashing; pickling `(attack_graph, node)` together
+  in *one* `pickle.dumps` call and unpickling confirmed the restored
+  node's owner is the *same* restored graph object (`is`, not just
+  `==`) - the identity-sharing-via-pickle-memoization design worked
+  exactly as the decision predicted, verified directly, not assumed. A
+  bare `Detector` also pickles/unpickles correctly (data-wise) standalone
+  and shares owner identity when combined with its graph in one call,
+  same as a node.
+- Error mapping spot-checked against real conditions: `get_node_by_full_name`
+  miss -> `LookupError`; `add_node` duplicate id -> `ValueError`;
+  `create_attack_graph` with a bad `lang` type -> `TypeError`.
+- `create_attack_graph` verified both call shapes (`(path, path)` and
+  `(LanguageGraph, Model)`), confirming `.lang_graph is`/`.model is`
+  identity for the object-argument case.
+- Full existing pytest suite unaffected - **no `.py` file was touched by
+  this phase** (confirmed via `git status`): `uv run pytest tests -m
+  "not integration"` - 107 passed, 3 deselected, identical to every
+  prior baseline. `uv run ruff check .` - clean (trivially, since
+  nothing Python changed).
+
+**Newly confirmed, logged findings (pre-existing, not introduced by this
+phase, not blocking):**
+1. **Fresh `generate_graph` node-id *numbering* isn't guaranteed to
+   match Python's, even for an isomorphic graph** - confirmed by running
+   the oracle diff and finding every node's numeric `id` differed
+   (structurally, everything else was identical) between a freshly
+   generated native graph and the Python oracle for the same model.
+   Root cause, confirmed by reading the (pre-existing, not touched by
+   this phase) core crate: `crates/maltoolbox-attackgraph/src/
+   generate.rs`'s `create_nodes_for` assigns sequential ids while
+   iterating each asset's attack steps via `LanguageGraphAsset
+   .attack_steps: HashMap<String, AttackStepId>` - a `HashMap`, not an
+   insertion-ordered structure - so the exact id a given step lands on
+   depends on Rust's (per-process-randomized-by-default) hash iteration
+   order, not the declaration order Python's own dict-based equivalent
+   preserves. This has no observable effect on correctness (every
+   consumer resolves nodes by `full_name`/id-returned-from-the-same-call,
+   never by assuming a specific number in advance) and doesn't affect
+   `from_dict`/`load_from_file` (those read ids verbatim from the
+   serialized form, this issue is specific to *fresh* generation) - but
+   it does mean an oracle diff comparing fresh-generation `_to_dict()`
+   output byte-for-byte will never match on the numeric ids, only
+   structurally. Not fixed here (would mean changing already-tested core
+   generation-order semantics, well outside this phase's scope) - logged
+   for whoever next touches `generate.rs`, if reproducible byte-for-byte
+   generation output is ever needed.
+2. **The pure-Python oracle's own `Detector.to_dict()`/`AttackGraph
+   ._to_dict()` crash outright on any detector-bearing graph** -
+   confirmed by direct testing (not just reading `PORTING_NOTES.md`'s
+   note about it): `json.dumps(ag_python._to_dict())` raises `TypeError:
+   Object of type AttackGraphNode is not JSON serializable`, since
+   `Detector.to_dict()` embeds the live `node`/`potential_context`
+   object references unconditionally. This port's `node_to_dict`/
+   `PyDetector.to_dict` use the already-fixed simplified serialization
+   (name/tprate only), so the *native* side has no such bug - but it
+   means no oracle diff can ever be done against the Python original for
+   a detector-bearing graph's full `_to_dict()`; the detector-specific
+   verification above compares native-against-itself plus direct
+   attribute access against the oracle instead.
+
+**Open gaps, logged not silently skipped:**
+1. **`AttackGraphNode` has no post-removal-readability tombstone** - the
+   `AttackGraphNode` analog of Phase 2's `AssetSnapshot` gap, left
+   unresolved this phase. A node handle resolves by looking up its id in
+   `owner.inner.borrow().id_to_node` on every access; once `remove_node`
+   (or a `partially_regenerate_graph`-internal removal) deletes that
+   entry, the handle can no longer resolve itself - any getter raises
+   `LookupError`, whereas a real Python `AttackGraphNode` object stays
+   fully readable after removal (same shape of gap, same root cause:
+   handle-by-id vs. live-object-reference). **Not currently known to be
+   load-bearing** - grepped `tests/attackgraph/test_attackgraph.py
+   ::test_attackgraph_remove_node` (the one existing test that calls
+   `remove_node`): it only does `not in`/membership checks on the
+   removed node afterward (needs `__hash__`/`__richcmp__`, which don't
+   need to resolve the node's data), never reads an attribute of the
+   removed node itself - so this gap has no reproducing test today,
+   unlike Phase 2's analogous gap which did. Flagged anyway, since
+   Phase 4's cutover could surface a case this misses, and the fix shape
+   would mirror `AssetSnapshot` closely if ever needed (a per-node-id
+   tombstone map on `PyAttackGraph`, populated by `remove_node`/the
+   `partially_regenerate_graph` removal path).
+2. **`additive_model_effects`/`subtractive_model_effects` raise
+   `NotImplementedError` when non-empty** (the common `None`/empty case
+   is fully correct). Deepened from Phase 1 gap #3's "nothing uses it"
+   finding: `tests/attackgraph/test_attackgraph.py::test_create_dynamic_ag`
+   *does* exercise this directly (DynaMAL model effects, deep structural
+   access: `.base[i].field_name`, `.targets[i].assoc_traversal[j]
+   .asset_filter.name`, etc.) - but only against the still-intact
+   pure-Python oracle, not through the native bindings, so this doesn't
+   block Phase 3 today. Confirmed via a fresh mal-simulator grep that
+   nothing in its acceptance surface touches this. Faithfully exposing
+   it needs a multi-class wrapper hierarchy over
+   `LanguageGraphModelEffect`/`AssocTraversalChain`/`AssocTraversalElem`/
+   `DynTarget` (each potentially resolving a `PyLanguageGraphAsset` via
+   `asset_filter`) - a meaningfully sized sub-project of its own,
+   deliberately not attempted under this phase's time budget. Will need
+   to be resolved (built, or `test_create_dynamic_ag` explicitly
+   adjusted) before Phase 4 can cut over `maltoolbox/attackgraph/node.py`
+   without regressing that test.
+3. **`AttackGraphNode.__deepcopy__` not implemented.** Grepped a fresh
+   mal-simulator clone: zero `copy.deepcopy` usage anywhere. mal-toolbox's
+   own `tests/attackgraph/test_attackgraph.py::test_attackgraph_deepcopy`/
+   `test_deepcopy_memo_test` exercise it, but through heavy `id()`-based
+   object-identity assertions (`id(copied_node) == id(same_node)` etc.)
+   that are fundamentally incompatible with the owner+id handle design
+   (freshly-constructed handles never share Python object identity) -
+   same category as Phase 1/2's freeform-construction-style gaps, not
+   attempted here, deliberately out of scope since nothing in the
+   acceptance surface needs it. Will need an explicit decision at Phase
+   4 (most likely: rewrite or drop these two tests, mirroring Phase 1's
+   `dummy_lang_graph` resolution).
+4. **`ExpressionsChain` still has no wrapper class** (Phase 1 gap #2,
+   unchanged - not revisited this phase, since nothing in the
+   `AttackGraph`/`AttackGraphNode` surface needed one; `tests/attackgraph/
+   test_partial_regeneration.py`'s raw `ExpressionsChain(...)`
+   construction remains the Phase 4 concern already logged in Phase 3
+   decision 5).
+5. **The `LoadError`/compiler-exception-mapping gap from Phase 1's
+   Architecture section is still open** (unrelated to this phase,
+   re-noted only because it's still the oldest open item in this
+   document).
+
+**Phase 3 is complete** - the open gaps above are logged, scoped,
+confirmed non-blocking for the mal-simulator acceptance surface (the
+goal this whole effort is ultimately judged against), and none
+contradict "the existing `tests/` suite keeps passing" (nothing was cut
+over yet, so nothing in `tests/` runs against the native bindings today
+regardless).
+
+**Next step:** Phase 4 (cut over) - replace `maltoolbox/{model,
+language/languagegraph, attackgraph/{attackgraph,node}}.py` with thin
+re-export shims pointing at `maltoolbox._native`. Before starting,
+resolve (or explicitly, deliberately accept as regressions) gaps 1-3
+above, since Phase 4 is where "the existing test suite keeps passing"
+stops being hypothetical and starts being the literal CI gate; also
+revisit `tests/attackgraph/test_partial_regeneration.py`'s
+internal-function tests per Phase 3 decision 5.

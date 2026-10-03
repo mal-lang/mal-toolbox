@@ -5,8 +5,8 @@
 //! shared conventions this follows, and
 //! `PYTHON_BINDINGS_IMPLEMENTATION.md` for the plan/status.
 
-mod asset;
-mod exceptions;
+pub mod asset;
+pub mod exceptions;
 mod model;
 
 use pyo3::prelude::*;

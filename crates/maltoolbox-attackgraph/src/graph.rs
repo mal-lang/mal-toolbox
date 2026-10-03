@@ -481,7 +481,12 @@ impl AttackGraph {
         Self::from_dict(&serialized, lang_graph, model)
     }
 
-    fn node_to_dict(&self, key: AttackGraphNodeId, model: Option<&Model>) -> Value {
+    /// Made `pub` (opportunistic, additive-only change) so the PyO3 compat
+    /// layer (`maltoolbox-attackgraph-py`) can serialize a single node the
+    /// same way `to_dict` does, for `AttackGraphNode.to_dict` - mirrors
+    /// the real Python original having `to_dict` on the node itself, not
+    /// just on the graph. No behavior change to any existing caller.
+    pub fn node_to_dict(&self, key: AttackGraphNodeId, model: Option<&Model>) -> Value {
         let node = &self.nodes[key];
 
         let mut children = Map::new();

@@ -14,5 +14,6 @@ use pyo3::prelude::*;
 fn _native(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     maltoolbox_language_py::register(py, m)?;
     maltoolbox_model_py::register(py, m)?;
+    maltoolbox_attackgraph_py::register(py, m)?;
     Ok(())
 }

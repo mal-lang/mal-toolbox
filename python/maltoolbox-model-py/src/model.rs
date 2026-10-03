@@ -27,7 +27,7 @@ use maltoolbox_model::{file as model_file, Model, ModelAsset};
 use crate::asset::{PyModelAsset, Tombstones};
 use crate::exceptions::{from_dict_error_to_py, load_error_to_py, model_error_to_py};
 
-#[pyclass(name = "Model", unsendable)]
+#[pyclass(name = "Model", module = "maltoolbox._native", unsendable)]
 pub struct PyModel {
     pub inner: Rc<RefCell<Model>>,
     pub lang_graph_py: Py<PyLanguageGraph>,
@@ -189,7 +189,7 @@ impl PyModel {
     }
 
     #[staticmethod]
-    fn load_from_file(py: Python<'_>, filename: &str, lang_graph: Py<PyLanguageGraph>) -> PyResult<Self> {
+    pub fn load_from_file(py: Python<'_>, filename: &str, lang_graph: Py<PyLanguageGraph>) -> PyResult<Self> {
         let lg_rc = Self::lang_graph_rc(py, &lang_graph);
         let cloned_graph = lg_rc.borrow().clone();
         let model = model_file::load_from_file(filename, Rc::new(cloned_graph)).map_err(load_error_to_py)?;
@@ -208,6 +208,27 @@ impl PyModel {
         let cloned_graph = lg_rc.borrow().clone();
         let model = model_file::from_dict(&value, Rc::new(cloned_graph)).map_err(from_dict_error_to_py)?;
         Self::wrap(py, model, lang_graph)
+    }
+
+    /// Pickling (Phase 3 decision 4, deferred from Phase 2): reconstructs
+    /// the nested `lang_graph` from its own pickled dict state first (via
+    /// `LanguageGraph._from_pickle_state`), then rebuilds `self` from
+    /// `_from_dict` the normal way - so a pickled `Model` never needs the
+    /// original `LanguageGraph` Python object to still be around.
+    #[staticmethod]
+    fn _from_pickle_state(py: Python<'_>, state: &Bound<'_, PyAny>, lang_graph_state: &Bound<'_, PyAny>) -> PyResult<Self> {
+        let lg_cls = py.import("maltoolbox._native")?.getattr("LanguageGraph")?;
+        let lang_graph_obj = lg_cls.call_method1("_from_pickle_state", (lang_graph_state,))?;
+        let lang_graph_py: Py<PyLanguageGraph> = lang_graph_obj.extract()?;
+        Self::from_dict_py(py, state, lang_graph_py)
+    }
+
+    fn __reduce__<'py>(&self, py: Python<'py>) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>, Bound<'py, PyAny>))> {
+        let cls = py.get_type::<PyModel>();
+        let func = cls.getattr("_from_pickle_state")?;
+        let lang_graph_state = self.lang_graph_py.bind(py).call_method0("_to_dict")?;
+        let model_state = self._to_dict(py)?;
+        Ok((func, (model_state, lang_graph_state)))
     }
 
     fn __repr__(&self, py: Python<'_>) -> String {

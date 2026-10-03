@@ -9,6 +9,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PySet, PyTuple};
 
 use maltoolbox_language::graph::file as lang_file;
+use maltoolbox_language::graph::file::language_graph_from_dict;
 use maltoolbox_language::graph::{language_graph_to_dict, LanguageGraph};
 
 use crate::asset::PyLanguageGraphAsset;
@@ -22,13 +23,13 @@ use crate::exceptions::{graph_error_to_py, load_error_to_py};
 /// already serializes access from Python; see
 /// PYTHON_BINDINGS_IMPLEMENTATION.md's "Rc<RefCell<_>> vs Arc<Mutex<_>>"
 /// note.
-#[pyclass(name = "LanguageGraph", unsendable)]
+#[pyclass(name = "LanguageGraph", module = "maltoolbox._native", unsendable)]
 pub struct PyLanguageGraph {
     pub inner: Rc<RefCell<LanguageGraph>>,
 }
 
 impl PyLanguageGraph {
-    fn wrap(graph: LanguageGraph) -> Self {
+    pub fn wrap(graph: LanguageGraph) -> Self {
         PyLanguageGraph {
             inner: Rc::new(RefCell::new(graph)),
         }
@@ -179,5 +180,26 @@ impl PyLanguageGraph {
             "LanguageGraph(id: \"{}\", version: \"{}\")",
             graph.metadata.id, graph.metadata.version
         )
+    }
+
+    /// Pickling target for `__reduce__` - a plain function (not the class
+    /// itself), since `PyLanguageGraph` has no `#[new]` (matches the real
+    /// Python original's `_from_dict`-based reconstruction path, not a
+    /// bare constructor call) - see PYTHON_BINDINGS_IMPLEMENTATION.md's
+    /// Phase 3 decision 4.
+    #[staticmethod]
+    fn _from_pickle_state(py: Python<'_>, state: &Bound<'_, PyAny>) -> PyResult<Self> {
+        let value: serde_json::Value = pythonize::depythonize(state)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let _ = py;
+        let graph = language_graph_from_dict(&value).map_err(graph_error_to_py)?;
+        Ok(Self::wrap(graph))
+    }
+
+    fn __reduce__<'py>(&self, py: Python<'py>) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>,))> {
+        let cls = py.get_type::<PyLanguageGraph>();
+        let func = cls.getattr("_from_pickle_state")?;
+        let state = self._to_dict(py)?;
+        Ok((func, (state,)))
     }
 }
