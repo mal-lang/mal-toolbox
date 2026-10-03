@@ -17,3 +17,5 @@ serde_json = { version = "1", features = ["preserve_order"] }
 thiserror = "2"
 pythonize = "0.29.0"
 pyo3 = "0.29.3"
+indexmap = "2"
+slotmap = "1"

@@ -1,6 +1,8 @@
 //! Mirrors `maltoolbox/language/language_graph_attack_step.py`'s
-//! `LanguageGraphAttackStep`. A handle (`owner` + `AttackStepId`), not a
-//! cache - see `handle.rs` / PYTHON_BINDINGS_IMPLEMENTATION.md.
+//! `LanguageGraphAttackStep`. A handle (`owner` + `AttackStepId`) - per
+//! Phase 4 decision 1, cached per-owner (`caches.steps`) so repeated
+//! lookups for the same id return the identical Python object; see
+//! `handle.rs` / PYTHON_BINDINGS_IMPLEMENTATION.md.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -15,44 +17,59 @@ use maltoolbox_language::graph::ids::AttackStepId;
 use maltoolbox_language::graph::LanguageGraph;
 
 use crate::asset::PyLanguageGraphAsset;
+use crate::detector::detector_to_py;
 use crate::exceptions::graph_error_to_py;
-use crate::handle::composite_hash;
+use crate::expr_chain::expr_chain_to_py;
+use crate::handle::{cached_handle, composite_hash, SharedLangGraphCaches};
+use crate::model_effect::{model_effect_to_py, PyLanguageGraphModelEffect};
 
 #[pyclass(name = "LanguageGraphAttackStep", unsendable, skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyLanguageGraphAttackStep {
     pub owner: Rc<RefCell<LanguageGraph>>,
     pub id: AttackStepId,
+    pub caches: SharedLangGraphCaches,
 }
 
 impl PyLanguageGraphAttackStep {
-    pub fn new(owner: Rc<RefCell<LanguageGraph>>, id: AttackStepId) -> Self {
-        PyLanguageGraphAttackStep { owner, id }
+    pub fn new(owner: Rc<RefCell<LanguageGraph>>, id: AttackStepId, caches: SharedLangGraphCaches) -> Self {
+        PyLanguageGraphAttackStep { owner, id, caches }
     }
 
     fn owner_ptr(&self) -> usize {
         Rc::as_ptr(&self.owner) as usize
     }
 
-    /// Pythonizes a `Vec<Option<ExpressionsChain>>` (an `own_children`/
-    /// `own_parents` value) into `list[dict | None]`. The chains
-    /// themselves are exposed via their serialized `to_dict()` form, not
-    /// a live `ExpressionsChain` wrapper object - see
-    /// PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 1 status for why.
+    fn step_handle(&self, py: Python<'_>, id: AttackStepId) -> PyResult<Py<PyLanguageGraphAttackStep>> {
+        let owner = self.owner.clone();
+        let caches = self.caches.clone();
+        cached_handle(&self.caches.steps, py, id, move || PyLanguageGraphAttackStep::new(owner, id, caches))
+    }
+
+    fn asset_handle(&self, py: Python<'_>, id: maltoolbox_language::graph::ids::AssetId) -> PyResult<Py<PyLanguageGraphAsset>> {
+        let owner = self.owner.clone();
+        let caches = self.caches.clone();
+        cached_handle(&self.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
+    }
+
+    /// Builds a `list[ExpressionsChain | None]` of real wrapper objects
+    /// (closes Phase 1 gap #2 - these used to be exposed via their
+    /// pythonized `to_dict()` form instead of a live object; confirmed
+    /// necessary for real by `tests/language/test_languagegraph.py::
+    /// test_interleaved_vars`/`test_attackstep_inherit`, which read
+    /// `.right_link.fieldname`/`.fieldname` directly on these).
     fn chains_to_pylist<'py>(
+        &self,
         py: Python<'py>,
-        graph: &LanguageGraph,
         chains: &[Option<maltoolbox_language::graph::expr_chain::ExpressionsChain>],
     ) -> PyResult<Bound<'py, PyList>> {
-        let mut items = Vec::new();
+        let mut items: Vec<Py<PyAny>> = Vec::new();
         for chain in chains {
-            let value = match chain {
-                Some(c) => c.to_dict(graph).map_err(graph_error_to_py)?,
-                None => serde_json::Value::Null,
+            let item = match chain {
+                Some(c) => expr_chain_to_py(py, self.owner.clone(), self.caches.clone(), c)?.into_any(),
+                None => py.None(),
             };
-            items.push(pythonize::pythonize(py, &value).map_err(|e| {
-                graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(e.to_string()))
-            })?);
+            items.push(item);
         }
         PyList::new(py, items)
     }
@@ -60,16 +77,16 @@ impl PyLanguageGraphAttackStep {
     fn step_map_to_pydict<'py>(
         &self,
         py: Python<'py>,
-        graph: &LanguageGraph,
-        map: &std::collections::HashMap<
+        _graph: &LanguageGraph,
+        map: &indexmap::IndexMap<
             AttackStepId,
             Vec<Option<maltoolbox_language::graph::expr_chain::ExpressionsChain>>,
         >,
     ) -> PyResult<Bound<'py, PyDict>> {
         let dict = PyDict::new(py);
         for (step_id, chains) in map {
-            let handle = PyLanguageGraphAttackStep::new(self.owner.clone(), *step_id);
-            let list = Self::chains_to_pylist(py, graph, chains)?;
+            let handle = self.step_handle(py, *step_id)?;
+            let list = self.chains_to_pylist(py, chains)?;
             dict.set_item(handle, list)?;
         }
         Ok(dict)
@@ -89,9 +106,9 @@ impl PyLanguageGraphAttackStep {
     }
 
     #[getter]
-    fn asset(&self) -> PyLanguageGraphAsset {
+    fn asset(&self, py: Python<'_>) -> PyResult<Py<PyLanguageGraphAsset>> {
         let asset_id = self.owner.borrow().step(self.id).asset;
-        PyLanguageGraphAsset::new(self.owner.clone(), asset_id)
+        self.asset_handle(py, asset_id)
     }
 
     #[getter]
@@ -131,12 +148,9 @@ impl PyLanguageGraphAttackStep {
     }
 
     #[getter]
-    fn inherits(&self) -> Option<PyLanguageGraphAttackStep> {
-        let graph = self.owner.borrow();
-        graph
-            .step(self.id)
-            .inherits
-            .map(|id| PyLanguageGraphAttackStep::new(self.owner.clone(), id))
+    fn inherits(&self, py: Python<'_>) -> PyResult<Option<Py<PyLanguageGraphAttackStep>>> {
+        let inherits_id = self.owner.borrow().step(self.id).inherits;
+        inherits_id.map(|id| self.step_handle(py, id)).transpose()
     }
 
     #[getter]
@@ -174,7 +188,7 @@ impl PyLanguageGraphAttackStep {
         let reqs = &graph.step(self.id).own_requires;
         let wrapped: Vec<Option<maltoolbox_language::graph::expr_chain::ExpressionsChain>> =
             reqs.iter().cloned().map(Some).collect();
-        Self::chains_to_pylist(py, &graph, &wrapped)
+        self.chains_to_pylist(py, &wrapped)
     }
 
     /// Own + inherited requirements.
@@ -184,13 +198,82 @@ impl PyLanguageGraphAttackStep {
         let reqs = graph.step(self.id).requires(&graph);
         let wrapped: Vec<Option<maltoolbox_language::graph::expr_chain::ExpressionsChain>> =
             reqs.into_iter().map(Some).collect();
-        Self::chains_to_pylist(py, &graph, &wrapped)
+        self.chains_to_pylist(py, &wrapped)
+    }
+
+    /// `own_additive_model_effects`/`own_subtractive_model_effects`/
+    /// `additive_model_effects`/`subtractive_model_effects` - closes
+    /// Phase 1 gap #3 ("not exposed, no usage found"), since
+    /// `tests/language/test_compiler.py::test_compile_wiperlang`/
+    /// `test_compile_multiplicity_lang` turned out to need these
+    /// directly on `LanguageGraphAttackStep` (distinct from
+    /// `AttackGraphNode.additive_model_effects`, Phase 4 decision 3,
+    /// which already wraps the same core `LanguageGraphModelEffect`
+    /// type - this just needed a second call site, no new wrapper
+    /// classes). `own_*` is the step's own (non-inherited) list; the
+    /// non-`own_` getters add inherited effects, mirroring the core's
+    /// own `additive_model_effects(&graph)`/`subtractive_model_effects(&graph)`.
+    #[getter]
+    fn own_additive_model_effects(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphModelEffect>>> {
+        let graph = self.owner.borrow();
+        graph
+            .step(self.id)
+            .own_additive_model_effects
+            .iter()
+            .map(|e| model_effect_to_py(py, self.owner.clone(), self.caches.clone(), e))
+            .collect()
+    }
+
+    #[getter]
+    fn own_subtractive_model_effects(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphModelEffect>>> {
+        let graph = self.owner.borrow();
+        graph
+            .step(self.id)
+            .own_subtractive_model_effects
+            .iter()
+            .map(|e| model_effect_to_py(py, self.owner.clone(), self.caches.clone(), e))
+            .collect()
+    }
+
+    #[getter]
+    fn additive_model_effects(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphModelEffect>>> {
+        let graph = self.owner.borrow();
+        graph
+            .step(self.id)
+            .additive_model_effects(&graph)
+            .iter()
+            .map(|e| model_effect_to_py(py, self.owner.clone(), self.caches.clone(), e))
+            .collect()
+    }
+
+    #[getter]
+    fn subtractive_model_effects(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphModelEffect>>> {
+        let graph = self.owner.borrow();
+        graph
+            .step(self.id)
+            .subtractive_model_effects(&graph)
+            .iter()
+            .map(|e| model_effect_to_py(py, self.owner.clone(), self.caches.clone(), e))
+            .collect()
     }
 
     #[getter]
     fn full_name(&self) -> String {
         let graph = self.owner.borrow();
         graph.step(self.id).full_name(&graph)
+    }
+
+    /// Task B: `{name: LanguageGraphDetector}` - matches the deleted
+    /// pure-Python original's `detectors: dict[str, LanguageGraphDetector]`
+    /// field shape exactly (see `detector.rs`'s module doc).
+    #[getter]
+    fn detectors<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        let graph = self.owner.borrow();
+        let dict = PyDict::new(py);
+        for (name, det) in &graph.step(self.id).detectors {
+            dict.set_item(name, detector_to_py(py, self.owner.clone(), self.caches.clone(), det)?)?;
+        }
+        Ok(dict)
     }
 
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -226,4 +309,76 @@ impl PyLanguageGraphAttackStep {
             _ => Ok(py.NotImplemented()),
         }
     }
+
+    /// Phase 4 decision 9 - see `PyLanguageGraphAsset::__reduce__`'s
+    /// identical rationale (fresh temporary `PyLanguageGraph` owner, no
+    /// identity requirement since `test_pickle_languagegraph_attack_step`
+    /// only checks `to_dict()` equality).
+    ///
+    /// Unlike assets (and unlike the original raw-ffi-id approach this
+    /// replaced), attack steps are pickled by `(asset_name, step_name)`
+    /// rather than by raw slotmap `KeyData` ffi id. Asset creation
+    /// (`generate_graph`'s pass 1 and `language_graph_from_dict`'s pass 1)
+    /// both insert assets in the same single-pass `asset_order`, so ffi
+    /// ids round-trip correctly for assets. Attack steps don't have that
+    /// property: `generate_graph` creates each asset's *own* declared
+    /// steps first across all assets, then synthesizes inherited-copy
+    /// steps in a second pass (`inherit_attack_steps`), interleaved in a
+    /// different (deferred-pending-queue) order - whereas
+    /// `language_graph_from_dict` creates all of an asset's steps (own +
+    /// inherited) in one shot per asset. Both produce the same *logical*
+    /// graph (same `to_dict()`), but the raw slotmap insertion order (and
+    /// hence the ffi id) differs between the two construction paths, so a
+    /// pickled ffi id resolves to the wrong step after a round-trip
+    /// through `_to_dict`/`_from_pickle_state`. Resolving by name instead
+    /// sidesteps the discrepancy entirely.
+    #[allow(clippy::type_complexity)]
+    fn __reduce__(
+        &self,
+        py: Python<'_>,
+    ) -> PyResult<(Py<PyAny>, (Py<crate::language_graph::PyLanguageGraph>, String, String))> {
+        let temp_owner = Py::new(
+            py,
+            crate::language_graph::PyLanguageGraph {
+                inner: self.owner.clone(),
+                caches: self.caches.clone(),
+            },
+        )?;
+        let graph = self.owner.borrow();
+        let step = graph.step(self.id);
+        let asset_name = graph.asset(step.asset).name.clone();
+        let step_name = step.name.clone();
+        drop(graph);
+        let func = py.import("maltoolbox._native")?.getattr("_rebuild_language_graph_attack_step")?.unbind();
+        Ok((func, (temp_owner, asset_name, step_name)))
+    }
+}
+
+/// Rebuilds a `PyLanguageGraphAttackStep` handle from a pickled
+/// `(owner, asset_name, step_name)` triple - the `__reduce__` target; see
+/// `PyLanguageGraphAttackStep::__reduce__`'s doc comment for why this
+/// resolves by name instead of by raw ffi id (unlike
+/// `asset.rs::_rebuild_language_graph_asset`).
+#[pyfunction]
+pub fn _rebuild_language_graph_attack_step(
+    py: Python<'_>,
+    owner: Py<crate::language_graph::PyLanguageGraph>,
+    asset_name: String,
+    step_name: String,
+) -> PyResult<Py<PyLanguageGraphAttackStep>> {
+    let graph = owner.borrow(py);
+    let id = {
+        let inner = graph.inner.borrow();
+        let asset_id = inner.asset_id(&asset_name).ok_or_else(|| {
+            graph_error_to_py(maltoolbox_language::graph::GraphError::Lookup(format!(
+                "Unknown asset type \"{asset_name}\" while unpickling attack step"
+            )))
+        })?;
+        inner.asset(asset_id).attack_steps.get(&step_name).copied().ok_or_else(|| {
+            graph_error_to_py(maltoolbox_language::graph::GraphError::Lookup(format!(
+                "Unknown attack step \"{step_name}\" on asset \"{asset_name}\" while unpickling"
+            )))
+        })?
+    };
+    graph.step_handle(py, id)
 }

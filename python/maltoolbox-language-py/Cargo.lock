@@ -161,6 +161,7 @@ dependencies = [
 name = "maltoolbox-language"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "maltoolbox-fileutil",
  "serde",
  "serde_json",
@@ -176,11 +177,13 @@ dependencies = [
 name = "maltoolbox-language-py"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "maltoolbox-fileutil",
  "maltoolbox-language",
  "pyo3",
  "pythonize",
  "serde_json",
+ "slotmap",
  "thiserror",
 ]
 

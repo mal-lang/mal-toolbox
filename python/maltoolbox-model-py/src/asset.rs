@@ -1,6 +1,8 @@
 //! Mirrors `maltoolbox/model.py`'s `ModelAsset`. A handle (`owner` +
-//! `i64` id), not a cache - same shape as Phase 1's
-//! `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep`. No `#[new]`:
+//! `i64` id) - per Phase 4 decision 1, cached per-owner (`handle_cache`)
+//! so repeated lookups for the same id return the identical Python
+//! object, same scheme as Phase 1's `PyLanguageGraphAsset`/
+//! `PyLanguageGraphAttackStep`. No `#[new]`:
 //! the real Python `ModelAsset.__init__` takes no `Model` argument at
 //! all (fully detached construction), which is incompatible with this
 //! handle design the same way Phase 1's `LanguageGraphAsset`/
@@ -34,8 +36,40 @@ use pyo3::types::{PyDict, PySet};
 use pyo3::IntoPyObjectExt;
 
 use maltoolbox_language::graph::LanguageGraph;
-use maltoolbox_language_py::handle::composite_hash;
+use maltoolbox_language_py::handle::{cached_handle, composite_hash, HandleCache, SharedLangGraphCaches};
 use maltoolbox_language_py::PyLanguageGraphAsset;
+
+/// `{fieldname: {other_asset_id: other_asset_name}}`'s inner keys are
+/// *integers* in the Python original (`{asset.id: asset.name for asset
+/// in assets}`), but the core's own `to_dict()` can only produce
+/// `serde_json::Map` (string keys only - a JSON limitation) - `pythonize`
+/// therefore hands back `{"0": "App1"}` instead of `{0: "App1"}` unless
+/// corrected here, after pythonizing, by rebuilding each inner dict with
+/// parsed-back-to-int keys. Shared by `PyModelAsset::_to_dict` and
+/// `PyModel::to_dict` (called once per asset dict either way). Caught by
+/// `tests/test_model.py::test_serialize`/`tests/translators/
+/// test_networkx.py` indexing `associated_assets`/`assets` by a real
+/// `int`, not a string - not caught by Phase 2's own oracle diff, which
+/// JSON-round-tripped both sides before comparing (erasing the int/str
+/// key distinction on both sides equally).
+pub fn fix_associated_assets_int_keys(py: Python<'_>, asset_dict: &Bound<'_, PyDict>) -> PyResult<()> {
+    let Some(associated) = asset_dict.get_item("associated_assets")? else {
+        return Ok(());
+    };
+    let associated = associated.cast::<PyDict>()?;
+    for (fieldname, sub_dict) in associated.iter() {
+        let sub_dict = sub_dict.cast::<PyDict>()?;
+        let fixed = PyDict::new(py);
+        for (key, value) in sub_dict.iter() {
+            let id: i64 = key.extract::<String>()?.parse().map_err(|_| {
+                pyo3::exceptions::PyValueError::new_err("non-integer key in associated_assets")
+            })?;
+            fixed.set_item(id, value)?;
+        }
+        associated.set_item(fieldname, fixed)?;
+    }
+    Ok(())
+}
 use maltoolbox_model::{Model, ModelAsset};
 
 use crate::exceptions::model_error_to_py;
@@ -68,21 +102,54 @@ pub struct PyModelAsset {
     /// `owner.borrow().lang_graph` (that's a bare `Rc<LanguageGraph>`,
     /// not `Rc<RefCell<LanguageGraph>>`).
     pub lang_graph: Rc<RefCell<LanguageGraph>>,
+    /// The owning `PyModel`'s `PyLanguageGraph.caches` - needed so
+    /// `.lg_asset` resolves to the same per-owner-cached
+    /// `PyLanguageGraphAsset` handle as every other path to it (Phase 4
+    /// decision 1).
+    pub lang_caches: SharedLangGraphCaches,
     pub tombstones: Tombstones,
+    /// This type's own per-owner handle cache (Phase 4 decision 1) -
+    /// shared (same `Rc`) with `PyModel` and every sibling
+    /// `PyModelAsset` handle, so e.g. `model.assets[id]` and
+    /// `asset.associated_assets['field']`'s members return the identical
+    /// Python object for the same id.
+    pub handle_cache: HandleCache<i64, PyModelAsset>,
 }
 
 impl PyModelAsset {
-    pub fn new(owner: Rc<RefCell<Model>>, id: i64, lang_graph: Rc<RefCell<LanguageGraph>>, tombstones: Tombstones) -> Self {
+    pub fn new(
+        owner: Rc<RefCell<Model>>,
+        id: i64,
+        lang_graph: Rc<RefCell<LanguageGraph>>,
+        lang_caches: SharedLangGraphCaches,
+        tombstones: Tombstones,
+        handle_cache: HandleCache<i64, PyModelAsset>,
+    ) -> Self {
         PyModelAsset {
             owner,
             id,
             lang_graph,
+            lang_caches,
             tombstones,
+            handle_cache,
         }
     }
 
     fn owner_ptr(&self) -> usize {
         Rc::as_ptr(&self.owner) as usize
+    }
+
+    /// Cache-aware constructor for a sibling `ModelAsset` handle owned by
+    /// the same `Model` - see the module doc comment / Phase 4 decision 1.
+    fn asset_handle(&self, py: Python<'_>, id: i64) -> PyResult<Py<PyModelAsset>> {
+        let owner = self.owner.clone();
+        let lang_graph = self.lang_graph.clone();
+        let lang_caches = self.lang_caches.clone();
+        let tombstones = self.tombstones.clone();
+        let handle_cache = self.handle_cache.clone();
+        cached_handle(&self.handle_cache, py, id, move || {
+            PyModelAsset::new(owner, id, lang_graph, lang_caches, tombstones, handle_cache)
+        })
     }
 
     fn not_found(&self) -> PyErr {
@@ -132,8 +199,11 @@ impl PyModelAsset {
     }
 
     #[getter]
-    fn lg_asset(&self) -> PyResult<PyLanguageGraphAsset> {
-        self.with_asset(|asset| Ok(PyLanguageGraphAsset::new(self.lang_graph.clone(), asset.lg_asset)))
+    fn lg_asset(&self, py: Python<'_>) -> PyResult<Py<PyLanguageGraphAsset>> {
+        let lg_id = self.with_asset(|asset| Ok(asset.lg_asset))?;
+        let owner = self.lang_graph.clone();
+        let caches = self.lang_caches.clone();
+        cached_handle(&self.lang_caches.assets, py, lg_id, move || PyLanguageGraphAsset::new(owner, lg_id, caches))
     }
 
     #[getter]
@@ -155,6 +225,24 @@ impl PyModelAsset {
         })
     }
 
+    /// Plain mutable attribute in the Python original
+    /// (`self.extras: dict = {}`, freely reassignable) - confirmed
+    /// load-bearing by `tests/test_model.py::
+    /// test_model_save_and_load_model_from_scratch` (`asset1.extras =
+    /// {...}`). Live-only, no tombstone fallback - same as every other
+    /// mutating method on this type (nothing requires mutating a removed
+    /// asset).
+    #[setter]
+    fn set_extras(&self, value: &Bound<'_, PyAny>) -> PyResult<()> {
+        let parsed: serde_json::Value =
+            pythonize::depythonize(value).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let extras = parsed.as_object().cloned().unwrap_or_default();
+        let mut model = self.owner.borrow_mut();
+        let asset = model.assets.get_mut(&self.id).ok_or_else(|| self.not_found())?;
+        asset.extras = extras;
+        Ok(())
+    }
+
     /// `dict[str, set[ModelAsset]]`, matching the Python `@property
     /// associated_assets`. Rebuilt fresh per access, not cached - same
     /// convention as every other mapping-shaped attribute in this
@@ -169,12 +257,7 @@ impl PyModelAsset {
             for (fieldname, ids) in &asset.associated_assets {
                 let set = PySet::empty(py)?;
                 for &other_id in ids {
-                    set.add(PyModelAsset::new(
-                        self.owner.clone(),
-                        other_id,
-                        self.lang_graph.clone(),
-                        self.tombstones.clone(),
-                    ))?;
+                    set.add(self.asset_handle(py, other_id)?)?;
                 }
                 dict.set_item(fieldname, set)?;
             }
@@ -182,13 +265,13 @@ impl PyModelAsset {
         })
     }
 
-    fn associations_with(&self, other: &PyModelAsset) -> PyResult<Vec<maltoolbox_language_py::PyLanguageGraphAssociation>> {
+    fn associations_with(&self, py: Python<'_>, other: &PyModelAsset) -> PyResult<Vec<Py<maltoolbox_language_py::PyLanguageGraphAssociation>>> {
         let model = self.owner.borrow();
         let assocs = model.associations_with(self.id, other.id);
-        Ok(assocs
+        assocs
             .into_iter()
-            .map(|a| maltoolbox_language_py::PyLanguageGraphAssociation::new(self.lang_graph.clone(), a))
-            .collect())
+            .map(|a| Py::new(py, maltoolbox_language_py::PyLanguageGraphAssociation::new(self.lang_graph.clone(), a, self.lang_caches.clone())))
+            .collect()
     }
 
     fn has_association_with(&self, other: &PyModelAsset, assoc_name: &str) -> bool {
@@ -224,6 +307,20 @@ impl PyModelAsset {
         self._to_dict(py)
     }
 
+    /// Matches the Python original's `ModelAsset._to_dict()` exactly:
+    /// returns `{self.id: {name, type, ...}}` - a single-key dict keyed
+    /// by this asset's own id, *not* just the inner field dict (that's
+    /// what `Model::to_dict()` does per-asset internally via
+    /// `contents['assets'].update(asset._to_dict())` in the original).
+    /// The core's own `ModelAsset::to_dict()` deliberately returns the
+    /// unwrapped inner dict (by design - `Model::to_dict` wraps it
+    /// per-asset itself, see that method's doc comment), so this
+    /// id-wrapping step belongs here, not in the core. Caught by
+    /// `tests/test_model.py::test_model_asset_to_dict` calling
+    /// `asset._to_dict()` standalone - Phase 2's own oracle diff never
+    /// caught this because it only ever compared the *whole model's*
+    /// `to_dict()`, which doesn't go through each asset handle's own
+    /// `_to_dict()` method at all.
     fn _to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         // `associated_assets` needs id->name resolution against the
         // live model, same as the core crate's own `Model::to_dict` -
@@ -250,7 +347,16 @@ impl PyModelAsset {
             let asset = tombstones.get(&self.id).ok_or_else(|| self.not_found())?;
             asset.to_dict()
         };
-        pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+        // Built as a real `PyDict` with an *integer* key, not via
+        // `pythonize` on a `serde_json::Map` - JSON objects only support
+        // string keys, which would silently turn `self.id` into `"0"`
+        // instead of `0` and break `asset._to_dict()`'s id-keyed contract.
+        let inner = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let inner = inner.cast::<PyDict>()?;
+        fix_associated_assets_int_keys(py, inner)?;
+        let wrapped = PyDict::new(py);
+        wrapped.set_item(self.id, inner)?;
+        Ok(wrapped.into_any())
     }
 
     fn __repr__(&self) -> PyResult<String> {

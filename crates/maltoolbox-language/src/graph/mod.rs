@@ -17,6 +17,7 @@ pub mod step_expr;
 
 use std::collections::{HashMap, HashSet};
 
+use indexmap::IndexMap;
 use serde_json::{json, Value};
 use slotmap::SlotMap;
 
@@ -122,11 +123,15 @@ impl LanguageGraph {
     }
 
     /// Own + inherited associations (`LanguageGraphAsset.associations`).
+    /// `IndexMap` to preserve insertion order from `own_associations`
+    /// (Phase 4 decision 7) - this feeds step-expression association
+    /// resolution (`step_expr.rs`) and is exposed to Python callers as
+    /// ordered dict-like iteration.
     pub fn associations(
         &self,
         asset: AssetId,
-    ) -> HashMap<String, std::rc::Rc<LanguageGraphAssociation>> {
-        let mut result: HashMap<String, std::rc::Rc<LanguageGraphAssociation>> = HashMap::new();
+    ) -> IndexMap<String, std::rc::Rc<LanguageGraphAssociation>> {
+        let mut result: IndexMap<String, std::rc::Rc<LanguageGraphAssociation>> = IndexMap::new();
         if let Some(super_asset) = self.asset(asset).own_super_asset {
             result.extend(self.associations(super_asset));
         }
@@ -140,8 +145,8 @@ impl LanguageGraph {
     pub fn variables(
         &self,
         asset: AssetId,
-    ) -> HashMap<String, (AssetId, Option<ExpressionsChain>)> {
-        let mut result: HashMap<String, (AssetId, Option<ExpressionsChain>)> = HashMap::new();
+    ) -> IndexMap<String, (AssetId, Option<ExpressionsChain>)> {
+        let mut result: IndexMap<String, (AssetId, Option<ExpressionsChain>)> = IndexMap::new();
         if let Some(super_asset) = self.asset(asset).own_super_asset {
             result.extend(self.variables(super_asset));
         }
@@ -157,7 +162,7 @@ impl LanguageGraph {
         &self,
         asset: AssetId,
         asset_type: AssetId,
-    ) -> HashMap<String, std::rc::Rc<LanguageGraphAssociation>> {
+    ) -> IndexMap<String, std::rc::Rc<LanguageGraphAssociation>> {
         let target_assocs: Vec<_> = self.associations(asset_type).into_values().collect();
         self.associations(asset)
             .into_iter()

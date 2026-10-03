@@ -24,7 +24,6 @@ use maltoolbox_attackgraph::AttackGraph;
 
 use crate::detector::PyDetector;
 use crate::graph::PyAttackGraph;
-use crate::node::PyAttackGraphNode;
 
 pub struct DetectorSnapshot {
     pub label: String,
@@ -64,15 +63,17 @@ pub fn detector_snapshots_for(graph: &AttackGraph, keys: &[AttackGraphNodeId]) -
 /// Builds a real `PyDetector` from a snapshot - safe to call with no
 /// outstanding `AttackGraph` borrow.
 pub fn build_py_detector(py: Python<'_>, owner_py: &Py<PyAttackGraph>, snap: &DetectorSnapshot) -> PyResult<Py<PyDetector>> {
-    let node = PyAttackGraphNode::new(owner_py.clone_ref(py), snap.node_id);
+    let graph = owner_py.borrow(py);
+    let node = graph.node_handle(owner_py, py, snap.node_id)?;
     let context_dict = PyDict::new(py);
     for (fieldname, ids) in &snap.potential_context {
         let set = PySet::empty(py)?;
         for &id in ids {
-            set.add(PyAttackGraphNode::new(owner_py.clone_ref(py), id))?;
+            set.add(graph.node_handle(owner_py, py, id)?)?;
         }
         context_dict.set_item(fieldname, set)?;
     }
+    drop(graph);
     Py::new(
         py,
         PyDetector::new(

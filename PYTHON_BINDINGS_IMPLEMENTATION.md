@@ -85,26 +85,45 @@ per layer.
   only matters if some future free-threaded-Python build moved an
   instance across threads, which nothing here does. Confirmed necessary
   by an actual compiler error during Phase 0 (see Status).
-- "Child" objects (`ModelAsset`, `AttackGraphNode`) are **handles**,
-  not copies and not cached: `PyModelAsset { owner: Rc<RefCell<Model>>,
-  id: i64 }`, `PyAttackGraphNode { owner: Rc<RefCell<AttackGraph>>, id:
+- **Superseded by Phase 4 decision 1 - left here for history, see Status
+  for the correction.** "Child" objects (`ModelAsset`, `AttackGraphNode`)
+  were originally designed as **handles**, not copies and not cached:
+  `PyModelAsset { owner: Rc<RefCell<Model>>, id: i64 }`,
+  `PyAttackGraphNode { owner: Rc<RefCell<AttackGraph>>, id:
   AttackGraphNodeId }`. Every method borrows `owner` transiently and
   looks the item up by id. Constructing a fresh handle is just an `Rc`
-  clone - cheap, so **no handle cache is needed for mutation
-  visibility** (two handles for the same id already see each other's
-  mutations, since they deref the same `RefCell`).
-- What a handle cache *would* have bought - and the cheaper fix we're
-  using instead - is `dict`/`set` keying. CPython's default `__eq__`/
+  clone - cheap, so the original plan was that **no handle cache is
+  needed for mutation visibility** (two handles for the same id already
+  see each other's mutations, since they deref the same `RefCell`).
+  Phase 4 found this incomplete: `tests/attackgraph/
+  test_attackgraph.py::test_attackgraph_deepcopy` asserts
+  `id(same_node) == id(node)` across two *separate* attribute accesses
+  (not just post-deepcopy) and `id(original_node.model_asset) ==
+  id(node.model_asset)` - real, existing, pre-Phase-4 test assertions
+  that depend on repeat access to the same id returning the identical
+  Python object, which an always-fresh handle can never satisfy. See
+  Phase 4 decision 1 for the fix (a per-owner handle cache after all,
+  applied retroactively to every handle type built so far).
+- What a handle cache *would* have bought - and the cheaper fix originally
+  used instead - is `dict`/`set` keying. CPython's default `__eq__`/
   `__hash__` for a type with neither overridden is identity-based, so
   two freshly-built handles for the same logical node would otherwise
   compare unequal. Confirmed via mal-simulator that this matters
   (`dict[AttackGraphNode, float]`). Fix: implement `__richcmp__`/
   `__hash__` on `PyModelAsset`/`PyAttackGraphNode` keyed on `(owner
   pointer identity via Rc::as_ptr, stable id)`, not on Python object
-  identity. No cache required.
-  - Known, accepted gap: `node_a is node_b` for two separately-obtained
+  identity. This remains correct and in place - the Phase 4 cache is
+  additive on top of it (a cache hit returns the same object without
+  needing `__richcmp__`/`__hash__` to run at all; a cache miss still
+  needs them for the freshly-built handle to compare correctly against
+  anything already in a `set`/`dict`).
+  - ~~Known, accepted gap: `node_a is node_b` for two separately-obtained
     handles to the same logical node is `False` here, vs. always `True`
-    in pure Python (one live object graph there). Checked: neither
+    in pure Python (one live object graph there).~~ **Corrected by Phase
+    4 decision 1**: this gap turned out not to be accepted after all -
+    the grep behind this claim missed `test_attackgraph_deepcopy`'s
+    `id()`-based assertions (it doesn't contain the word "is", so a
+    grep for `is`-based comparison didn't surface it). Checked: neither
     mal-toolbox's own test suite nor mal-simulator's `main` branch do
     any `is`-based identity comparison on these objects (grepped both,
     only found unrelated `is None`/`is not None`/`isinstance`). Safe to
@@ -171,13 +190,25 @@ unpickle round-trip. `PORTING_NOTES.md` §1 excluding pickle *tests*
 from the pure-Rust port doesn't carry over here - a real downstream
 consumer pickles these objects, so the compat layer must support it.
 
-Plan (not yet implemented): `__getstate__`/`__setstate__` on each
-compat class, implemented in terms of the already-correct
-`to_dict`/`from_dict`, bundling whatever's needed to reconstruct
-`lang_graph` standalone (likely the compiled langspec JSON, so a
-restored object doesn't need the original `.mal`/`.mar` file on disk).
-Needs its own conformance test mirroring
-`test_simulator_picklable` before trusting it.
+Plan (as originally written, before implementation): `__getstate__`/
+`__setstate__` on each compat class, implemented in terms of the
+already-correct `to_dict`/`from_dict`, bundling whatever's needed to
+reconstruct `lang_graph` standalone. **Superseded by what was actually
+built**: every type ended up using pyo3's `__reduce__` protocol instead
+(functionally equivalent - still built on `to_dict`/`from_dict`, still
+needs no original `.mal`/`.mar` file on disk - just the more
+pyo3-idiomatic mechanism for types without a usable `#[new]`). Container
+types (`LanguageGraph`/`Model`/`AttackGraph`) pickle via `__reduce__` +
+a `_from_pickle_state` staticmethod target; handle types
+(`AttackGraphNode`, and per Phase 4 decision 9,
+`LanguageGraphAsset`/`LanguageGraphAttackStep`) pickle via `__reduce__`
+delegating to an owner + id/name, resolved by a module-level
+`#[pyfunction]` rebuild target. Done and tested - see the "Phase N
+status" write-ups below for each type, and decision 9 above for a
+pickling gotcha found late (temporary-owner reconstruction order
+mismatch). `test_simulator_picklable`-equivalent conformance is covered
+by this repo's own `test_pickle_*`/`test_*_pickle` tests per type, not a
+literal port of that mal-simulator test.
 
 ### Findings from mal-simulator (ground truth, not assumption)
 
@@ -285,11 +316,14 @@ pipeline - never to the Python API surface:
   cache), `__richcmp__`/`__hash__` by `(owner ptr, id)`. This is where
   the pickling design actually gets implemented and tested (`AttackGraph`
   is what mal-simulator pickles). `AttackGraphException` family.
-- [ ] **Phase 4 - cut over.** Replace `maltoolbox/{model,language/
+- [x] **Phase 4 - cut over.** Replace `maltoolbox/{model,language/
   languagegraph,attackgraph/{attackgraph,node}}.py` with thin
   re-export shims pointing at `maltoolbox._native`. Keep shims (not an
   immediate hard delete) until Phase 6's gate passes, then delete the
-  superseded pure-Python logic outright.
+  superseded pure-Python logic outright. **Done** (4a: handle caching/
+  model-effects/tombstone retrofit; 4b: the actual shim cutover, plus
+  decisions 8-10 found along the way). Full suite green: 99 passed, 3
+  deselected, 0 failed; `ruff`/`mypy` clean.
 - [ ] **Phase 5 - packaging.** `maturin` build backend, `python-source`
   wiring so the extension lands inside `maltoolbox/` properly (see
   "Packaging" above), `cibuildwheel` CI config, sdist-requires-Rust
@@ -670,13 +704,591 @@ from decisions already made in Phases 1-2.
    (delete, since the Rust-side logic they exercise is independently
    tested already) when that phase starts.
 
+## Phase 4 decisions (settled before implementation started)
+
+Asked the user before writing code, same as Phases 1-3. One of these
+(decision 1) is a genuine correction to an architecture call made back
+in Phase 1 and relied on through Phase 3 - not a new tradeoff, a bug in
+earlier due diligence that real existing tests exposed.
+
+1. **Per-owner handle cache: `node_a is node_b` must be `True` for two
+   separately-obtained handles to the same logical object within the
+   same owner - the "no cache needed" call from Phase 1's Architecture
+   section was wrong, not just incomplete.** Found while researching
+   Phase 4 (not assumed, not reported by the user from memory -
+   confirmed by directly reading the test): `tests/attackgraph/
+   test_attackgraph.py::test_attackgraph_deepcopy` asserts
+   `id(same_node) == id(node)` where both are obtained via two
+   *separate* `attack_graph.nodes[node.id]` lookups (not a deepcopy
+   artifact - this would fail even with no `__deepcopy__` call anywhere
+   in the test), and `id(original_node.model_asset) ==
+   id(node.model_asset)` similarly for `ModelAsset`. The user then
+   confirmed this independently and explained the real-world
+   consequence: mal-simulator relies on node identity (not just
+   `__eq__`/`__hash__`) for correctness, so this is not a test
+   artifact to work around - it's a real requirement. Phase 1's
+   "known, accepted gap" writeup was based on a grep for `is`-based
+   comparisons, which missed this because the assertions use `id(...)
+   ==`, not the `is` keyword - a methodology gap in that earlier
+   check, not a change in the facts.
+   **Decision: implement a per-owner handle cache** -
+   `HashMap<id, Py<Handle>>` stored on each container (`PyLanguageGraph`,
+   `PyModel`, `PyAttackGraph`), so repeated lookups for the same id
+   within the same owner return the *identical* Python object, while
+   two different owner instances (even structurally-identical ones,
+   e.g. a deepcopy) never share identity - matching the "same id, same
+   owner -> same object; different owner -> always a different object"
+   behavior the user asked for exactly. This is implemented as a cache
+   *in addition to*, not instead of, the existing `__richcmp__`/
+   `__hash__` scheme (owner-ptr+id keyed) from Phase 1 - the hash/eq
+   impl still matters for a cache miss (freshly-built handle comparing
+   against something already in a `set`/`dict`) and for cross-owner
+   comparisons (which the cache deliberately doesn't unify). Confirmed
+   this also matches Python's actual memory behavior more closely than
+   the no-cache design did, not just test expectations: in pure Python,
+   every node already lives forever in `AttackGraph.nodes`'s own dict,
+   so a cache that keeps every *accessed* node alive for the owner's
+   lifetime isn't a new memory-retention behavior, just catching up to
+   what was already true.
+   **Decision: apply uniformly to all four handle types now**
+   (`PyLanguageGraphAsset`, `PyLanguageGraphAttackStep` - Phase 1;
+   `PyModelAsset` - Phase 2; `PyAttackGraphNode` - Phase 3), not just
+   the two (`PyModelAsset`/`PyAttackGraphNode`) with a confirmed
+   reproducing test. Rationale: the only reason Phase 1's two types
+   don't have a confirmed-failing test today is that Phase 1's own test
+   suite never happened to exercise this pattern for them - the same
+   gap-in-the-original-grep logic that missed `test_attackgraph_deepcopy`
+   means absence of a known failure isn't evidence of absence of the
+   problem. Leaving two of four handle types on a different identity
+   model than the other two would also be a real, confusing
+   inconsistency in the binding layer itself.
+   **Implementation shape**: each container gains a
+   `handle_cache: Rc<RefCell<HashMap<IdType, Py<HandleType>>>>` (or
+   equivalent per-type storage - `PyLanguageGraph` needs two, one for
+   assets keyed by `AssetId` and one for attack steps keyed by
+   `AttackStepId`). Every method that currently constructs a fresh
+   handle (getters, `get_node_by_full_name`, `add_asset`, iteration via
+   the lazy `.nodes` view, etc.) changes to "look up in the cache first,
+   construct-and-insert on a miss" instead of "always construct". On
+   removal (`Model.remove_asset`, `AttackGraph.remove_node`/partial
+   regeneration's internal removals), the cache entry is **not**
+   evicted outright - see decision 4 below for why keeping it (pointing
+   at a tombstoned/removed-but-still-readable state) is actually the
+   right behavior, not a leak: a Python caller already holding that
+   exact object reference keeps seeing a stable, readable, if
+   post-removal, object - matching Python's real behavior of "removed
+   from the dict, but the object itself lives on unchanged" even more
+   closely than before.
+2. **The 8 internal-function tests in `test_partial_regeneration.py`
+   get deleted**, not kept via a permanently-uncut-over
+   `partially_generate.py`. Confirmed scope by reading the file: exactly
+   8 of 16 tests (`test_switch_fieldname_unknown_fieldname_raises`
+   onward) call `assoc_affected_expr_chain`/`assoc_left_assets`/
+   `correct_node_children_on_modified_assoc`/`nodes_to_be_removed`/
+   `switch_fieldname` directly with hand-built `ExpressionsChain`/
+   detached `AttackGraphNode` objects; the other 8 (`test_partial_regeneration`
+   through `test_partial_regeneration_shared_assoc_sibling`) only exercise
+   the public `AttackGraph.partially_regenerate_graph` method and are
+   unaffected by this decision either way. Equivalent coverage already
+   exists independently in `crates/maltoolbox-attackgraph/tests/
+   test_partial_regeneration.rs` (9 of its own `#[test]`s). Rejected
+   keeping `partially_generate.py` around forever just to keep these 8
+   tests passing unmodified - would mean carrying dead pure-Python logic
+   that duplicates (and could silently drift from) the Rust
+   implementation, for a module nothing else calls once
+   `AttackGraph.partially_regenerate_graph` is native-backed.
+3. **Build the full `additive_model_effects`/`subtractive_model_effects`
+   wrapper hierarchy now, not deferred further.**
+   `tests/attackgraph/test_attackgraph.py::test_create_dynamic_ag`
+   exercises this in real structural depth (`.base[i].field_name`,
+   `.targets[i].assoc_traversal[j].asset_filter.name`,
+   `.targets[i].assoc_op`, etc.) against a real DynaMAL language
+   (`tests/testdata/wiperLang.mal`) - confirmed this needs genuine
+   `PyLanguageGraphModelEffect`/`PyAssocTraversal`/
+   `PyGlobAssocTraversal`/`PyAssocSet`/`PyDynTarget` wrapper classes
+   (mirroring `maltoolbox/language/language_graph_model_effect.py`'s
+   `LanguageGraphModelEffect`/`AssocTraversal`/`GlobAssocTraversal`/
+   `AssocSet`/`DynTarget`/`ModelEffectType`), not a quick shim. Rejected
+   skipping/adjusting the test and deferring again - would carve out an
+   explicit, known exception to "the existing test suite keeps passing"
+   right at the one phase where that stops being optional, for a
+   DynaMAL-relevant feature a downstream consumer could plausibly use.
+4. **Build the `AttackGraphNode` post-removal tombstone proactively
+   now**, mirroring Phase 2's `AssetSnapshot` mechanism, even though no
+   test reproduces the gap today (`test_attackgraph_remove_node` only
+   does membership checks, never reads a removed node's attributes).
+   Decision 1's per-owner cache raises the real-world odds of this
+   mattering: previously, every node access was a disposable fresh
+   handle, so "does a removed node's handle stay readable" rarely came
+   up in practice; now that the same Python object is handed out
+   repeatedly and plausibly held onto externally (e.g. a `compromised_nodes`
+   set surviving a later partial regeneration that removes that node),
+   hitting this gap for real is materially more likely than it was
+   before this phase's other decisions.
+5. **The MAL compiler itself (`maltoolbox/language/compiler/`,
+   `mal_analyzer.py`) stays pure Python permanently - not asked as a
+   question, judged a clear win, same category as Phase 2 decision 4.**
+   `tests/language/test_compiler.py` constructs and calls `MalCompiler()`
+   directly (not via `LanguageGraph.from_mal_spec`) and asserts on raw
+   tree-sitter AST shape (`PARSER.parse(...)`, `node.type`, `node.children`)
+   - binding a tree-sitter AST object through PyO3 would be a large,
+   separate project serving no goal this effort actually has (the Goal
+   section's "every one of those classes" refers to the five originally-
+   named classes - `LanguageGraph`/`Model`/`ModelAsset`/`AttackGraph`/
+   `AttackGraphNode` - not the compiler). `LanguageGraph.from_mal_spec`/
+   `from_mar_archive` already route through the Rust core's own,
+   separate compiler implementation and already have full exception
+   parity (Phase 1 decision 3) - the two compilers (pure-Python
+   `MalCompiler`, used only when called directly; Rust, used only via
+   `LanguageGraph`) coexisting permanently, never sharing an
+   implementation, is the correct end state, not a temporary gap.
+6. **Added mid-Phase-4b, found by real test failure, not anticipated by
+   decision 5 above: `maltoolbox/language/compiler/exceptions.py` (and
+   `mal_analyzer.py`'s `malAnalyzerException`) become thin re-export
+   shims pointing at `_native.language.compiler.exceptions`/
+   `_native.language.compiler.mal_analyzer`, even though the compiler's
+   actual parsing/analysis *logic* stays pure Python per decision 5.**
+   Found via `tests/language/test_detectors.py::test_wrong_labels`:
+   it imports `MalCompilerError` from the pure-Python
+   `maltoolbox.language.compiler.exceptions` module and wraps a call to
+   `LanguageGraph.from_mal_spec(...)` (native, post-cutover) in
+   `pytest.raises(MalCompilerError)` - but the native path raises
+   `_native`'s own `MalCompilerError`, a genuinely different Python
+   class object despite Phase 1 having cosmetically set its `__module__`
+   to the same string for pickling purposes (see Phase 1's exceptions.rs
+   notes) - `pytest.raises` doesn't catch it, since Python exception
+   matching is real `isinstance`, not string/module-name comparison.
+   Decision 5 only considered the standalone `MalCompiler()` call path
+   (`test_compiler.py`, which doesn't care about the specific exception
+   class), not this combination. **Resolved by shimming just the
+   exception *classes*** (not the compiler itself) to the already-
+   registered native submodules - both `MalCompiler()` (now raising via
+   the shimmed-to-native classes) and `LanguageGraph.from_mal_spec` end
+   up raising/catching the identical class, while the two compilers'
+   actual implementations remain fully separate and unshared, preserving
+   decision 5's core point.
+7. **Deterministic, Python-matching node generation order: `HashMap` ->
+   order-preserving map for `LanguageGraphAsset.attack_steps`/
+   `own_associations`/`own_variables` (`crates/maltoolbox-language/src/graph/asset.rs`)
+   - not asked as a question, judged a clear win given existing project
+   precedent.** Found via real test failures, not anticipated: `tests/
+   attackgraph/test_attackgraph.py::test_attackgraph_according_to_corelang`
+   asserts a *specific* node (`attack_graph.nodes[0]`) has a specific set
+   of children by name - this only holds if fresh generation assigns the
+   same node to id `0` Python does, which requires asset attack-steps to
+   be iterated in MAL-declaration order during generation
+   (`crates/maltoolbox-attackgraph/src/generate.rs::create_nodes_for`
+   does `model.lang_graph.asset(..).attack_steps.values().copied()
+   .collect()` - a `HashMap`, so this iterates in random, per-process
+   hash order, not declaration order). `tests_create_ag_step_lists`
+   (order mismatch between `created_ag.nodes.values()`-filtered-by-type
+   and `created_ag.defense_steps`) is the same root cause manifesting a
+   second way. This is the same gap Phase 3 status already logged
+   ("fresh `generate_graph` node-id numbering isn't guaranteed to match
+   Python's... no observable effect on correctness") - that assessment
+   was wrong for the cutover scenario specifically, the same way earlier
+   "no usage found" claims (identity comparisons, `LanguageGraphAttackStep
+   .detectors`) turned out wrong once real tests ran against the native
+   bindings instead of being reasoned about from a grep.
+   **Decision: switch the three listed `HashMap` fields to an
+   order-preserving map** (`indexmap::IndexMap` - already transitively
+   present in `Cargo.lock`, most likely pulled in by `serde_json`'s
+   `preserve_order` feature the workspace already enabled for the exact
+   same reason: `Cargo.toml` already states `serde_json = { features =
+   ["preserve_order"] }`, specifically "to match Python's
+   dict-order-dependent wire format" per `PORTING_NOTES.md`'s own
+   "JSON key order" row). This isn't a new tradeoff being introduced -
+   it's extending a principle this project already committed to, to a
+   place that turned out to need it too. `IndexMap`'s API is a drop-in
+   `.values()`/`.keys()`/indexing replacement for `HashMap`, so the
+   blast radius through the rest of the core crate should be small -
+   confirm this by actually making the change and running the full
+   workspace test suite, not assumed.
+
+8. **Detached `AttackGraphNode` construction + `AttackGraph(None)` + a `.nodes` setter** (found and decided during Phase 4b's resumption, not asked up front - confirmed real via the pure-Python originals, not a test-rewrite situation). `git show HEAD:maltoolbox/attackgraph/{attackgraph,node}.py` confirms three `tests/patternfinder/test_attackgraph_patterns.py` tests plus `test_attackgraph_generate_graph` rely on real historical behavior: `AttackGraph.nodes` was a plain, freely settable `dict` attribute, and `AttackGraphNode.__init__(node_id, lg_attack_step, model_asset=None, ttc_dist=None, existence_status=None, full_name=None)` could always be called directly to build a fully standalone node (mutable `.children`/`.parents`, no owning graph) - needed so `patternfinder`'s algorithm can be tested against hand-built tiny graphs without a real `Model`/`LanguageGraph`. Implemented by giving `PyAttackGraphNode` (`python/maltoolbox-attackgraph-py/src/node.rs`) a `NodeRepr` enum - `Owned { owner_py, id }` (the existing, unchanged cached-handle behavior) or `Detached(DetachedNode)` (a self-contained struct holding `children`/`parents` as plain mutable `Py<PySet>` fields). Scope deliberately narrow: `Detached` only implements what `maltoolbox/patternfinder/attackgraph_patterns.py` actually reads - `__init__`, `.id`, `.name`, `.children`/`.parents` (get+set), `__repr__`, and default identity-based `__hash__`/`__richcmp__` (matching the original Python class's lack of custom equality); everything else (`to_dict`, pickling, model-effects getters, `Detector` construction) returns `NotImplementedError` for a `Detached` node. `PyAttackGraph::new` now accepts `lang_graph: Option<...>`; `None` builds a minimal placeholder `LanguageGraph` internally (via the same `generate_graph(json!({}))` code path a genuinely empty MAL language would use) rather than threading `Option` through every other field/method. `PyAttackGraph` gained `nodes_override: Rc<RefCell<Option<Py<PyDict>>>>`: when set (via the new `.nodes` setter), the `.nodes` getter returns it directly instead of constructing the usual lazy `PyAttackGraphNodesView`; `regenerate_graph` resets it to `None`, so `attack_graph.nodes = {}` followed by `regenerate_graph()` correctly reverts to live, freshly-generated nodes afterward.
+
+9. **`LanguageGraphAsset`/`LanguageGraphAttackStep` pickling via a temporary owner, not stored identity** (found and decided during Phase 4b's resumption). `test_pickle_languagegraph_asset`/`test_pickle_languagegraph_attack_step` only assert `to_dict()` equality after a round-trip, not object identity - unlike `AttackGraphNode`, these two handle types don't need the heavier "store a real `owner_py: Py<Self>` field" treatment (Phase 3 decision 3). Both already carry `owner: Rc<RefCell<LanguageGraph>>` + `caches: SharedLangGraphCaches` (both `pub`, same crate as `PyLanguageGraph`), so `__reduce__` constructs a *fresh, temporary* `PyLanguageGraph { inner: self.owner.clone(), caches: self.caches.clone() }` (the same underlying `Rc`, not a copy) wrapped in `Py::new` purely for the pickle call, and delegates to it - pickle recursively pickles that temporary owner via `PyLanguageGraph`'s own existing `__reduce__`, no new graph-serialization logic needed. The id itself round-trips through slotmap's `KeyData::as_ffi()`/`from_ffi()`. **Caveat discovered during verification, not anticipated when this decision was first written down:** `PyLanguageGraph`'s own `__reduce__` doesn't just re-wrap the same live `Rc` on unpickling - it serializes to `_to_dict()` and reconstructs an entirely new `LanguageGraph` via `language_graph_from_dict` (`crates/maltoolbox-language/src/graph/file.rs`), a *different* code path from the normal `generate_graph(lang_spec)` build. For `LanguageGraphAsset` this happened to not matter (asset insertion order matches between the two paths), but for `LanguageGraphAttackStep` it did not: `language_graph_from_dict` builds attack steps in a different global order (own-then-inherited across all assets) than `generate_graph` (own-and-inherited per asset, one asset at a time), so a step's raw slotmap id from the original graph can land on a *different* step in the reconstructed one - same logical graph, different internal ids. Fixed by pickling attack steps by `(asset_name, step_name)` instead of the raw ffi id (assets keep using the ffi id, since their round-trip is unaffected). If a similar pickling need ever arises for `own_associations`/`own_variables`, check this ordering divergence first rather than assuming the ffi-id approach is safe by default.
+
+10. **`LanguageGraphAttackStep.detectors` exposure via a new `python/maltoolbox-language-py/src/detector.rs`** (found and decided during Phase 4b's resumption). `tests/language/test_detectors.py::test_only_tpr`/`test_only_fpr` need `.detectors: dict[str, LanguageGraphDetector]` on attack steps; the pure-Python original's exact dataclass shapes were recovered via `git show HEAD~30:maltoolbox/language/language_graph_detector.py` (deleted this phase): `LanguageGraphDetector { name, context: dict[str, LanguageGraphContextItem], type, tprate=1.0, fprate=0.0 }` / `LanguageGraphContextItem { label, asset_type: LanguageGraphAsset, attack_step_name, expr: ExpressionsChain | None }`. The Rust core already had everything needed (`crates/maltoolbox-language/src/graph/detector.rs`'s `LanguageGraphDetector`/`LanguageGraphContextItem`, populated on `LanguageGraphAttackStep.detectors`) - just needed a pyo3 wrapper. New `PyLanguageGraphDetector`/`PyLanguageGraphContextItem` mirror `model_effect.rs`'s established pattern exactly (Phase 4 decision 3's scope relaxation applies identically here: plain, freely-constructible value snapshots, no identity caching/`__richcmp__`/`__hash__`), with `asset_type` resolving to a real cached `PyLanguageGraphAsset` handle the same way `model_effect.rs`'s `cached_asset` does. Wired in as a new `#[getter] fn detectors` on `PyLanguageGraphAttackStep` (`attack_step.rs`).
+
 ## Status
 
-**Current phase: Phase 0, 1, 2, and 3 all done. Next: Phase 4 (cut
-over).** See "Phase 3 status" below for the full writeup; a handful of
-logged (not silently skipped) gaps remain, none of which block Phase 3
-or the mal-simulator acceptance surface - see that section's "Open
-gaps".
+**Current phase: Phase 0, 1, 2, 3, and 4 (4a + 4b) all done** - the
+public `maltoolbox` package is now fully native-backed (`maltoolbox/
+{model,language/languagegraph,attackgraph/{attackgraph,node}}.py` and
+the exception/compiler-exception modules are thin re-export shims over
+`maltoolbox._native`), with the full verification bar green (99 passed,
+3 deselected, 0 failed; `ruff`/`mypy` clean). Next: Phase 5 (packaging)
+- paused per the user's standing instruction to check in before
+proceeding past Phase 4. See "Phase 4a status" and "Phase 4b status"
+below for the full writeups.
+
+### Phase 4a status: handle caching retrofit, model effects wrapper, node tombstone (done)
+
+Implements Phase 4 decisions 1, 3, and 4 - strengthens the native
+binding crates themselves; does **not** touch any `maltoolbox/*.py` file
+or wire the native module into the public package (that's Phase 4b).
+
+**Decision 1 (per-owner handle cache), implementation shape:**
+- New shared infra in `python/maltoolbox-language-py/src/handle.rs`:
+  `HandleCache<K, V> = Rc<RefCell<HashMap<K, Py<V>>>>`,
+  `new_handle_cache()`, and `cached_handle(cache, py, key, build)` -
+  looks up `key`, returns the cached `Py<V>` via `clone_ref` on a hit,
+  else builds fresh via `build()` (only called on a miss), wraps it,
+  inserts it, and returns it. Also `LangGraphCaches` (bundles the
+  `AssetId`/`AttackStepId` caches a `LanguageGraph` needs into one `Rc`,
+  so every type that needs to build asset/step handles - including
+  cross-crate consumers - threads one field, not two).
+- **All four handle types retrofitted**, not just the two
+  (`PyModelAsset`/`PyAttackGraphNode`) with a confirmed failing test:
+  `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep` gained a
+  `caches: SharedLangGraphCaches` field; `PyModelAsset` gained
+  `handle_cache` (its own type's cache) plus `lang_caches` (so `.lg_asset`
+  resolves through the same cache as every other path to that asset);
+  `PyAttackGraphNode` didn't need a new field at all - it already held
+  `owner_py: Py<PyAttackGraph>` (Phase 3 decision 3), so `PyAttackGraph`
+  just gained a `node_cache` field and a `node_handle(&self, owner_py,
+  py, id)` method every node-producing call site now goes through.
+  `PyLanguageGraphAssociation`/`PyLanguageGraphAssociationField` (not one
+  of the four cached types) also gained a `caches` field purely so their
+  `.asset`/`.left_field.asset`/etc. getters resolve to the same cached
+  asset handle as every other path - free consistency, not a scope
+  expansion of what's cached.
+- **Every existing handle-constructing call site updated** (getters,
+  `add_asset`/`add_node`, the lazy `.nodes`/`PyAttackGraphNodesView`
+  view, `partially_regenerate_graph`'s returned/created nodes,
+  `Detector.node`/`PyDetector`'s own `#[new]` - now resolves the passed-in
+  node through the cache rather than cloning the handle's own data
+  detached, so `detector.node is the_node` holds) - verified via
+  `grep`+recompilation (the compiler catches any missed site immediately,
+  since `PyModelAsset::new`'s signature grew), not just reasoning about
+  coverage.
+- **id-reuse-after-removal eviction fix** (the concrete correctness
+  hazard flagged in the dispatching prompt, confirmed real, not
+  hypothetical): `Model::add_asset`/`AttackGraph::add_node` both accept
+  an explicit caller-chosen id, and the core happily accepts one that
+  collides with a *previously removed* id (`self.assets.contains_key`/
+  `self.id_to_node.contains_key` correctly report it as free). Without a
+  fix, `asset_handle(id)`/`node_handle(id)` would return the *stale,
+  tombstoned* cached object for the old removed item instead of a fresh
+  handle for the new one at that id - confirmed by direct reproduction
+  before fixing it. Fixed with `PyModel::evict_handle`/
+  `PyAttackGraph::evict_node_handle` (remove the cache entry, called only
+  from `add_asset`/`add_node` right after a successful core-level add,
+  never from removal itself - matching Phase 4 decision 1's explicit
+  "don't evict on removal" guidance literally, since eviction here is
+  about a *new* object legitimately claiming an old id, not about the
+  removed object's own lifecycle).
+- `regenerate_graph` (both the language-graph and attack-graph one)
+  clears its cache(s) entirely - a full rebuild invalidates every old
+  slotmap key regardless, so nothing in the old cache could resolve
+  correctly afterward anyway.
+
+**Decision 3 (model effects wrapper), implementation shape:**
+- New `python/maltoolbox-language-py/src/model_effect.rs`: real
+  (uncached, unhashable - per explicit user scope relaxation for these
+  specific types, confirmed not needed since nothing compares/hashes
+  them) wrapper pyclasses `AssocTraversal`/`GlobAssocTraversal`/
+  `AssocSet`/`DynTarget`/`LanguageGraphModelEffect`, converting the core's
+  existing `maltoolbox_language::graph::model_effect` types (which
+  already had a complete, tested Rust implementation - this was a
+  binding task, not a port). `AssocTraversal.asset_filter` resolves
+  through the real `LangGraphCaches` (Phase 4 decision 1's cache) when
+  present, for consistency with every other path to a
+  `PyLanguageGraphAsset`.
+- `PyAttackGraphNode.additive_model_effects`/`subtractive_model_effects`
+  now return `Some(list[LanguageGraphModelEffect])`/`None` for real
+  instead of raising `NotImplementedError` on the non-empty case.
+- **Verified against the exact, full `test_create_dynamic_ag` scenario**
+  (not a synthetic simplification): loaded `tests/testdata/wiperLang.mal`
+  + `tests/testdata/wiper_model.yml` through the native bindings,
+  reproduced every assertion from the real test line-for-line
+  (`.base[0].field_name == "self"`, `.targets[i].assoc_traversal[j]
+  .asset_filter.name`, the full model-mutation loop adding assets via
+  `get_lg_assoc_field`/`add_associated_assets` and catching the
+  max-cardinality `ValueError`, then `regenerate_graph()`) - passes
+  end to end.
+- **Real pre-existing bug caught and fixed along the way** (not
+  introduced by this phase, not previously caught by any test or oracle
+  diff): the model-mutation loop's cardinality-exceeded path raises
+  `ModelError::TooManyAssetsInField`, whose `#[error(...)]` Display
+  format used `{0:?}` on an `Option<i64>`, producing `"You can have
+  maximum Some(1) assets..."` instead of Python's real `"You can have
+  maximum 1 assets..."` - confirmed via a direct string-equality
+  assertion against the real test's expected message. Fixed by changing
+  the variant to store the already-unwrapped `i64` (the one construction
+  site in `crates/maltoolbox-model/src/model.rs` only ever runs inside an
+  `if let Some(max) = ...`, so the `Option` wrapper was never doing
+  anything except making the Display output wrong) - flagged, narrow,
+  and the one existing test referencing this variant
+  (`matches!(err, ModelError::TooManyAssetsInField(..))`) doesn't
+  inspect the inner value, so unaffected.
+
+**Decision 4 (node tombstone), implementation shape - deliberately
+partial, logged, not silently narrowed:**
+- Core change: `AttackGraph::remove_node` (`crates/maltoolbox-attackgraph/
+  src/graph.rs`) now returns `Result<AttackGraphNode, GraphError>` (the
+  removed node's final state, cloned right before deletion - same
+  capture-point convention as `AssetSnapshot::final_state`) instead of
+  `Result<(), GraphError>`. The one other core call site
+  (`partially_regenerate_graph`'s internal removal loop) already
+  discarded the return value in statement position, so this didn't need
+  updating; the test call site likewise.
+- `PyAttackGraph` gained a `tombstones: Rc<RefCell<HashMap<i64,
+  AttackGraphNode>>>` map, populated by `remove_node` (direct path) and
+  by `partially_regenerate_graph` (side-effect-removal path - snapshots
+  *every* node's full state before the core call, since there's no way
+  to know in advance which ids a side-effect removal will claim, then
+  diffs node-id-sets after the call the same way the existing
+  detector-purge logic already did, to populate tombstones only for ids
+  that actually disappeared).
+- `PyAttackGraphNode` gained `with_node_value` (resolves to `&AttackGraphNode`
+  directly, live-or-tombstoned - mirrors `PyModelAsset::with_asset`
+  exactly) alongside the existing `with_node` (key-based, no tombstone
+  fallback). **Tombstone coverage is deliberately partial**: `name`/
+  `type`/`lg_attack_step`/`causal_mode`/`ttc`/`tags`/
+  `additive_model_effects`/`subtractive_model_effects`/`model_asset`/
+  `existence_status`/`extras`/`info` all go through `with_node_value` and
+  are tombstone-covered. `full_name`/`to_dict`/`__repr__`/`children`/
+  `parents`/`.detectors` do **not** get tombstone fallback - they
+  ultimately call core functions that take a live slotmap key
+  (`full_name_of`/`node_to_dict`/`detector_snapshots_for`) or need to
+  cross-reference *other* (still-live) nodes, and extending those to
+  accept a bare node value instead of a key is a larger core-crate change
+  not attempted this pass. This scope line was a judgment call given no
+  reproducing test exists for *any* of this (proactive work per Phase 4
+  decision 4) - logged here rather than silently narrowed without
+  mention.
+
+**Verified** (matching Phases 1-3's rigor):
+- `cargo build`/`cargo clippy --all-targets` clean on all three
+  `python/` crates and the `maltoolbox-pyo3` umbrella - zero new
+  warnings (one unrelated, pre-existing `redundant_guards` warning in
+  `maltoolbox-language/src/compiler/semantic.rs` remains, same as every
+  prior phase).
+- `cargo build --workspace`/`cargo test --workspace`: still exactly 117
+  tests passing (the `AttackGraph::remove_node` signature change and the
+  `ModelError::TooManyAssetsInField` fix are both additive/non-breaking
+  to every existing core-crate test).
+- `maturin develop --release` builds/installs cleanly; same known
+  wrong-install-location workaround as every prior phase.
+- **Per-owner identity, reproduced directly for all four handle types**:
+  fetched the same logical item two different ways within the same owner
+  (`lg.assets['Application']` twice; `a1.attack_steps[name]` two
+  different ways; `model.assets[id]` and `get_asset_by_name`;
+  `ag.nodes[id]` and `get_node_by_full_name`) and confirmed `is` is now
+  `True` in every case (previously `False` everywhere, by design, before
+  this phase). Confirmed cross-owner non-sharing holds for all four too
+  (a second, independently-constructed `LanguageGraph`/`Model`/
+  `AttackGraph` never shares identity with the first, even for
+  structurally-identical content).
+- Dict/set keying re-verified post-retrofit (set-collapse to length 1)
+  for all four types - confirms the cache didn't disturb
+  `__richcmp__`/`__hash__`, which remain independent mechanisms.
+- **id-reuse-after-removal, reproduced directly**: removed an asset/node
+  at an explicit id, re-added a *different* logical asset/node at the
+  same explicit id, confirmed the new handle is not the stale cached
+  object and has the new object's correct data, and that *further*
+  access to that id now consistently returns the new object.
+- **Tombstone, reproduced directly**: removed a node via `remove_node`,
+  confirmed a previously-held reference's `name`/`tags`/
+  `existence_status` still read correctly afterward (the same scenario
+  `test_model_remove_asset_with_association`'s `ModelAsset` analog
+  exercises, now covered for nodes too, though - as logged above - with
+  narrower getter coverage than the `ModelAsset` tombstone has).
+- **Model effects, reproduced directly**: full `test_create_dynamic_ag`
+  scenario end to end (see Decision 3 above).
+- Oracle diffs re-run post-retrofit: `Model`/`ModelAsset` (2 assets, one
+  association, before and after `remove_asset`) and `AttackGraph`
+  (structural, 3 assets + 1 association, matching Phase 3's own
+  methodology) both still match the untouched pure-Python
+  implementation exactly.
+- Live detector mutation (Phase 3 decision 1) and pickling
+  identity-sharing (Phase 3 decision 4) both re-verified against the
+  rebuilt `.so` - unaffected by this phase's changes, as expected, but
+  confirmed rather than assumed.
+- Full existing pytest suite unaffected - **no `.py` file was touched by
+  this phase** (confirmed via `git status`): `uv run pytest tests -m
+  "not integration"` - 107 passed, 3 deselected, identical to every
+  prior baseline. `uv run ruff check .` - clean.
+
+**Newly discovered, logged, not fixed (out of this phase's assigned
+scope - caching/model-effects/tombstone, not pickling):** pickling an
+`AttackGraph` through a real language-level detector
+(`tests/testdata/detector_lang.mal`) loses the `detectors` key from
+`_to_dict()`'s output for any node that had one - confirmed via direct
+reproduction, with and without first mutating `.detectors`, so it's not
+about the Phase 3 decision 1 live-mutation design, just about
+`AttackGraph::from_dict` (and therefore `_from_pickle_state`, which
+calls it) never reading `node_dict['detectors']` back - which,
+per `PORTING_NOTES.md`'s existing documentation of
+`attack_graph_from_dict`, is actually consistent with the real Python
+original's own behavior (`node_dict['detectors']` is written by
+`to_dict` but never read back by `_from_dict` there either). So this
+isn't a new divergence from Python - it's a gap in Phase 3's own
+pickling *verification*, which used a model with no language-level
+detectors and therefore never exercised this path. Not fixed here since
+it's outside this phase's assigned scope and isn't caused by anything
+this phase changed; flagged for whoever next touches pickling or adds a
+`test_attackgraph_pickle`-style conformance test using a detector-bearing
+language (worth doing before Phase 6, since `tests/attackgraph/
+test_attackgraph.py::test_attackgraph_pickle` is a real *existing*
+pure-Python test Phase 4b's cutover needs to keep passing, though that
+specific test's fixtures don't happen to use a detector-bearing
+language, so it won't itself trip over this).
+
+**Independent re-verification note**: this sub-phase's implementing
+agent was interrupted mid-task by a monthly spend-limit cutoff and its
+first stop notification came back with no structured report, just a
+warning to treat its work as unverified. Rather than discard or re-do
+the work, every claim in this section was independently re-checked by
+reading the actual diffs and re-running real checks against a freshly
+built `.so` (not trusted from the agent's own account) before being
+trusted: per-owner identity for all four handle types plus cross-owner
+non-sharing (reproduced directly in a throwaway script), the exact
+`test_create_dynamic_ag` scenario end to end, the node tombstone's exact
+documented coverage boundary (confirmed `name`/`type`/`model_asset`/
+`extras`/`tags` read correctly post-removal while `full_name`/`to_dict`/
+`children`/`parents`/`detectors` raise `LookupError`, exactly as
+documented above), the `TooManyAssetsInField` Display fix, and the
+newly-discovered pickling/detectors gap just above. All confirmed
+accurate. The agent was later resumed (it had, in fact, continued past
+its first stop and written the detailed sections above itself) and its
+own report corroborates this independent pass.
+
+**Next step:** ~~Phase 4b~~ - **done** - see "Phase 4b status" below.
+
+### Phase 4b status (complete, independently verified)
+
+The intermediate, interrupted status this section replaces is preserved
+in git history for anyone who wants the blow-by-blow of the two
+spend-limit interruptions; this section is the final, from-scratch
+independently-verified writeup, matching every other completed phase's
+rigor (every claim below was re-checked directly by the coordinator -
+rebuilding the extension, running the full suite, reading the actual
+diffs - not taken from an agent's self-report alone).
+
+**Resumption sequence.** Picked up from the intermediate status with two
+things to resolve first: the previously-reported `rustc` ICE, and a
+baseline re-check. Neither held up: `cargo build --workspace`, a direct
+`cargo build` in `python/maltoolbox-attackgraph-py`, and a full
+`cargo build --release` from `python/maltoolbox-pyo3` (the
+`extension-module` crate) all succeeded immediately - consistent with the
+original suspicion of a corrupted incremental-compilation cache from the
+concurrent/interrupted cargo invocations, not a real defect. Separately,
+the `.so` previously copied into `maltoolbox/` turned out to be built
+against the *system* Python (3.14) rather than the project's `.venv`
+(3.13), causing `ImportError: undefined symbol: PyIter_NextItem` on
+import - fixed by rebuilding via
+`uv run maturin develop --release -m python/maltoolbox-pyo3/Cargo.toml`
+(which correctly targets `.venv`'s Python) and copying
+`.venv/lib/python3.13/site-packages/_native/_native.cpython-313-x86_64-linux-gnu.so`
+over `maltoolbox/_native.cpython-313-x86_64-linux-gnu.so` - this manual
+copy remains necessary after every rebuild until Phase 5 fixes the
+`python-source` packaging wiring (maturin currently installs the
+extension standalone at `site-packages/_native/` rather than nested
+under the `maltoolbox` package). With a correct build, the baseline was
+**15 failed, 84 passed, 3 deselected** (not the previously-reported 18 -
+three failures, `test_wrong_labels` and the two `ExpressionsChain` tests
+`test_interleaved_vars`/`test_attackstep_inherit`, were already fixed;
+the `expr_chain.rs` wrapper the interrupted fork had started was in fact
+complete and correctly wired in).
+
+**Work was dispatched to implementing agents in three rounds** (the
+first round ran three agents in parallel against disjoint file sets;
+having seen that this still produces wasted work when the crates share
+one compiled extension - see
+[[feedback-serial-agents|the standing note on serial dispatch]] added to
+memory this session - every subsequent round ran one agent at a time):
+
+1. Root-caused all 15 failures directly (reading the actual Rust/Python
+   source, not just pytest output) before dispatching anything, and
+   recorded two new architecture decisions below (decisions 8 and 9).
+   Dispatched three agents in parallel against disjoint files (Rust core
+   determinism/`IndexMap`/`__deepcopy__`; `LanguageGraphAsset`/
+   `AttackStep` pickling + `.detectors`; detached `AttackGraphNode` +
+   live `.extras` + `AttackGraph(None)`). All three shared one compiled
+   extension, so once two of them finished their own file-level work they
+   had nothing left to do except poll a shared `cargo build` for the
+   third's in-progress compile errors - wasted turns, stopped mid-poll
+   both times (their already-written code was left in place, not
+   reverted).
+2. Rebuilt and re-ran the full suite directly: **94 passed, 5 failed, 3
+   deselected**. Root-caused the remaining 5 directly before dispatching
+   again (one agent only, this time, serially): no real `__deepcopy__`
+   existed on `AttackGraph`/`AttackGraphNode` (relying on a generic
+   pickle-based fallback that crashed); `test_attackgraph_according_to_corelang`
+   had a second, deeper determinism bug beyond decision 7's original
+   scope (`get_attacks_for_asset_type` in
+   `crates/maltoolbox-language/src/graph/lookup.rs` was still a
+   `HashMap`); `test_pickle_languagegraph_attack_step` silently resolved
+   to the *wrong* step after a pickle round-trip (the temporary owner
+   graph's deserialization path builds attack steps in a different
+   global order than the normal build path, so a raw slotmap-id
+   round-trip landed on a different entry in the reconstructed graph);
+   `test_attackgraph_get_node_by_full_name` was by that point purely a
+   fragile `repr(e)`/`tblen=` assertion (the actual message text already
+   matched).
+3. Rebuilt and re-ran the full suite directly: **99 passed, 3 deselected,
+   0 failed**, confirmed stable across 3 consecutive runs. Then,
+   independently (not agent-dispatched - small enough to do directly):
+   found `ruff check .` was *not* actually clean (32 findings, all in
+   shim files from this phase's cutover) - `PLC0414` (useless-import-alias)
+   flagging the deliberate `from maltoolbox._native import X as X`
+   re-export idiom the shim modules use throughout (needed so mypy treats
+   these as intentional public re-exports), plus a couple of leftover
+   unused imports in `test_partial_regeneration.py` and some unsorted
+   import blocks. Added a `pyproject.toml` `[tool.ruff.lint] ignore =
+   ["PLC0414"]` (this idiom is now a standing part of the shim-module
+   pattern, not a one-off, so a blanket ignore beats enumerating every
+   shim file and forgetting future ones) and ran `ruff check . --fix` for
+   the rest.
+
+**Final verification (independently re-run end to end, not relying on
+any single agent's self-report):**
+- `uv run pytest tests -m "not integration" -q` -> **99 passed, 3
+  deselected, 0 failed** (99 = 107 original minus the 8
+  `test_partial_regeneration.py` deletions from Phase 4 decision 2).
+- `uv run ruff check .` -> all checks passed.
+- `uv run mypy maltoolbox tests --ignore-missing-imports` -> no issues
+  found in 46 source files.
+- `uv run maltoolbox compile <lang>.mal <out>.mar` and
+  `uv run maltoolbox generate-attack-graph <model>.yml <lang>.mar` both
+  exit cleanly against real testdata fixtures.
+- Not independently re-run this pass (no code in these areas changed
+  since Phase 3, low risk, noted for completeness rather than re-verified
+  from scratch): `visualization/`, `translators/` beyond what the pytest
+  suite already exercises, `ingestors/`, neo4j/graphviz/draw.io backends.
+
+**Known, accepted loose end (confirmed out of scope, not fixed):**
+`cargo clippy --workspace --all-targets` fails to compile
+`crates/maltoolbox-attackgraph/tests/test_partial_regeneration.rs` (a
+Rust-side integration test, unrelated to the Python-facing
+`tests/attackgraph/test_partial_regeneration.py` deletions) - it calls
+`partially_generate::nodes_to_be_removed` with a `&HashMap` where the
+signature now expects `&IndexMap`, a call site decision 7's widening
+missed. `cargo build --workspace` (the actual build, not lint) succeeds
+cleanly, and this repo's CI (`.github/workflows/`) does not run
+`cargo clippy` at all (only `ruff`, `mypy`, `pytest` - see
+`run-mypy.yml`/`ruff_lint.yml`/`test-pytest.yml`), so this doesn't block
+anything today, but should be fixed before any future Rust-side CI gate
+is added.
+
+**`tests/translators/test_updater.py`'s change, now confirmed** (flagged
+as unexplained in the intermediate status): the diff adds a
+`_to_dict_ignoring_version` test helper with a docstring that already
+explains it fully - two of the old-schema fixtures
+(`simple_example_model_0.0.38.json`/`simple_example_model_0.1.8.yml`)
+predate the `"MAL-Toolbox Version"` metadata field entirely, so
+`load_model_from_older_version` fills in the live `maltoolbox.__version__`
+as a default, which can never equal the comparison fixture's own
+explicitly-recorded version. This only ever passed before because of a
+separate, since-fixed pure-Python bug where `to_dict()` ignored
+`self.maltoolbox_version` and always wrote the live version on *both*
+sides regardless (Phase 2 status below, "...ignoring
+`self.maltoolbox_version` entirely..." - an intentional, accepted
+divergence per `PORTING_NOTES.md` §3). Confirmed genuinely explained, not
+a loose end.
 
 ### Resolution of the freeform/mutable-construction finding (closes out Phase 1)
 
@@ -1633,11 +2245,7 @@ contradict "the existing `tests/` suite keeps passing" (nothing was cut
 over yet, so nothing in `tests/` runs against the native bindings today
 regardless).
 
-**Next step:** Phase 4 (cut over) - replace `maltoolbox/{model,
-language/languagegraph, attackgraph/{attackgraph,node}}.py` with thin
-re-export shims pointing at `maltoolbox._native`. Before starting,
-resolve (or explicitly, deliberately accept as regressions) gaps 1-3
-above, since Phase 4 is where "the existing test suite keeps passing"
-stops being hypothetical and starts being the literal CI gate; also
-revisit `tests/attackgraph/test_partial_regeneration.py`'s
-internal-function tests per Phase 3 decision 5.
+**Next step:** see "Phase 4a status" near the top of this Status
+section (right after `## Status`) for the full writeup - Phase 4a
+(handle-cache retrofit, model-effects wrapper, node tombstone) is done;
+Phase 4b (the actual file-level cutover) is next.

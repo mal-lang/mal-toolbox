@@ -38,11 +38,11 @@ pub fn create_attack_graph(py: Python<'_>, lang: &Bound<'_, PyAny>, model: &Boun
     let model_py: Py<PyModel> = if let Ok(m) = model.extract::<Py<PyModel>>() {
         m
     } else if let Ok(path) = model.extract::<String>() {
-        let loaded = PyModel::load_from_file(py, &path, lang_graph_py.clone_ref(py))?;
+        let loaded = PyModel::load_from_file(py, std::path::PathBuf::from(&path), lang_graph_py.clone_ref(py))?;
         Py::new(py, loaded)?
     } else {
         return Err(PyTypeError::new_err("`model` must be either string or Model"));
     };
 
-    PyAttackGraph::new(py, lang_graph_py, Some(model_py))
+    PyAttackGraph::new(py, Some(lang_graph_py), Some(model_py))
 }

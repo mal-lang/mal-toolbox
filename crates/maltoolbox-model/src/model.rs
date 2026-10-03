@@ -43,8 +43,20 @@ pub enum ModelError {
         fieldname: String,
         expected_type: String,
     },
-    #[error("You can have maximum {0:?} assets for association field {1}")]
-    TooManyAssetsInField(Option<i64>, String),
+    /// Opportunistic fix, flagged: the stored value is the already-
+    /// unwrapped `max` from the one call site that constructs this
+    /// (only ever reached when `assoc_field.maximum` is `Some(_)`) - was
+    /// previously `Option<i64>` with a `{0:?}` Display format, producing
+    /// `"You can have maximum Some(1) assets..."` instead of matching
+    /// the real Python message (`f'You can have maximum
+    /// {assoc_field.maximum} ...'`, always a bare int there too, for the
+    /// same reason). Caught by running `tests/attackgraph/
+    /// test_attackgraph.py::test_create_dynamic_ag`'s exact scenario
+    /// against the native bindings directly - this error path wasn't
+    /// exercised by any `maltoolbox-model`/`-py` test or oracle diff
+    /// before now.
+    #[error("You can have maximum {0} assets for association field {1}")]
+    TooManyAssetsInField(i64, String),
     #[error("Association fieldname \"{fieldname}\" does not exist from <{from_type}> to <{to_type}>, must be one of:\n -{possible}")]
     UnknownAssociation {
         fieldname: String,
@@ -332,10 +344,7 @@ impl Model {
         let after_len = before.union(assets_to_add).count();
         if let Some(max) = assoc_field.maximum {
             if after_len as i64 > max {
-                return Err(ModelError::TooManyAssetsInField(
-                    assoc_field.maximum,
-                    fieldname.to_string(),
-                ));
+                return Err(ModelError::TooManyAssetsInField(max, fieldname.to_string()));
             }
         }
 

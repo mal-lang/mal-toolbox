@@ -13,14 +13,17 @@
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
+use pyo3::IntoPyObjectExt;
 
 use maltoolbox_attackgraph::ids::AttackGraphNodeId;
 use maltoolbox_attackgraph::AttackGraph;
-use maltoolbox_language::graph::LanguageGraph;
+use maltoolbox_language::graph::{generate_graph as build_graph_from_langspec, LanguageGraph};
+use maltoolbox_language_py::handle::{cached_handle, new_handle_cache, HandleCache};
 use maltoolbox_language_py::PyLanguageGraph;
 use maltoolbox_model::{AssetSnapshot, Model};
 use maltoolbox_model_py::PyModel;
@@ -41,22 +44,63 @@ pub struct PyAttackGraph {
     /// Phase 3 decision 1: per-node detectors dict side table, lazily
     /// populated the same way - see `node.rs`'s `.detectors` getter.
     pub node_detectors: Rc<RefCell<HashMap<i64, Py<PyDict>>>>,
+    /// Same pattern as `node_detectors`, for `AttackGraphNode.extras` -
+    /// see `node.rs`'s `.extras` getter. Lazily seeded (once per node,
+    /// from the core's `n.extras` via `pythonize`) and never re-derived,
+    /// so in-place mutation (`node.extras['x'] = y`) sticks across
+    /// accesses.
+    pub node_extras: Rc<RefCell<HashMap<i64, Py<PyDict>>>>,
+    /// Per-owner `PyAttackGraphNode` handle cache (Phase 4 decision 1) -
+    /// shared (same `Rc`) with every node handle this graph ever hands
+    /// out, so repeated lookups for the same id return the identical
+    /// Python object.
+    pub node_cache: HandleCache<i64, PyAttackGraphNode>,
+    /// Phase 4 decision 4: read-only record of each removed node's final
+    /// state (post-unlink, pre-delete - mirrors
+    /// `maltoolbox_model::AssetSnapshot::final_state`'s capture point),
+    /// keyed by id. Lets a `PyAttackGraphNode` handle whose entry is gone
+    /// from `inner.id_to_node` keep resolving its own simple fields -
+    /// see `node.rs`'s `with_node_value` for the scope of what this
+    /// covers (not `children`/`parents`/`full_name`/`to_dict`, which
+    /// need further core-crate changes to support - logged as a
+    /// deliberately partial implementation, not silently dropped).
+    pub tombstones: Rc<RefCell<HashMap<i64, maltoolbox_attackgraph::AttackGraphNode>>>,
+    /// Phase 4 decision 8: when `Some`, `.nodes` returns this dict as-is
+    /// instead of constructing a `PyAttackGraphNodesView` - lets
+    /// `attack_graph.nodes = {...}` freely override the live view (e.g.
+    /// with hand-built detached nodes with no owning graph, or simply
+    /// `{}`), matching the pure-Python original's plain, freely-settable
+    /// `dict` attribute. Reset to `None` by `regenerate_graph`, which
+    /// (re)builds live nodes from scratch and should surface those again.
+    pub nodes_override: Rc<RefCell<Option<Py<PyDict>>>>,
 }
 
 impl PyAttackGraph {
     #[allow(clippy::type_complexity)]
-    fn empty_state() -> (Rc<RefCell<Option<Py<PyList>>>>, Rc<RefCell<HashMap<i64, Py<PyDict>>>>) {
-        (Rc::new(RefCell::new(None)), Rc::new(RefCell::new(HashMap::new())))
+    fn empty_state() -> (
+        Rc<RefCell<Option<Py<PyList>>>>,
+        Rc<RefCell<HashMap<i64, Py<PyDict>>>>,
+        Rc<RefCell<HashMap<i64, Py<PyDict>>>>,
+    ) {
+        (
+            Rc::new(RefCell::new(None)),
+            Rc::new(RefCell::new(HashMap::new())),
+            Rc::new(RefCell::new(HashMap::new())),
+        )
     }
 
     fn wrap(inner: AttackGraph, lang_graph_py: Py<PyLanguageGraph>, model_py: Option<Py<PyModel>>) -> Self {
-        let (detectors_list, node_detectors) = Self::empty_state();
+        let (detectors_list, node_detectors, node_extras) = Self::empty_state();
         PyAttackGraph {
             inner: Rc::new(RefCell::new(inner)),
             lang_graph_py,
             model_py,
             detectors_list,
             node_detectors,
+            node_extras,
+            node_cache: new_handle_cache(),
+            tombstones: Rc::new(RefCell::new(HashMap::new())),
+            nodes_override: Rc::new(RefCell::new(None)),
         }
     }
 
@@ -67,6 +111,95 @@ impl PyAttackGraph {
     fn reset_detector_state(&self) {
         *self.detectors_list.borrow_mut() = None;
         self.node_detectors.borrow_mut().clear();
+        self.node_extras.borrow_mut().clear();
+    }
+
+    /// Cache-aware constructor for a node handle owned by this graph -
+    /// see the `node_cache` field doc comment / Phase 4 decision 1.
+    /// `owner_py` must be the `Py<PyAttackGraph>` wrapping *this very*
+    /// `PyAttackGraph` (callers already have one in hand, per the
+    /// `self_: &Bound<'_, Self>` receiver pattern used throughout this
+    /// file, since a plain `&self` method can't produce a `Py<Self>` of
+    /// itself).
+    pub fn node_handle(&self, owner_py: &Py<PyAttackGraph>, py: Python<'_>, id: i64) -> PyResult<Py<PyAttackGraphNode>> {
+        let owner_py = owner_py.clone_ref(py);
+        cached_handle(&self.node_cache, py, id, move || PyAttackGraphNode::new(owner_py, id))
+    }
+
+    /// Evicts `id`'s cache entry, if any - same rationale as
+    /// `PyModel::evict_handle`: `add_node`'s caller-chosen `node_id` can
+    /// legitimately collide with a previously-removed node's id, which
+    /// must build a genuinely new handle, not resurface the stale cached
+    /// one. Not done on removal itself - see Phase 4 decision 1.
+    fn evict_node_handle(&self, id: i64) {
+        self.node_cache.borrow_mut().remove(&id);
+    }
+
+    /// Shared implementation for `PyAttackGraph::__deepcopy__` and
+    /// `PyAttackGraphNodesView::__deepcopy__`/`PyAttackGraphNode::__deepcopy__`
+    /// (`node.rs`) - port of `AttackGraph.__deepcopy__`
+    /// (`maltoolbox/attackgraph/attackgraph.py`). `memo` is a real Python
+    /// dict keyed by `id(python_object)`, exactly like the pure-Python
+    /// original, so a whole-graph `copy.deepcopy` call (or one that also
+    /// separately touches individual nodes reachable from this graph)
+    /// produces exactly one copy of this graph and of each node, with
+    /// every cross-reference pointing at the shared copies -
+    /// `test_deepcopy_memo_test` checks this directly by inspecting
+    /// `memo`'s contents after deep-copying `.nodes`.
+    ///
+    /// Unlike the Python original (which builds an empty `AttackGraph`,
+    /// then deep-copies each node and re-links `children`/`parents`
+    /// individually), this clones the whole core `AttackGraph` in one
+    /// shot (`AttackGraph` is `#[derive(Clone)]` - see its doc comment):
+    /// `AttackGraphNodeId` slotmap keys stay valid and already mutually
+    /// consistent across the clone, so no manual re-linking is needed.
+    /// This is behaviorally equivalent (same `to_dict()`, same id-keyed
+    /// `.nodes`, same children/parents cross-references) and does not
+    /// clone `lang_graph` (an `Rc`, cheaply shared, matching the
+    /// original's implicit sharing of language-graph attack step
+    /// references) or `model` (explicitly kept identical, per
+    /// `test_attackgraph_deepcopy`'s docstring: "references to the
+    /// instance model should remain the same").
+    ///
+    /// Registers every *node* in `memo` (keyed by the original node
+    /// handle's `id(...)`) so that deep-copying a node reachable from
+    /// this graph elsewhere in the same `copy.deepcopy` call (e.g.
+    /// `copy.deepcopy((attack_graph, some_node))`, or deep-copying
+    /// `.nodes` directly) resolves to the same copied handle this call
+    /// produces, not a separate duplicate - mirrors the Python
+    /// original's `memo[id(node)] = copied_node` bookkeeping. Does *not*
+    /// register the graph itself in `memo` under its own id first
+    /// (unlike the Python original's `if id(self) in memo: return
+    /// memo[id(self)]` early-out) - `PyAttackGraph` has no equivalent
+    /// "already copied, return existing" re-entrancy concern in practice
+    /// (nothing in this codebase deep-copies a structure that reaches
+    /// the same `AttackGraph` via two different paths), and omitting it
+    /// keeps this simple; revisit if that ever changes.
+    pub fn deepcopy_graph(self_: &Bound<'_, Self>, memo: &Bound<'_, PyDict>) -> PyResult<Py<PyAttackGraph>> {
+        let py = self_.py();
+        let self_py: Py<PyAttackGraph> = self_.clone().unbind();
+        let slf = self_.borrow();
+
+        let cloned_inner = slf.inner.borrow().clone();
+        let ids: Vec<i64> = slf.inner.borrow().id_to_node.keys().copied().collect();
+        let lang_graph_py = slf.lang_graph_py.clone_ref(py);
+        let model_py = slf.model_py.as_ref().map(|m| m.clone_ref(py));
+
+        let new_graph = Py::new(py, PyAttackGraph::wrap(cloned_inner, lang_graph_py, model_py))?;
+
+        // Register each node in `memo`, keyed by the *original* node
+        // handle's `id(...)` (its canonical cached object identity on
+        // this graph), pointing at the corresponding handle on the new
+        // graph - see this method's doc comment.
+        let new_graph_ref = new_graph.borrow(py);
+        for id in ids {
+            let original_handle = slf.node_handle(&self_py, py, id)?;
+            let copied_handle = new_graph_ref.node_handle(&new_graph, py, id)?;
+            memo.set_item(original_handle.bind(py).as_ptr() as isize, copied_handle)?;
+        }
+        drop(slf);
+
+        Ok(new_graph.clone_ref(py))
     }
 
     /// Borrows `self.model_py` (if any) down to a `&Model` in one scope -
@@ -80,6 +213,43 @@ impl PyAttackGraph {
             }
             None => f(None),
         }
+    }
+
+    /// Builds the core's `to_dict()` `Value`, then overlays each node's
+    /// live `node_extras` side-table entry (if seeded - see `node.rs`'s
+    /// `.extras` getter) onto its `"extras"` field, since the core's own
+    /// `node_to_dict` only knows about `extras` as captured at
+    /// generation time and has no way to see Python-side mutation of the
+    /// compat layer's lazily-seeded dict (`node.extras['x'] = y`) -
+    /// confirmed necessary by `test_attackgraph_save_load_no_model_given`,
+    /// which mutates `.extras` then expects `to_dict`/`save_to_file` to
+    /// reflect it. Done directly on the `serde_json::Value` (not the
+    /// pythonized `dict`, after `fix_children_parents_int_keys` has
+    /// already given `children`/`parents` *integer* keys, which aren't
+    /// valid JSON and would fail `depythonize` on the `save_to_file`
+    /// path) so both `to_dict`/`save_to_file` can share this one pass.
+    fn to_dict_value(&self, py: Python<'_>) -> serde_json::Value {
+        let mut dict = self.with_model(py, |model| self.inner.borrow().to_dict(model));
+        if let Some(steps) = dict.get_mut("attack_steps").and_then(|v| v.as_object_mut()) {
+            let node_extras = self.node_extras.borrow();
+            for node_value in steps.values_mut() {
+                let Some(id) = node_value.get("id").and_then(|v| v.as_i64()) else {
+                    continue;
+                };
+                let Some(extras) = node_extras.get(&id) else { continue };
+                let extras = extras.bind(py);
+                if extras.is_empty() {
+                    if let Some(obj) = node_value.as_object_mut() {
+                        obj.remove("extras");
+                    }
+                    continue;
+                }
+                if let Ok(value) = pythonize::depythonize::<serde_json::Value>(extras) {
+                    node_value["extras"] = value;
+                }
+            }
+        }
+        dict
     }
 
     fn bare_lang_graph(py: Python<'_>, lang_graph_py: &Py<PyLanguageGraph>, model_py: Option<&Py<PyModel>>) -> Rc<LanguageGraph> {
@@ -153,9 +323,29 @@ impl PyAttackGraph {
 
 #[pymethods]
 impl PyAttackGraph {
+    /// `lang_graph=None` (Phase 4 decision 8) is accepted purely so
+    /// `AttackGraph(None)` succeeds, matching the pure-Python original
+    /// (`lang_graph` was just stored, only used if `model is not None`).
+    /// Nothing is exercised afterward on a `None`-lang_graph instance
+    /// except `.nodes` get/set - see `nodes_override`/the `.nodes`
+    /// getter/setter below - so a minimal placeholder `PyLanguageGraph`
+    /// (built from an empty langspec `{}`, same real code path as a
+    /// genuinely empty MAL language) is constructed internally rather
+    /// than threading `Option` through every other field/method that
+    /// assumes a real one.
     #[new]
     #[pyo3(signature = (lang_graph, model=None))]
-    pub fn new(py: Python<'_>, lang_graph: Py<PyLanguageGraph>, model: Option<Py<PyModel>>) -> PyResult<Self> {
+    pub fn new(py: Python<'_>, lang_graph: Option<Py<PyLanguageGraph>>, model: Option<Py<PyModel>>) -> PyResult<Self> {
+        let lang_graph = match lang_graph {
+            Some(lg) => lg,
+            None => Py::new(
+                py,
+                PyLanguageGraph::wrap(
+                    build_graph_from_langspec(serde_json::json!({}))
+                        .map_err(maltoolbox_language_py::exceptions::graph_error_to_py)?,
+                ),
+            )?,
+        };
         let inner = match &model {
             Some(m) => {
                 let model_ref = m.borrow(py);
@@ -190,12 +380,34 @@ impl PyAttackGraph {
     /// Phase 3 decision 2: a lazy read-only Mapping view, not a real
     /// `dict` - see `node.rs`'s `PyAttackGraphNodesView`. Needs `Py<Self>`
     /// to hand out, hence the `&Bound<'_, Self>` receiver instead of
-    /// `&self`.
+    /// `&self`. Phase 4 decision 8: when `nodes_override` has been set
+    /// (via the `#[setter]` below), that real `dict` is returned as-is
+    /// instead - matching the pure-Python original's plain, freely
+    /// settable `dict` attribute (`attack_graph.nodes = {...}`), which
+    /// the patternfinder tests rely on to hand-build small graphs of
+    /// detached nodes with no real `Model`/`LanguageGraph` generation.
     #[getter]
-    fn nodes(self_: &Bound<'_, Self>) -> PyAttackGraphNodesView {
-        PyAttackGraphNodesView {
-            owner_py: self_.clone().unbind(),
+    fn nodes(self_: &Bound<'_, Self>) -> PyResult<Py<PyAny>> {
+        let py = self_.py();
+        let slf = self_.borrow();
+        if let Some(dict) = &*slf.nodes_override.borrow() {
+            return Ok(dict.clone_ref(py).into_any());
         }
+        drop(slf);
+        let view = PyAttackGraphNodesView {
+            owner_py: self_.clone().unbind(),
+        };
+        view.into_py_any(py)
+    }
+
+    /// See the `.nodes` getter's doc comment / Phase 4 decision 8.
+    /// Cleared back to `None` by `regenerate_graph`, so a full rebuild
+    /// surfaces the freshly-generated live nodes again instead of a
+    /// stale override (`test_attackgraph_generate_graph`: `.nodes = {}`
+    /// followed by `.regenerate_graph()`).
+    #[setter]
+    fn set_nodes(&self, value: &Bound<'_, PyDict>) {
+        *self.nodes_override.borrow_mut() = Some(value.clone().unbind());
     }
 
     /// `dict[str, AttackGraphNode]`, rebuilt fresh per access - lower,
@@ -206,39 +418,39 @@ impl PyAttackGraph {
         let py = self_.py();
         let owner_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
-        let graph = slf.inner.borrow();
+        let ids: Vec<(String, i64)> = {
+            let graph = slf.inner.borrow();
+            graph.full_name_to_node.iter().map(|(full_name, &key)| (full_name.clone(), graph.nodes[key].id)).collect()
+        };
         let dict = PyDict::new(py);
-        for (full_name, &key) in &graph.full_name_to_node {
-            let id = graph.nodes[key].id;
-            dict.set_item(full_name, PyAttackGraphNode::new(owner_py.clone_ref(py), id))?;
+        for (full_name, id) in ids {
+            dict.set_item(full_name, slf.node_handle(&owner_py, py, id)?)?;
         }
         Ok(dict)
     }
 
     #[getter]
-    fn attack_steps(self_: &Bound<'_, Self>) -> PyResult<Vec<PyAttackGraphNode>> {
+    fn attack_steps(self_: &Bound<'_, Self>) -> PyResult<Vec<Py<PyAttackGraphNode>>> {
         let py = self_.py();
         let owner_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
-        let graph = slf.inner.borrow();
-        Ok(graph
-            .attack_steps
-            .iter()
-            .map(|&key| PyAttackGraphNode::new(owner_py.clone_ref(py), graph.nodes[key].id))
-            .collect())
+        let ids: Vec<i64> = {
+            let graph = slf.inner.borrow();
+            graph.attack_steps.iter().map(|&key| graph.nodes[key].id).collect()
+        };
+        ids.into_iter().map(|id| slf.node_handle(&owner_py, py, id)).collect()
     }
 
     #[getter]
-    fn defense_steps(self_: &Bound<'_, Self>) -> PyResult<Vec<PyAttackGraphNode>> {
+    fn defense_steps(self_: &Bound<'_, Self>) -> PyResult<Vec<Py<PyAttackGraphNode>>> {
         let py = self_.py();
         let owner_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
-        let graph = slf.inner.borrow();
-        Ok(graph
-            .defense_steps
-            .iter()
-            .map(|&key| PyAttackGraphNode::new(owner_py.clone_ref(py), graph.nodes[key].id))
-            .collect())
+        let ids: Vec<i64> = {
+            let graph = slf.inner.borrow();
+            graph.defense_steps.iter().map(|&key| graph.nodes[key].id).collect()
+        };
+        ids.into_iter().map(|id| slf.node_handle(&owner_py, py, id)).collect()
     }
 
     /// Live, mutable flat list (Phase 3 decision 1): lazily seeded from
@@ -275,12 +487,16 @@ impl PyAttackGraph {
         Ok(list.unbind())
     }
 
-    fn get_node_by_full_name(self_: &Bound<'_, Self>, full_name: &str) -> PyResult<PyAttackGraphNode> {
+    fn get_node_by_full_name(self_: &Bound<'_, Self>, full_name: &str) -> PyResult<Py<PyAttackGraphNode>> {
+        let py = self_.py();
         let owner_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
-        let graph = slf.inner.borrow();
-        let key = graph.get_node_by_full_name(full_name).map_err(graph_error_to_lookup)?;
-        Ok(PyAttackGraphNode::new(owner_py, graph.nodes[key].id))
+        let id = {
+            let graph = slf.inner.borrow();
+            let key = graph.get_node_by_full_name(full_name).map_err(graph_error_to_lookup)?;
+            graph.nodes[key].id
+        };
+        slf.node_handle(&owner_py, py, id)
     }
 
     /// Matches Python's `regenerate_graph`: a full rebuild from
@@ -288,6 +504,10 @@ impl PyAttackGraph {
     /// `PyAttackGraphNode` handle for an old id will correctly fail to
     /// resolve afterward (same as Python's old objects being orphaned by
     /// `self.nodes = generate_graph(...)`'s wholesale reassignment).
+    /// Also clears `node_cache` entirely (Phase 4 decision 1): the old
+    /// slotmap keys an old cached handle might resolve through are gone
+    /// regardless, and fresh generation may well reuse the same `i64`
+    /// ids for logically different nodes.
     fn regenerate_graph(&self, py: Python<'_>) -> PyResult<()> {
         let model_py = self
             .model_py
@@ -297,6 +517,12 @@ impl PyAttackGraph {
         let core_model = model_ref.inner.borrow();
         self.inner.borrow_mut().regenerate_graph(&core_model).map_err(graph_error_to_py)?;
         self.reset_detector_state();
+        self.node_cache.borrow_mut().clear();
+        // Phase 4 decision 8: a full rebuild should surface the
+        // freshly-generated live nodes, not a stale `.nodes = {...}`
+        // override from before the rebuild - see the `.nodes`
+        // getter/setter's doc comment.
+        *self.nodes_override.borrow_mut() = None;
         Ok(())
     }
 
@@ -307,7 +533,7 @@ impl PyAttackGraph {
         new_associations: Option<&Bound<'_, PyAny>>,
         removed_assets: Option<&Bound<'_, PyAny>>,
         removed_associations: Option<&Bound<'_, PyAny>>,
-    ) -> PyResult<Vec<PyAttackGraphNode>> {
+    ) -> PyResult<Vec<Py<PyAttackGraphNode>>> {
         let py = self_.py();
         let owner_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
@@ -327,15 +553,25 @@ impl PyAttackGraph {
             removed_snapshots.insert(*id, Self::asset_snapshot_for(&model_py, py, *id)?);
         }
 
-        // Snapshot node ids before the call so any node removed as a
-        // *side effect* of this call (`removal_candidates` inside the
-        // core's own `partially_regenerate_graph` - not surfaced back to
-        // this binding directly) can still have its stale
-        // `node_detectors` side-table entry purged below. Without this,
+        // Snapshot every node's full state before the call, so any node
+        // removed as a *side effect* of this call (`removal_candidates`
+        // inside the core's own `partially_regenerate_graph` - not
+        // surfaced back to this binding directly) can still have its
+        // stale `node_detectors` side-table entry purged, and (Phase 4
+        // decision 4) its final state recorded in `tombstones` for
+        // post-removal readability, below. Without the ids half of this,
         // a removed node's per-node detectors dict would linger
         // indefinitely (and could wrongly resurface if the same id is
-        // ever reused).
-        let node_ids_before: HashSet<i64> = slf.inner.borrow().id_to_node.keys().copied().collect();
+        // ever reused). Cloning every node here (not just ids) is more
+        // than the detector-purge path alone needs, but this method
+        // isn't a simulation hot path (unlike `.nodes`, which is why
+        // that one got the lazy-view treatment instead), so the cost is
+        // acceptable for the tombstone coverage it buys.
+        let nodes_before: HashMap<i64, maltoolbox_attackgraph::AttackGraphNode> = {
+            let graph = slf.inner.borrow();
+            graph.nodes.values().map(|n| (n.id, n.clone())).collect()
+        };
+        let node_ids_before: HashSet<i64> = nodes_before.keys().copied().collect();
 
         let created_ids: Vec<i64> = {
             let model_ref = model_py.borrow(py);
@@ -355,13 +591,20 @@ impl PyAttackGraph {
             created.into_iter().map(|key| graph.nodes[key].id).collect()
         };
 
-        // Purge stale per-node detector entries for any node removed as a
-        // side effect of this call (see `node_ids_before` above).
+        // Purge stale per-node detector entries, and record a tombstone
+        // (Phase 4 decision 4), for any node removed as a side effect of
+        // this call (see `nodes_before`/`node_ids_before` above).
         {
             let node_ids_after: HashSet<i64> = slf.inner.borrow().id_to_node.keys().copied().collect();
             let mut table = slf.node_detectors.borrow_mut();
+            let mut extras_table = slf.node_extras.borrow_mut();
+            let mut tombstones = slf.tombstones.borrow_mut();
             for removed_id in node_ids_before.difference(&node_ids_after) {
                 table.remove(removed_id);
+                extras_table.remove(removed_id);
+                if let Some(final_state) = nodes_before.get(removed_id) {
+                    tombstones.insert(*removed_id, final_state.clone());
+                }
             }
         }
 
@@ -393,7 +636,7 @@ impl PyAttackGraph {
             }
         }
 
-        Ok(created_ids.into_iter().map(|id| PyAttackGraphNode::new(owner_py.clone_ref(py), id)).collect())
+        created_ids.into_iter().map(|id| slf.node_handle(&owner_py, py, id)).collect()
     }
 
     #[pyo3(signature = (lg_attack_step, node_id=None, model_asset=None, ttc_dist=None, existence_status=None, full_name=None))]
@@ -406,7 +649,7 @@ impl PyAttackGraph {
         ttc_dist: Option<&Bound<'_, PyAny>>,
         existence_status: Option<bool>,
         full_name: Option<String>,
-    ) -> PyResult<PyAttackGraphNode> {
+    ) -> PyResult<Py<PyAttackGraphNode>> {
         let py = self_.py();
         let owner_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
@@ -433,41 +676,72 @@ impl PyAttackGraph {
             .map_err(graph_error_to_py)?
         };
         let id = slf.inner.borrow().nodes[key].id;
-        Ok(PyAttackGraphNode::new(owner_py, id))
+        // See `evict_node_handle`'s doc comment: a caller-chosen
+        // `node_id` can legitimately collide with a previously-removed
+        // node's id.
+        slf.evict_node_handle(id);
+        slf.node_handle(&owner_py, py, id)
     }
 
     fn remove_node(&self, node: &PyAttackGraphNode, py: Python<'_>) -> PyResult<()> {
+        let _ = py;
+        let node_id = node.id();
         let mut graph = self.inner.borrow_mut();
         let key = graph
             .id_to_node
-            .get(&node.id)
+            .get(&node_id)
             .copied()
-            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err(node.id))?;
-        graph.remove_node(key).map_err(graph_error_to_py)?;
+            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err(node_id))?;
+        let final_state = graph.remove_node(key).map_err(graph_error_to_py)?;
         drop(graph);
-        let _ = py;
-        self.node_detectors.borrow_mut().remove(&node.id);
+        self.node_detectors.borrow_mut().remove(&node_id);
+        self.node_extras.borrow_mut().remove(&node_id);
+        self.tombstones.borrow_mut().insert(node_id, final_state);
         Ok(())
     }
 
+    /// Each node's `children`/`parents` need the same int-key fixup
+    /// `PyAttackGraphNode::to_dict` applies standalone - see
+    /// `fix_children_parents_int_keys`'s doc comment for why.
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let dict = self.with_model(py, |model| self.inner.borrow().to_dict(model));
-        pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+        let dict = self.to_dict_value(py);
+        let pythonized = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let pythonized = pythonized.cast::<PyDict>()?;
+        if let Some(steps) = pythonized.get_item("attack_steps")? {
+            let steps = steps.cast::<PyDict>()?;
+            for (_, node_dict) in steps.iter() {
+                let node_dict = node_dict.cast::<PyDict>()?;
+                crate::node::fix_children_parents_int_keys(py, node_dict)?;
+            }
+        }
+        Ok(pythonized.clone().into_any())
     }
 
     fn _to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         self.to_dict(py)
     }
 
-    fn save_to_file(&self, py: Python<'_>, filename: &str) -> PyResult<()> {
-        let graph = self.inner.borrow();
-        self.with_model(py, |model| graph.save_to_file(model, filename))
-            .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
+    /// `PathBuf`, not `&str` - pyo3 extracts it from both a plain `str`
+    /// and any `os.PathLike` (e.g. `pathlib.Path`), matching the Python
+    /// original's file APIs (see `maltoolbox-language-py`'s identical
+    /// fix for the same reason).
+    ///
+    /// Routed through `self.to_dict_value()` (not the core's own
+    /// `AttackGraph::save_to_file`, which only ever sees the
+    /// generation-time snapshot) specifically so the `node_extras`
+    /// side-table overlay is reflected on disk too - confirmed necessary
+    /// by `test_attackgraph_save_load_no_model_given`, matching the
+    /// Python original's own `save_to_file`, which always delegated to
+    /// `self._to_dict()` (never a separate serialization path) for
+    /// exactly this reason.
+    fn save_to_file(&self, py: Python<'_>, filename: PathBuf) -> PyResult<()> {
+        let value = self.to_dict_value(py);
+        maltoolbox_fileutil::save_dict_to_file(filename, &value).map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
     }
 
     #[staticmethod]
     #[pyo3(signature = (filename, lang_graph, model=None))]
-    fn load_from_file(py: Python<'_>, filename: &str, lang_graph: Py<PyLanguageGraph>, model: Option<Py<PyModel>>) -> PyResult<Self> {
+    fn load_from_file(py: Python<'_>, filename: PathBuf, lang_graph: Py<PyLanguageGraph>, model: Option<Py<PyModel>>) -> PyResult<Self> {
         let bare_lang_graph = Self::bare_lang_graph(py, &lang_graph, model.as_ref());
         let inner = match &model {
             Some(m) => {
@@ -560,5 +834,10 @@ impl PyAttackGraph {
             None => None,
         };
         Ok((func, (state, lang_graph_state, model_state)))
+    }
+
+    /// See `deepcopy_graph`'s doc comment for the full rationale.
+    fn __deepcopy__(self_: &Bound<'_, Self>, memo: &Bound<'_, PyDict>) -> PyResult<Py<PyAttackGraph>> {
+        Self::deepcopy_graph(self_, memo)
     }
 }

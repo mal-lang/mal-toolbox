@@ -9,6 +9,7 @@ repository.workspace = true
 maltoolbox-fileutil = { workspace = true }
 maltoolbox-language = { workspace = true }
 maltoolbox-model = { workspace = true }
+indexmap = { workspace = true }
 slotmap = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

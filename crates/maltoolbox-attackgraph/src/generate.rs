@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use indexmap::IndexMap;
 use maltoolbox_language::graph::attack_step::AttackStepType;
 use maltoolbox_language::graph::AttackStepId;
 use maltoolbox_model::Model;
@@ -17,10 +18,13 @@ use crate::GraphError;
 
 pub struct GeneratedGraph {
     pub nodes: SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    pub id_to_node: HashMap<i64, AttackGraphNodeId>,
+    /// `IndexMap`, matching `AttackGraph::id_to_node`/`full_name_to_node`
+    /// (Phase 4 decision 7, widened) - insertion order here is node
+    /// creation order, which must be deterministic.
+    pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
     pub defense_steps: Vec<AttackGraphNodeId>,
-    pub full_name_to_node: HashMap<String, AttackGraphNodeId>,
+    pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
 }
 
 /// Just-created nodes, as produced by [`create_nodes_for`] directly into
@@ -30,8 +34,8 @@ pub struct GeneratedGraph {
 /// created them and can't be transplanted into a different one the way
 /// Python's plain integer-keyed dicts can.
 pub struct CreatedNodes {
-    pub id_to_node: HashMap<i64, AttackGraphNodeId>,
-    pub full_name_to_node: HashMap<String, AttackGraphNodeId>,
+    pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
+    pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
     pub defense_steps: Vec<AttackGraphNodeId>,
 }
@@ -84,8 +88,8 @@ fn create_nodes_for(
     starting_id: i64,
     model: &Model,
 ) -> Result<CreatedNodes, GraphError> {
-    let mut id_to_node = HashMap::new();
-    let mut full_name_to_node = HashMap::new();
+    let mut id_to_node = IndexMap::new();
+    let mut full_name_to_node = IndexMap::new();
     let mut attack_steps = Vec::new();
     let mut defense_steps = Vec::new();
     let mut node_id: i64 = starting_id;
@@ -161,7 +165,7 @@ pub fn link_node_children(
     model: &Model,
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     ag_node_key: AttackGraphNodeId,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
 ) -> Result<(), GraphError> {
     let (model_asset_id, lg_attack_step_id) = {
         let node = &nodes[ag_node_key];
@@ -197,7 +201,7 @@ fn link_from_expr_chain(
     model_asset_id: i64,
     child_step_name: &str,
     expr_chain: Option<&maltoolbox_language::graph::ExpressionsChain>,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
 ) -> Result<(), GraphError> {
     let target_assets = follow_expr_chain(model, &HashSet::from([model_asset_id]), expr_chain)?;
 
@@ -230,7 +234,7 @@ fn link_from_expr_chain(
 pub fn link_nodes_by_language(
     model: &Model,
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
 ) -> Result<(), GraphError> {
     let keys: Vec<AttackGraphNodeId> = full_name_to_node.values().copied().collect();
     for key in keys {
@@ -242,7 +246,7 @@ pub fn link_nodes_by_language(
 fn get_potential_context(
     model: &Model,
     asset_id: i64,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
     lg_detector: &maltoolbox_language::graph::LanguageGraphDetector,
 ) -> Result<HashMap<String, HashSet<AttackGraphNodeId>>, GraphError> {
     let mut context: HashMap<String, HashSet<AttackGraphNodeId>> = HashMap::new();
@@ -268,7 +272,7 @@ fn get_potential_context(
 
 pub fn create_detectors(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
     model: &Model,
 ) -> Result<(), GraphError> {
     let node_keys: Vec<AttackGraphNodeId> = full_name_to_node.values().copied().collect();

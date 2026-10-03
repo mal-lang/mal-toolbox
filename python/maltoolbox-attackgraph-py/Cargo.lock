@@ -151,6 +151,7 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 name = "maltoolbox-attackgraph"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "maltoolbox-fileutil",
  "maltoolbox-language",
  "maltoolbox-model",
@@ -191,6 +192,7 @@ dependencies = [
 name = "maltoolbox-language"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "maltoolbox-fileutil",
  "serde",
  "serde_json",
@@ -206,11 +208,13 @@ dependencies = [
 name = "maltoolbox-language-py"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "maltoolbox-fileutil",
  "maltoolbox-language",
  "pyo3",
  "pythonize",
  "serde_json",
+ "slotmap",
  "thiserror",
 ]
 

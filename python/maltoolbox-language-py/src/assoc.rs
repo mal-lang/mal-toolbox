@@ -26,6 +26,7 @@ use maltoolbox_language::graph::LanguageGraph;
 
 use crate::asset::PyLanguageGraphAsset;
 use crate::exceptions::graph_error_to_py;
+use crate::handle::{cached_handle, SharedLangGraphCaches};
 
 fn struct_hash<T: std::hash::Hash>(value: &T) -> isize {
     use std::hash::Hasher;
@@ -34,18 +35,30 @@ fn struct_hash<T: std::hash::Hash>(value: &T) -> isize {
     hasher.finish() as isize
 }
 
+/// `caches` is threaded through so `.asset` resolves to the same
+/// per-owner-cached `PyLanguageGraphAsset` handle everywhere else uses
+/// (Phase 4 decision 1) - `LanguageGraphAssociation`/`Field` themselves
+/// are *not* one of the four cached handle types (they already have
+/// real structural equality via the core's own `PartialEq`/`Hash` - see
+/// the module doc comment), this is purely about keeping the *asset*
+/// handles they hand out consistent with every other path to the same
+/// asset.
 #[pyclass(name = "LanguageGraphAssociationField", unsendable, skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyLanguageGraphAssociationField {
     pub owner: Rc<RefCell<LanguageGraph>>,
     pub field: LanguageGraphAssociationField,
+    pub caches: SharedLangGraphCaches,
 }
 
 #[pymethods]
 impl PyLanguageGraphAssociationField {
     #[getter]
-    fn asset(&self) -> PyLanguageGraphAsset {
-        PyLanguageGraphAsset::new(self.owner.clone(), self.field.asset)
+    fn asset(&self, py: Python<'_>) -> PyResult<Py<PyLanguageGraphAsset>> {
+        let owner = self.owner.clone();
+        let id = self.field.asset;
+        let caches = self.caches.clone();
+        cached_handle(&self.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
     }
 
     #[getter]
@@ -64,9 +77,10 @@ impl PyLanguageGraphAssociationField {
     }
 
     pub fn __repr__(&self) -> String {
+        let asset_name = self.owner.borrow().asset(self.field.asset).name.clone();
         format!(
-            "LanguageGraphAssociationField(asset: {}, fieldname: \"{}\", minimum: {}, maximum: {:?})",
-            self.asset().__repr__(),
+            "LanguageGraphAssociationField(asset: LanguageGraphAsset(name: \"{}\"), fieldname: \"{}\", minimum: {}, maximum: {:?})",
+            asset_name,
             self.field.fieldname,
             self.field.minimum,
             self.field.maximum
@@ -97,17 +111,19 @@ impl PyLanguageGraphAssociationField {
 pub struct PyLanguageGraphAssociation {
     pub owner: Rc<RefCell<LanguageGraph>>,
     pub assoc: Rc<LanguageGraphAssociation>,
+    pub caches: SharedLangGraphCaches,
 }
 
 impl PyLanguageGraphAssociation {
-    pub fn new(owner: Rc<RefCell<LanguageGraph>>, assoc: Rc<LanguageGraphAssociation>) -> Self {
-        PyLanguageGraphAssociation { owner, assoc }
+    pub fn new(owner: Rc<RefCell<LanguageGraph>>, assoc: Rc<LanguageGraphAssociation>, caches: SharedLangGraphCaches) -> Self {
+        PyLanguageGraphAssociation { owner, assoc, caches }
     }
 
     fn wrap_field(&self, field: &LanguageGraphAssociationField) -> PyLanguageGraphAssociationField {
         PyLanguageGraphAssociationField {
             owner: self.owner.clone(),
             field: field.clone(),
+            caches: self.caches.clone(),
         }
     }
 }
