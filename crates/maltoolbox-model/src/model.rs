@@ -43,8 +43,20 @@ pub enum ModelError {
         fieldname: String,
         expected_type: String,
     },
-    #[error("You can have maximum {0:?} assets for association field {1}")]
-    TooManyAssetsInField(Option<i64>, String),
+    /// Opportunistic fix, flagged: the stored value is the already-
+    /// unwrapped `max` from the one call site that constructs this
+    /// (only ever reached when `assoc_field.maximum` is `Some(_)`) - was
+    /// previously `Option<i64>` with a `{0:?}` Display format, producing
+    /// `"You can have maximum Some(1) assets..."` instead of matching
+    /// the real Python message (`f'You can have maximum
+    /// {assoc_field.maximum} ...'`, always a bare int there too, for the
+    /// same reason). Caught by running `tests/attackgraph/
+    /// test_attackgraph.py::test_create_dynamic_ag`'s exact scenario
+    /// against the native bindings directly - this error path wasn't
+    /// exercised by any `maltoolbox-model`/`-py` test or oracle diff
+    /// before now.
+    #[error("You can have maximum {0} assets for association field {1}")]
+    TooManyAssetsInField(i64, String),
     #[error("Association fieldname \"{fieldname}\" does not exist from <{from_type}> to <{to_type}>, must be one of:\n -{possible}")]
     UnknownAssociation {
         fieldname: String,
@@ -73,10 +85,20 @@ pub enum ModelError {
 /// unlinked from `Model.assets`. Returned by [`Model::remove_asset`] so
 /// callers (e.g. `AttackGraph::partially_regenerate_graph`) never need
 /// `model.get_asset_by_id` to still succeed for a removed id.
+///
+/// `final_state` additionally carries a full clone of the asset's data
+/// as it stood immediately before removal from `Model.assets` - i.e.
+/// *after* the associated-assets cleanup loop in [`Model::remove_asset`]
+/// has already run, so `final_state.associated_assets` reflects the
+/// post-cleanup (typically empty) state, not the pre-removal one. This
+/// lets a binding layer (e.g. `maltoolbox-model-py`) keep a read-only
+/// "tombstone" per removed id, matching Python's `ModelAsset` objects
+/// staying fully readable after `Model.remove_asset`.
 #[derive(Debug, Clone)]
-pub struct RemovedAssetSnapshot {
+pub struct AssetSnapshot {
     pub name: String,
     pub lg_asset: maltoolbox_language::graph::AssetId,
+    pub final_state: ModelAsset,
 }
 
 #[derive(Debug, Clone)]
@@ -198,16 +220,14 @@ impl Model {
         Ok(asset_id)
     }
 
-    pub fn remove_asset(&mut self, asset_id: i64) -> Result<RemovedAssetSnapshot, ModelError> {
+    pub fn remove_asset(&mut self, asset_id: i64) -> Result<AssetSnapshot, ModelError> {
         let asset = self.assets.get(&asset_id).ok_or_else(|| ModelError::AssetNotFound {
             name: String::new(),
             id: asset_id,
             model: self.name.clone(),
         })?;
-        let snapshot = RemovedAssetSnapshot {
-            name: asset.name.clone(),
-            lg_asset: asset.lg_asset,
-        };
+        let name = asset.name.clone();
+        let lg_asset = asset.lg_asset;
 
         let associated_fieldnames: Vec<(String, HashSet<i64>)> = asset
             .associated_assets
@@ -217,6 +237,21 @@ impl Model {
         for (fieldname, assoc_assets) in associated_fieldnames {
             self.remove_associated_assets(asset_id, &fieldname, &assoc_assets)?;
         }
+
+        // Captured *after* the cleanup loop above, so `final_state`
+        // reflects the post-cleanup state (e.g. `associated_assets`
+        // already emptied), matching what a still-held Python
+        // `ModelAsset` reference would show post-removal.
+        let final_state = self
+            .assets
+            .get(&asset_id)
+            .expect("asset confirmed present above, not removed by cleanup loop")
+            .clone();
+        let snapshot = AssetSnapshot {
+            name,
+            lg_asset,
+            final_state,
+        };
 
         self.assets.remove(&asset_id);
         self.name_to_asset_id.remove(&snapshot.name);
@@ -309,10 +344,7 @@ impl Model {
         let after_len = before.union(assets_to_add).count();
         if let Some(max) = assoc_field.maximum {
             if after_len as i64 > max {
-                return Err(ModelError::TooManyAssetsInField(
-                    assoc_field.maximum,
-                    fieldname.to_string(),
-                ));
+                return Err(ModelError::TooManyAssetsInField(max, fieldname.to_string()));
             }
         }
 

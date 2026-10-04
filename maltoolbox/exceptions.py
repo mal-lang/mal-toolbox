@@ -1,42 +1,27 @@
-class MalToolboxException(Exception):
-    """Base exception for all other maltoolbox exceptions to inherit from."""
+"""MAL-Toolbox exception hierarchy.
 
+Implemented in Rust, exposed here via `maltoolbox._native` - see
+PYTHON_BINDINGS_IMPLEMENTATION.md at the repo root (`### Error ->
+exception mapping`) for the full hierarchy and rationale.
+"""
 
-class LanguageGraphException(MalToolboxException):
-    """Base exception for all language-graph related exceptions."""
-
-
-class LanguageGraphSuperAssetNotFoundError(LanguageGraphException):
-    """Asset's super asset not found in language graph during attack graph construction."""
-
-
-class LanguageGraphAssociationError(LanguageGraphException):
-    """Error in building an association.
-
-    For example, right or left-hand side asset of association missing in
-    language graph.
-    """
-
-
-class LanguageGraphStepExpressionError(LanguageGraphException):
-    """A target asset cannot be linked with for a step expression."""
-
-
-class AttackGraphException(MalToolboxException):
-    """Base exception for all attack-graph related exceptions."""
-
-
-class AttackGraphStepExpressionError(AttackGraphException):
-    """A target attack step cannot be linked with for a step expression."""
-
-
-class ModelException(MalToolboxException):
-    """Base Exception for all Model related exceptions"""
-
-
-class ModelAssociationException(ModelException):
-    """Exception related to associations in Model"""
-
-
-class DuplicateModelAssociationError(ModelException):
-    """Associations should be unique as part of Model"""
+from maltoolbox._native import AttackGraphException as AttackGraphException
+from maltoolbox._native import (
+    AttackGraphStepExpressionError as AttackGraphStepExpressionError,
+)
+from maltoolbox._native import (
+    DuplicateModelAssociationError as DuplicateModelAssociationError,
+)
+from maltoolbox._native import (
+    LanguageGraphAssociationError as LanguageGraphAssociationError,
+)
+from maltoolbox._native import LanguageGraphException as LanguageGraphException
+from maltoolbox._native import (
+    LanguageGraphStepExpressionError as LanguageGraphStepExpressionError,
+)
+from maltoolbox._native import (
+    LanguageGraphSuperAssetNotFoundError as LanguageGraphSuperAssetNotFoundError,
+)
+from maltoolbox._native import MalToolboxException as MalToolboxException
+from maltoolbox._native import ModelAssociationException as ModelAssociationException
+from maltoolbox._native import ModelException as ModelException

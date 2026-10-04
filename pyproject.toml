@@ -51,14 +51,14 @@ dev = [
 "maltoolbox" = "maltoolbox.__main__:main"
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1,<2"]
+build-backend = "maturin"
 
-[tool.setuptools.packages.find]
-include = ["maltoolbox*"]
-
-[tool.setuptools.package-data]
-maltoolbox = ["*.conf*", "py.typed"]
+[tool.maturin]
+manifest-path = "python/maltoolbox-pyo3/Cargo.toml"
+module-name = "maltoolbox._native"
+python-source = "."
+include = ["maltoolbox/py.typed", "maltoolbox/*.conf*"]
 
 [tool.pytest.ini_options]
 pythonpath = ['.']
@@ -80,6 +80,15 @@ dummy-variable-rgx = "^_$"
 
 # Try to fix all that it can
 fixable = ["ALL"]
+
+# PLC0414 (useless-import-alias) flags the explicit `import X as X`
+# re-export idiom as pointless, but that idiom is exactly what the
+# native-shim modules (e.g. `maltoolbox/exceptions.py`,
+# `maltoolbox/model.py`) use throughout to re-export symbols from
+# `maltoolbox._native` - it's required so mypy treats them as
+# intentional public re-exports rather than unused imports. See
+# PYTHON_BINDINGS_IMPLEMENTATION.md for the shim-module pattern.
+ignore = ["PLC0414"]
 
 # Override certain rules based on file path
 [tool.ruff.lint.per-file-ignores]

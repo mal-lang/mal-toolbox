@@ -16,6 +16,7 @@
 //! little over that. Two cheap error-path unit tests are kept
 //! (`switch_fieldname`/`nodes_to_be_removed` raising on bad input).
 
+use indexmap::IndexMap;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -47,20 +48,21 @@ fn compile_lang(name: &str) -> Rc<LanguageGraph> {
     Rc::new(maltoolbox_language::generate_graph(spec).unwrap())
 }
 
-/// Captures a [`maltoolbox_model::RemovedAssetSnapshot`] per id from the
+/// Captures a [`maltoolbox_model::AssetSnapshot`] per id from the
 /// still-live `model`, for tests that call `partially_regenerate_graph`
 /// before `model.remove_asset` (both orders are valid; `snapshot` just
 /// captures from wherever the asset currently lives instead of from
 /// `remove_asset`'s return value).
-fn snapshot(model: &Model, ids: &HashSet<i64>) -> HashMap<i64, maltoolbox_model::RemovedAssetSnapshot> {
+fn snapshot(model: &Model, ids: &HashSet<i64>) -> HashMap<i64, maltoolbox_model::AssetSnapshot> {
     ids.iter()
         .map(|&id| {
             let asset = model.get_asset_by_id(id).unwrap();
             (
                 id,
-                maltoolbox_model::RemovedAssetSnapshot {
+                maltoolbox_model::AssetSnapshot {
                     name: asset.name.clone(),
                     lg_asset: asset.lg_asset,
+                    final_state: asset.clone(),
                 },
             )
         })
@@ -672,7 +674,7 @@ fn nodes_to_be_removed_missing_node_raises() {
     let err = maltoolbox_attackgraph::partially_generate::nodes_to_be_removed(
         &snapshot(&model, &HashSet::from([network])),
         &model,
-        &HashMap::new(),
+        &IndexMap::new(),
     )
     .unwrap_err();
     assert!(err.to_string().contains("Failed to find"));

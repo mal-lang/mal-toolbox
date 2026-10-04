@@ -10,6 +10,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde_json::json;
 
 use super::assoc::LanguageGraphAssociation;
@@ -20,15 +21,25 @@ use super::{GraphError, LanguageGraph};
 #[derive(Debug, Clone)]
 pub struct LanguageGraphAsset {
     pub name: String,
-    pub own_associations: HashMap<String, Rc<LanguageGraphAssociation>>,
+    /// Insertion order here matters - it feeds attack-graph node
+    /// creation order via `attack_steps` (see this struct's doc) and the
+    /// association-field iteration order surfaced in diagnostics, and
+    /// must match the original MAL spec's dict order the way Python's
+    /// plain `dict` naturally does. `IndexMap` preserves insertion
+    /// order; `HashMap` here would make generation output
+    /// nondeterministic across process runs (Phase 4 decision 7).
+    pub own_associations: IndexMap<String, Rc<LanguageGraphAssociation>>,
     /// Both directly-defined and inherited attack steps, by name - mirrors
     /// the Python `attack_steps` dict, which `_inherit_attack_steps` also
-    /// populates with synthesized inherited entries.
-    pub attack_steps: HashMap<String, AttackStepId>,
+    /// populates with synthesized inherited entries. Iteration order
+    /// feeds attack-graph node id assignment order directly
+    /// (`generate.rs`'s `create_nodes_for`), so this must be an
+    /// `IndexMap`, not a `HashMap` (Phase 4 decision 7).
+    pub attack_steps: IndexMap<String, AttackStepId>,
     pub info: HashMap<String, String>,
     pub own_super_asset: Option<AssetId>,
     pub own_sub_assets: Vec<AssetId>,
-    pub own_variables: HashMap<String, (AssetId, Option<ExpressionsChain>)>,
+    pub own_variables: IndexMap<String, (AssetId, Option<ExpressionsChain>)>,
     pub is_abstract: bool,
 }
 

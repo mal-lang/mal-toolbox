@@ -73,6 +73,9 @@ nosetests.xml
 
 # Rust
 /target
+# Each python/*-py crate is its own standalone Cargo workspace (see
+# PYTHON_BINDINGS_IMPLEMENTATION.md), so /target above doesn't reach them
+python/*/target
 **/*.rs.bk
 *.pdb
 

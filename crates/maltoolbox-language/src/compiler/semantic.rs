@@ -140,7 +140,7 @@ fn analyse_defines(langspec: &Value) -> Result<(), CompileError> {
     let defines = &langspec["defines"];
 
     match defines.get("id").and_then(Value::as_str) {
-        Some(id) if id.is_empty() => return Err(err("Define 'id' cannot be empty")),
+        Some("") => return Err(err("Define 'id' cannot be empty")),
         Some(_) => {}
         None => return Err(err("Missing required define '#id: \"\"'")),
     }

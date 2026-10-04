@@ -28,6 +28,7 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use maltoolbox_language::graph::LanguageGraph;
 use maltoolbox_model::Model;
 use serde_json::{json, Map, Value};
@@ -42,11 +43,27 @@ use crate::partially_generate::{
 };
 use crate::GraphError;
 
+/// `Clone` deep-copies node storage (the `SlotMap`/`IndexMap`s, each
+/// holding `Clone`-able `AttackGraphNode`s) while cheaply sharing
+/// `lang_graph` (an `Rc`, never mutated after construction - see this
+/// module's top doc comment) - exactly the semantics
+/// `PyAttackGraph::__deepcopy__` needs: a structurally distinct graph
+/// whose `AttackGraphNodeId` keys (and hence every node's `children`/
+/// `parents` cross-references, which are just those keys) stay valid
+/// and already mutually consistent, with no manual re-linking required.
+#[derive(Clone)]
 pub struct AttackGraph {
     pub lang_graph: Rc<LanguageGraph>,
     pub nodes: SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    pub id_to_node: HashMap<i64, AttackGraphNodeId>,
-    pub full_name_to_node: HashMap<String, AttackGraphNodeId>,
+    /// `IndexMap`, not `HashMap`: iteration order over these two maps
+    /// feeds node-by-id/by-name lookups whose failure paths
+    /// (`node_getters.rs`'s `get_similar_full_names`) and whose
+    /// downstream consumers rely on deterministic, insertion-matching
+    /// order - a plain `HashMap`'s randomized per-process order made
+    /// attack-graph generation output nondeterministic (Phase 4 decision
+    /// 7, widened).
+    pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
+    pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
     pub defense_steps: Vec<AttackGraphNodeId>,
     pub next_node_id: i64,
@@ -59,8 +76,8 @@ impl AttackGraph {
         AttackGraph {
             lang_graph,
             nodes: SlotMap::with_key(),
-            id_to_node: HashMap::new(),
-            full_name_to_node: HashMap::new(),
+            id_to_node: IndexMap::new(),
+            full_name_to_node: IndexMap::new(),
             attack_steps: Vec::new(),
             defense_steps: Vec::new(),
             next_node_id: 0,
@@ -103,7 +120,7 @@ impl AttackGraph {
     /// Returns the newly created attack/defense step nodes.
     ///
     /// Unlike the Python original, `removed_assets` carries a
-    /// [`maltoolbox_model::RemovedAssetSnapshot`] per id (returned by
+    /// [`maltoolbox_model::AssetSnapshot`] per id (returned by
     /// `Model::remove_asset`) rather than a bare id: nodes only ever store
     /// a `model_asset: i64`, not a live asset reference the way Python's
     /// `ModelAsset` objects stay readable even after being unlinked from
@@ -119,7 +136,7 @@ impl AttackGraph {
         model: &Model,
         new_assets: &HashSet<i64>,
         new_associations: &HashSet<(i64, String, i64)>,
-        removed_assets: &HashMap<i64, maltoolbox_model::RemovedAssetSnapshot>,
+        removed_assets: &HashMap<i64, maltoolbox_model::AssetSnapshot>,
         removed_associations: &HashSet<(i64, String, i64)>,
     ) -> Result<HashSet<AttackGraphNodeId>, GraphError> {
         let created = generate::create_nodes_from_assets(
@@ -307,7 +324,18 @@ impl AttackGraph {
         Ok(key)
     }
 
-    pub fn remove_node(&mut self, key: AttackGraphNodeId) -> Result<(), GraphError> {
+    /// Removes a node, returning its final state - captured *after* the
+    /// parent/child unlinking loops below have already mutated it (so
+    /// `children`/`parents` on the returned value are empty, matching
+    /// what a still-held Python `AttackGraphNode` reference would show
+    /// post-removal), but before the node is actually dropped from
+    /// `self.nodes`. Mirrors `maltoolbox_model::Model::remove_asset`'s
+    /// `AssetSnapshot::final_state` capture-point placement exactly -
+    /// this is the PyO3 compat layer's only way to keep a removed node's
+    /// handle readable afterward (see `AttackGraphNode`'s own doc
+    /// comment in `maltoolbox-attackgraph-py`'s Phase 4 status), the
+    /// same shape of gap `AssetSnapshot` already solves for `ModelAsset`.
+    pub fn remove_node(&mut self, key: AttackGraphNodeId) -> Result<AttackGraphNode, GraphError> {
         let (id, children, parents) = {
             let node = &self.nodes[key];
             (node.id, node.children.clone(), node.parents.clone())
@@ -321,14 +349,19 @@ impl AttackGraph {
 
         let full_name = self.full_name_to_node.iter().find_map(|(name, &k)| (k == key).then(|| name.clone()));
 
+        let final_state = self.nodes[key].clone();
         self.nodes.remove(key);
-        self.id_to_node.remove(&id);
+        // `shift_remove` (not `swap_remove`): preserves the relative
+        // order of the remaining entries, matching Python `del dict[k]`
+        // semantics (Phase 4 decision 7) - `swap_remove` would move the
+        // last entry into the removed slot instead.
+        self.id_to_node.shift_remove(&id);
         if let Some(name) = full_name {
-            self.full_name_to_node.remove(&name);
+            self.full_name_to_node.shift_remove(&name);
         }
         self.attack_steps.retain(|&k| k != key);
         self.defense_steps.retain(|&k| k != key);
-        Ok(())
+        Ok(final_state)
     }
 
     pub fn to_dict(&self, model: Option<&Model>) -> Value {
@@ -432,7 +465,7 @@ impl AttackGraph {
         }
 
         // Re-establish links between nodes, now that every node exists.
-        let resolve_relation = |id_to_node: &HashMap<i64, AttackGraphNodeId>,
+        let resolve_relation = |id_to_node: &IndexMap<i64, AttackGraphNodeId>,
                                  node_dict: &Value,
                                  relation: &'static str|
          -> Result<HashSet<AttackGraphNodeId>, GraphError> {
@@ -481,7 +514,12 @@ impl AttackGraph {
         Self::from_dict(&serialized, lang_graph, model)
     }
 
-    fn node_to_dict(&self, key: AttackGraphNodeId, model: Option<&Model>) -> Value {
+    /// Made `pub` (opportunistic, additive-only change) so the PyO3 compat
+    /// layer (`maltoolbox-attackgraph-py`) can serialize a single node the
+    /// same way `to_dict` does, for `AttackGraphNode.to_dict` - mirrors
+    /// the real Python original having `to_dict` on the node itself, not
+    /// just on the graph. No behavior change to any existing caller.
+    pub fn node_to_dict(&self, key: AttackGraphNodeId, model: Option<&Model>) -> Value {
         let node = &self.nodes[key];
 
         let mut children = Map::new();
