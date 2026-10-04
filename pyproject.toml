@@ -51,14 +51,14 @@ dev = [
 "maltoolbox" = "maltoolbox.__main__:main"
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1,<2"]
+build-backend = "maturin"
 
-[tool.setuptools.packages.find]
-include = ["maltoolbox*"]
-
-[tool.setuptools.package-data]
-maltoolbox = ["*.conf*", "py.typed"]
+[tool.maturin]
+manifest-path = "python/maltoolbox-pyo3/Cargo.toml"
+module-name = "maltoolbox._native"
+python-source = "."
+include = ["maltoolbox/py.typed", "maltoolbox/*.conf*"]
 
 [tool.pytest.ini_options]
 pythonpath = ['.']

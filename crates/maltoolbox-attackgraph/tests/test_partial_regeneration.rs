@@ -16,6 +16,7 @@
 //! little over that. Two cheap error-path unit tests are kept
 //! (`switch_fieldname`/`nodes_to_be_removed` raising on bad input).
 
+use indexmap::IndexMap;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -673,7 +674,7 @@ fn nodes_to_be_removed_missing_node_raises() {
     let err = maltoolbox_attackgraph::partially_generate::nodes_to_be_removed(
         &snapshot(&model, &HashSet::from([network])),
         &model,
-        &HashMap::new(),
+        &IndexMap::new(),
     )
     .unwrap_err();
     assert!(err.to_string().contains("Failed to find"));

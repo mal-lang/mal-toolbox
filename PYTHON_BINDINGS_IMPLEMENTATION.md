@@ -250,30 +250,28 @@ mal-simulator's `main` overrides `__eq__`/`__hash__`, and neither does
 any `is`-based identity comparison on these objects - both facts used
 above to justify skipping a handle cache.
 
-### Packaging (Phase 5, not started)
+### Packaging (Phase 5, done - see "Phase 5 status" below for the full writeup)
 
-This is a deliberate, acknowledged break to the **build/release**
+This was a deliberate, acknowledged break to the **build/release**
 pipeline - never to the Python API surface:
 
-- `pyproject.toml`'s `[build-system]` moves from `setuptools` to
-  `maturin`.
-- `mal-toolbox` becomes a compiled-extension package unconditionally
+- `pyproject.toml`'s `[build-system]` moved from `setuptools` to
+  `maturin`. **Done.**
+- `mal-toolbox` is now a compiled-extension package unconditionally
   (same category as `pydantic`/`polars`/`ruff`). Prebuilt wheels for
-  common platforms via `maturin`+`cibuildwheel` become necessary;
-  building from sdist on an uncovered platform now requires a Rust
-  toolchain, where today it never did.
-- Still TODO even for local dev (see Status): get `maturin`'s
-  `module-name = "maltoolbox._native"` to install the compiled
-  extension *inside* the existing `maltoolbox/` source directory
-  automatically. Phase 0 found that without a `python-source` pointing
-  at a directory that actually contains a `maltoolbox/` package,
-  maturin installs a bare top-level `_native` package instead (wrong
-  location) - worked around for now by manually copying the built
-  `.so` into `maltoolbox/` (gitignored, not committed, not a real fix).
-  Proper fix is Phase 5's job: likely `python-source = "../.."` (repo
-  root) once `maltoolbox/*.py` are themselves just re-export shims, so
-  maturin owning the whole source tree during `maturin develop` doesn't
-  fight with anything else.
+  common platforms via `maturin`+`cibuildwheel` are built in CI on tag
+  push; building from sdist on an uncovered platform now requires a Rust
+  toolchain, where it never did before. **Done**, though the
+  cibuildwheel/rustup CI recipe itself hasn't yet been exercised by a
+  real tag push - see "Phase 5 status".
+- The local-dev blocker (getting `maturin`'s `module-name =
+  "maltoolbox._native"` to install the compiled extension *inside* the
+  existing `maltoolbox/` source directory automatically, instead of a
+  wrong-location bare top-level `_native` package) is fixed: setting
+  `python-source = "."` in `[tool.maturin]` was the whole fix. The manual
+  `cp` workaround described in earlier phases' status sections no longer
+  applies - `uv sync`/`uv run` rebuild the extension in place
+  automatically. **Done.**
 
 ## Phasing
 
@@ -324,10 +322,14 @@ pipeline - never to the Python API surface:
   model-effects/tombstone retrofit; 4b: the actual shim cutover, plus
   decisions 8-10 found along the way). Full suite green: 99 passed, 3
   deselected, 0 failed; `ruff`/`mypy` clean.
-- [ ] **Phase 5 - packaging.** `maturin` build backend, `python-source`
+- [x] **Phase 5 - packaging.** `maturin` build backend, `python-source`
   wiring so the extension lands inside `maltoolbox/` properly (see
   "Packaging" above), `cibuildwheel` CI config, sdist-requires-Rust
-  documented in README.
+  documented in README. **Done** - see "Phase 5 status" for the full
+  writeup, including one not-yet-exercised item (the cibuildwheel/rustup
+  recipe needs a real push to confirm it actually works end to end -
+  `on: push` with no tag filter, kept identical to `main`, so any push
+  exercises it).
 - [ ] **Phase 6 - mal-simulator acceptance gate.** Clone mal-simulator
   `main` unmodified, install this repo's Rust-backed wheel as its
   `mal-toolbox` dependency, run its test suite unmodified. Must pass.
@@ -913,15 +915,17 @@ earlier due diligence that real existing tests exposed.
 
 ## Status
 
-**Current phase: Phase 0, 1, 2, 3, and 4 (4a + 4b) all done** - the
-public `maltoolbox` package is now fully native-backed (`maltoolbox/
-{model,language/languagegraph,attackgraph/{attackgraph,node}}.py` and
-the exception/compiler-exception modules are thin re-export shims over
+**Current phase: Phase 0 through 5 all done** - the public `maltoolbox`
+package is fully native-backed (`maltoolbox/{model,language/
+languagegraph,attackgraph/{attackgraph,node}}.py` and the exception/
+compiler-exception modules are thin re-export shims over
 `maltoolbox._native`), with the full verification bar green (99 passed,
-3 deselected, 0 failed; `ruff`/`mypy` clean). Next: Phase 5 (packaging)
-- paused per the user's standing instruction to check in before
-proceeding past Phase 4. See "Phase 4a status" and "Phase 4b status"
-below for the full writeups.
+3 deselected, 0 failed; `ruff`/`mypy` clean), and the build now goes
+through `maturin` end to end - `uv sync`/`uv run` rebuild the extension
+in place with no manual `cp` step. See "Phase 4a status", "Phase 4b
+status", and "Phase 5 status" below for the full writeups. Next: Phase 6
+(mal-simulator acceptance gate) - not started, paused per the user's
+standing instruction to check in before proceeding past each phase.
 
 ### Phase 4a status: handle caching retrofit, model effects wrapper, node tombstone (done)
 
@@ -1260,19 +1264,37 @@ any single agent's self-report):**
   from scratch): `visualization/`, `translators/` beyond what the pytest
   suite already exercises, `ingestors/`, neo4j/graphviz/draw.io backends.
 
-**Known, accepted loose end (confirmed out of scope, not fixed):**
-`cargo clippy --workspace --all-targets` fails to compile
-`crates/maltoolbox-attackgraph/tests/test_partial_regeneration.rs` (a
-Rust-side integration test, unrelated to the Python-facing
-`tests/attackgraph/test_partial_regeneration.py` deletions) - it calls
+**Former loose end, now fixed:** this section previously documented
+`crates/maltoolbox-attackgraph/tests/test_partial_regeneration.rs` as a
+known, accepted, not-CI-blocking gap - it called
 `partially_generate::nodes_to_be_removed` with a `&HashMap` where the
-signature now expects `&IndexMap`, a call site decision 7's widening
-missed. `cargo build --workspace` (the actual build, not lint) succeeds
-cleanly, and this repo's CI (`.github/workflows/`) does not run
-`cargo clippy` at all (only `ruff`, `mypy`, `pytest` - see
-`run-mypy.yml`/`ruff_lint.yml`/`test-pytest.yml`), so this doesn't block
-anything today, but should be fixed before any future Rust-side CI gate
-is added.
+signature now expects `&IndexMap` (a call site decision 7's `HashMap`->
+`IndexMap` widening missed), failing `cargo clippy --workspace
+--all-targets` and, as the user hit directly, plain `cargo test
+--workspace` too (this repo's CI only runs `ruff`/`mypy`/`pytest`, so it
+never surfaced there - but it does block local Rust-side testing).
+Fixed: the one broken call site (`nodes_to_be_removed_missing_node_raises`,
+passing `&HashMap::new()` for the `full_name_to_node` parameter) now
+passes `&IndexMap::new()` instead, with a new `use indexmap::IndexMap;`
+import added (the crate already depends on `indexmap` as a regular,
+non-dev dependency, so no `Cargo.toml` change was needed - integration
+tests get the same `[dependencies]` as the lib). The `removed_assets`
+parameter on both `nodes_to_be_removed` and `partially_regenerate_graph`
+is unaffected and correctly still `&HashMap<i64, AssetSnapshot>` - decision
+7's widening was specifically for node/lookup maps needing deterministic
+iteration order, not every map in the crate, so this was a true one-line
+fix, not a wider pattern to hunt for. Verified: `cargo test --workspace`
+(all crates, all 9 tests in this file including the previously-broken
+one) passes clean.
+
+`cargo clippy --workspace --all-targets` still had one pre-existing,
+unrelated warning at this point (`clippy::redundant_guards` on
+`Some(id) if id.is_empty()` in `crates/maltoolbox-language/src/compiler/
+semantic.rs:143`, predating this whole phase, nothing to do with the
+`HashMap`/`IndexMap` fix) - also fixed, applying clippy's own suggested
+rewrite verbatim (`Some(id) if id.is_empty()` -> `Some("")`). `cargo
+clippy --workspace --all-targets` is now genuinely zero-warning, not just
+zero-error.
 
 **`tests/translators/test_updater.py`'s change, now confirmed** (flagged
 as unexplained in the intermediate status): the diff adds a
@@ -1289,6 +1311,239 @@ sides regardless (Phase 2 status below, "...ignoring
 `self.maltoolbox_version` entirely..." - an intentional, accepted
 divergence per `PORTING_NOTES.md` §3). Confirmed genuinely explained, not
 a loose end.
+
+### Phase 5 status: packaging (done)
+
+Covers the three items listed under "Packaging (Phase 5, not started)"
+above, in order.
+
+**`[build-system]` moved to `maturin`.** Root `pyproject.toml`'s
+`[build-system]` now reads `requires = ["maturin>=1,<2"]` /
+`build-backend = "maturin"`, replacing `setuptools`. The `[project]`
+metadata table (name/version/authors/dependencies/scripts/etc.) is
+untouched - maturin reads standard PEP 621 metadata directly, so none of
+that needed to change. `[tool.setuptools.packages.find]` and
+`[tool.setuptools.package-data]` are gone, replaced by a new
+`[tool.maturin]` table:
+```toml
+[tool.maturin]
+manifest-path = "python/maltoolbox-pyo3/Cargo.toml"
+module-name = "maltoolbox._native"
+python-source = "."
+include = ["maltoolbox/py.typed", "maltoolbox/*.conf*"]
+```
+`manifest-path` points at the existing umbrella extension crate (its
+`[workspace]`/path-dependency wiring into `python/maltoolbox-{language,
+model,attackgraph}-py` and `crates/*` is unchanged - still a separate
+Cargo workspace from the root one, as before). `include` replaces the old
+`package-data` entry for the two non-`.py` files the package ships
+(`py.typed`, `*.conf*`).
+
+**`python-source` wiring fixed - this was the actual blocking problem.**
+Setting `python-source = "."` (repo root, same directory as
+`pyproject.toml`, which already contains the real `maltoolbox/` package)
+was the whole fix. Verified directly, not assumed: deleted the manually-
+copied `maltoolbox/_native.cpython-313-*.so` first, then ran a plain
+`uv sync` from a clean state - maturin's PEP 660 editable-install hook
+built the extension and placed `maltoolbox/_native.cpython-313-x86_64-
+linux-gnu.so` directly inside the real `maltoolbox/` package in the repo
+(not a separate `site-packages/_native/`), and `import maltoolbox._native`
+resolved correctly with zero manual steps. The old manual-copy workaround
+(`uv run maturin develop --release -m python/maltoolbox-pyo3/Cargo.toml
+&& cp .venv/.../_native*.so maltoolbox/...`) documented throughout this
+plan is now obsolete - plain `uv sync` (or any `uv run <cmd>`, which
+triggers a rebuild check automatically) is sufficient after a Rust
+change. `uv run <cmd>` with no Rust changes pending stays fast (~30ms
+overhead, confirmed by timing) - the rebuild check is cheap when nothing
+changed.
+
+**`cibuildwheel` CI config added (superseded below - kept for history).**
+Originally folded a `cibuildwheel`-based `build-wheels` job into the
+existing `.github/workflows/publish-to-pypi-and-test-pypi.yml`: ran
+`pypa/cibuildwheel@v4.2.1` across `ubuntu-latest`/`macos-latest`/
+`windows-latest` (CPython 3.10-3.14, skipping musllinux/manylinux i686 and
+win32), with `CIBW_BEFORE_ALL_LINUX` installing a Rust toolchain into the
+manylinux/musllinux containers once per container (not
+`CIBW_BEFORE_BUILD_LINUX`, which would reinstall it once per CPython
+target built inside that same container), plus `CIBW_TEST_COMMAND:
+'python -c "import maltoolbox"'`; a separate `build-sdist` job ran
+`maturin sdist`. This version came from a second pass after an external
+review of the first cut of this workflow caught several things worth
+fixing - see git history around this point for the review content if
+useful context is ever needed. The `publish-to-pypi`-needs-
+`publish-to-testpypi` sequencing (TestPyPI as a real gate, not a
+simultaneous no-ordering publish) and the tag-gated `if:` conditions
+introduced in this pass carried forward unchanged into the
+`maturin-action` rewrite below.
+
+**Superseding rewrite: switched the build jobs from `cibuildwheel` to
+`PyO3/maturin-action@v1`**, per explicit user request to use the
+Rust-ecosystem-native tool and follow current best practices for a
+PyO3/maturin project specifically (not just "any compiled-extension
+package" best practices, which is what the `cibuildwheel` pass was
+following). Source of truth: ran `maturin generate-ci github` locally
+(maturin 1.15.0) rather than trusting secondhand summaries of
+`maturin-action`'s README, since an earlier fetch of that README had
+already produced one visibly-hallucinated detail (a QEMU `if:` condition
+comparing a matrix field to itself). The generator's live output revealed
+`maturin-action` needs no manual Rust-toolchain bootstrapping at all
+(unlike `cibuildwheel`, which needed the `CIBW_BEFORE_ALL_LINUX` rustup
+curl-install) - it runs inside manylinux/musllinux containers that already
+carry a Rust toolchain, and handles aarch64 cross-compilation internally
+with no explicit QEMU setup step in the generated output, so none was
+added here either.
+
+**A critical bug found and fixed before wiring this up, not merely a
+style choice:** the generator, when pointed at the extension crate's
+manifest via `-m python/maltoolbox-pyo3/Cargo.toml`, emits `args:
+--manifest-path python/maltoolbox-pyo3/Cargo.toml` in every build step.
+Tested by hand: `maturin build --manifest-path python/maltoolbox-pyo3/
+Cargo.toml` run from the repo root does **not** use the repo-root
+`pyproject.toml`'s `[tool.maturin]` config - it resolves pyproject.toml
+configuration from the directory containing that `Cargo.toml` instead,
+which found the stale `python/maltoolbox-pyo3/pyproject.toml` (its
+`module-name` set, but no `python-source` override) and silently built a
+wholly wrong wheel: `maltoolbox_native-0.1.0-...whl`, not
+`mal_toolbox-2.11.0-...whl`, with none of the real package's files in it.
+Deleting that nested file and re-running produced an equally-wrong result
+from a different cause - no pyproject.toml found at all, so maturin fell
+back to the Cargo package's own `[package] name = "maltoolbox-pyo3"` for
+metadata, still ignoring the real package. The fix, confirmed working:
+regenerate with no `-m` flag at all, which resolves `manifest-path` from
+the repo-root `pyproject.toml`'s own `[tool.maturin]` table (already set
+there - see "Packaging" above) - `args` in the final workflow has no
+`--manifest-path` anywhere. Verified directly: `maturin build --release`
+with no flags, run from repo root, produces
+`mal_toolbox-2.11.0-cp313-cp313-manylinux_2_34_x86_64.whl` with
+`maltoolbox/_native.cpython-313-...so` correctly nested inside, matching
+local `uv sync` behavior exactly. The now-proven-dangerous
+`python/maltoolbox-pyo3/pyproject.toml` was deleted outright (see the
+correction note above, in the original Phase 5 writeup, where it had
+been wrongly called "harmless").
+
+**Final job structure:** `linux` (manylinux, `x86_64`+`aarch64`, one job
+per target via a matrix, `manylinux: auto`), `musllinux` (same two
+targets, `manylinux: musllinux_1_2`), `windows` (`x64` only), `macos`
+(`x86_64` on `macos-15-intel` + `aarch64` on `macos-latest`, both native -
+not cross-compiled, since GitHub's `macos-latest` runner is Apple Silicon
+and `macos-15-intel` is the explicit Intel runner), `sdist`. **Deliberately
+scoped down from the generator's full default matrix**, which also
+includes `x86` (32-bit), `s390x`, `ppc64le`, `armv7`, and Windows `x86`/
+`arm64` - dropped as very unlikely to have real demand for this package;
+trivial to add back from the generator's raw output
+(`/tmp/.../generated-ci-v2.yml`-equivalent, regenerate with `maturin
+generate-ci github` if needed) if that changes. Each build job sets
+`sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}` (cache for regular
+CI runs, but force a clean uncached build for actual release artifacts -
+taken directly from the generator's own default, not invented here) and
+`--find-interpreter` (maturin auto-discovers whatever CPython
+interpreters are present on the runner/in the container rather than a
+hardcoded version list - simpler than `cibuildwheel`'s explicit
+`CIBW_BUILD` list, but means Python-version coverage for Windows/macOS
+wheels depends on what `actions/setup-python`/the runner image actually
+provides rather than an explicit choice; not yet confirmed against a real
+CI run which versions this actually produces). A `Test wheel` step
+(`pip install` the built wheel + `python -c "import maltoolbox"`) was
+added on every native-arch build (`linux`/`musllinux` only on their
+`x86_64` matrix entry, both `macos` entries, the single `windows` entry) -
+`maturin-action` has no built-in equivalent to `cibuildwheel`'s
+`CIBW_TEST_COMMAND`, so this is hand-rolled; skipped for the cross-compiled
+`aarch64` Linux entries since there's no QEMU/emulation set up to actually
+execute a foreign-arch binary on an `x86_64` runner.
+
+**Publish jobs unchanged in mechanism, renamed `needs` targets only:**
+still `pypa/gh-action-pypi-publish@release/v1` via OIDC trusted publishing
+(not the generator's own default of `uv publish` + a stored
+`PYPI_API_TOKEN` secret - deliberately kept, since trusted publishing/no
+stored secret is the better-established practice and was already reviewed
+and committed to earlier in this phase), still `publish-to-testpypi`
+before `publish-to-pypi` with the latter `needs`-ing the former, still
+tag-gated via the same `if:` conditions, still `on: push` at the top level
+(unchanged, per the explicit instruction not to touch the trigger).
+Artifact naming switched to the generator's `wheels-<platform>-<target>`
+convention (was `python-package-distributions-<os>`) since a target-level
+matrix within one job - new with `maturin-action` - needs unique names per
+matrix entry, not just per job.
+
+**One new hardening item added beyond what was already there, taken
+directly from the generator's default:** a GitHub-native build-provenance
+attestation step (`actions/attest@v4`, requiring a new `attestations:
+write` permission) added to `publish-to-pypi` only, over the final
+`dist/*` artifacts right before the real PyPI publish. This is separate
+from and additional to the Sigstore/PEP 740 attestations
+`gh-action-pypi-publish` already generates automatically for trusted-
+published packages (uploaded to PyPI itself) - this one is GitHub-native,
+independently verifiable via `gh attestation verify` without going through
+PyPI at all. Not added to `publish-to-testpypi`, since attesting test-only
+artifacts adds no real value.
+
+Standard GitHub Actions versions bumped to match the generator's current
+defaults rather than the versions this workflow happened to already be
+on: `actions/checkout@v4`->`v6`, `actions/setup-python@v5`->`v6`,
+`actions/upload-artifact@v4`->`v6`, `actions/download-artifact@v4`->`v7`.
+
+**Trigger kept identical to `main` (`on: push`), per explicit user
+instruction** ("this branch is not for updating/modifying CI, just for
+porting to the Rust backend"). An earlier pass on this branch narrowed the
+trigger to `push: tags: [...]` (reasoning: `cibuildwheel` now compiles the
+Rust extension across a multi-platform matrix on every build, materially
+more expensive than the old pure-Python `pip install build` the same
+trigger used to run) - correctly caught as out-of-scope CI-policy
+tinkering and reverted. Net effect, carried forward unmodified from
+`main`: `build-wheels`/`build-sdist` still run on every push (now
+compiling Rust instead of pure Python - an unavoidable consequence of the
+backend port itself, not a policy change made on this branch); only the
+`publish-to-pypi`/`publish-to-testpypi` jobs are tag-gated, via their
+existing `if: startsWith(github.ref, 'refs/tags/')` conditions (also
+unmodified from `main`). Separately worth noting: `main`'s tags are plain
+semver (`2.11.0`, `0.0.10`, ...), never `v`-prefixed - confirmed via `git
+tag -l`, all 88 existing tags match `^[0-9]+\.[0-9]+\.[0-9]+$` - so had a
+tag-based trigger been kept, the pattern would have needed to be
+`[0-9]+.[0-9]+.[0-9]+`, not `v*`. Not applicable now that the trigger
+matches `main`, but worth remembering if a tag-gated trigger is ever
+revisited outside this branch's scope.
+
+This has not been exercised by an actual tag push or GitHub-hosted CI run
+yet - the YAML was validated for syntax (`yaml.safe_load`), the exact
+`maturin build` invocation the workflow uses was verified by hand locally
+(see above - this is what caught the `--manifest-path` bug), but the
+`maturin-action`-in-CI path specifically (container selection, aarch64
+cross-compilation, `--find-interpreter`'s actual Python-version coverage
+on the GitHub-hosted Windows/macOS runners) is still unverified against
+real CI and should be smoke-tested before the first real release tag.
+
+**README updated** with a `### Requirements` note that building from the
+sdist (i.e. no prebuilt wheel matches the installer's platform/Python
+version) now requires a Rust toolchain, linking rustup.rs.
+
+**Full verification bar, re-run after the `pyproject.toml` switch:**
+`uv run pytest tests -m "not integration" -q` -> 99 passed, 3 deselected
+(unchanged from Phase 4b); `uv run ruff check .` -> all checks passed;
+`uv run mypy maltoolbox tests --ignore-missing-imports` -> no issues in
+46 source files; CLI spot checks (`uv run maltoolbox compile`/
+`generate-attack-graph` against real testdata fixtures) exit cleanly and
+raise correctly-mapped exceptions (`MalSyntaxError`, `ModelException`) on
+bad input, round-tripping through the now-maturin-built extension exactly
+as before the packaging change.
+
+**Correction to this section's original claim, found and fixed in the
+`maturin-action` CI pass below:** the nested
+`python/maltoolbox-pyo3/pyproject.toml` was originally left in place here
+as "harmless." It is not. Confirmed by hand: `maturin build --manifest-path
+python/maltoolbox-pyo3/Cargo.toml` (the exact invocation style
+`maturin-action`/`maturin generate-ci` produce when given an explicit
+manifest path) resolves pyproject.toml configuration from the directory
+*containing that Cargo.toml*, not the repo root - so it silently picked up
+the stale nested file's `module-name`/missing `python-source` and built a
+wheel named `maltoolbox_native-0.1.0` with the wrong internal layout,
+ignoring the real `mal-toolbox` package entirely, no error or warning.
+Deleted in the Phase 5 CI follow-up (see below) once this was confirmed;
+the fix is to never pass `--manifest-path` to `maturin`/`maturin-action` at
+all and let it resolve everything from the root `pyproject.toml`'s own
+`[tool.maturin] manifest-path` setting instead (verified: `maturin build`
+with no `--manifest-path` run from repo root correctly produces
+`mal_toolbox-2.11.0...whl` with `maltoolbox/_native...so` nested
+correctly).
 
 ### Resolution of the freeform/mutable-construction finding (closes out Phase 1)
 
