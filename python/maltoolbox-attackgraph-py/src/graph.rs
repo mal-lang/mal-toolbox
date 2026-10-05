@@ -32,7 +32,7 @@ use crate::detector_support::{build_py_detector, detector_snapshots_for};
 use crate::exceptions::{graph_error_to_lookup, graph_error_to_py};
 use crate::node::{PyAttackGraphNode, PyAttackGraphNodesView};
 
-#[pyclass(name = "AttackGraph", module = "maltoolbox._native", unsendable)]
+#[pyclass(name = "AttackGraph", module = "maltoolbox._native", unsendable, weakref)]
 pub struct PyAttackGraph {
     pub inner: Rc<RefCell<AttackGraph>>,
     pub lang_graph_py: Py<PyLanguageGraph>,
@@ -383,6 +383,73 @@ impl PyAttackGraph {
         Ok(Self::wrap(inner, lang_graph, model))
     }
 
+    /// Makes the reference cycle `PyAttackGraph.node_cache ->
+    /// Py<PyAttackGraphNode> -> NodeRepr::Owned.owner_py -> back to this
+    /// `PyAttackGraph`` visible to CPython's cyclic GC. Without this (and
+    /// `PyAttackGraphNode::__traverse__`/`__clear__` on the other side of
+    /// the cycle - `node.rs`), every `AttackGraph` that ever handed out a
+    /// node handle (i.e. essentially all of them, since `.nodes`/
+    /// `attack_steps`/`defense_steps`/traversal all go through
+    /// `node_handle`) leaked: the cycle has no edge visible to
+    /// `gc.get_referrers`/the generational collector (both `Py<T>` legs
+    /// live inside Rust-side `Rc<RefCell<...>>` containers, invisible to
+    /// `tp_traverse` unless a class opts in), so `gc.collect()` could
+    /// never find and break it, pinning the graph (and everything it
+    /// transitively owns - lang_graph, model, every cached node/detector)
+    /// alive forever. Caught by mal-simulator's
+    /// `test_no_memory_leak_on_teardown` (needs weakref support first -
+    /// see the `weakref` pyclass flag above - to even observe the leak).
+    /// Visits every `Py<T>` field that can reach back into a cycle;
+    /// `inner`/`tombstones` are plain Rust data (no `Py<T>` inside), so
+    /// nothing to visit there.
+    fn __traverse__(&self, visit: pyo3::PyVisit<'_>) -> Result<(), pyo3::PyTraverseError> {
+        visit.call(&self.lang_graph_py)?;
+        if let Some(model_py) = &self.model_py {
+            visit.call(model_py)?;
+        }
+        if let Some(list) = self.detectors_list.borrow().as_ref() {
+            visit.call(list)?;
+        }
+        for v in self.node_detectors.borrow().values() {
+            visit.call(v)?;
+        }
+        for v in self.node_extras.borrow().values() {
+            visit.call(v)?;
+        }
+        for v in self.node_cache.borrow().values() {
+            visit.call(v)?;
+        }
+        for (children, parents) in self.node_edges_cache.borrow().values() {
+            visit.call(children)?;
+            visit.call(parents)?;
+        }
+        if let Some(dict) = self.nodes_override.borrow().as_ref() {
+            visit.call(dict)?;
+        }
+        Ok(())
+    }
+
+    /// Breaks the cycle described in `__traverse__`'s doc comment by
+    /// dropping every `Py<PyAttackGraphNode>` this graph holds (plus the
+    /// other lazily-cached `Py<T>` containers, for the same reason) -
+    /// after this runs, no strong Rust-side reference from this
+    /// `PyAttackGraph` back to any node handle (or vice versa, once that
+    /// handle's own `__clear__` also runs) remains, so the cycle
+    /// collector can finish reclaiming both sides. Matches the
+    /// `CycleWithClear` pattern in pyo3's own `test_gc.rs`: clearing is
+    /// allowed to leave the object in a method-unusable state because a
+    /// cleared object is, by construction, already unreachable from
+    /// living Python code - `__clear__` only runs during cycle
+    /// collection, never otherwise.
+    fn __clear__(&self) {
+        self.node_cache.borrow_mut().clear();
+        self.node_edges_cache.borrow_mut().clear();
+        self.node_detectors.borrow_mut().clear();
+        self.node_extras.borrow_mut().clear();
+        *self.detectors_list.borrow_mut() = None;
+        *self.nodes_override.borrow_mut() = None;
+    }
+
     #[getter]
     fn lang_graph(&self, py: Python<'_>) -> Py<PyLanguageGraph> {
         self.lang_graph_py.clone_ref(py)
@@ -709,7 +776,19 @@ impl PyAttackGraph {
         // `node_id` can legitimately collide with a previously-removed
         // node's id.
         slf.evict_node_handle(id);
-        slf.evict_edges_cache();
+        // Deliberately *not* `evict_edges_cache()` here: the core's
+        // `add_node` always creates the new node with empty
+        // `children`/`parents` (`Default::default()`, never linked into
+        // any existing node's edges as a side effect), so no other
+        // node's cached `(children, parents)` `PySet` pair can have gone
+        // stale from this call. Wiping the whole cache here used to
+        // silently discard any direct Python-side mutation of an
+        // already-fetched edges set (`some_node.parents.add(new_node)`,
+        // the pure-Python original's normal usage pattern - see
+        // `edges_sets`'s doc comment) made *before* a later, unrelated
+        // `add_node` call: the mutated `PySet` stayed correct in-memory,
+        // but the next `.parents` read after the evicted cache missed
+        // and rebuilt from the (unmodified) core would silently lose it.
         slf.node_handle(&owner_py, py, id)
     }
 
@@ -851,6 +930,20 @@ impl PyAttackGraph {
         Ok(Self::wrap(inner, lang_graph_py, model_py))
     }
 
+    /// Uses `to_dict_value` (string-keyed `children`/`parents`, straight
+    /// from the core's own `to_dict`), not `self.to_dict()`/`._to_dict()`
+    /// (which runs `fix_children_parents_int_keys` to give Python callers
+    /// *integer* keys, matching the pure-Python original's public API).
+    /// `_from_pickle_state` feeds `state` through `pythonize::depythonize`
+    /// back into a `serde_json::Value` - and `serde_json::Value::Object`
+    /// only accepts string keys, so passing the int-keyed form here raised
+    /// `ValueError: unexpected type: 'int' object is not an instance of
+    /// 'str'` on unpickling for any graph with at least one linked node
+    /// (not exercised by `test_attackgraph_pickle`, whose `model` fixture
+    /// is asset-less and so produces zero nodes). The core's own
+    /// `AttackGraph::from_dict` (what `_from_pickle_state` ultimately
+    /// calls) parses `children`/`parents` ids back out of string keys
+    /// too, so the string-keyed form round-trips correctly either way.
     #[allow(clippy::type_complexity)]
     fn __reduce__<'py>(
         &self,
@@ -858,7 +951,7 @@ impl PyAttackGraph {
     ) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>, Bound<'py, PyAny>, Option<Bound<'py, PyAny>>))> {
         let cls = py.get_type::<PyAttackGraph>();
         let func = cls.getattr("_from_pickle_state")?;
-        let state = self.to_dict(py)?;
+        let state = pythonize::pythonize(py, &self.to_dict_value(py)).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let lang_graph_state = self.lang_graph_py.bind(py).call_method0("_to_dict")?;
         let model_state = match &self.model_py {
             Some(m) => Some(m.bind(py).call_method0("_to_dict")?),

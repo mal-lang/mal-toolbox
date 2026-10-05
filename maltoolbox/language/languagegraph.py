@@ -8,6 +8,22 @@ pieces that have no native equivalent: `disaggregate_attack_step_full_name`
 URL branch (`language_graph_from_git_url` needs a live git clone at
 runtime - explicitly out of scope for the Rust port, see
 `PORTING_NOTES.md` §1).
+
+The pure-Python original's `LanguageGraph.load_from_file` classmethod
+*was* `load_language_graph_from_file` (it dispatched `.git`-suffixed
+filenames to a clone-then-load path before falling through to the
+mal/mar/yaml/json loader). The Rust-native `LanguageGraph.load_from_file`
+staticmethod never got that `.git` dispatch ported, so any caller that
+does `from maltoolbox._native import LanguageGraph` (directly, or via
+`maltoolbox.language`'s re-export) and then calls
+`LanguageGraph.load_from_file(git_url)` - e.g. mal-simulator's
+`Scenario` loader - got `TypeError: Unknown file extension`. Rather than
+require every such caller to route through
+`load_language_graph_from_file` instead, we monkeypatch the native
+staticmethod itself at import time below: `LanguageGraph.load_from_file`
+now checks for a `.git` suffix first and only falls through to the
+original native implementation otherwise. This keeps the fix in one
+place and makes it transparent to every existing call site.
 """
 
 from __future__ import annotations
@@ -18,6 +34,8 @@ from maltoolbox._native import LanguageGraph
 from maltoolbox.file_utils import download_git_repo
 
 logger = logging.getLogger(__name__)
+
+_native_load_from_file = LanguageGraph.load_from_file
 
 
 def disaggregate_attack_step_full_name(attack_step_full_name: str) -> list[str]:
@@ -61,8 +79,20 @@ def language_graph_from_git_url(git_url: str) -> LanguageGraph:
     return LanguageGraph.from_mal_spec(str(mal_file))
 
 
-def load_language_graph_from_file(filename: str) -> LanguageGraph:
-    """Create LanguageGraph from mal, mar, yaml, json or git url"""
+def _load_from_file_with_git_support(filename: str) -> LanguageGraph:
+    """Create LanguageGraph from mal, mar, yaml, json or git url.
+
+    Patched onto `LanguageGraph.load_from_file` below so every caller
+    (direct native import or via this module) gets `.git` dispatch.
+    """
     if filename.endswith('.git'):
         return language_graph_from_git_url(filename)
+    return _native_load_from_file(filename)
+
+
+LanguageGraph.load_from_file = staticmethod(_load_from_file_with_git_support)  # type: ignore[method-assign]
+
+
+def load_language_graph_from_file(filename: str) -> LanguageGraph:
+    """Create LanguageGraph from mal, mar, yaml, json or git url"""
     return LanguageGraph.load_from_file(filename)

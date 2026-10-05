@@ -283,6 +283,46 @@ impl PyAttackGraphNode {
         Ok((children_unbind, parents_unbind))
     }
 
+    /// Shared `Owned`-only implementation for `set_children`/`set_parents`
+    /// (`is_children` picks which side) - resolves `value` (an iterable of
+    /// `AttackGraphNode`s) to core `AttackGraphNodeId`s, writes them into
+    /// the live node's `children`/`parents` `HashSet`, then rebuilds just
+    /// this id's `node_edges_cache` entry from the fresh core state so the
+    /// getter's cached `PySet` reflects the write immediately rather than
+    /// going stale until some unrelated structural mutation evicts the
+    /// whole cache (see `edges_sets`'s doc comment).
+    fn set_edge_field(&self, py: Python<'_>, value: &Bound<'_, PyAny>, is_children: bool) -> PyResult<()> {
+        let (owner_py, id) = self.owned()?;
+        let owner = owner_py.borrow(py);
+        let items: Vec<Bound<'_, PyAny>> = value.try_iter()?.collect::<PyResult<Vec<_>>>()?;
+        let new_ids: Vec<i64> = items
+            .iter()
+            .map(|item| -> PyResult<i64> {
+                let node_ref = item
+                    .extract::<PyRef<'_, PyAttackGraphNode>>()
+                    .map_err(|e| pyo3::PyErr::from(e))?;
+                Ok(node_ref.id())
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        {
+            let mut graph = owner.inner.borrow_mut();
+            let key = self.node_key(&graph, id)?;
+            let mut new_keys = std::collections::HashSet::with_capacity(new_ids.len());
+            for nid in &new_ids {
+                new_keys.insert(self.node_key(&graph, *nid)?);
+            }
+            if is_children {
+                graph.nodes[key].children = new_keys;
+            } else {
+                graph.nodes[key].parents = new_keys;
+            }
+        }
+        owner.node_edges_cache.borrow_mut().remove(&id);
+        drop(owner);
+        self.edges_sets(py)?;
+        Ok(())
+    }
+
     /// Shared conversion for `additive_model_effects`/
     /// `subtractive_model_effects` (Phase 4 decision 3). `Owned`-only -
     /// see `owned()`.
@@ -336,6 +376,43 @@ impl PyAttackGraphNode {
             }),
         })
     }
+
+    /// Other half of the reference cycle described in
+    /// `PyAttackGraph::__traverse__`'s doc comment
+    /// (`owning graph -> node_cache -> this node -> owner_py -> owning
+    /// graph`): an `Owned` node's `owner_py` is a strong `Py<PyAttackGraph>`
+    /// back-reference, so the cycle collector needs this edge visible too
+    /// (both legs must be traversable for CPython's GC to recognize a
+    /// cycle at all). `Detached` nodes hold `Py<PySet>` children/parents
+    /// directly (Phase 4 decision 8) that could themselves reference
+    /// other `AttackGraphNode`s - visited for the same reason, even
+    /// though the common leak case (see `__clear__`) is the `Owned` one.
+    fn __traverse__(&self, visit: pyo3::PyVisit<'_>) -> Result<(), pyo3::PyTraverseError> {
+        match &self.repr {
+            NodeRepr::Owned { owner_py, .. } => visit.call(owner_py)?,
+            NodeRepr::Detached(d) => {
+                visit.call(&d.children)?;
+                visit.call(&d.parents)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Deliberately a no-op. `NodeRepr::Owned.owner_py` is a plain
+    /// (non-`Option`) `Py<PyAttackGraph>`, so there's no GIL-free way to
+    /// null it out here (unlike pyo3's own `test_gc.rs` examples, which
+    /// clear `Option<Py<T>>` fields by assigning `None`) without a
+    /// larger restructuring of `NodeRepr`/`owned()`'s ~30 call sites for
+    /// marginal benefit: breaking *one* edge of a cycle is sufficient for
+    /// the whole cycle to become collectible, and
+    /// `PyAttackGraph::__clear__` already does that by dropping every
+    /// `Py<PyAttackGraphNode>` in `node_cache` - once that forward edge
+    /// is gone, nothing but a (now being torn down) node's own
+    /// `owner_py` points at the graph, and normal refcounting finishes
+    /// the job as each node is deallocated. `__traverse__` above still
+    /// reports this edge (required for the GC to recognize the cycle at
+    /// all); only the *clearing* half is skipped on this side.
+    fn __clear__(&self) {}
 
     #[getter]
     pub fn id(&self) -> i64 {
@@ -418,6 +495,25 @@ impl PyAttackGraphNode {
         self.with_node_value(py, |n| Ok(n.existence_status))
     }
 
+    /// Plain mutable attribute in the pure-Python original
+    /// (`self.existence_status = existence_status` in `__init__`, freely
+    /// reassigned afterwards - e.g. by `analyzers.py`'s viability/necessity
+    /// propagation). `Owned`-only: writes through to the live node's core
+    /// field; `Detached` nodes don't store this field at all (see
+    /// `DetachedNode`'s doc comment), so setting it there is also
+    /// unsupported, same as the pure-Python original would be (there is
+    /// no detached node concept in the original to compare against, but
+    /// nothing in scope needs it).
+    #[setter]
+    fn set_existence_status(&self, py: Python<'_>, value: Option<bool>) -> PyResult<()> {
+        let (owner_py, id) = self.owned()?;
+        let owner = owner_py.borrow(py);
+        let mut graph = owner.inner.borrow_mut();
+        let key = self.node_key(&graph, id)?;
+        graph.nodes[key].existence_status = value;
+        Ok(())
+    }
+
     /// `Owned`: lazily built, then cached, per (owner, id) - see
     /// `edges_sets`. `Detached`: the plain mutable `Py<PySet>` set
     /// directly by Python code (`node1.children = {node2, node3}`) - see
@@ -433,12 +529,20 @@ impl PyAttackGraphNode {
         }
     }
 
+    /// Plain mutable set in the pure-Python original - `AttackGraphNode`
+    /// sets `self.children`/`self.parents` as bare `set()` attributes with
+    /// no linking method (see PYTHON_BINDINGS_IMPLEMENTATION.md Phase 4
+    /// decision 8's own research), so this was never detached-only; e.g.
+    /// `analyzers.py`'s apriori viability/necessity propagation reassigns
+    /// `.parents` directly on live, owned nodes. For `Owned`, writes
+    /// through to the core's `HashSet<AttackGraphNodeId>` *and* refreshes
+    /// `node_edges_cache` for this id so the cached `PySet` returned by the
+    /// getter reflects the new value instead of going stale (see
+    /// `edges_sets`'s doc comment on why that cache exists).
     #[setter]
     fn set_children(&self, py: Python<'_>, value: &Bound<'_, PyAny>) -> PyResult<()> {
         match &self.repr {
-            NodeRepr::Owned { .. } => Err(pyo3::exceptions::PyNotImplementedError::new_err(
-                "Setting .children directly is only supported on a detached AttackGraphNode.",
-            )),
+            NodeRepr::Owned { .. } => self.set_edge_field(py, value, true),
             NodeRepr::Detached(d) => {
                 let set = PySet::new(py, value.try_iter()?.collect::<PyResult<Vec<_>>>()?)?;
                 d.children.bind(py).clear();
@@ -462,12 +566,11 @@ impl PyAttackGraphNode {
         }
     }
 
+    /// See `set_children`'s doc comment - same `Owned`/`Detached` split.
     #[setter]
     fn set_parents(&self, py: Python<'_>, value: &Bound<'_, PyAny>) -> PyResult<()> {
         match &self.repr {
-            NodeRepr::Owned { .. } => Err(pyo3::exceptions::PyNotImplementedError::new_err(
-                "Setting .parents directly is only supported on a detached AttackGraphNode.",
-            )),
+            NodeRepr::Owned { .. } => self.set_edge_field(py, value, false),
             NodeRepr::Detached(d) => {
                 let set = PySet::new(py, value.try_iter()?.collect::<PyResult<Vec<_>>>()?)?;
                 d.parents.bind(py).clear();
