@@ -234,6 +234,55 @@ impl PyAttackGraphNode {
         }
     }
 
+    /// Builds (or returns the cached) `(children, parents)` `PySet` pair
+    /// for this `Owned` node - lazily built once per (owner, id) and
+    /// cached in `PyAttackGraph::node_edges_cache` from then on, same
+    /// persistent pattern as `.extras`/`.detectors` below, invalidated
+    /// only on structural mutation (see
+    /// `PyAttackGraph::evict_edges_cache`'s call sites), never on
+    /// unrelated per-node state changes. Previously, `children`/`parents`
+    /// each rebuilt a brand-new `PySet` from scratch on *every* access
+    /// (walking the core's id list, resolving each via `node_handle`, and
+    /// inserting into a fresh `PySet` - one hash-through-FFI per element,
+    /// every time); malsim's hot loop reads `.parents` twice per
+    /// traversability check and never mutates graph edges mid-run, so
+    /// that cost was paid millions of times per simulation for no
+    /// benefit. Builds both sets in one graph borrow (not two separate
+    /// lazy fields) since `children`/`parents` are almost always read
+    /// together in practice and the core data for both sits on the same
+    /// node. `Owned`-only - see `owned()`.
+    fn edges_sets(&self, py: Python<'_>) -> PyResult<(Py<PySet>, Py<PySet>)> {
+        let (owner_py, id) = self.owned()?;
+        let owner = owner_py.borrow(py);
+        {
+            let cache = owner.node_edges_cache.borrow();
+            if let Some((children, parents)) = cache.get(&id) {
+                return Ok((children.clone_ref(py), parents.clone_ref(py)));
+            }
+        }
+        let (child_ids, parent_ids): (Vec<i64>, Vec<i64>) = self.with_node(py, |g, k| {
+            Ok((
+                g.nodes[k].children.iter().map(|&c| g.nodes[c].id).collect(),
+                g.nodes[k].parents.iter().map(|&p| g.nodes[p].id).collect(),
+            ))
+        })?;
+        let children_set = PySet::empty(py)?;
+        for cid in child_ids {
+            children_set.add(owner.node_handle(owner_py, py, cid)?)?;
+        }
+        let parents_set = PySet::empty(py)?;
+        for pid in parent_ids {
+            parents_set.add(owner.node_handle(owner_py, py, pid)?)?;
+        }
+        let children_unbind = children_set.unbind();
+        let parents_unbind = parents_set.unbind();
+        owner
+            .node_edges_cache
+            .borrow_mut()
+            .insert(id, (children_unbind.clone_ref(py), parents_unbind.clone_ref(py)));
+        Ok((children_unbind, parents_unbind))
+    }
+
     /// Shared conversion for `additive_model_effects`/
     /// `subtractive_model_effects` (Phase 4 decision 3). `Owned`-only -
     /// see `owned()`.
@@ -369,23 +418,16 @@ impl PyAttackGraphNode {
         self.with_node_value(py, |n| Ok(n.existence_status))
     }
 
-    /// `Owned`: derived live from the core graph on every access (as
-    /// before). `Detached`: the plain mutable `Py<PySet>` set directly by
-    /// Python code (`node1.children = {node2, node3}`) - see the
-    /// `#[setter]` below and Phase 4 decision 8.
+    /// `Owned`: lazily built, then cached, per (owner, id) - see
+    /// `edges_sets`. `Detached`: the plain mutable `Py<PySet>` set
+    /// directly by Python code (`node1.children = {node2, node3}`) - see
+    /// the `#[setter]` below and Phase 4 decision 8.
     #[getter]
     fn children<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PySet>> {
         match &self.repr {
-            NodeRepr::Owned { owner_py, .. } => {
-                let ids: Vec<i64> = self.with_node(py, |g, k| {
-                    Ok(g.nodes[k].children.iter().map(|&c| g.nodes[c].id).collect())
-                })?;
-                let owner = owner_py.borrow(py);
-                let set = PySet::empty(py)?;
-                for id in ids {
-                    set.add(owner.node_handle(owner_py, py, id)?)?;
-                }
-                Ok(set)
+            NodeRepr::Owned { .. } => {
+                let (children, _parents) = self.edges_sets(py)?;
+                Ok(children.into_bound(py))
             }
             NodeRepr::Detached(d) => Ok(d.children.bind(py).clone()),
         }
@@ -412,16 +454,9 @@ impl PyAttackGraphNode {
     #[getter]
     fn parents<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PySet>> {
         match &self.repr {
-            NodeRepr::Owned { owner_py, .. } => {
-                let ids: Vec<i64> = self.with_node(py, |g, k| {
-                    Ok(g.nodes[k].parents.iter().map(|&p| g.nodes[p].id).collect())
-                })?;
-                let owner = owner_py.borrow(py);
-                let set = PySet::empty(py)?;
-                for id in ids {
-                    set.add(owner.node_handle(owner_py, py, id)?)?;
-                }
-                Ok(set)
+            NodeRepr::Owned { .. } => {
+                let (_children, parents) = self.edges_sets(py)?;
+                Ok(parents.into_bound(py))
             }
             NodeRepr::Detached(d) => Ok(d.parents.bind(py).clone()),
         }

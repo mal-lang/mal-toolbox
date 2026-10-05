@@ -17,7 +17,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList};
+use pyo3::types::{PyDict, PyList, PySet};
 use pyo3::IntoPyObjectExt;
 
 use maltoolbox_attackgraph::ids::AttackGraphNodeId;
@@ -65,6 +65,20 @@ pub struct PyAttackGraph {
     /// need further core-crate changes to support - logged as a
     /// deliberately partial implementation, not silently dropped).
     pub tombstones: Rc<RefCell<HashMap<i64, maltoolbox_attackgraph::AttackGraphNode>>>,
+    /// Per-node `(children, parents)` `PySet` pair, lazily built once per
+    /// id from the core's topology and cached from then on - same
+    /// persistent pattern as `node_detectors`/`node_extras` above,
+    /// applied to `AttackGraphNode.children`/`.parents` (`node.rs`'s
+    /// `edges_sets`). Before this cache existed, every single access
+    /// rebuilt a brand-new `PySet` from scratch (one hash-through-FFI per
+    /// element); malsim's hot loop reads `.parents` twice per
+    /// traversability check, so this mattered a lot in practice. Cleared
+    /// wholesale (not per-id) on any structural mutation
+    /// (`add_node`/`remove_node`/`regenerate_graph`/
+    /// `partially_regenerate_graph` - see `evict_edges_cache`), never on
+    /// unrelated per-node state changes (`enabled_defenses`,
+    /// `existence_status`, ...) that don't touch topology.
+    pub node_edges_cache: Rc<RefCell<HashMap<i64, (Py<PySet>, Py<PySet>)>>>,
     /// Phase 4 decision 8: when `Some`, `.nodes` returns this dict as-is
     /// instead of constructing a `PyAttackGraphNodesView` - lets
     /// `attack_graph.nodes = {...}` freely override the live view (e.g.
@@ -101,7 +115,19 @@ impl PyAttackGraph {
             node_cache: new_handle_cache(),
             tombstones: Rc::new(RefCell::new(HashMap::new())),
             nodes_override: Rc::new(RefCell::new(None)),
+            node_edges_cache: Rc::new(RefCell::new(HashMap::new())),
         }
+    }
+
+    /// Invalidates the whole `.children`/`.parents` cache - called on any
+    /// structural mutation. Whole-cache, not per-id: adding or removing
+    /// one node can change the children/parents sets of arbitrary
+    /// *other*, already-existing nodes (whichever ones its step
+    /// expressions link to), so a precise per-id invalidation isn't
+    /// meaningfully cheaper than just letting the next access per node
+    /// rebuild lazily.
+    fn evict_edges_cache(&self) {
+        self.node_edges_cache.borrow_mut().clear();
     }
 
     /// Resets the lazily-seeded detector containers - used after a full
@@ -518,6 +544,7 @@ impl PyAttackGraph {
         self.inner.borrow_mut().regenerate_graph(&core_model).map_err(graph_error_to_py)?;
         self.reset_detector_state();
         self.node_cache.borrow_mut().clear();
+        self.evict_edges_cache();
         // Phase 4 decision 8: a full rebuild should surface the
         // freshly-generated live nodes, not a stale `.nodes = {...}`
         // override from before the rebuild - see the `.nodes`
@@ -590,6 +617,8 @@ impl PyAttackGraph {
             let graph = slf.inner.borrow();
             created.into_iter().map(|key| graph.nodes[key].id).collect()
         };
+
+        slf.evict_edges_cache();
 
         // Purge stale per-node detector entries, and record a tombstone
         // (Phase 4 decision 4), for any node removed as a side effect of
@@ -680,6 +709,7 @@ impl PyAttackGraph {
         // `node_id` can legitimately collide with a previously-removed
         // node's id.
         slf.evict_node_handle(id);
+        slf.evict_edges_cache();
         slf.node_handle(&owner_py, py, id)
     }
 
@@ -697,6 +727,7 @@ impl PyAttackGraph {
         self.node_detectors.borrow_mut().remove(&node_id);
         self.node_extras.borrow_mut().remove(&node_id);
         self.tombstones.borrow_mut().insert(node_id, final_state);
+        self.evict_edges_cache();
         Ok(())
     }
 
