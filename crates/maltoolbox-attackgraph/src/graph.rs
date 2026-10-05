@@ -189,7 +189,15 @@ impl AttackGraph {
                 .entry(fieldname.clone())
                 .or_default()
                 .insert(*right_id);
-            let opposite = partially_generate::switch_fieldname(model, *left_id, fieldname)?;
+            // `left_id` may already be gone from `model` (removed_assets
+            // is processed below, independent of order), hence the
+            // snapshot-aware lookup rather than a plain `switch_fieldname`.
+            let opposite = partially_generate::switch_fieldname_possibly_removed(
+                model,
+                *left_id,
+                fieldname,
+                removed_assets,
+            )?;
             new_assoc_dict
                 .entry(*right_id)
                 .or_default()

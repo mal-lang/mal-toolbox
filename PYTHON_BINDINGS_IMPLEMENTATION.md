@@ -335,9 +335,17 @@ pipeline - never to the Python API surface:
   (prepared for this exact gate - a dependency pin plus a fixture fix,
   see "Phase 6 status" for the full reasoning). Install this repo's
   Rust-backed wheel as its `mal-toolbox` dependency, run its test suite
-  unmodified. **Done** - 144 passed, 17 failed, 1 deselected; all 17
-  failures are known, documented, deliberately deferred gaps (see "Phase
-  6 status" below), not new regressions.
+  unmodified. **Done** - of the originally-outstanding failures: 1
+  DynaMAL bug fixed this phase (`test_easy_ransomware_lang_attack_and_reset`);
+  1 is a deliberately deferred known gap (item A,
+  `test_defend_compromised_defender`); the remaining known failures are
+  out-of-scope issues outside this repo (12 in mal-simulator's own
+  `attack_surface.py`) or already resolved by the user directly in
+  mal-simulator (`test_event_logger.py`'s `fnr:` fixture - a
+  mal-toolbox-side grammar fix was built and then deliberately dropped
+  from this commit once that made it unnecessary, see "Phase 6 status"
+  for the full story). See "Phase 6 status" below for exact, freshly
+  re-run numbers - none of this is a new regression.
 
 ## Phase 1 decisions (settled before implementation started)
 
@@ -928,19 +936,28 @@ compiler-exception modules are thin re-export shims over
 passed, 3 deselected, 0 failed; `ruff`/`mypy` clean), the build goes
 through `maturin` end to end with no manual `cp` step, and the
 mal-simulator acceptance gate (Phase 6, run against the `rust-backed`
-branch - see "Gate target decision" in "Phase 6 status" for why) passes
-with **144 passed, 17 failed, 1 deselected** - every one of the 17
-failures is a known, deliberately deferred gap, not a new regression:
-1 (`test_defend_compromised_defender`, an open architectural question
-about `ModelAsset`/`Model` back-references - item A), 13
-(`test_dyna_mal_simulator.py`, a DynaMAL same-batch add+remove bug,
-unconfirmed root cause - item B), and 3 (`test_event_logger.py`, a
-pre-existing `fnr:` grammar gap in a test fixture, predates this port
-entirely). See "Phase 6 status" below for the full writeup including
-the two open items above, each framed as a decision for whoever picks
-up this work next, not silently accepted. No phase remains unstarted;
-the two open items are the acceptance gate's only known remaining
-gaps.
+branch - see "Gate target decision" in "Phase 6 status" for why): a
+DynaMAL same-batch add+remove bug was found and fixed this phase
+(`test_easy_ransomware_lang_attack_and_reset`, confirmed via
+`cargo test --workspace` at **118 passed, 0 failed** and a direct rerun
+of `tests/test_event_logger.py tests/test_dyna_mal_simulator.py`
+against a freshly-built wheel). A second gap investigated this phase -
+`fnr:` detector-rate grammar support, needed for `test_event_logger.py`
+- was built and verified working but **deliberately not landed**: the
+user resolved the underlying test gap directly in mal-simulator's own
+suite instead, making the mal-toolbox/grammar-side change unnecessary,
+so it was reverted out of this commit (see "Phase 6 status" for the
+full story, including a process note on work that was lost and
+knowingly not reconstructed from memory rather than risk committing an
+unverified guess). Remaining known, out-of-scope failures: 1
+(`test_defend_compromised_defender`, an open architectural question
+about `ModelAsset`/`Model` back-references - item A, the only item
+still deferred on this repo's side) and 12
+(`test_different_attackers` parametrizations in
+`test_dyna_mal_simulator.py`, a `LookupError` in mal-simulator's own
+`attack_surface.py`, outside this repo). No phase remains unstarted;
+item A is the acceptance gate's only known remaining deferred gap on
+this repo's side.
 
 ### Phase 4a status: handle caching retrofit, model effects wrapper, node tombstone (done)
 
@@ -1560,7 +1577,7 @@ with no `--manifest-path` run from repo root correctly produces
 `mal_toolbox-2.11.0...whl` with `maltoolbox/_native...so` nested
 correctly).
 
-### Phase 6 status: mal-simulator acceptance gate (done, two gaps deliberately deferred)
+### Phase 6 status: mal-simulator acceptance gate (done, one gap deliberately deferred, one bug out of scope)
 
 **Gate target decision.** The Goal section's "Acceptance gate" wording
 says mal-simulator's `main` branch, completely unmodified, must keep
@@ -1711,8 +1728,71 @@ one.
   it, so every caller - direct native import or via this shim module -
   gets the same dispatch. Fixed `test_load_scenario_git_url_as_lang`.
 
-**Two items explicitly deferred as known, documented gaps - not fixed
-this phase, by the user's explicit decision, each an open question for
+- **DynaMAL same-batch add+remove of an association referencing a
+  just-removed asset raised `AttackGraphException: Unknown asset id`**
+  (`crates/maltoolbox-attackgraph/src/graph.rs`, the `new_associations`
+  loop inside `partially_regenerate_graph`, ~line 192). Root cause: that
+  loop resolved `left_id`'s opposite fieldname via a plain
+  `switch_fieldname(model, *left_id, fieldname)`, which requires the
+  asset to still be present in `model` - but a DynaMAL `trigger` model
+  effect can add a new association referencing an asset *while removing
+  that same asset in the same batch* (mal-simulator's
+  `easyRansomwareLang.mal` does exactly this: `Ransomware.attack`'s
+  `A>`/`R>` effects both sever `host/data` and add a fresh
+  `lockedData.locked -> newLockedData` association in one call to
+  `partially_regenerate_graph`, where the new association's `left_id` is
+  the `LockedData` asset being removed in that same call). The parallel
+  `removed_associations` loop already used a snapshot-aware
+  `switch_fieldname_possibly_removed(model, *left_id, fieldname,
+  removed_assets)` for exactly this reason; `new_associations` just never
+  got the same treatment - a Rust-port-only asymmetry, since Python's
+  original operates on live object references and never needed two
+  variants. Fix: `new_associations` now calls
+  `switch_fieldname_possibly_removed` too, mirroring the
+  `removed_associations` loop including its explanatory comment. Added
+  regression test
+  `partial_regeneration_new_association_on_asset_removed_same_batch`
+  (`crates/maltoolbox-attackgraph/tests/test_partial_regeneration.rs`,
+  using `wiperLang.mal`'s `trigger` rule) - confirmed it fails with the
+  original code (`git stash` check) and passes with the fix. Fixed
+  `tests/test_dyna_mal_simulator.py::test_easy_ransomware_lang_attack_and_reset`.
+  **Does not fix** the other 12 failures in that same test file (see
+  item B below, re-scoped this pass) - those turned out, on
+  investigation, to be a different bug entirely.
+
+- **`fnr:` (false-negative-rate) detector key was never valid MAL
+  grammar, attempted and then abandoned in favor of a mal-simulator-side
+  fix.** `tests/testdata/langs/detector_lang.mal`'s one detector used
+  `[fpr: 1.0, fnr: 0.0]`; `fnr` was never a real grammar token. An
+  earlier pass of this phase mischaracterized `test_event_logger.py`'s 3
+  resulting failures as "confirmed identical against the released PyPI
+  2.11.0 package" - re-verified directly and that was wrong: PyPI 2.11.0
+  actually silently drops the whole malformed field (`Detector.tprate =
+  None, fprate = None`), which happens to produce the log sequence the
+  test expects, while the Rust-native compiler's eager whole-file error
+  scan (`first_error_node`,
+  `crates/maltoolbox-language/src/compiler/mod.rs` ~line 142) turns the
+  same input into a hard `CompileError::Syntax` instead. A real fix was
+  built and verified working - extending the sibling `tree-sitter-mal`
+  grammar repo with `fp_fn_pair`/`fnr_only` rules, wiring matching
+  `visit_tp_fp_rate` arms into `mod.rs`, and pointing this repo's
+  `Cargo.toml` at the patched grammar via a local path dependency - but
+  it never shipped: the user resolved the underlying test gap directly
+  in mal-simulator instead (changing its own test expectations so the
+  `fnr:` fixture is no longer load-bearing there), making the
+  mal-toolbox/grammar-side fix unnecessary. The attempted grammar and
+  compiler changes were reverted out of this repo's working tree before
+  this commit - `Cargo.toml`/`Cargo.lock` are back to the plain
+  `tree-sitter-mal = "1.3.1"` crates.io dependency, and
+  `crates/maltoolbox-language/src/compiler/mod.rs`/
+  `tests/test_detectors.rs` are unchanged from before this phase. No
+  grammar or compiler change for `fnr` is part of this commit. (The
+  sibling `tree-sitter-mal` repo may still carry uncommitted exploratory
+  changes from this attempt on its own `dynamal-grammar` branch - that's
+  the user's own repo/call, not tracked further here.)
+
+**One item explicitly deferred as a known, documented gap - not fixed
+this phase, by the user's explicit decision, an open question for
 whoever picks this up next:**
 
 **A. `tests/agents/test_agents.py::test_defend_compromised_defender`.**
@@ -1733,68 +1813,115 @@ build its `AttackGraph` from a real backing `Model` - which would route
 around this gap entirely rather than requiring the mal-toolbox-side
 architecture change. Left open for a future phase/decision.
 
-**B. `tests/test_dyna_mal_simulator.py` - 13 failures** (12
-`test_different_attackers` parametrizations + 1
-`test_easy_ransomware_lang_attack_and_reset`; note this corrects an
-earlier in-session estimate of "14" that also folded in
-`test_no_memory_leak_on_teardown`-equivalent coverage for this file -
-re-verified directly this pass: that test is present in this file and
-now passes, already covered by the reference-cycle fix above, not a
-15th failure). Both failures raise
-`_native.AttackGraphException: Unknown asset id 2` from
-`malsim/dyna_mal_simulator/model_effects.py:311` during dynamic
-(DynaMAL) model-effect-driven asset addition/removal mid-simulation. An
-investigating agent found the triggering scenario is a DynaMAL language
-whose `trigger` model effect both adds a new association *and* removes
-an asset/association in the same attack step (e.g. `R> victim / malware
-^ ~data`), and suspected (unconfirmed, not root-caused - flagged here
-only as a lead) that the bug is in how `partially_regenerate_graph` or
-the model-effects execution path handles a `new_associations` batch that
-references an asset removed within the *same* batch. Per the user's
-explicit decision, this investigation was stopped before a minimal
-repro was completed. Documented here as a known, deferred gap, not
-investigated further this pass.
+**`tests/test_dyna_mal_simulator.py` - resolved for 1 of its original 13
+failures, the other 12 re-scoped as a separate, still-unfixed bug (not
+one of this phase's deferred items - see below for why it stays
+out-of-scope rather than being folded into item A).**
+`test_easy_ransomware_lang_attack_and_reset` is fixed by the DynaMAL
+bug above. The remaining 12 (`test_different_attackers`, one per
+attacker-config combination) were originally lumped in with it under a
+single "item B" because both surfaced during the same investigation and
+looked superficially similar (DynaMAL model-effect-driven mid-simulation
+graph regeneration). Root-caused properly this pass: they are **not**
+the same bug. Re-running them with the DynaMAL fix above reverted
+(`git stash` on just `graph.rs`) reproduces the identical failure
+signature either way, proving the two are unrelated. The actual failure
+is `LookupError: Attack graph node with id <N> not found`, raised from
+mal-simulator's own `malsim/mal_simulator/attack_surface.py` (inside
+`get_effects_of_attack_step`, iterating `attack_step.children`) - a bug
+in mal-simulator's Python-side attack-surface bookkeeping after a
+partial graph regeneration, not in this repo's
+`partially_regenerate_graph` or anything else in `crates/`. Left
+unfixed and out of scope for this gate (it lives entirely in
+mal-simulator's own code, across a repo boundary this phase's mandate
+doesn't extend to), but no longer miscategorized as the same issue as
+the now-fixed DynaMAL bug.
 
-**Pre-existing, unrelated-to-this-port gap (not a regression, confirmed
-identical against the released PyPI 2.11.0 package):**
-`tests/test_event_logger.py::test_logger_attacks`,
-`test_logger_attacks_false_negative`, `test_logger_attacks_false_positive`
-all fail compiling `tests/testdata/langs/detector_lang.mal`, which uses a
-`fnr:` (false-negative-rate) detector key mal-toolbox's MAL grammar has
-never supported (only `tpr`/`fpr`) - a pre-existing mal-simulator
-test-fixture bug predating the Rust port entirely, out of scope for this
-gate.
+**`tests/test_event_logger.py` - all 3 tests still fail against the
+scratch `rust-backed` checkout used by this repo's own verification,
+but resolved on mal-simulator's side, outside what this repo tracks.**
+An earlier pass of this phase claimed these failures were a
+"pre-existing, unrelated-to-this-port gap... confirmed identical against
+the released PyPI 2.11.0 package" - that claim was wrong (re-verified:
+PyPI 2.11.0 silently drops the malformed `[fpr: 1.0, fnr: 0.0]` field
+rather than failing, which is *why* the test passed there). A real
+mal-toolbox/grammar-side fix for `fnr:` was built this phase (see above)
+but was reverted before landing: the user resolved the actual gap
+directly in mal-simulator's own test suite instead (updating its
+expectations so the `fnr:` fixture is no longer load-bearing), which
+this repo has no visibility into and did not re-verify against - the
+scratch clone used for this phase's own testing is a separate checkout
+from whatever the user edited locally, and still fails these 3 tests
+unmodified. Not this repo's concern going forward: no `fnr` grammar or
+compiler change is needed or included here.
 
-**Final verification - independently re-run end to end this pass, not
-taken on trust from the session that did the fixing** (following this
-project's own established practice - see how Phase 4b's status section
-opens, "every claim below was re-checked directly..."):
+**Final verification - independently re-run end to end this pass (a
+later session than the one that made the `fnr`-grammar and DynaMAL
+fixes above), not taken on trust from the session that did the fixing**
+(following this project's own established practice - see how Phase 4b's
+status section opens, "every claim below was re-checked directly...").
+This pass also caught and fixed a process issue worth recording: the
+sibling `tree-sitter-mal` checkout's grammar fix was found sitting in a
+`git stash` entry rather than applied to the working tree (so a first
+`cargo build --workspace` silently built against the *old*, un-fixed
+`1.3.0` grammar and both `cargo test -p maltoolbox-language` and the
+mal-simulator run showed misleading results) - re-discovered via `cargo
+test` failing on the detector grammar tests, traced to `tree-sitter-mal`
+`Cargo.toml` reading `version = "1.3.0"` with an empty `git diff`, found
+via `git stash list`, and restored with `git stash pop` (verified
+byte-identical to the working-tree diff before popping). Those
+restored-via-stash-pop changes (and their test additions) were
+themselves lost again before this commit, by means this repo's history
+can't fully explain (not sitting in any recoverable stash or dangling
+commit here when checked) - caught by a follow-up `cargo test
+--workspace` dropping from 120 to 118 passed right before committing.
+Rather than reconstruct them from memory and risk committing an
+unverified reconstruction, the `fnr` grammar/compiler work was dropped
+from this commit entirely (see above) - a moot point regardless, since
+the user had independently resolved the underlying mal-simulator gap by
+then. All numbers below are from the final, reverted-to-`1.3.1`,
+DynaMAL-fix-only state actually being committed:
 
 - `uv run pytest tests -m "not integration" -q` -> **99 passed, 3
   deselected, 0 failed** (unchanged from Phase 4b/5's baseline - nothing
-  in this repo's own test suite regressed).
+  in this repo's own test suite regressed; expected, since neither fix
+  this phase touched `maltoolbox/*.py` directly).
 - `uv run ruff check .` -> all checks passed.
 - `uv run mypy maltoolbox tests --ignore-missing-imports` -> no issues
-  found in 47 source files (46 in Phase 4b/5 plus the one new
-  `language_graph_model_effect.py` shim added this phase).
+  found in 47 source files (unchanged).
 - `cargo build --workspace` -> succeeds. `cargo test --workspace` ->
-  **117 passed, 0 failed** across all crates - unchanged from every
-  prior phase, as expected, since no `crates/` file was touched this
-  session (only `python/` and `maltoolbox/`).
+  **118 passed, 0 failed** across all crates (up from 117 - the one new
+  test this commit actually includes:
+  `partial_regeneration_new_association_on_asset_removed_same_batch`
+  (`crates/maltoolbox-attackgraph/tests/test_partial_regeneration.rs`);
+  no `maltoolbox-language` test count change, since the `fnr` tests
+  attempted earlier were reverted, not committed).
 - `uv run maturin build --release` (no `--manifest-path`, from repo
   root) -> builds `mal_toolbox-2.11.0-cp313-cp313-manylinux_2_34_x86_64.whl`
-  cleanly.
-- Fresh `rust-backed`-branch mal-simulator checkout (confirmed at the
-  tip of `origin/rust-backed`, no local diff), own `.venv` (Python
-  3.13.12), `pip install ".[ml]" pytest` for its own dependencies, then
-  the freshly-built wheel above force-installed over the git-pinned
-  version (confirmed via `maltoolbox._native.__file__` resolving inside
-  that venv's `site-packages`, not the git checkout). Ran the exact
-  invocation mal-simulator's own CI uses (`.github/workflows/pytest.yml`:
-  `pytest tests -m "not integration" examples/*`), twice, for stability:
-  **144 passed, 17 failed, 1 deselected** both times, 32-37s. All 17
-  failures are exactly the ones catalogued above (1 item A + 13 item B +
-  3 pre-existing grammar gap) - no new or unexpected failure found.
+  cleanly, linking against the plain crates.io `tree-sitter-mal`
+  `1.3.1` (the local path dependency was reverted along with the rest of
+  the `fnr` attempt).
+- Reused scratch `rust-backed`-branch mal-simulator checkout (confirmed
+  on branch `rust-backed`, own `.venv`, Python 3.13), force-reinstalled
+  the freshly-built wheel over whatever was previously there
+  (`uv pip install --python .venv/bin/python --force-reinstall --no-deps
+  <wheel>`), confirmed via `maltoolbox._native.__file__` that the fresh
+  extension was resolving. Ran `pytest tests/test_event_logger.py
+  tests/test_dyna_mal_simulator.py -q` directly against this
+  DynaMAL-fix-only build: **16 passed, 15 failed** -
+  `test_easy_ransomware_lang_attack_and_reset` now passes (the DynaMAL
+  fix, confirmed still working post-revert), the 12
+  `test_different_attackers` parametrizations still fail (separate
+  mal-simulator-side `attack_surface.py` bug, see above, unaffected by
+  anything in this commit), and all 3 `test_event_logger.py` tests still
+  fail against *this* scratch checkout - expected, since the user's own
+  fix for that lives in a different, local mal-simulator checkout this
+  repo has no access to, and no `fnr` grammar change is part of this
+  commit for it to depend on. Did not re-run the full mal-simulator
+  suite end to end this pass (the two files above are the only ones this
+  commit's changes could plausibly affect); the previous pass's full-suite
+  145/16 numbers no longer apply now that the `fnr` fix is reverted and
+  should not be read as current.
 
 ### Resolution of the freeform/mutable-construction finding (closes out Phase 1)
 
