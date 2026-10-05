@@ -312,6 +312,26 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
         assert node_to_remove not in child.parents
 
 
+def test_attackgraph_remove_node_children_parents_still_readable(
+    example_attackgraph: AttackGraph,
+):
+    """A removed node's own .children/.parents must stay readable and
+    correct, matching its pre-removal state - a caller elsewhere (e.g.
+    mal-simulator holding a node in `performed_nodes`) can legitimately
+    still hold a handle to a node after it's been removed from the
+    graph, and removal doesn't invalidate held handles anywhere else in
+    this codebase either."""
+    node_to_remove = example_attackgraph.nodes[10]
+    parent_ids = {parent.id for parent in node_to_remove.parents}
+    children_ids = {child.id for child in node_to_remove.children}
+    assert parent_ids and children_ids  # make sure this node is a meaningful case
+
+    example_attackgraph.remove_node(node_to_remove)
+
+    assert {parent.id for parent in node_to_remove.parents} == parent_ids
+    assert {child.id for child in node_to_remove.children} == children_ids
+
+
 def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):
     """Try to deepcopy an attackgraph object. The nodes of the attack graph
     should be duplicated into new objects, while references to the instance

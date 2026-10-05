@@ -20,7 +20,7 @@ use maltoolbox_language_py::handle::composite_hash;
 use maltoolbox_language_py::{model_effect_to_py, PyLanguageGraphAttackStep, PyLanguageGraphModelEffect};
 use maltoolbox_model_py::PyModelAsset;
 
-use crate::detector_support::{build_py_detector, detector_snapshots_for};
+use crate::detector_support::{build_py_detector, detector_snapshots_for, DetectorSnapshot};
 use crate::graph::PyAttackGraph;
 
 /// `children`/`parents` are `{other_node_id: other_node_full_name}` with
@@ -70,6 +70,30 @@ pub struct DetachedNode {
     pub name: String,
     pub children: Py<PySet>,
     pub parents: Py<PySet>,
+}
+
+/// A removed node's recorded post-removal state (Phase 4 decision 4),
+/// plus its children/parents **pre-resolved to stable `i64` ids at the
+/// moment of removal**. `state.children`/`state.parents` themselves stay
+/// as raw `AttackGraphNodeId` slotmap keys (whatever the core handed
+/// back), which is fine for display/debugging but unsafe to resolve
+/// against the graph's *current* state later - those keys can be reused
+/// for logically-unrelated new nodes created after this tombstone was
+/// recorded. `children_ids`/`parents_ids` sidestep that by capturing the
+/// id translation once, at a moment the keys are still guaranteed to
+/// point at the right nodes - see `edges_sets`'s tombstone fallback.
+/// `detector_snapshots`/`full_name` are the same idea applied to
+/// `.detectors`/`.full_name`/`__repr__` - each needs more than
+/// `state`'s own fields (a graph-wide key lookup, for `detector`
+/// potential-context ids and asset-derived naming respectively), so each
+/// is captured once, at the same moment, instead of attempted lazily
+/// against a graph the removed id can no longer resolve into.
+pub struct PyNodeTombstone {
+    pub state: maltoolbox_attackgraph::AttackGraphNode,
+    pub children_ids: Vec<i64>,
+    pub parents_ids: Vec<i64>,
+    pub detector_snapshots: Vec<DetectorSnapshot>,
+    pub full_name: String,
 }
 
 /// Either a live handle into an owning `AttackGraph` (`Owned`, the
@@ -138,17 +162,22 @@ impl PyAttackGraphNode {
 
     /// Borrows the owning graph transiently and runs `f` against the
     /// resolved node. **No tombstone fallback** - a removed node's id
-    /// simply fails to resolve here, unlike `with_node_value` below.
-    /// This is the path for getters that ultimately need a *key* into
-    /// the live graph (`full_name_of`/`node_to_dict`/
-    /// `detector_snapshots_for` all take an `AttackGraphNodeId`, not an
-    /// owned node value) or that cross-reference *other* nodes
-    /// (`children`/`parents`) - extending the tombstone to cover these
-    /// too would need further core-crate changes (those functions
-    /// accepting a node value directly) not attempted in this pass. See
-    /// `with_node_value` / PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 4
-    /// status for the scope of what *is* tombstone-covered. `Owned`-only -
-    /// see `owned()`.
+    /// simply fails to resolve here, unlike `with_node_value` below. This
+    /// helper itself genuinely can't fall back (it hands back a *key*
+    /// into the live graph, and there's no live slot for a removed node
+    /// by definition) - but that no longer means every caller is stuck
+    /// with no fallback: `edges_sets`, `.detectors`, and `.full_name`/
+    /// `__repr__` all used to route through this helper for their own-id
+    /// resolution and raise on a miss; each now checks liveness first and
+    /// falls back to a precomputed field on `PyNodeTombstone`
+    /// (`children_ids`/`parents_ids`, `detector_snapshots`, `full_name`
+    /// respectively) instead of calling this helper at all in the removed
+    /// case. The one remaining caller of this helper directly,
+    /// `full_name_or_fallback`, is deliberately best-effort already (see
+    /// its own doc comment) and doesn't need the same treatment.
+    /// `to_dict()`'s use of `with_node_and_model` (below) is the one
+    /// genuinely still-open gap - see that method's doc comment.
+    /// `Owned`-only - see `owned()`.
     fn with_node<R>(&self, py: Python<'_>, f: impl FnOnce(&AttackGraph, AttackGraphNodeId) -> PyResult<R>) -> PyResult<R> {
         let (owner_py, id) = self.owned()?;
         let owner = owner_py.borrow(py);
@@ -175,8 +204,8 @@ impl PyAttackGraphNode {
         }
         drop(graph);
         let tombstones = owner.tombstones.borrow();
-        if let Some(node) = tombstones.get(&id) {
-            return f(node);
+        if let Some(tomb) = tombstones.get(&id) {
+            return f(&tomb.state);
         }
         Err(self.not_found(id))
     }
@@ -250,7 +279,16 @@ impl PyAttackGraphNode {
     /// benefit. Builds both sets in one graph borrow (not two separate
     /// lazy fields) since `children`/`parents` are almost always read
     /// together in practice and the core data for both sits on the same
-    /// node. `Owned`-only - see `owned()`.
+    /// node. Falls back to this node's own tombstone record
+    /// (`PyNodeTombstone::children_ids`/`parents_ids`) when the id
+    /// itself is no longer live - a Python caller can legitimately still
+    /// hold a handle to a node a prior `partially_regenerate_graph`/
+    /// `remove_node` call removed (e.g. mal-simulator's
+    /// `performed_nodes`), and removal doesn't invalidate held handles
+    /// anywhere else in this codebase either, so `.children`/`.parents`
+    /// shouldn't be the one getter that raises where every other
+    /// shouldn't-be-special getter (`with_node_value`-backed ones)
+    /// already tolerates this. `Owned`-only - see `owned()`.
     fn edges_sets(&self, py: Python<'_>) -> PyResult<(Py<PySet>, Py<PySet>)> {
         let (owner_py, id) = self.owned()?;
         let owner = owner_py.borrow(py);
@@ -260,12 +298,24 @@ impl PyAttackGraphNode {
                 return Ok((children.clone_ref(py), parents.clone_ref(py)));
             }
         }
-        let (child_ids, parent_ids): (Vec<i64>, Vec<i64>) = self.with_node(py, |g, k| {
-            Ok((
-                g.nodes[k].children.iter().map(|&c| g.nodes[c].id).collect(),
-                g.nodes[k].parents.iter().map(|&p| g.nodes[p].id).collect(),
-            ))
-        })?;
+        let live_key = {
+            let graph = owner.inner.borrow();
+            graph.id_to_node.get(&id).copied()
+        };
+        let (child_ids, parent_ids): (Vec<i64>, Vec<i64>) = match live_key {
+            Some(key) => {
+                let graph = owner.inner.borrow();
+                (
+                    graph.nodes[key].children.iter().map(|&c| graph.nodes[c].id).collect(),
+                    graph.nodes[key].parents.iter().map(|&p| graph.nodes[p].id).collect(),
+                )
+            }
+            None => {
+                let tombstones = owner.tombstones.borrow();
+                let tomb = tombstones.get(&id).ok_or_else(|| self.not_found(id))?;
+                (tomb.children_ids.clone(), tomb.parents_ids.clone())
+            }
+        };
         let children_set = PySet::empty(py)?;
         for cid in child_ids {
             children_set.add(owner.node_handle(owner_py, py, cid)?)?;
@@ -611,7 +661,14 @@ impl PyAttackGraphNode {
     /// then the same `Py<PyDict>` object is returned every subsequent
     /// access, so external `node.detectors['x'] = Detector(...)`
     /// mutation is visible to later reads - matching confirmed real
-    /// mal-simulator usage (`test_logger_attacks_false_negative`).
+    /// mal-simulator usage (`test_logger_attacks_false_negative`). Falls
+    /// back to this node's own tombstone record
+    /// (`PyNodeTombstone::detector_snapshots`) when the id itself is no
+    /// longer live - confirmed necessary, not speculative:
+    /// mal-simulator's `event_logger.py::collect_logs` reads
+    /// `attack_step.detectors.values()` on a node that was compromised
+    /// and then removed within the same DynaMAL step, same held-handle-
+    /// across-removal shape as `edges_sets`'s fallback.
     #[getter]
     fn detectors(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
         let (owner_py, id) = self.owned()?;
@@ -622,7 +679,21 @@ impl PyAttackGraphNode {
                 return Ok(existing.clone_ref(py));
             }
         }
-        let snapshot = self.with_node(py, |g, k| Ok(detector_snapshots_for(g, &[k])))?;
+        let live_key = {
+            let graph = owner.inner.borrow();
+            graph.id_to_node.get(&id).copied()
+        };
+        let snapshot: Vec<DetectorSnapshot> = match live_key {
+            Some(key) => {
+                let graph = owner.inner.borrow();
+                detector_snapshots_for(&graph, &[key])
+            }
+            None => {
+                let tombstones = owner.tombstones.borrow();
+                let tomb = tombstones.get(&id).ok_or_else(|| self.not_found(id))?;
+                tomb.detector_snapshots.clone()
+            }
+        };
         let dict = PyDict::new(py);
         for snap in &snapshot {
             let det = build_py_detector(py, owner_py, snap)?;
@@ -632,9 +703,26 @@ impl PyAttackGraphNode {
         Ok(dict.unbind())
     }
 
+    /// Falls back to this node's own tombstone record
+    /// (`PyNodeTombstone::full_name`, precomputed at removal time) when
+    /// the id itself is no longer live - same rationale as `.detectors`
+    /// above and `edges_sets`'s `.children`/`.parents` fallback.
     #[getter]
     fn full_name(&self, py: Python<'_>) -> PyResult<String> {
-        self.with_node_and_model(py, |g, k, model| Ok(g.full_name_of(k, model)))
+        let (owner_py, id) = self.owned()?;
+        let owner = owner_py.borrow(py);
+        let live_key = {
+            let graph = owner.inner.borrow();
+            graph.id_to_node.get(&id).copied()
+        };
+        match live_key {
+            Some(_) => self.with_node_and_model(py, |g, k, model| Ok(g.full_name_of(k, model))),
+            None => {
+                let tombstones = owner.tombstones.borrow();
+                let tomb = tombstones.get(&id).ok_or_else(|| self.not_found(id))?;
+                Ok(tomb.full_name.clone())
+            }
+        }
     }
 
     #[getter]
@@ -658,7 +746,18 @@ impl PyAttackGraphNode {
     /// the serialized `"extras"` field - see
     /// `PyAttackGraph::to_dict`'s doc comment for why this is needed
     /// (the core's own `node_to_dict` can't see compat-layer-side
-    /// mutation of `.extras`).
+    /// mutation of `.extras`). **Known, deliberately deferred gap**: no
+    /// tombstone fallback - unlike `edges_sets`/`.detectors`/`.full_name`/
+    /// `__repr__`, this still raises `LookupError` if the node's own id
+    /// was removed by a prior `partially_regenerate_graph`/`remove_node`
+    /// call. Closing it properly would mean synthesizing the same
+    /// `children`/`parents` dict shape `node_to_dict` produces (full
+    /// names, not just ids) from the tombstone's pre-resolved
+    /// `children_ids`/`parents_ids` plus each neighbor's own (possibly
+    /// also-tombstoned) `full_name` - doable with the pieces this fix
+    /// already added, but not attempted here since no currently-known
+    /// test or real caller needs `.to_dict()` on a removed node (PYTHON_
+    /// BINDINGS_IMPLEMENTATION.md's Phase 6 status tracks this).
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let dict = self.with_node_and_model(py, |g, k, model| Ok(g.node_to_dict(k, model)))?;
         let pythonized = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
@@ -679,17 +778,41 @@ impl PyAttackGraphNode {
         Ok(pythonized.clone().into_any())
     }
 
+    /// Falls back to the tombstone record for a removed node's own id
+    /// (same rationale as `.detectors`/`.full_name` above) rather than
+    /// raising - display/debugging code (including pytest's own failure
+    /// formatting, which is what surfaced this gap) shouldn't crash just
+    /// because the node it's trying to describe was since removed.
     fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         match &self.repr {
-            NodeRepr::Owned { .. } => self.with_node_and_model(py, |g, k, model| {
-                let node = &g.nodes[k];
-                Ok(format!(
-                    "AttackGraphNode(name: \"{}\", id: {}, type: {})",
-                    g.full_name_of(k, model),
-                    node.id,
-                    node.step_type.as_str()
-                ))
-            }),
+            NodeRepr::Owned { owner_py, id } => {
+                let owner = owner_py.borrow(py);
+                let live_key = {
+                    let graph = owner.inner.borrow();
+                    graph.id_to_node.get(id).copied()
+                };
+                match live_key {
+                    Some(_) => self.with_node_and_model(py, |g, k, model| {
+                        let node = &g.nodes[k];
+                        Ok(format!(
+                            "AttackGraphNode(name: \"{}\", id: {}, type: {})",
+                            g.full_name_of(k, model),
+                            node.id,
+                            node.step_type.as_str()
+                        ))
+                    }),
+                    None => {
+                        let tombstones = owner.tombstones.borrow();
+                        let tomb = tombstones.get(id).ok_or_else(|| self.not_found(*id))?;
+                        Ok(format!(
+                            "AttackGraphNode(name: \"{}\", id: {}, type: {})",
+                            tomb.full_name,
+                            tomb.state.id,
+                            tomb.state.step_type.as_str()
+                        ))
+                    }
+                }
+            }
             NodeRepr::Detached(d) => Ok(format!("AttackGraphNode(name: \"{}\", id: {}, type: detached)", d.name, d.id)),
         }
     }

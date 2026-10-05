@@ -25,6 +25,7 @@ use maltoolbox_attackgraph::AttackGraph;
 use crate::detector::PyDetector;
 use crate::graph::PyAttackGraph;
 
+#[derive(Clone)]
 pub struct DetectorSnapshot {
     pub label: String,
     pub node_id: i64,

@@ -747,6 +747,65 @@ fn partial_regeneration_new_association_on_asset_removed_same_batch() {
 }
 
 #[test]
+fn partial_regeneration_new_asset_removed_same_batch() {
+    // Regression test: DynaMAL-style model effect that adds a brand new
+    // asset *and* removes that same asset in the same
+    // `partially_regenerate_graph` batch (e.g. `baseDynamicTestLang4.mal`'s
+    // `Bowl.tamper`: `A> self / apples` immediately followed by
+    // `R> self / apples` on the same step - the new `Apple` ends up in
+    // both `new_assets` and `removed_assets` for this one call). Before
+    // the fix, `generate::create_nodes_for` indexed `model.assets[&id]`
+    // directly for every id in `new_assets`, which panics
+    // ("no entry found for key") once `model.remove_asset` has already
+    // run for that id - unlike the association-resolution path
+    // (`switch_fieldname_possibly_removed`), node creation had no
+    // removed-assets fallback at all.
+    let lang_graph = compile_lang("dynamal_test_langs/basic/baseDynamicTestLang4.mal");
+    let mut model = Model::new("Test Model", lang_graph.clone());
+
+    let bowl = model.add_asset("Bowl", Some("bowl1".into()), None, None, None, true).unwrap();
+
+    let mut ag = AttackGraph::from_model(&model).unwrap();
+
+    // Simulate the same-step A>/R> model effect: add a new Apple,
+    // associate it to the Bowl via "apples", then remove it again -
+    // all before `partially_regenerate_graph` is ever called.
+    let apple = model.add_asset("Apple", Some("apple1".into()), None, None, None, true).unwrap();
+    model.add_associated_assets(bowl, "apples", HashSet::from([apple])).unwrap();
+
+    let new_assets = HashSet::from([apple]);
+    let new_associations = HashSet::from([(bowl, "apples".to_string(), apple)]);
+    let removed_assets_snapshot = snapshot(&model, &HashSet::from([apple]));
+    let removed_associations = HashSet::from([(bowl, "apples".to_string(), apple)]);
+
+    model.remove_asset(apple).unwrap();
+
+    // Must not panic.
+    ag.partially_regenerate_graph(
+        &model,
+        &new_assets,
+        &new_associations,
+        &removed_assets_snapshot,
+        &removed_associations,
+    )
+    .expect("partial regeneration must handle a new asset removed in the same batch");
+
+    // `Apple` has no attack steps (`asset Apple {}`), so no nodes are
+    // expected for it either way - the real assertion is that
+    // regeneration didn't panic. Confirm nothing stray survives.
+    assert!(
+        !ag.full_name_to_node.keys().any(|k| k.starts_with("apple1:")),
+        "expected no nodes left for the transient, same-batch-removed apple1, found: {:?}",
+        ag.full_name_to_node.keys().filter(|k| k.starts_with("apple1:")).collect::<Vec<_>>()
+    );
+
+    // Independently rebuilding from the current model (apple1 gone,
+    // bowl1 with no apples left) must match.
+    let regenerated = AttackGraph::from_model(&model).unwrap();
+    check_graph_equivalence(&model, &regenerated, &ag);
+}
+
+#[test]
 fn switch_fieldname_unknown_fieldname_raises() {
     let lang_graph = training_lang();
     let mut model = Model::new("Test Model", lang_graph);

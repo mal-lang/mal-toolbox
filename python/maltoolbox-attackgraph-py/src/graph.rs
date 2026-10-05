@@ -59,12 +59,19 @@ pub struct PyAttackGraph {
     /// state (post-unlink, pre-delete - mirrors
     /// `maltoolbox_model::AssetSnapshot::final_state`'s capture point),
     /// keyed by id. Lets a `PyAttackGraphNode` handle whose entry is gone
-    /// from `inner.id_to_node` keep resolving its own simple fields -
-    /// see `node.rs`'s `with_node_value` for the scope of what this
-    /// covers (not `children`/`parents`/`full_name`/`to_dict`, which
-    /// need further core-crate changes to support - logged as a
-    /// deliberately partial implementation, not silently dropped).
-    pub tombstones: Rc<RefCell<HashMap<i64, maltoolbox_attackgraph::AttackGraphNode>>>,
+    /// from `inner.id_to_node` keep resolving its own simple fields - see
+    /// `node.rs`'s `with_node_value` - and, via the rest of
+    /// `PyNodeTombstone`'s pre-resolved fields (each computed once, at
+    /// removal time, while the graph-wide context a plain `state` lookup
+    /// would otherwise need was still available), `.children`/`.parents`
+    /// (`children_ids`/`parents_ids`, `node.rs`'s `edges_sets`),
+    /// `.detectors` (`detector_snapshots`), and `.full_name`/`__repr__`
+    /// (`full_name`) too. `to_dict()` is the one remaining gap - see its
+    /// doc comment in `node.rs` for why (it would need to synthesize a
+    /// `children`/`parents` dict of full *names*, not just ids, from
+    /// data this struct doesn't carry yet, not a fundamental core-crate
+    /// limitation like earlier revisions of this comment claimed).
+    pub tombstones: Rc<RefCell<HashMap<i64, crate::node::PyNodeTombstone>>>,
     /// Per-node `(children, parents)` `PySet` pair, lazily built once per
     /// id from the core's topology and cached from then on - same
     /// persistent pattern as `node_detectors`/`node_extras` above,
@@ -661,9 +668,44 @@ impl PyAttackGraph {
         // isn't a simulation hot path (unlike `.nodes`, which is why
         // that one got the lazy-view treatment instead), so the cost is
         // acceptable for the tombstone coverage it buys.
-        let nodes_before: HashMap<i64, maltoolbox_attackgraph::AttackGraphNode> = {
+        // `key_to_id_before` is captured in the same borrow as
+        // `nodes_before`, so it reflects slotmap keys as they stood
+        // immediately before this call's mutations - the only point at
+        // which a removed node's `children`/`parents` keys (captured
+        // inside its own clone, below) are guaranteed to still mean what
+        // they meant when cloned. Resolving them against the graph's
+        // *post*-call state instead would risk a key that's since been
+        // recycled for an unrelated new node (see `PyNodeTombstone`'s
+        // doc comment). `detector_snapshots_before`/`full_names_before`
+        // are the same idea applied to `.detectors`/`.full_name` -
+        // computed for every currently-live node here (a superset of
+        // what's strictly needed, same "cloning every node is more than
+        // the detector-purge path alone needs, but cheap enough" call
+        // already made for `nodes_before` above), so that whichever ids
+        // turn out to be removed below can have a tombstone with these
+        // fields pre-resolved too.
+        let (nodes_before, key_to_id_before, detector_snapshots_before, full_names_before): (
+            HashMap<i64, maltoolbox_attackgraph::AttackGraphNode>,
+            HashMap<AttackGraphNodeId, i64>,
+            HashMap<i64, Vec<crate::detector_support::DetectorSnapshot>>,
+            HashMap<i64, String>,
+        ) = {
             let graph = slf.inner.borrow();
-            graph.nodes.values().map(|n| (n.id, n.clone())).collect()
+            let model_ref = model_py.borrow(py);
+            let core_model = model_ref.inner.borrow();
+            let nodes_before: HashMap<i64, maltoolbox_attackgraph::AttackGraphNode> =
+                graph.nodes.values().map(|n| (n.id, n.clone())).collect();
+            let key_to_id_before: HashMap<AttackGraphNodeId, i64> = graph.nodes.iter().map(|(k, n)| (k, n.id)).collect();
+            let all_keys: Vec<AttackGraphNodeId> = key_to_id_before.keys().copied().collect();
+            let mut detector_snapshots_before: HashMap<i64, Vec<crate::detector_support::DetectorSnapshot>> = HashMap::new();
+            for snap in detector_snapshots_for(&graph, &all_keys) {
+                detector_snapshots_before.entry(snap.node_id).or_default().push(snap);
+            }
+            let full_names_before: HashMap<i64, String> = key_to_id_before
+                .iter()
+                .map(|(&k, &id)| (id, graph.full_name_of(k, Some(&core_model))))
+                .collect();
+            (nodes_before, key_to_id_before, detector_snapshots_before, full_names_before)
         };
         let node_ids_before: HashSet<i64> = nodes_before.keys().copied().collect();
 
@@ -699,7 +741,26 @@ impl PyAttackGraph {
                 table.remove(removed_id);
                 extras_table.remove(removed_id);
                 if let Some(final_state) = nodes_before.get(removed_id) {
-                    tombstones.insert(*removed_id, final_state.clone());
+                    let children_ids: Vec<i64> = final_state
+                        .children
+                        .iter()
+                        .filter_map(|k| key_to_id_before.get(k).copied())
+                        .collect();
+                    let parents_ids: Vec<i64> = final_state
+                        .parents
+                        .iter()
+                        .filter_map(|k| key_to_id_before.get(k).copied())
+                        .collect();
+                    tombstones.insert(
+                        *removed_id,
+                        crate::node::PyNodeTombstone {
+                            state: final_state.clone(),
+                            children_ids,
+                            parents_ids,
+                            detector_snapshots: detector_snapshots_before.get(removed_id).cloned().unwrap_or_default(),
+                            full_name: full_names_before.get(removed_id).cloned().unwrap_or_else(|| final_state.fallback_full_name()),
+                        },
+                    );
                 }
             }
         }
@@ -793,7 +854,6 @@ impl PyAttackGraph {
     }
 
     fn remove_node(&self, node: &PyAttackGraphNode, py: Python<'_>) -> PyResult<()> {
-        let _ = py;
         let node_id = node.id();
         let mut graph = self.inner.borrow_mut();
         let key = graph
@@ -801,11 +861,43 @@ impl PyAttackGraph {
             .get(&node_id)
             .copied()
             .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err(node_id))?;
+        // Capture detector snapshots and full_name BEFORE removal, while
+        // `key` still resolves to a live node - both `detector_snapshots_for`
+        // and `full_name_of` need the node to still be present at `key`,
+        // unlike children/parents translation below (which only needs
+        // *other* nodes' keys, untouched by removing this one).
+        let detector_snapshots = detector_snapshots_for(&graph, &[key]);
+        let full_name = match &self.model_py {
+            Some(m) => {
+                let model_ref = m.borrow(py);
+                let core_model = model_ref.inner.borrow();
+                graph.full_name_of(key, Some(&core_model))
+            }
+            None => graph.full_name_of(key, None),
+        };
         let final_state = graph.remove_node(key).map_err(graph_error_to_py)?;
+        // Resolve children/parents to stable i64 ids while `graph` is
+        // still borrowed, right after removal - a single non-batch
+        // removal doesn't touch any other node's slotmap key, so this is
+        // the simplest point at which the translation is guaranteed
+        // valid (same rationale as `key_to_id_before` in
+        // `partially_regenerate_graph`, just not needing a separate
+        // pre-call snapshot here since nothing else has mutated yet).
+        let children_ids: Vec<i64> = final_state.children.iter().filter_map(|k| graph.nodes.get(*k).map(|n| n.id)).collect();
+        let parents_ids: Vec<i64> = final_state.parents.iter().filter_map(|k| graph.nodes.get(*k).map(|n| n.id)).collect();
         drop(graph);
         self.node_detectors.borrow_mut().remove(&node_id);
         self.node_extras.borrow_mut().remove(&node_id);
-        self.tombstones.borrow_mut().insert(node_id, final_state);
+        self.tombstones.borrow_mut().insert(
+            node_id,
+            crate::node::PyNodeTombstone {
+                state: final_state,
+                children_ids,
+                parents_ids,
+                detector_snapshots,
+                full_name,
+            },
+        );
         self.evict_edges_cache();
         Ok(())
     }

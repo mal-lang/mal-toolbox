@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use indexmap::IndexMap;
 use maltoolbox_language::graph::attack_step::AttackStepType;
 use maltoolbox_language::graph::AttackStepId;
-use maltoolbox_model::Model;
+use maltoolbox_model::{AssetSnapshot, Model, ModelAsset};
 use serde_json::Map;
 use slotmap::SlotMap;
 
@@ -66,20 +66,27 @@ pub fn create_nodes_from_model(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     model: &Model,
 ) -> Result<CreatedNodes, GraphError> {
-    create_nodes_for(nodes, model.asset_order.iter().copied(), 0, model)
+    create_nodes_for(nodes, model.asset_order.iter().copied(), 0, model, &HashMap::new())
 }
 
 /// Port of `partially_generate.py`'s `create_nodes_from_assets`: build
 /// nodes only for `asset_ids`, continuing node-id assignment from
 /// `starting_id`. Shares the node-building logic with
 /// `create_nodes_from_model` via `create_nodes_for`.
+///
+/// `removed_assets` is consulted as a fallback when an id in `asset_ids`
+/// is no longer in `model.assets` - a DynaMAL model effect can add and
+/// remove the same asset within one `partially_regenerate_graph` batch
+/// (mirrors `partially_generate::switch_fieldname_possibly_removed`'s
+/// reason for existing).
 pub fn create_nodes_from_assets(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     asset_ids: &std::collections::HashSet<i64>,
     starting_id: i64,
     model: &Model,
+    removed_assets: &HashMap<i64, AssetSnapshot>,
 ) -> Result<CreatedNodes, GraphError> {
-    create_nodes_for(nodes, asset_ids.iter().copied(), starting_id, model)
+    create_nodes_for(nodes, asset_ids.iter().copied(), starting_id, model, removed_assets)
 }
 
 fn create_nodes_for(
@@ -87,6 +94,7 @@ fn create_nodes_for(
     asset_ids: impl Iterator<Item = i64>,
     starting_id: i64,
     model: &Model,
+    removed_assets: &HashMap<i64, AssetSnapshot>,
 ) -> Result<CreatedNodes, GraphError> {
     let mut id_to_node = IndexMap::new();
     let mut full_name_to_node = IndexMap::new();
@@ -95,7 +103,20 @@ fn create_nodes_for(
     let mut node_id: i64 = starting_id;
 
     for asset_id in asset_ids {
-        let asset = &model.assets[&asset_id];
+        // `asset_id` may already be gone from `model.assets` - a
+        // same-batch add-then-remove (e.g. a DynaMAL step whose `A>`/`R>`
+        // model effects both touch the same asset) leaves it present in
+        // both `new_assets` and `removed_assets` for this call. The node(s)
+        // built here are transient in that case: `nodes_to_be_removed`
+        // (which already resolves purely from `removed_assets`, never
+        // `model.assets`) removes them again right after.
+        let asset: &ModelAsset = match model.assets.get(&asset_id) {
+            Some(asset) => asset,
+            None => removed_assets
+                .get(&asset_id)
+                .map(|snapshot| &snapshot.final_state)
+                .ok_or_else(|| GraphError::Malformed(format!("Unknown asset id {asset_id}")))?,
+        };
         let lg_step_ids: Vec<AttackStepId> = model
             .lang_graph
             .asset(asset.lg_asset)

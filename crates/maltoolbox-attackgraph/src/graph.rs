@@ -144,6 +144,7 @@ impl AttackGraph {
             new_assets,
             self.next_node_id,
             model,
+            removed_assets,
         )?;
 
         self.next_node_id += created.id_to_node.len() as i64;
