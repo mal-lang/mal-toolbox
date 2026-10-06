@@ -12,7 +12,9 @@ use pyo3::types::{PyDict, PySet, PyTuple};
 use maltoolbox_language::graph::file as lang_file;
 use maltoolbox_language::graph::file::language_graph_from_dict;
 use maltoolbox_language::graph::ids::{AssetId, AttackStepId};
-use maltoolbox_language::graph::{generate_graph as build_graph_from_langspec, language_graph_to_dict, LanguageGraph};
+use maltoolbox_language::graph::{
+    generate_graph as build_graph_from_langspec, language_graph_to_dict, LanguageGraph,
+};
 
 use crate::asset::PyLanguageGraphAsset;
 use crate::assoc::PyLanguageGraphAssociation;
@@ -48,13 +50,21 @@ impl PyLanguageGraph {
     pub fn asset_handle(&self, py: Python<'_>, id: AssetId) -> PyResult<Py<PyLanguageGraphAsset>> {
         let owner = self.inner.clone();
         let caches = self.caches.clone();
-        cached_handle(&self.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
+        cached_handle(&self.caches.assets, py, id, move || {
+            PyLanguageGraphAsset::new(owner, id, caches)
+        })
     }
 
-    pub fn step_handle(&self, py: Python<'_>, id: AttackStepId) -> PyResult<Py<PyLanguageGraphAttackStep>> {
+    pub fn step_handle(
+        &self,
+        py: Python<'_>,
+        id: AttackStepId,
+    ) -> PyResult<Py<PyLanguageGraphAttackStep>> {
         let owner = self.inner.clone();
         let caches = self.caches.clone();
-        cached_handle(&self.caches.steps, py, id, move || PyLanguageGraphAttackStep::new(owner, id, caches))
+        cached_handle(&self.caches.steps, py, id, move || {
+            PyLanguageGraphAttackStep::new(owner, id, caches)
+        })
     }
 }
 
@@ -71,8 +81,8 @@ impl PyLanguageGraph {
     /// doesn't support (see PYTHON_BINDINGS_IMPLEMENTATION.md).
     #[new]
     fn new(lang_spec: &Bound<'_, PyAny>) -> PyResult<Self> {
-        let value: serde_json::Value =
-            pythonize::depythonize(lang_spec).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let value: serde_json::Value = pythonize::depythonize(lang_spec)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let graph = build_graph_from_langspec(value).map_err(graph_error_to_py)?;
         Ok(Self::wrap(graph))
     }
@@ -114,8 +124,11 @@ impl PyLanguageGraph {
     /// unconditionally).
     fn save_language_specification_to_json(&self, filename: PathBuf) -> PyResult<()> {
         let graph = self.inner.borrow();
-        let json = serde_json::to_string_pretty(&graph.lang_spec)
-            .map_err(|e| graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(e.to_string())))?;
+        let json = serde_json::to_string_pretty(&graph.lang_spec).map_err(|e| {
+            graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
+                e.to_string(),
+            ))
+        })?;
         std::fs::write(filename, json)
             .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
     }
@@ -126,7 +139,8 @@ impl PyLanguageGraph {
     /// Python original's same gap.
     fn regenerate_graph(&self) -> PyResult<()> {
         let lang_spec = self.inner.borrow().lang_spec.clone();
-        let regenerated = maltoolbox_language::generate_graph(lang_spec).map_err(graph_error_to_py)?;
+        let regenerated =
+            maltoolbox_language::generate_graph(lang_spec).map_err(graph_error_to_py)?;
         *self.inner.borrow_mut() = regenerated;
         Ok(())
     }
@@ -144,7 +158,9 @@ impl PyLanguageGraph {
     fn lang_spec<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let graph = self.inner.borrow();
         pythonize::pythonize(py, &graph.lang_spec).map_err(|e| {
-            graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(e.to_string()))
+            graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
+                e.to_string(),
+            ))
         })
     }
 
@@ -152,7 +168,11 @@ impl PyLanguageGraph {
     fn assets<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let names: Vec<(String, AssetId)> = {
             let graph = self.inner.borrow();
-            graph.asset_order.iter().map(|&id| (graph.asset(id).name.clone(), id)).collect()
+            graph
+                .asset_order
+                .iter()
+                .map(|&id| (graph.asset(id).name.clone(), id))
+                .collect()
         };
         let dict = PyDict::new(py);
         for (name, id) in names {
@@ -168,7 +188,11 @@ impl PyLanguageGraph {
         let set = PySet::empty(py)?;
         for &asset_id in &graph.asset_order {
             for assoc in graph.asset(asset_id).own_associations.values() {
-                set.add(PyLanguageGraphAssociation::new(self.inner.clone(), assoc.clone(), self.caches.clone()))?;
+                set.add(PyLanguageGraphAssociation::new(
+                    self.inner.clone(),
+                    assoc.clone(),
+                    self.caches.clone(),
+                ))?;
             }
         }
         Ok(set)
@@ -179,7 +203,18 @@ impl PyLanguageGraph {
     fn attack_steps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PySet>> {
         let step_ids: Vec<AttackStepId> = {
             let graph = self.inner.borrow();
-            graph.asset_order.iter().flat_map(|&asset_id| graph.asset(asset_id).attack_steps.values().copied().collect::<Vec<_>>()).collect()
+            graph
+                .asset_order
+                .iter()
+                .flat_map(|&asset_id| {
+                    graph
+                        .asset(asset_id)
+                        .attack_steps
+                        .values()
+                        .copied()
+                        .collect::<Vec<_>>()
+                })
+                .collect()
         };
         let set = PySet::empty(py)?;
         for step_id in step_ids {
@@ -210,7 +245,9 @@ impl PyLanguageGraph {
         let graph = self.inner.borrow();
         let dict = language_graph_to_dict(&graph).map_err(graph_error_to_py)?;
         pythonize::pythonize(py, &dict).map_err(|e| {
-            graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(e.to_string()))
+            graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
+                e.to_string(),
+            ))
         })
     }
 
@@ -233,7 +270,10 @@ impl PyLanguageGraph {
         Ok(Self::wrap(graph))
     }
 
-    fn __reduce__<'py>(&self, py: Python<'py>) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>,))> {
+    fn __reduce__<'py>(
+        &self,
+        py: Python<'py>,
+    ) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>,))> {
         let cls = py.get_type::<PyLanguageGraph>();
         let func = cls.getattr("_from_pickle_state")?;
         let state = self._to_dict(py)?;

@@ -20,8 +20,8 @@ use pyo3::prelude::*;
 use maltoolbox_language::graph::expr_chain::ExpressionsChain;
 use maltoolbox_language::graph::LanguageGraph;
 
-use crate::assoc::PyLanguageGraphAssociation;
 use crate::asset::PyLanguageGraphAsset;
+use crate::assoc::PyLanguageGraphAssociation;
 use crate::handle::{cached_handle, SharedLangGraphCaches};
 
 #[derive(Clone)]
@@ -91,7 +91,11 @@ impl PyExpressionsChain {
         match &self.chain {
             ExpressionsChain::Field { association, .. } => Ok(Some(Py::new(
                 py,
-                PyLanguageGraphAssociation::new(self.ctx.owner.clone(), association.clone(), self.ctx.caches.clone()),
+                PyLanguageGraphAssociation::new(
+                    self.ctx.owner.clone(),
+                    association.clone(),
+                    self.ctx.caches.clone(),
+                ),
             )?)),
             _ => Ok(None),
         }
@@ -103,9 +107,12 @@ impl PyExpressionsChain {
             ExpressionsChain::SubType { subtype, .. } => {
                 let owner = self.ctx.owner.clone();
                 let caches = self.ctx.caches.clone();
-                Ok(Some(cached_handle(&self.ctx.caches.assets, py, *subtype, move || {
-                    PyLanguageGraphAsset::new(owner, *subtype, caches)
-                })?))
+                Ok(Some(cached_handle(
+                    &self.ctx.caches.assets,
+                    py,
+                    *subtype,
+                    move || PyLanguageGraphAsset::new(owner, *subtype, caches),
+                )?))
             }
             _ => Ok(None),
         }
@@ -115,7 +122,8 @@ impl PyExpressionsChain {
     fn multiplicity<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyAny>>> {
         match &self.chain {
             ExpressionsChain::Multiplicity { multiplicity, .. } => Ok(Some(
-                pythonize::pythonize(py, multiplicity).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?,
+                pythonize::pythonize(py, multiplicity)
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?,
             )),
             _ => Ok(None),
         }
@@ -126,7 +134,11 @@ impl PyExpressionsChain {
     }
 }
 
-fn chain_to_py(py: Python<'_>, ctx: Ctx, chain: ExpressionsChain) -> PyResult<Py<PyExpressionsChain>> {
+fn chain_to_py(
+    py: Python<'_>,
+    ctx: Ctx,
+    chain: ExpressionsChain,
+) -> PyResult<Py<PyExpressionsChain>> {
     Py::new(py, PyExpressionsChain { chain, ctx })
 }
 

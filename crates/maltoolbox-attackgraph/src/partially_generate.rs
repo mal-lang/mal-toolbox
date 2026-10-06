@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 
 use maltoolbox_language::graph::step_expr::reverse_expr_chain;
 use maltoolbox_language::graph::{AssetId, ExprType, ExpressionsChain};
-use maltoolbox_model::{Model, AssetSnapshot};
+use maltoolbox_model::{AssetSnapshot, Model};
 use slotmap::SlotMap;
 
 use crate::expr_follow::follow_expr_chain;
@@ -20,7 +20,11 @@ use crate::GraphError;
 /// other asset ids an association add/remove touched.
 pub type AssocAffectedDict = HashMap<i64, HashMap<String, HashSet<i64>>>;
 
-pub fn switch_fieldname(model: &Model, asset_id: i64, fieldname: &str) -> Result<String, GraphError> {
+pub fn switch_fieldname(
+    model: &Model,
+    asset_id: i64,
+    fieldname: &str,
+) -> Result<String, GraphError> {
     let asset = model
         .get_asset_by_id(asset_id)
         .ok_or_else(|| GraphError::Malformed(format!("Unknown asset id {asset_id}")))?;
@@ -87,19 +91,23 @@ pub fn correct_node_children_on_modified_assoc(
 ) -> Result<(), GraphError> {
     let (model_asset_id, lg_attack_step_id) = {
         let node = &nodes[affected_key];
-        let asset_id = node
-            .model_asset
-            .ok_or_else(|| GraphError::Malformed("Attack graph node is missing asset link".into()))?;
+        let asset_id = node.model_asset.ok_or_else(|| {
+            GraphError::Malformed("Attack graph node is missing asset link".into())
+        })?;
         (asset_id, node.lg_attack_step)
     };
 
-    let children = model.lang_graph.step(lg_attack_step_id).children(&model.lang_graph);
+    let children = model
+        .lang_graph
+        .step(lg_attack_step_id)
+        .children(&model.lang_graph);
 
     let mut correct_children: HashSet<AttackGraphNodeId> = HashSet::new();
     for (child_lg_step, chains) in children {
         let child_step_name = model.lang_graph.step(child_lg_step).name.clone();
         for chain in chains {
-            let target_assets = follow_expr_chain(model, &HashSet::from([model_asset_id]), chain.as_ref())?;
+            let target_assets =
+                follow_expr_chain(model, &HashSet::from([model_asset_id]), chain.as_ref())?;
             for target_asset_id in target_assets {
                 let target_asset = model
                     .get_asset_by_id(target_asset_id)
@@ -146,7 +154,13 @@ pub fn nodes_to_be_removed(
 ) -> Result<HashSet<AttackGraphNodeId>, GraphError> {
     let mut removal_candidates = HashSet::new();
     for snapshot in removed_assets.values() {
-        let lg_step_ids: Vec<_> = model.lang_graph.asset(snapshot.lg_asset).attack_steps.values().copied().collect();
+        let lg_step_ids: Vec<_> = model
+            .lang_graph
+            .asset(snapshot.lg_asset)
+            .attack_steps
+            .values()
+            .copied()
+            .collect();
         for lg_step_id in lg_step_ids {
             let lg_step = model.lang_graph.step(lg_step_id);
             let full_name = format!("{}:{}", snapshot.name, lg_step.name);
@@ -173,7 +187,13 @@ pub fn assoc_affected_expr_chain(
         .values()
         .flat_map(|fields| fields.keys().cloned())
         .collect();
-    assoc_affected_expr_chain_inner(model, instigating_assets, affected_assoc_dict, expr_chain, &modified_fieldnames)
+    assoc_affected_expr_chain_inner(
+        model,
+        instigating_assets,
+        affected_assoc_dict,
+        expr_chain,
+        &modified_fieldnames,
+    )
 }
 
 fn assoc_affected_expr_chain_inner(
@@ -194,24 +214,39 @@ fn assoc_affected_expr_chain_inner(
     }
 
     match chain {
-        ExpressionsChain::Field { fieldname, .. } => Ok(instigating_assets.iter().any(|asset_id| {
-            affected_assoc_dict
-                .get(asset_id)
-                .map(|fields| fields.contains_key(fieldname))
-                .unwrap_or(false)
-        })),
-        ExpressionsChain::Binary { op, left, right }
-            if *op != ExprType::Collect =>
-        {
-            Ok(
-                assoc_affected_expr_chain_inner(model, instigating_assets, affected_assoc_dict, left.as_deref(), modified_fieldnames)?
-                    || assoc_affected_expr_chain_inner(model, instigating_assets, affected_assoc_dict, right.as_deref(), modified_fieldnames)?,
-            )
+        ExpressionsChain::Field { fieldname, .. } => {
+            Ok(instigating_assets.iter().any(|asset_id| {
+                affected_assoc_dict
+                    .get(asset_id)
+                    .map(|fields| fields.contains_key(fieldname))
+                    .unwrap_or(false)
+            }))
+        }
+        ExpressionsChain::Binary { op, left, right } if *op != ExprType::Collect => {
+            Ok(assoc_affected_expr_chain_inner(
+                model,
+                instigating_assets,
+                affected_assoc_dict,
+                left.as_deref(),
+                modified_fieldnames,
+            )? || assoc_affected_expr_chain_inner(
+                model,
+                instigating_assets,
+                affected_assoc_dict,
+                right.as_deref(),
+                modified_fieldnames,
+            )?)
         }
         ExpressionsChain::Binary { op, left, right } if *op == ExprType::Collect => {
             use maltoolbox_language::graph::expr_chain::chain_fieldnames;
             if !chain_fieldnames(left.as_deref()).is_disjoint(modified_fieldnames)
-                && assoc_affected_expr_chain_inner(model, instigating_assets, affected_assoc_dict, left.as_deref(), modified_fieldnames)?
+                && assoc_affected_expr_chain_inner(
+                    model,
+                    instigating_assets,
+                    affected_assoc_dict,
+                    left.as_deref(),
+                    modified_fieldnames,
+                )?
             {
                 return Ok(true);
             }
@@ -219,16 +254,32 @@ fn assoc_affected_expr_chain_inner(
                 return Ok(false);
             }
             let next_assets = follow_expr_chain(model, instigating_assets, left.as_deref())?;
-            assoc_affected_expr_chain_inner(model, &next_assets, affected_assoc_dict, right.as_deref(), modified_fieldnames)
+            assoc_affected_expr_chain_inner(
+                model,
+                &next_assets,
+                affected_assoc_dict,
+                right.as_deref(),
+                modified_fieldnames,
+            )
         }
-        ExpressionsChain::SubType { sub, .. } => {
-            assoc_affected_expr_chain_inner(model, instigating_assets, affected_assoc_dict, Some(sub), modified_fieldnames)
-        }
+        ExpressionsChain::SubType { sub, .. } => assoc_affected_expr_chain_inner(
+            model,
+            instigating_assets,
+            affected_assoc_dict,
+            Some(sub),
+            modified_fieldnames,
+        ),
         ExpressionsChain::Transitive { sub } => {
             let mut frontier = instigating_assets.clone();
             let mut visited: HashSet<i64> = HashSet::new();
             while !frontier.is_empty() {
-                if assoc_affected_expr_chain_inner(model, &frontier, affected_assoc_dict, Some(sub), modified_fieldnames)? {
+                if assoc_affected_expr_chain_inner(
+                    model,
+                    &frontier,
+                    affected_assoc_dict,
+                    Some(sub),
+                    modified_fieldnames,
+                )? {
                     return Ok(true);
                 }
                 visited.extend(&frontier);
@@ -260,35 +311,66 @@ pub fn assoc_left_assets(
     use maltoolbox_language::graph::expr_chain::chain_fieldnames;
 
     match chain {
-        ExpressionsChain::Field { association, fieldname } => Ok(affected_assoc_dict
+        ExpressionsChain::Field {
+            association,
+            fieldname,
+        } => Ok(affected_assoc_dict
             .iter()
             .filter(|(asset_id, fields)| {
                 fields.contains_key(fieldname)
                     && model
                         .get_asset_by_id(**asset_id)
-                        .and_then(|a| model.lang_graph.associations(a.lg_asset).get(fieldname).cloned())
+                        .and_then(|a| {
+                            model
+                                .lang_graph
+                                .associations(a.lg_asset)
+                                .get(fieldname)
+                                .cloned()
+                        })
                         .map(|a| *a == **association)
                         .unwrap_or(false)
             })
             .map(|(asset_id, _)| *asset_id)
             .collect()),
-        ExpressionsChain::Binary { op, left, right }
-            if *op != ExprType::Collect =>
-        {
-            let mut result = assoc_left_assets(model, affected_assoc_dict, left.as_deref(), modified_fieldnames)?;
-            result.extend(assoc_left_assets(model, affected_assoc_dict, right.as_deref(), modified_fieldnames)?);
+        ExpressionsChain::Binary { op, left, right } if *op != ExprType::Collect => {
+            let mut result = assoc_left_assets(
+                model,
+                affected_assoc_dict,
+                left.as_deref(),
+                modified_fieldnames,
+            )?;
+            result.extend(assoc_left_assets(
+                model,
+                affected_assoc_dict,
+                right.as_deref(),
+                modified_fieldnames,
+            )?);
             Ok(result)
         }
         ExpressionsChain::Binary { op, left, right } if *op == ExprType::Collect => {
             let mut roots = HashSet::new();
             if !chain_fieldnames(left.as_deref()).is_disjoint(modified_fieldnames) {
-                roots.extend(assoc_left_assets(model, affected_assoc_dict, left.as_deref(), modified_fieldnames)?);
+                roots.extend(assoc_left_assets(
+                    model,
+                    affected_assoc_dict,
+                    left.as_deref(),
+                    modified_fieldnames,
+                )?);
             }
             if !chain_fieldnames(right.as_deref()).is_disjoint(modified_fieldnames) {
-                let right_roots = assoc_left_assets(model, affected_assoc_dict, right.as_deref(), modified_fieldnames)?;
+                let right_roots = assoc_left_assets(
+                    model,
+                    affected_assoc_dict,
+                    right.as_deref(),
+                    modified_fieldnames,
+                )?;
                 if !right_roots.is_empty() {
                     let reverse_left = reverse_expr_chain(left.as_deref())?;
-                    roots.extend(follow_expr_chain(model, &right_roots, reverse_left.as_ref())?);
+                    roots.extend(follow_expr_chain(
+                        model,
+                        &right_roots,
+                        reverse_left.as_ref(),
+                    )?);
                 }
             }
             Ok(roots)
@@ -297,7 +379,8 @@ pub fn assoc_left_assets(
             assoc_left_assets(model, affected_assoc_dict, Some(sub), modified_fieldnames)
         }
         ExpressionsChain::Transitive { sub } => {
-            let seed_roots = assoc_left_assets(model, affected_assoc_dict, Some(sub), modified_fieldnames)?;
+            let seed_roots =
+                assoc_left_assets(model, affected_assoc_dict, Some(sub), modified_fieldnames)?;
             let reverse_sub = reverse_expr_chain(Some(sub))?;
             let mut roots = seed_roots.clone();
             let mut frontier = seed_roots;
@@ -340,7 +423,12 @@ pub fn assoc_affected_nodes(
         let Some(asset_type_id) = model.lang_graph.asset_id(&asset_type) else {
             continue;
         };
-        let Some(&lg_step_id) = model.lang_graph.asset(asset_type_id).attack_steps.get(&step_name) else {
+        let Some(&lg_step_id) = model
+            .lang_graph
+            .asset(asset_type_id)
+            .attack_steps
+            .get(&step_name)
+        else {
             continue;
         };
         let lg_step = model.lang_graph.step(lg_step_id);
@@ -350,20 +438,33 @@ pub fn assoc_affected_nodes(
             for chain in chains {
                 let Some(chain) = chain else { continue };
                 if chain.is_additive() {
-                    affected_assets.extend(assoc_left_assets(model, affected_assoc_dict, Some(chain), &modified_fieldnames)?);
+                    affected_assets.extend(assoc_left_assets(
+                        model,
+                        affected_assoc_dict,
+                        Some(chain),
+                        &modified_fieldnames,
+                    )?);
                     continue;
                 }
                 if assets_by_type.is_none() {
                     let mut by_type: HashMap<String, Vec<i64>> = HashMap::new();
                     for &asset_id in &model.asset_order {
                         let asset = &model.assets[&asset_id];
-                        by_type.entry(asset.asset_type.clone()).or_default().push(asset_id);
+                        by_type
+                            .entry(asset.asset_type.clone())
+                            .or_default()
+                            .push(asset_id);
                     }
                     assets_by_type = Some(by_type);
                 }
                 if let Some(candidates) = assets_by_type.as_ref().and_then(|m| m.get(&asset_type)) {
                     for &asset_id in candidates {
-                        if assoc_affected_expr_chain(model, &HashSet::from([asset_id]), affected_assoc_dict, Some(chain))? {
+                        if assoc_affected_expr_chain(
+                            model,
+                            &HashSet::from([asset_id]),
+                            affected_assoc_dict,
+                            Some(chain),
+                        )? {
                             affected_assets.insert(asset_id);
                         }
                     }
@@ -373,7 +474,12 @@ pub fn assoc_affected_nodes(
 
         for asset_id in affected_assets {
             let asset = &model.assets[&asset_id];
-            if !model.lang_graph.asset(asset.lg_asset).attack_steps.contains_key(&step_name) {
+            if !model
+                .lang_graph
+                .asset(asset.lg_asset)
+                .attack_steps
+                .contains_key(&step_name)
+            {
                 continue;
             }
             let full_name = format!("{}:{step_name}", asset.name);

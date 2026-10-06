@@ -52,7 +52,12 @@ pub fn new_handle_cache<K, V>() -> HandleCache<K, V> {
 /// `clone_ref` (bumps the refcount, doesn't construct a new Python
 /// object). On a miss, builds a fresh `V` via `build`, wraps it in a new
 /// `Py<V>`, inserts it into the cache, and returns it.
-pub fn cached_handle<K, V>(cache: &HandleCache<K, V>, py: Python<'_>, key: K, build: impl FnOnce() -> V) -> PyResult<Py<V>>
+pub fn cached_handle<K, V>(
+    cache: &HandleCache<K, V>,
+    py: Python<'_>,
+    key: K,
+    build: impl FnOnce() -> V,
+) -> PyResult<Py<V>>
 where
     K: Eq + Hash,
     V: PyClass + Into<PyClassInitializer<V>>,

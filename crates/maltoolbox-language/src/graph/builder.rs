@@ -16,7 +16,7 @@ use super::assoc::{LanguageGraphAssociation, LanguageGraphAssociationField};
 use super::attack_step::{AttackStepType, CausalMode, LanguageGraphAttackStep};
 use super::detector::{LanguageGraphContextItem, LanguageGraphDetector};
 use super::ids::{AssetId, AttackStepId};
-use super::step_expr::{process_step_expression, reverse_expr_chain, resolve_variable};
+use super::step_expr::{process_step_expression, resolve_variable, reverse_expr_chain};
 use super::{asset::LanguageGraphAsset, assoc_traversal, model_effect, GraphError, LanguageGraph};
 
 fn meta_map(v: &Value) -> HashMap<String, String> {
@@ -37,7 +37,10 @@ pub fn generate_graph(graph: &mut LanguageGraph) -> Result<(), GraphError> {
 }
 
 fn create_lg_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
-    let assets_spec = graph.lang_spec["assets"].as_array().cloned().unwrap_or_default();
+    let assets_spec = graph.lang_spec["assets"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     for asset_dict in &assets_spec {
         let name = asset_dict["name"]
             .as_str()
@@ -61,7 +64,10 @@ fn create_lg_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
 }
 
 fn link_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
-    let assets_spec = graph.lang_spec["assets"].as_array().cloned().unwrap_or_default();
+    let assets_spec = graph.lang_spec["assets"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     for asset_dict in &assets_spec {
         let name = asset_dict["name"].as_str().unwrap_or_default();
         let asset_id = *graph.asset_id_by_name.get(name).unwrap();
@@ -69,12 +75,14 @@ fn link_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
         let Some(super_name) = asset_dict["superAsset"].as_str() else {
             continue;
         };
-        let super_id = graph.asset_id_by_name.get(super_name).copied().ok_or_else(|| {
-            GraphError::SuperAssetNotFound {
+        let super_id = graph
+            .asset_id_by_name
+            .get(super_name)
+            .copied()
+            .ok_or_else(|| GraphError::SuperAssetNotFound {
                 asset_name: name.to_string(),
                 super_name: super_name.to_string(),
-            }
-        })?;
+            })?;
 
         graph.assets[super_id].own_sub_assets.push(asset_id);
         graph.assets[asset_id].own_super_asset = Some(super_id);
@@ -83,34 +91,47 @@ fn link_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
 }
 
 fn create_associations_for_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
-    let associations_spec = graph.lang_spec["associations"].as_array().cloned().unwrap_or_default();
+    let associations_spec = graph.lang_spec["associations"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     for assoc_dict in &associations_spec {
         let name = assoc_dict["name"].as_str().unwrap_or_default().to_string();
         let left_asset_name = assoc_dict["leftAsset"].as_str().unwrap_or_default();
         let right_asset_name = assoc_dict["rightAsset"].as_str().unwrap_or_default();
 
-        let left_asset_id = graph.asset_id_by_name.get(left_asset_name).copied().ok_or_else(|| {
-            GraphError::AssociationAssetNotFound {
+        let left_asset_id = graph
+            .asset_id_by_name
+            .get(left_asset_name)
+            .copied()
+            .ok_or_else(|| GraphError::AssociationAssetNotFound {
                 assoc_name: name.clone(),
                 asset_name: left_asset_name.to_string(),
-            }
-        })?;
-        let right_asset_id = graph.asset_id_by_name.get(right_asset_name).copied().ok_or_else(|| {
-            GraphError::AssociationAssetNotFound {
+            })?;
+        let right_asset_id = graph
+            .asset_id_by_name
+            .get(right_asset_name)
+            .copied()
+            .ok_or_else(|| GraphError::AssociationAssetNotFound {
                 assoc_name: name.clone(),
                 asset_name: right_asset_name.to_string(),
-            }
-        })?;
+            })?;
 
         let left_field = LanguageGraphAssociationField {
             asset: left_asset_id,
-            fieldname: assoc_dict["leftField"].as_str().unwrap_or_default().to_string(),
+            fieldname: assoc_dict["leftField"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
             minimum: assoc_dict["leftMultiplicity"]["min"].as_i64().unwrap_or(0),
             maximum: assoc_dict["leftMultiplicity"]["max"].as_i64(),
         };
         let right_field = LanguageGraphAssociationField {
             asset: right_asset_id,
-            fieldname: assoc_dict["rightField"].as_str().unwrap_or_default().to_string(),
+            fieldname: assoc_dict["rightField"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
             minimum: assoc_dict["rightMultiplicity"]["min"].as_i64().unwrap_or(0),
             maximum: assoc_dict["rightMultiplicity"]["max"].as_i64(),
         };
@@ -145,7 +166,9 @@ fn set_variables_for_assets(graph: &mut LanguageGraph) -> Result<(), GraphError>
                 .ok_or_else(|| GraphError::Malformed("variable missing name".into()))?
                 .to_string();
             let resolved = resolve_variable(graph, asset_id, &var_name)?;
-            graph.assets[asset_id].own_variables.insert(var_name, resolved);
+            graph.assets[asset_id]
+                .own_variables
+                .insert(var_name, resolved);
         }
     }
     Ok(())
@@ -193,7 +216,9 @@ fn build_detectors(
     Ok(detectors)
 }
 
-fn create_lg_attack_step_nodes(graph: &mut LanguageGraph) -> Result<HashMap<String, Value>, GraphError> {
+fn create_lg_attack_step_nodes(
+    graph: &mut LanguageGraph,
+) -> Result<HashMap<String, Value>, GraphError> {
     let mut attack_step_dicts = HashMap::new();
     let order = graph.asset_order.clone();
 
@@ -207,7 +232,9 @@ fn create_lg_attack_step_nodes(graph: &mut LanguageGraph) -> Result<HashMap<Stri
                     .as_str()
                     .ok_or_else(|| GraphError::Malformed("attack step missing type".into()))?,
             )?;
-            let causal_mode = step_dict["causal_mode"].as_str().and_then(CausalMode::parse);
+            let causal_mode = step_dict["causal_mode"]
+                .as_str()
+                .and_then(CausalMode::parse);
             let ttc = if step_dict["ttc"].is_null() {
                 None
             } else {
@@ -247,7 +274,9 @@ fn create_lg_attack_step_nodes(graph: &mut LanguageGraph) -> Result<HashMap<Stri
 
             let full_name = format!("{asset_name}:{step_name}");
             let step_id = graph.steps.insert(node);
-            graph.assets[asset_id].attack_steps.insert(step_name, step_id);
+            graph.assets[asset_id]
+                .attack_steps
+                .insert(step_name, step_id);
             attack_step_dicts.insert(full_name, step_dict);
         }
     }
@@ -298,7 +327,9 @@ fn inherit_attack_steps(graph: &mut LanguageGraph) -> Result<(), GraphError> {
                         detectors: IndexMap::new(),
                     };
                     let new_id = graph.steps.insert(node);
-                    graph.assets[asset_id].attack_steps.insert(step_name, new_id);
+                    graph.assets[asset_id]
+                        .attack_steps
+                        .insert(step_name, new_id);
                 }
                 Some(current_id) => {
                     if graph.step(current_id).overrides {
@@ -326,7 +357,12 @@ fn connect_attack_steps(
     attack_step_dicts: &HashMap<String, Value>,
 ) -> Result<(), GraphError> {
     for asset_id in graph.asset_order.clone() {
-        let step_ids: Vec<AttackStepId> = graph.asset(asset_id).attack_steps.values().copied().collect();
+        let step_ids: Vec<AttackStepId> = graph
+            .asset(asset_id)
+            .attack_steps
+            .values()
+            .copied()
+            .collect();
 
         for step_id in step_ids {
             let full_name = graph.step(step_id).full_name(graph);
@@ -337,7 +373,10 @@ fn connect_attack_steps(
             let step_asset = graph.step(step_id).asset;
 
             if let Some(reaches) = step_dict.get("reaches").filter(|r| !r.is_null()) {
-                let exprs = reaches["stepExpressions"].as_array().cloned().unwrap_or_default();
+                let exprs = reaches["stepExpressions"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
                 for expr in exprs {
                     let (tgt_asset, chain, tgt_name) =
                         process_step_expression(graph, step_asset, None, &expr)?;
@@ -410,7 +449,12 @@ fn connect_model_effects(
     attack_step_dicts: &HashMap<String, Value>,
 ) -> Result<(), GraphError> {
     for asset_id in graph.asset_order.clone() {
-        let step_ids: Vec<AttackStepId> = graph.asset(asset_id).attack_steps.values().copied().collect();
+        let step_ids: Vec<AttackStepId> = graph
+            .asset(asset_id)
+            .attack_steps
+            .values()
+            .copied()
+            .collect();
 
         for step_id in step_ids {
             let full_name = graph.step(step_id).full_name(graph);
@@ -421,18 +465,30 @@ fn connect_model_effects(
             let step_asset = graph.step(step_id).asset;
 
             if let Some(append_reaches) = step_dict.get("append_reaches").filter(|r| !r.is_null()) {
-                let exprs = append_reaches["stepExpressions"].as_array().cloned().unwrap_or_default();
+                let exprs = append_reaches["stepExpressions"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
                 for expr in exprs {
-                    let model_effect = model_effect::build_model_effect(graph, step_asset, &expr, true)?;
-                    graph.steps[step_id].own_additive_model_effects.push(model_effect);
+                    let model_effect =
+                        model_effect::build_model_effect(graph, step_asset, &expr, true)?;
+                    graph.steps[step_id]
+                        .own_additive_model_effects
+                        .push(model_effect);
                 }
             }
 
             if let Some(remove_reaches) = step_dict.get("remove_reaches").filter(|r| !r.is_null()) {
-                let exprs = remove_reaches["stepExpressions"].as_array().cloned().unwrap_or_default();
+                let exprs = remove_reaches["stepExpressions"]
+                    .as_array()
+                    .cloned()
+                    .unwrap_or_default();
                 for expr in exprs {
-                    let model_effect = model_effect::build_model_effect(graph, step_asset, &expr, false)?;
-                    graph.steps[step_id].own_subtractive_model_effects.push(model_effect);
+                    let model_effect =
+                        model_effect::build_model_effect(graph, step_asset, &expr, false)?;
+                    graph.steps[step_id]
+                        .own_subtractive_model_effects
+                        .push(model_effect);
                 }
             }
         }

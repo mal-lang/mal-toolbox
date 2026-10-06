@@ -20,26 +20,39 @@ use maltoolbox_model_py::PyModel;
 use crate::graph::PyAttackGraph;
 
 #[pyfunction]
-pub fn create_attack_graph(py: Python<'_>, lang: &Bound<'_, PyAny>, model: &Bound<'_, PyAny>) -> PyResult<PyAttackGraph> {
+pub fn create_attack_graph(
+    py: Python<'_>,
+    lang: &Bound<'_, PyAny>,
+    model: &Bound<'_, PyAny>,
+) -> PyResult<PyAttackGraph> {
     let lang_graph_py: Py<PyLanguageGraph> = if let Ok(lg) = lang.extract::<Py<PyLanguageGraph>>() {
         lg
     } else if let Ok(path) = lang.extract::<String>() {
         let graph = match maltoolbox_language::from_mar_archive(&path) {
             Ok(g) => g,
-            Err(_) => maltoolbox_language::from_mal_spec(&path).map_err(maltoolbox_language_py::exceptions::load_error_to_py)?,
+            Err(_) => maltoolbox_language::from_mal_spec(&path)
+                .map_err(maltoolbox_language_py::exceptions::load_error_to_py)?,
         };
         Py::new(py, PyLanguageGraph::wrap(graph))?
     } else {
-        return Err(PyTypeError::new_err("`lang` must be either string or LanguageGraph"));
+        return Err(PyTypeError::new_err(
+            "`lang` must be either string or LanguageGraph",
+        ));
     };
 
     let model_py: Py<PyModel> = if let Ok(m) = model.extract::<Py<PyModel>>() {
         m
     } else if let Ok(path) = model.extract::<String>() {
-        let loaded = PyModel::load_from_file(py, std::path::PathBuf::from(&path), lang_graph_py.clone_ref(py))?;
+        let loaded = PyModel::load_from_file(
+            py,
+            std::path::PathBuf::from(&path),
+            lang_graph_py.clone_ref(py),
+        )?;
         Py::new(py, loaded)?
     } else {
-        return Err(PyTypeError::new_err("`model` must be either string or Model"));
+        return Err(PyTypeError::new_err(
+            "`model` must be either string or Model",
+        ));
     };
 
     PyAttackGraph::new(py, Some(lang_graph_py), Some(model_py))

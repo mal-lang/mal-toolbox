@@ -155,7 +155,10 @@ impl LanguageGraphAttackStep {
 
     /// Own + inherited subtractive model effects, mirroring the
     /// `subtractive_model_effects` property.
-    pub fn subtractive_model_effects(&self, graph: &LanguageGraph) -> Vec<LanguageGraphModelEffect> {
+    pub fn subtractive_model_effects(
+        &self,
+        graph: &LanguageGraph,
+    ) -> Vec<LanguageGraphModelEffect> {
         let mut all = self.own_subtractive_model_effects.clone();
         let Some(inherits) = self.inherits else {
             return all;

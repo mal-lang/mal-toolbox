@@ -25,9 +25,7 @@ use crate::generate::{self, GeneratedGraph};
 use crate::ids::AttackGraphNodeId;
 use crate::node::AttackGraphNode;
 use crate::node_getters::get_node_by_full_name;
-use crate::partially_generate::{
-    self, AssocAffectedDict,
-};
+use crate::partially_generate::{self, AssocAffectedDict};
 use crate::GraphError;
 
 /// `Clone` deep-copies node storage (the `SlotMap`/`IndexMap`s, each holding
@@ -73,7 +71,12 @@ impl AttackGraph {
     }
 
     fn from_generated(lang_graph: Rc<LanguageGraph>, generated: GeneratedGraph) -> Self {
-        let next_node_id = generated.id_to_node.keys().max().map(|&m| m + 1).unwrap_or(0);
+        let next_node_id = generated
+            .id_to_node
+            .keys()
+            .max()
+            .map(|&m| m + 1)
+            .unwrap_or(0);
         AttackGraph {
             lang_graph,
             nodes: generated.nodes,
@@ -126,9 +129,12 @@ impl AttackGraph {
 
         self.next_node_id += created.id_to_node.len() as i64;
         self.id_to_node.extend(created.id_to_node);
-        self.attack_steps.extend(created.attack_steps.iter().copied());
-        self.defense_steps.extend(created.defense_steps.iter().copied());
-        self.full_name_to_node.extend(created.full_name_to_node.clone());
+        self.attack_steps
+            .extend(created.attack_steps.iter().copied());
+        self.defense_steps
+            .extend(created.defense_steps.iter().copied());
+        self.full_name_to_node
+            .extend(created.full_name_to_node.clone());
 
         for &key in created.full_name_to_node.values() {
             generate::link_node_children(model, &mut self.nodes, key, &self.full_name_to_node)?;
@@ -187,13 +193,19 @@ impl AttackGraph {
             for (asset_id, fields) in assoc_dict {
                 let dest_fields = affected_assoc_dict.entry(*asset_id).or_default();
                 for (fieldname, assets) in fields {
-                    dest_fields.entry(fieldname.clone()).or_default().extend(assets);
+                    dest_fields
+                        .entry(fieldname.clone())
+                        .or_default()
+                        .extend(assets);
                 }
             }
         }
 
-        let nodes_of_modified_assoc =
-            partially_generate::assoc_affected_nodes(model, &affected_assoc_dict, &self.full_name_to_node)?;
+        let nodes_of_modified_assoc = partially_generate::assoc_affected_nodes(
+            model,
+            &affected_assoc_dict,
+            &self.full_name_to_node,
+        )?;
         for key in nodes_of_modified_assoc {
             partially_generate::correct_node_children_on_modified_assoc(
                 model,
@@ -205,8 +217,11 @@ impl AttackGraph {
 
         generate::create_detectors(&mut self.nodes, &created.full_name_to_node, model)?;
 
-        let removal_candidates =
-            partially_generate::nodes_to_be_removed(removed_assets, model, &self.full_name_to_node)?;
+        let removal_candidates = partially_generate::nodes_to_be_removed(
+            removed_assets,
+            model,
+            &self.full_name_to_node,
+        )?;
         for candidate in removal_candidates {
             self.remove_node(candidate)?;
         }
@@ -326,7 +341,10 @@ impl AttackGraph {
             self.nodes[parent].children.remove(&key);
         }
 
-        let full_name = self.full_name_to_node.iter().find_map(|(name, &k)| (k == key).then(|| name.clone()));
+        let full_name = self
+            .full_name_to_node
+            .iter()
+            .find_map(|(name, &k)| (k == key).then(|| name.clone()));
 
         let final_state = self.nodes[key].clone();
         self.nodes.remove(key);
@@ -387,13 +405,17 @@ impl AttackGraph {
                 _ => None,
             };
 
-            let lg_full_name = node_dict["lang_graph_attack_step"].as_str().ok_or_else(|| {
-                GraphError::Malformed(format!(
-                    "attack graph node \"{node_full_name}\" missing \"lang_graph_attack_step\""
-                ))
-            })?;
+            let lg_full_name = node_dict["lang_graph_attack_step"]
+                .as_str()
+                .ok_or_else(|| {
+                    GraphError::Malformed(format!(
+                        "attack graph node \"{node_full_name}\" missing \"lang_graph_attack_step\""
+                    ))
+                })?;
             let (lg_asset_name, lg_step_name) = lg_full_name.split_once(':').ok_or_else(|| {
-                GraphError::Malformed(format!("malformed lang_graph_attack_step \"{lg_full_name}\""))
+                GraphError::Malformed(format!(
+                    "malformed lang_graph_attack_step \"{lg_full_name}\""
+                ))
             })?;
             let lg_asset_id = lang_graph.asset_id(lg_asset_name).ok_or_else(|| {
                 GraphError::Malformed(format!(
@@ -411,7 +433,9 @@ impl AttackGraph {
                 })?;
 
             let node_id = node_dict["id"].as_i64().ok_or_else(|| {
-                GraphError::Malformed(format!("attack graph node \"{node_full_name}\" missing \"id\""))
+                GraphError::Malformed(format!(
+                    "attack graph node \"{node_full_name}\" missing \"id\""
+                ))
             })?;
             let ttc_dist = match node_dict.get("ttc") {
                 Some(Value::Null) | None => None,
@@ -426,13 +450,21 @@ impl AttackGraph {
                 node_asset_id,
                 ttc_dist,
                 existence_status,
-                if model.is_none() { Some(node_full_name.clone()) } else { None },
+                if model.is_none() {
+                    Some(node_full_name.clone())
+                } else {
+                    None
+                },
             )?;
 
             attack_graph.nodes[key].tags = node_dict
                 .get("tags")
                 .and_then(Value::as_array)
-                .map(|tags| tags.iter().filter_map(|t| t.as_str().map(str::to_string)).collect())
+                .map(|tags| {
+                    tags.iter()
+                        .filter_map(|t| t.as_str().map(str::to_string))
+                        .collect()
+                })
                 .unwrap_or_default();
             attack_graph.nodes[key].extras = node_dict
                 .get("extras")
@@ -443,15 +475,15 @@ impl AttackGraph {
 
         // Re-establish links between nodes, now that every node exists.
         let resolve_relation = |id_to_node: &IndexMap<i64, AttackGraphNodeId>,
-                                 node_dict: &Value,
-                                 relation: &'static str|
+                                node_dict: &Value,
+                                relation: &'static str|
          -> Result<HashSet<AttackGraphNodeId>, GraphError> {
             let mut resolved = HashSet::new();
             if let Some(entries) = node_dict.get(relation).and_then(Value::as_object) {
                 for id_str in entries.keys() {
-                    let id: i64 = id_str
-                        .parse()
-                        .map_err(|_| GraphError::Malformed(format!("malformed {relation} id \"{id_str}\"")))?;
+                    let id: i64 = id_str.parse().map_err(|_| {
+                        GraphError::Malformed(format!("malformed {relation} id \"{id_str}\""))
+                    })?;
                     let related_key = *id_to_node.get(&id).ok_or_else(|| {
                         GraphError::Malformed(format!(
                             "Failed to find {relation} node with id {id} when loading from attack graph from dict"

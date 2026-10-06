@@ -17,26 +17,62 @@ use maltoolbox_language::graph::GraphError;
 // `repr` use), set to where these live in `maltoolbox/exceptions.py`,
 // not this crate's own `_native` module.
 create_exception!(maltoolbox.exceptions, MalToolboxException, PyException);
-create_exception!(maltoolbox.exceptions, LanguageGraphException, MalToolboxException);
+create_exception!(
+    maltoolbox.exceptions,
+    LanguageGraphException,
+    MalToolboxException
+);
 create_exception!(
     maltoolbox.exceptions,
     LanguageGraphSuperAssetNotFoundError,
     LanguageGraphException
 );
-create_exception!(maltoolbox.exceptions, LanguageGraphAssociationError, LanguageGraphException);
-create_exception!(maltoolbox.exceptions, LanguageGraphStepExpressionError, LanguageGraphException);
+create_exception!(
+    maltoolbox.exceptions,
+    LanguageGraphAssociationError,
+    LanguageGraphException
+);
+create_exception!(
+    maltoolbox.exceptions,
+    LanguageGraphStepExpressionError,
+    LanguageGraphException
+);
 
 // `maltoolbox.language.compiler.exceptions` - a separate hierarchy, not
 // under `MalToolboxException`. `__module__` is set to
 // `maltoolbox.language.compiler.exceptions` (not this crate's own
 // `_native.language.compiler.exceptions` nesting) so pickling/repr
 // resolve to the same path as the Python originals.
-create_exception!(maltoolbox.language.compiler.exceptions, MalCompilerError, PyException);
-create_exception!(maltoolbox.language.compiler.exceptions, MalSyntaxError, MalCompilerError);
-create_exception!(maltoolbox.language.compiler.exceptions, MalParseError, MalCompilerError);
-create_exception!(maltoolbox.language.compiler.exceptions, MalTypeError, MalCompilerError);
-create_exception!(maltoolbox.language.compiler.exceptions, MalNameError, MalCompilerError);
-create_exception!(maltoolbox.language.compiler.exceptions, MalCompilationError, MalCompilerError);
+create_exception!(
+    maltoolbox.language.compiler.exceptions,
+    MalCompilerError,
+    PyException
+);
+create_exception!(
+    maltoolbox.language.compiler.exceptions,
+    MalSyntaxError,
+    MalCompilerError
+);
+create_exception!(
+    maltoolbox.language.compiler.exceptions,
+    MalParseError,
+    MalCompilerError
+);
+create_exception!(
+    maltoolbox.language.compiler.exceptions,
+    MalTypeError,
+    MalCompilerError
+);
+create_exception!(
+    maltoolbox.language.compiler.exceptions,
+    MalNameError,
+    MalCompilerError
+);
+create_exception!(
+    maltoolbox.language.compiler.exceptions,
+    MalCompilationError,
+    MalCompilerError
+);
 
 // `maltoolbox.language.compiler.mal_analyzer.malAnalyzerException` - yet
 // another separate hierarchy. The unconventional lowercase-`m` name is
@@ -95,11 +131,9 @@ pub fn load_error_to_py(err: LoadError) -> PyErr {
         LoadError::Archive(path, reason) => {
             PyOSError::new_err(format!("failed to read mar archive '{path}': {reason}"))
         }
-        LoadError::UnknownExtension => {
-            pyo3::exceptions::PyTypeError::new_err(
-                "Unknown file extension, expected json/mal/mar/yml/yaml",
-            )
-        }
+        LoadError::UnknownExtension => pyo3::exceptions::PyTypeError::new_err(
+            "Unknown file extension, expected json/mal/mar/yml/yaml",
+        ),
     }
 }
 
@@ -110,7 +144,10 @@ pub fn load_error_to_py(err: LoadError) -> PyErr {
 /// see `lib.rs::register` for how the caller nests them.
 pub fn register(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("MalToolboxException", py.get_type::<MalToolboxException>())?;
-    m.add("LanguageGraphException", py.get_type::<LanguageGraphException>())?;
+    m.add(
+        "LanguageGraphException",
+        py.get_type::<LanguageGraphException>(),
+    )?;
     m.add(
         "LanguageGraphSuperAssetNotFoundError",
         py.get_type::<LanguageGraphSuperAssetNotFoundError>(),
@@ -137,6 +174,9 @@ pub fn register_compiler_exceptions(py: Python<'_>, m: &Bound<'_, PyModule>) -> 
 }
 
 pub fn register_analyzer_exceptions(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("malAnalyzerException", py.get_type::<malAnalyzerException>())?;
+    m.add(
+        "malAnalyzerException",
+        py.get_type::<malAnalyzerException>(),
+    )?;
     Ok(())
 }

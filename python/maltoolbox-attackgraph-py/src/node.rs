@@ -17,7 +17,9 @@ use pyo3::IntoPyObjectExt;
 use maltoolbox_attackgraph::ids::AttackGraphNodeId;
 use maltoolbox_attackgraph::AttackGraph;
 use maltoolbox_language_py::handle::composite_hash;
-use maltoolbox_language_py::{model_effect_to_py, PyLanguageGraphAttackStep, PyLanguageGraphModelEffect};
+use maltoolbox_language_py::{
+    model_effect_to_py, PyLanguageGraphAttackStep, PyLanguageGraphModelEffect,
+};
 use maltoolbox_model_py::PyModelAsset;
 
 use crate::detector_support::{build_py_detector, detector_snapshots_for, DetectorSnapshot};
@@ -30,7 +32,10 @@ use crate::graph::PyAttackGraph;
 /// corrected here. Same root cause as `maltoolbox-model-py`'s
 /// `fix_associated_assets_int_keys`. Shared by `PyAttackGraphNode::to_dict`
 /// and `PyAttackGraph::to_dict`.
-pub fn fix_children_parents_int_keys(py: Python<'_>, node_dict: &Bound<'_, PyDict>) -> PyResult<()> {
+pub fn fix_children_parents_int_keys(
+    py: Python<'_>,
+    node_dict: &Bound<'_, PyDict>,
+) -> PyResult<()> {
     for field in ["children", "parents"] {
         let Some(value) = node_dict.get_item(field)? else {
             continue;
@@ -40,10 +45,9 @@ pub fn fix_children_parents_int_keys(py: Python<'_>, node_dict: &Bound<'_, PyDic
         };
         let fixed = PyDict::new(py);
         for (key, val) in sub_dict.iter() {
-            let id: i64 = key
-                .extract::<String>()?
-                .parse()
-                .map_err(|_| pyo3::exceptions::PyValueError::new_err(format!("non-integer key in {field}")))?;
+            let id: i64 = key.extract::<String>()?.parse().map_err(|_| {
+                pyo3::exceptions::PyValueError::new_err(format!("non-integer key in {field}"))
+            })?;
             fixed.set_item(id, val)?;
         }
         node_dict.set_item(field, fixed)?;
@@ -89,7 +93,10 @@ pub struct PyNodeTombstone {
 /// module's top doc comment) or a `Detached` standalone node with no
 /// owner.
 pub enum NodeRepr {
-    Owned { owner_py: Py<PyAttackGraph>, id: i64 },
+    Owned {
+        owner_py: Py<PyAttackGraph>,
+        id: i64,
+    },
     Detached(DetachedNode),
 }
 
@@ -144,7 +151,11 @@ impl PyAttackGraphNode {
     }
 
     fn node_key(&self, graph: &AttackGraph, id: i64) -> PyResult<AttackGraphNodeId> {
-        graph.id_to_node.get(&id).copied().ok_or_else(|| self.not_found(id))
+        graph
+            .id_to_node
+            .get(&id)
+            .copied()
+            .ok_or_else(|| self.not_found(id))
     }
 
     /// Borrows the owning graph transiently and runs `f` against the
@@ -156,7 +167,11 @@ impl PyAttackGraphNode {
     /// fall back to a precomputed `PyNodeTombstone` field instead of
     /// calling this at all in the removed case. `Owned`-only - see
     /// `owned()`.
-    fn with_node<R>(&self, py: Python<'_>, f: impl FnOnce(&AttackGraph, AttackGraphNodeId) -> PyResult<R>) -> PyResult<R> {
+    fn with_node<R>(
+        &self,
+        py: Python<'_>,
+        f: impl FnOnce(&AttackGraph, AttackGraphNodeId) -> PyResult<R>,
+    ) -> PyResult<R> {
         let (owner_py, id) = self.owned()?;
         let owner = owner_py.borrow(py);
         let graph = owner.inner.borrow();
@@ -171,7 +186,11 @@ impl PyAttackGraphNode {
     /// pattern. Used by every getter that only needs this node's own
     /// fields, not a graph-wide key lookup or cross-referencing other
     /// nodes. `Owned`-only - see `owned()`.
-    fn with_node_value<R>(&self, py: Python<'_>, f: impl FnOnce(&maltoolbox_attackgraph::AttackGraphNode) -> PyResult<R>) -> PyResult<R> {
+    fn with_node_value<R>(
+        &self,
+        py: Python<'_>,
+        f: impl FnOnce(&maltoolbox_attackgraph::AttackGraphNode) -> PyResult<R>,
+    ) -> PyResult<R> {
         let (owner_py, id) = self.owned()?;
         let owner = owner_py.borrow(py);
         let graph = owner.inner.borrow();
@@ -216,7 +235,12 @@ impl PyAttackGraphNode {
     /// since this is a structural equality check, not a context where
     /// raising is appropriate.
     pub fn eq_with(&self, other: &PyAttackGraphNode, py: Python<'_>) -> bool {
-        match (self.owner_ptr(py), other.owner_ptr(py), self.owned(), other.owned()) {
+        match (
+            self.owner_ptr(py),
+            other.owner_ptr(py),
+            self.owned(),
+            other.owned(),
+        ) {
             (Ok(a), Ok(b), Ok((_, self_id)), Ok((_, other_id))) => a == b && self_id == other_id,
             _ => false,
         }
@@ -269,8 +293,16 @@ impl PyAttackGraphNode {
             Some(key) => {
                 let graph = owner.inner.borrow();
                 (
-                    graph.nodes[key].children.iter().map(|&c| graph.nodes[c].id).collect(),
-                    graph.nodes[key].parents.iter().map(|&p| graph.nodes[p].id).collect(),
+                    graph.nodes[key]
+                        .children
+                        .iter()
+                        .map(|&c| graph.nodes[c].id)
+                        .collect(),
+                    graph.nodes[key]
+                        .parents
+                        .iter()
+                        .map(|&p| graph.nodes[p].id)
+                        .collect(),
                 )
             }
             None => {
@@ -289,10 +321,10 @@ impl PyAttackGraphNode {
         }
         let children_unbind = children_set.unbind();
         let parents_unbind = parents_set.unbind();
-        owner
-            .node_edges_cache
-            .borrow_mut()
-            .insert(id, (children_unbind.clone_ref(py), parents_unbind.clone_ref(py)));
+        owner.node_edges_cache.borrow_mut().insert(
+            id,
+            (children_unbind.clone_ref(py), parents_unbind.clone_ref(py)),
+        );
         Ok((children_unbind, parents_unbind))
     }
 
@@ -302,7 +334,12 @@ impl PyAttackGraphNode {
     /// the live node's `children`/`parents` `HashSet`, then refreshes
     /// this id's `node_edges_cache` entry so the getter's cached `PySet`
     /// reflects the write immediately (see `edges_sets`'s doc comment).
-    fn set_edge_field(&self, py: Python<'_>, value: &Bound<'_, PyAny>, is_children: bool) -> PyResult<()> {
+    fn set_edge_field(
+        &self,
+        py: Python<'_>,
+        value: &Bound<'_, PyAny>,
+        is_children: bool,
+    ) -> PyResult<()> {
         let (owner_py, id) = self.owned()?;
         let owner = owner_py.borrow(py);
         let items: Vec<Bound<'_, PyAny>> = value.try_iter()?.collect::<PyResult<Vec<_>>>()?;
@@ -341,7 +378,9 @@ impl PyAttackGraphNode {
         py: Python<'_>,
         effects: Option<Vec<maltoolbox_language::graph::model_effect::LanguageGraphModelEffect>>,
     ) -> PyResult<Option<Vec<Py<PyLanguageGraphModelEffect>>>> {
-        let Some(effects) = effects else { return Ok(None) };
+        let Some(effects) = effects else {
+            return Ok(None);
+        };
         let (owner_py, _) = self.owned()?;
         let owner = owner_py.borrow(py);
         let lang_graph = owner.lang_graph_py.borrow(py);
@@ -453,7 +492,8 @@ impl PyAttackGraphNode {
     #[getter]
     fn ttc<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         self.with_node_value(py, |n| match &n.ttc {
-            Some(v) => pythonize::pythonize(py, v).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string())),
+            Some(v) => pythonize::pythonize(py, v)
+                .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string())),
             None => Ok(py.None().into_bound(py)),
         })
     }
@@ -467,13 +507,19 @@ impl PyAttackGraphNode {
     /// `LanguageGraphModelEffect` wrappers - see `maltoolbox-language-py`'s
     /// `model_effect.rs` for the wrapper hierarchy.
     #[getter]
-    fn additive_model_effects(&self, py: Python<'_>) -> PyResult<Option<Vec<Py<PyLanguageGraphModelEffect>>>> {
+    fn additive_model_effects(
+        &self,
+        py: Python<'_>,
+    ) -> PyResult<Option<Vec<Py<PyLanguageGraphModelEffect>>>> {
         let effects = self.with_node_value(py, |n| Ok(n.additive_model_effects.clone()))?;
         self.model_effects_to_py(py, effects)
     }
 
     #[getter]
-    fn subtractive_model_effects(&self, py: Python<'_>) -> PyResult<Option<Vec<Py<PyLanguageGraphModelEffect>>>> {
+    fn subtractive_model_effects(
+        &self,
+        py: Python<'_>,
+    ) -> PyResult<Option<Vec<Py<PyLanguageGraphModelEffect>>>> {
         let effects = self.with_node_value(py, |n| Ok(n.subtractive_model_effects.clone()))?;
         self.model_effects_to_py(py, effects)
     }
@@ -481,10 +527,14 @@ impl PyAttackGraphNode {
     #[getter]
     fn model_asset(&self, py: Python<'_>) -> PyResult<Option<Py<PyModelAsset>>> {
         let asset_id = self.with_node_value(py, |n| Ok(n.model_asset))?;
-        let Some(asset_id) = asset_id else { return Ok(None) };
+        let Some(asset_id) = asset_id else {
+            return Ok(None);
+        };
         let (owner_py, _) = self.owned()?;
         let owner = owner_py.borrow(py);
-        let Some(model_py) = owner.model_py.as_ref() else { return Ok(None) };
+        let Some(model_py) = owner.model_py.as_ref() else {
+            return Ok(None);
+        };
         let model = model_py.borrow(py);
         Ok(Some(model.asset_handle(py, asset_id)?))
     }
@@ -590,11 +640,15 @@ impl PyAttackGraphNode {
                 return Ok(existing.clone_ref(py));
             }
         }
-        let value = self.with_node_value(py, |n| Ok(serde_json::Value::Object(n.extras.clone())))?;
-        let pythonized =
-            pythonize::pythonize(py, &value).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let value =
+            self.with_node_value(py, |n| Ok(serde_json::Value::Object(n.extras.clone())))?;
+        let pythonized = pythonize::pythonize(py, &value)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let dict = pythonized.cast::<PyDict>()?;
-        owner.node_extras.borrow_mut().insert(id, dict.clone().unbind());
+        owner
+            .node_extras
+            .borrow_mut()
+            .insert(id, dict.clone().unbind());
         Ok(dict.clone().unbind())
     }
 
@@ -638,7 +692,10 @@ impl PyAttackGraphNode {
             let det = build_py_detector(py, owner_py, snap)?;
             dict.set_item(&snap.label, det)?;
         }
-        owner.node_detectors.borrow_mut().insert(id, dict.clone().unbind());
+        owner
+            .node_detectors
+            .borrow_mut()
+            .insert(id, dict.clone().unbind());
         Ok(dict.unbind())
     }
 
@@ -692,7 +749,8 @@ impl PyAttackGraphNode {
     /// status).
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let dict = self.with_node_and_model(py, |g, k, model| Ok(g.node_to_dict(k, model)))?;
-        let pythonized = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let pythonized = pythonize::pythonize(py, &dict)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let pythonized = pythonized.cast::<PyDict>()?;
         fix_children_parents_int_keys(py, pythonized)?;
         if let Ok((owner_py, id)) = self.owned() {
@@ -744,7 +802,10 @@ impl PyAttackGraphNode {
                     }
                 }
             }
-            NodeRepr::Detached(d) => Ok(format!("AttackGraphNode(name: \"{}\", id: {}, type: detached)", d.name, d.id)),
+            NodeRepr::Detached(d) => Ok(format!(
+                "AttackGraphNode(name: \"{}\", id: {}, type: detached)",
+                d.name, d.id
+            )),
         }
     }
 
@@ -764,7 +825,12 @@ impl PyAttackGraphNode {
     /// `__richcmp__`'s `Eq`/`Ne`. A `Detached` node compared against an
     /// `Owned` one is never equal, consistent with default identity
     /// semantics.
-    fn __richcmp__(self_: &Bound<'_, Self>, other: &Bound<'_, PyAny>, op: CompareOp, py: Python<'_>) -> PyResult<Py<PyAny>> {
+    fn __richcmp__(
+        self_: &Bound<'_, Self>,
+        other: &Bound<'_, PyAny>,
+        op: CompareOp,
+        py: Python<'_>,
+    ) -> PyResult<Py<PyAny>> {
         let eq = {
             let slf = self_.borrow();
             match &slf.repr {
@@ -794,7 +860,10 @@ impl PyAttackGraphNode {
         // Looked up by import path rather than hardcoding a
         // `Py<PyFunction>` reference, so it resolves correctly regardless
         // of how this module gets packaged.
-        let func = py.import("maltoolbox._native")?.getattr("_rebuild_attack_graph_node")?.unbind();
+        let func = py
+            .import("maltoolbox._native")?
+            .getattr("_rebuild_attack_graph_node")?
+            .unbind();
         Ok((func, (owner_py.clone_ref(py), id)))
     }
 
@@ -808,7 +877,10 @@ impl PyAttackGraphNode {
     /// `copy.deepcopy((attack_graph, a_node))` - returns the *same* copy
     /// rather than cloning the whole graph again. `Detached` nodes aren't
     /// owned by any graph to delegate to, so this errors clearly instead.
-    fn __deepcopy__(self_: &Bound<'_, Self>, memo: &Bound<'_, PyDict>) -> PyResult<Py<PyAttackGraphNode>> {
+    fn __deepcopy__(
+        self_: &Bound<'_, Self>,
+        memo: &Bound<'_, PyDict>,
+    ) -> PyResult<Py<PyAttackGraphNode>> {
         let py = self_.py();
         if let Some(existing) = memo.get_item(self_.as_ptr() as isize)? {
             return existing.extract().map_err(PyErr::from);
@@ -837,7 +909,14 @@ pub struct PyAttackGraphNodesView {
 
 impl PyAttackGraphNodesView {
     fn ids(&self, py: Python<'_>) -> Vec<i64> {
-        self.owner_py.borrow(py).inner.borrow().id_to_node.keys().copied().collect()
+        self.owner_py
+            .borrow(py)
+            .inner
+            .borrow()
+            .id_to_node
+            .keys()
+            .copied()
+            .collect()
     }
 }
 
@@ -858,7 +937,12 @@ impl PyAttackGraphNodesView {
     }
 
     fn __contains__(&self, py: Python<'_>, id: i64) -> bool {
-        self.owner_py.borrow(py).inner.borrow().id_to_node.contains_key(&id)
+        self.owner_py
+            .borrow(py)
+            .inner
+            .borrow()
+            .id_to_node
+            .contains_key(&id)
     }
 
     fn __iter__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -873,7 +957,10 @@ impl PyAttackGraphNodesView {
 
     fn values(&self, py: Python<'_>) -> PyResult<Vec<Py<PyAttackGraphNode>>> {
         let owner = self.owner_py.borrow(py);
-        self.ids(py).into_iter().map(|id| owner.node_handle(&self.owner_py, py, id)).collect()
+        self.ids(py)
+            .into_iter()
+            .map(|id| owner.node_handle(&self.owner_py, py, id))
+            .collect()
     }
 
     fn items(&self, py: Python<'_>) -> PyResult<Vec<(i64, Py<PyAttackGraphNode>)>> {
@@ -885,11 +972,18 @@ impl PyAttackGraphNodesView {
     }
 
     #[pyo3(signature = (id, default=None))]
-    fn get(&self, py: Python<'_>, id: i64, default: Option<Py<PyAny>>) -> PyResult<Option<Py<PyAny>>> {
+    fn get(
+        &self,
+        py: Python<'_>,
+        id: i64,
+        default: Option<Py<PyAny>>,
+    ) -> PyResult<Option<Py<PyAny>>> {
         let owner = self.owner_py.borrow(py);
         let present = owner.inner.borrow().id_to_node.contains_key(&id);
         if present {
-            Ok(Some(owner.node_handle(&self.owner_py, py, id)?.into_py_any(py)?))
+            Ok(Some(
+                owner.node_handle(&self.owner_py, py, id)?.into_py_any(py)?,
+            ))
         } else {
             Ok(default)
         }
@@ -929,7 +1023,11 @@ impl PyAttackGraphNodesView {
 /// of its nodes), the second occurrence resolves to the same Python
 /// object as the first, same as live access.
 #[pyfunction]
-pub fn _rebuild_attack_graph_node(py: Python<'_>, owner: Py<PyAttackGraph>, id: i64) -> PyResult<Py<PyAttackGraphNode>> {
+pub fn _rebuild_attack_graph_node(
+    py: Python<'_>,
+    owner: Py<PyAttackGraph>,
+    id: i64,
+) -> PyResult<Py<PyAttackGraphNode>> {
     let graph = owner.borrow(py);
     graph.node_handle(&owner, py, id)
 }

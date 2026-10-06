@@ -76,13 +76,35 @@ fn link(graph: &mut AttackGraph, parent: AttackGraphNodeId, children: &[AttackGr
 #[test]
 fn find_pattern_example_graph() {
     let lang_graph = Rc::new(
-        maltoolbox_language::from_mar_archive(fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar"))
-            .expect("load corelang"),
+        maltoolbox_language::from_mar_archive(
+            fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar"),
+        )
+        .expect("load corelang"),
     );
     let mut model = Model::new("Test Model", lang_graph);
-    let app1 = model.add_asset("Application", Some("Application 1".into()), None, None, None, true).unwrap();
-    let app2 = model.add_asset("Application", Some("Application 2".into()), None, None, None, true).unwrap();
-    model.add_associated_assets(app1, "appExecutedApps", HashSet::from([app2])).unwrap();
+    let app1 = model
+        .add_asset(
+            "Application",
+            Some("Application 1".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let app2 = model
+        .add_asset(
+            "Application",
+            Some("Application 2".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    model
+        .add_associated_assets(app1, "appExecutedApps", HashSet::from([app2]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
 
@@ -94,7 +116,10 @@ fn find_pattern_example_graph() {
 
     let paths = pattern.find_matches(&attack_graph);
     for path in paths {
-        let names: Vec<&str> = path.iter().map(|&id| attack_graph.nodes[id].name.as_str()).collect();
+        let names: Vec<&str> = path
+            .iter()
+            .map(|&id| attack_graph.nodes[id].name.as_str())
+            .collect();
         assert_eq!(names, vec!["attemptRead", "successfulRead", "read"]);
     }
 }

@@ -36,14 +36,22 @@ pub struct DetectorSnapshot {
 
 /// Snapshots every detector on the given nodes (identified by core
 /// slotmap key) into owned, borrow-free data.
-pub fn detector_snapshots_for(graph: &AttackGraph, keys: &[AttackGraphNodeId]) -> Vec<DetectorSnapshot> {
+pub fn detector_snapshots_for(
+    graph: &AttackGraph,
+    keys: &[AttackGraphNodeId],
+) -> Vec<DetectorSnapshot> {
     let mut out = Vec::new();
     for &key in keys {
-        let Some(node) = graph.nodes.get(key) else { continue };
+        let Some(node) = graph.nodes.get(key) else {
+            continue;
+        };
         for (label, det) in &node.detectors {
             let mut potential_context = HashMap::new();
             for (fieldname, ids) in &det.potential_context {
-                let resolved: Vec<i64> = ids.iter().filter_map(|&k| graph.nodes.get(k).map(|n| n.id)).collect();
+                let resolved: Vec<i64> = ids
+                    .iter()
+                    .filter_map(|&k| graph.nodes.get(k).map(|n| n.id))
+                    .collect();
                 potential_context.insert(fieldname.clone(), resolved);
             }
             out.push(DetectorSnapshot {
@@ -61,7 +69,11 @@ pub fn detector_snapshots_for(graph: &AttackGraph, keys: &[AttackGraphNodeId]) -
 
 /// Builds a real `PyDetector` from a snapshot - safe to call with no
 /// outstanding `AttackGraph` borrow.
-pub fn build_py_detector(py: Python<'_>, owner_py: &Py<PyAttackGraph>, snap: &DetectorSnapshot) -> PyResult<Py<PyDetector>> {
+pub fn build_py_detector(
+    py: Python<'_>,
+    owner_py: &Py<PyAttackGraph>,
+    snap: &DetectorSnapshot,
+) -> PyResult<Py<PyDetector>> {
     let graph = owner_py.borrow(py);
     let node = graph.node_handle(owner_py, py, snap.node_id)?;
     let context_dict = PyDict::new(py);

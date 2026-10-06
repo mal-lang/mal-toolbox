@@ -13,8 +13,8 @@ use pyo3::prelude::*;
 use pyo3::types::{PyList, PyTuple};
 
 use maltoolbox_language::graph::model_effect::{
-    AssocSet, AssocTraversal, AssocTraversalChain, AssocTraversalElem, DynTarget, GlobAssocTraversal,
-    LanguageGraphModelEffect, ModelEffectType, QuantityFilter,
+    AssocSet, AssocTraversal, AssocTraversalChain, AssocTraversalElem, DynTarget,
+    GlobAssocTraversal, LanguageGraphModelEffect, ModelEffectType, QuantityFilter,
 };
 use maltoolbox_language::graph::LanguageGraph;
 
@@ -55,7 +55,9 @@ impl PyAssocTraversal {
 
     #[getter]
     fn asset_filter(&self, py: Python<'_>) -> PyResult<Option<Py<PyLanguageGraphAsset>>> {
-        self.asset_filter.map(|id| cached_asset(py, &self.ctx, id)).transpose()
+        self.asset_filter
+            .map(|id| cached_asset(py, &self.ctx, id))
+            .transpose()
     }
 
     #[getter]
@@ -74,10 +76,16 @@ impl PyAssocTraversal {
 /// Resolves an `asset_filter: AssetId` to a `PyLanguageGraphAsset`
 /// handle via the owning graph's real cache, for consistency with every
 /// other path to the same asset.
-fn cached_asset(py: Python<'_>, ctx: &Ctx, id: maltoolbox_language::graph::ids::AssetId) -> PyResult<Py<PyLanguageGraphAsset>> {
+fn cached_asset(
+    py: Python<'_>,
+    ctx: &Ctx,
+    id: maltoolbox_language::graph::ids::AssetId,
+) -> PyResult<Py<PyLanguageGraphAsset>> {
     let owner = ctx.owner.clone();
     let caches = ctx.caches.clone();
-    crate::handle::cached_handle(&ctx.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
+    crate::handle::cached_handle(&ctx.caches.assets, py, id, move || {
+        PyLanguageGraphAsset::new(owner, id, caches)
+    })
 }
 
 #[pyclass(name = "GlobAssocTraversal", module = "maltoolbox._native", unsendable)]
@@ -100,7 +108,10 @@ impl PyGlobAssocTraversal {
     }
 
     fn __repr__(&self) -> String {
-        format!("GlobAssocTraversal(pattern: [{} elem(s)])", self.pattern.len())
+        format!(
+            "GlobAssocTraversal(pattern: [{} elem(s)])",
+            self.pattern.len()
+        )
     }
 }
 
@@ -168,11 +179,19 @@ impl PyDynTarget {
     }
 
     fn __repr__(&self) -> String {
-        format!("DynTarget(assoc_op: {}, assoc_traversal: [{} elem(s)])", self.assoc_op, self.assoc_traversal.len())
+        format!(
+            "DynTarget(assoc_op: {}, assoc_traversal: [{} elem(s)])",
+            self.assoc_op,
+            self.assoc_traversal.len()
+        )
     }
 }
 
-#[pyclass(name = "LanguageGraphModelEffect", module = "maltoolbox._native", unsendable)]
+#[pyclass(
+    name = "LanguageGraphModelEffect",
+    module = "maltoolbox._native",
+    unsendable
+)]
 pub struct PyLanguageGraphModelEffect {
     model_effect_type: ModelEffectType,
     base: AssocTraversalChain,
@@ -238,7 +257,10 @@ fn elem_to_py(py: Python<'_>, ctx: &Ctx, elem: &AssocTraversalElem) -> PyResult<
             },
         )?
         .into_any()),
-        AssocTraversalElem::Glob(GlobAssocTraversal { pattern, quantity_filter }) => Ok(Py::new(
+        AssocTraversalElem::Glob(GlobAssocTraversal {
+            pattern,
+            quantity_filter,
+        }) => Ok(Py::new(
             py,
             PyGlobAssocTraversal {
                 pattern: pattern.clone(),
@@ -266,7 +288,11 @@ fn elem_to_py(py: Python<'_>, ctx: &Ctx, elem: &AssocTraversalElem) -> PyResult<
     }
 }
 
-fn chain_to_pylist<'py>(py: Python<'py>, ctx: &Ctx, chain: &AssocTraversalChain) -> PyResult<Bound<'py, PyList>> {
+fn chain_to_pylist<'py>(
+    py: Python<'py>,
+    ctx: &Ctx,
+    chain: &AssocTraversalChain,
+) -> PyResult<Bound<'py, PyList>> {
     let items: PyResult<Vec<Py<PyAny>>> = chain.iter().map(|e| elem_to_py(py, ctx, e)).collect();
     PyList::new(py, items?)
 }

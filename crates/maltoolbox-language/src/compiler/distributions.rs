@@ -22,8 +22,15 @@ pub fn validate(distribution_name: &str, params: &[f64]) -> Result<(), Distribut
         "Pareto" => validate_pareto(params),
         "TruncatedNormal" => validate_truncated_normal(params),
         "Uniform" => validate_uniform(params),
-        "Enabled" | "Disabled" | "Zero" | "Infinity" | "EasyAndCertain" | "EasyAndUncertain"
-        | "HardAndCertain" | "HardAndUncertain" | "VeryHardAndCertain"
+        "Enabled"
+        | "Disabled"
+        | "Zero"
+        | "Infinity"
+        | "EasyAndCertain"
+        | "EasyAndUncertain"
+        | "HardAndCertain"
+        | "HardAndUncertain"
+        | "VeryHardAndCertain"
         | "VeryHardAndUncertain" => validate_combination(params),
         other => Err(err(format!("Distribution {other} is not supported"))),
     }

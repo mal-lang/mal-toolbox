@@ -30,7 +30,12 @@ use crate::detector_support::{build_py_detector, detector_snapshots_for};
 use crate::exceptions::{graph_error_to_lookup, graph_error_to_py};
 use crate::node::{PyAttackGraphNode, PyAttackGraphNodesView};
 
-#[pyclass(name = "AttackGraph", module = "maltoolbox._native", unsendable, weakref)]
+#[pyclass(
+    name = "AttackGraph",
+    module = "maltoolbox._native",
+    unsendable,
+    weakref
+)]
 pub struct PyAttackGraph {
     pub inner: Rc<RefCell<AttackGraph>>,
     pub lang_graph_py: Py<PyLanguageGraph>,
@@ -95,7 +100,11 @@ impl PyAttackGraph {
         )
     }
 
-    fn wrap(inner: AttackGraph, lang_graph_py: Py<PyLanguageGraph>, model_py: Option<Py<PyModel>>) -> Self {
+    fn wrap(
+        inner: AttackGraph,
+        lang_graph_py: Py<PyLanguageGraph>,
+        model_py: Option<Py<PyModel>>,
+    ) -> Self {
         let (detectors_list, node_detectors, node_extras) = Self::empty_state();
         PyAttackGraph {
             inner: Rc::new(RefCell::new(inner)),
@@ -136,9 +145,16 @@ impl PyAttackGraph {
     /// `&self` method can't produce a `Py<Self>` of itself, hence callers
     /// pass one in via the `self_: &Bound<'_, Self>` receiver pattern
     /// used throughout this file).
-    pub fn node_handle(&self, owner_py: &Py<PyAttackGraph>, py: Python<'_>, id: i64) -> PyResult<Py<PyAttackGraphNode>> {
+    pub fn node_handle(
+        &self,
+        owner_py: &Py<PyAttackGraph>,
+        py: Python<'_>,
+        id: i64,
+    ) -> PyResult<Py<PyAttackGraphNode>> {
         let owner_py = owner_py.clone_ref(py);
-        cached_handle(&self.node_cache, py, id, move || PyAttackGraphNode::new(owner_py, id))
+        cached_handle(&self.node_cache, py, id, move || {
+            PyAttackGraphNode::new(owner_py, id)
+        })
     }
 
     /// Evicts `id`'s cache entry, if any. Needed because `add_node`'s
@@ -179,7 +195,10 @@ impl PyAttackGraph {
     /// early-out): nothing in this codebase deep-copies a structure that
     /// reaches the same `AttackGraph` via two different paths, so that
     /// re-entrancy case doesn't arise in practice.
-    pub fn deepcopy_graph(self_: &Bound<'_, Self>, memo: &Bound<'_, PyDict>) -> PyResult<Py<PyAttackGraph>> {
+    pub fn deepcopy_graph(
+        self_: &Bound<'_, Self>,
+        memo: &Bound<'_, PyDict>,
+    ) -> PyResult<Py<PyAttackGraph>> {
         let py = self_.py();
         let self_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
@@ -189,7 +208,10 @@ impl PyAttackGraph {
         let lang_graph_py = slf.lang_graph_py.clone_ref(py);
         let model_py = slf.model_py.as_ref().map(|m| m.clone_ref(py));
 
-        let new_graph = Py::new(py, PyAttackGraph::wrap(cloned_inner, lang_graph_py, model_py))?;
+        let new_graph = Py::new(
+            py,
+            PyAttackGraph::wrap(cloned_inner, lang_graph_py, model_py),
+        )?;
 
         // Register each node in `memo`, keyed by the original handle's
         // `id(...)`, pointing at the corresponding handle on the new
@@ -235,7 +257,9 @@ impl PyAttackGraph {
                 let Some(id) = node_value.get("id").and_then(|v| v.as_i64()) else {
                     continue;
                 };
-                let Some(extras) = node_extras.get(&id) else { continue };
+                let Some(extras) = node_extras.get(&id) else {
+                    continue;
+                };
                 let extras = extras.bind(py);
                 if extras.is_empty() {
                     if let Some(obj) = node_value.as_object_mut() {
@@ -251,7 +275,11 @@ impl PyAttackGraph {
         dict
     }
 
-    fn bare_lang_graph(py: Python<'_>, lang_graph_py: &Py<PyLanguageGraph>, model_py: Option<&Py<PyModel>>) -> Rc<LanguageGraph> {
+    fn bare_lang_graph(
+        py: Python<'_>,
+        lang_graph_py: &Py<PyLanguageGraph>,
+        model_py: Option<&Py<PyModel>>,
+    ) -> Rc<LanguageGraph> {
         if let Some(m) = model_py {
             // Reuse the model's own bare `Rc<LanguageGraph>` - an `Rc`
             // clone, no data copy.
@@ -268,7 +296,11 @@ impl PyAttackGraph {
     /// (`Vec<PyRef<T>>` extraction only accepts `Sequence`s, not sets).
     fn asset_ids_of(obj: &Bound<'_, PyAny>) -> PyResult<HashSet<i64>> {
         obj.try_iter()?
-            .map(|item| Ok(item?.extract::<PyRef<'_, maltoolbox_model_py::PyModelAsset>>()?.id))
+            .map(|item| {
+                Ok(item?
+                    .extract::<PyRef<'_, maltoolbox_model_py::PyModelAsset>>()?
+                    .id)
+            })
             .collect()
     }
 
@@ -278,9 +310,11 @@ impl PyAttackGraph {
         obj.try_iter()?
             .map(|item| {
                 let tuple = item?;
-                let left: PyRef<'_, maltoolbox_model_py::PyModelAsset> = tuple.get_item(0)?.extract()?;
+                let left: PyRef<'_, maltoolbox_model_py::PyModelAsset> =
+                    tuple.get_item(0)?.extract()?;
                 let fieldname: String = tuple.get_item(1)?.extract()?;
-                let right: PyRef<'_, maltoolbox_model_py::PyModelAsset> = tuple.get_item(2)?.extract()?;
+                let right: PyRef<'_, maltoolbox_model_py::PyModelAsset> =
+                    tuple.get_item(2)?.extract()?;
                 Ok((left.id, fieldname, right.id))
             })
             .collect()
@@ -291,7 +325,11 @@ impl PyAttackGraph {
     /// tombstone record (same live-then-tombstone logic as
     /// `PyModelAsset::with_asset`, duplicated here since that helper is
     /// private to `maltoolbox-model-py`).
-    fn asset_snapshot_for(model_py: &Py<PyModel>, py: Python<'_>, id: i64) -> PyResult<AssetSnapshot> {
+    fn asset_snapshot_for(
+        model_py: &Py<PyModel>,
+        py: Python<'_>,
+        id: i64,
+    ) -> PyResult<AssetSnapshot> {
         let model = model_py.borrow(py);
         {
             let core_model = model.inner.borrow();
@@ -326,7 +364,11 @@ impl PyAttackGraph {
     /// every other field/method that assumes a real one.
     #[new]
     #[pyo3(signature = (lang_graph, model=None))]
-    pub fn new(py: Python<'_>, lang_graph: Option<Py<PyLanguageGraph>>, model: Option<Py<PyModel>>) -> PyResult<Self> {
+    pub fn new(
+        py: Python<'_>,
+        lang_graph: Option<Py<PyLanguageGraph>>,
+        model: Option<Py<PyModel>>,
+    ) -> PyResult<Self> {
         let lang_graph = match lang_graph {
             Some(lg) => lg,
             None => Py::new(
@@ -460,7 +502,11 @@ impl PyAttackGraph {
         let slf = self_.borrow();
         let ids: Vec<(String, i64)> = {
             let graph = slf.inner.borrow();
-            graph.full_name_to_node.iter().map(|(full_name, &key)| (full_name.clone(), graph.nodes[key].id)).collect()
+            graph
+                .full_name_to_node
+                .iter()
+                .map(|(full_name, &key)| (full_name.clone(), graph.nodes[key].id))
+                .collect()
         };
         let dict = PyDict::new(py);
         for (full_name, id) in ids {
@@ -476,9 +522,15 @@ impl PyAttackGraph {
         let slf = self_.borrow();
         let ids: Vec<i64> = {
             let graph = slf.inner.borrow();
-            graph.attack_steps.iter().map(|&key| graph.nodes[key].id).collect()
+            graph
+                .attack_steps
+                .iter()
+                .map(|&key| graph.nodes[key].id)
+                .collect()
         };
-        ids.into_iter().map(|id| slf.node_handle(&owner_py, py, id)).collect()
+        ids.into_iter()
+            .map(|id| slf.node_handle(&owner_py, py, id))
+            .collect()
     }
 
     #[getter]
@@ -488,9 +540,15 @@ impl PyAttackGraph {
         let slf = self_.borrow();
         let ids: Vec<i64> = {
             let graph = slf.inner.borrow();
-            graph.defense_steps.iter().map(|&key| graph.nodes[key].id).collect()
+            graph
+                .defense_steps
+                .iter()
+                .map(|&key| graph.nodes[key].id)
+                .collect()
         };
-        ids.into_iter().map(|id| slf.node_handle(&owner_py, py, id)).collect()
+        ids.into_iter()
+            .map(|id| slf.node_handle(&owner_py, py, id))
+            .collect()
     }
 
     /// Live, mutable flat list: lazily seeded from every node's current
@@ -525,13 +583,18 @@ impl PyAttackGraph {
         Ok(list.unbind())
     }
 
-    fn get_node_by_full_name(self_: &Bound<'_, Self>, full_name: &str) -> PyResult<Py<PyAttackGraphNode>> {
+    fn get_node_by_full_name(
+        self_: &Bound<'_, Self>,
+        full_name: &str,
+    ) -> PyResult<Py<PyAttackGraphNode>> {
         let py = self_.py();
         let owner_py: Py<PyAttackGraph> = self_.clone().unbind();
         let slf = self_.borrow();
         let id = {
             let graph = slf.inner.borrow();
-            let key = graph.get_node_by_full_name(full_name).map_err(graph_error_to_lookup)?;
+            let key = graph
+                .get_node_by_full_name(full_name)
+                .map_err(graph_error_to_lookup)?;
             graph.nodes[key].id
         };
         slf.node_handle(&owner_py, py, id)
@@ -544,13 +607,15 @@ impl PyAttackGraph {
     /// generation may reuse the same `i64` ids for logically different
     /// nodes.
     fn regenerate_graph(&self, py: Python<'_>) -> PyResult<()> {
-        let model_py = self
-            .model_py
-            .as_ref()
-            .ok_or_else(|| pyo3::exceptions::PyAssertionError::new_err("Model required to generate graph"))?;
+        let model_py = self.model_py.as_ref().ok_or_else(|| {
+            pyo3::exceptions::PyAssertionError::new_err("Model required to generate graph")
+        })?;
         let model_ref = model_py.borrow(py);
         let core_model = model_ref.inner.borrow();
-        self.inner.borrow_mut().regenerate_graph(&core_model).map_err(graph_error_to_py)?;
+        self.inner
+            .borrow_mut()
+            .regenerate_graph(&core_model)
+            .map_err(graph_error_to_py)?;
         self.reset_detector_state();
         self.node_cache.borrow_mut().clear();
         self.evict_edges_cache();
@@ -576,12 +641,26 @@ impl PyAttackGraph {
             .model_py
             .as_ref()
             .map(|m| m.clone_ref(py))
-            .ok_or_else(|| pyo3::exceptions::PyAssertionError::new_err("Model required to generate graph"))?;
+            .ok_or_else(|| {
+                pyo3::exceptions::PyAssertionError::new_err("Model required to generate graph")
+            })?;
 
-        let new_assets = new_assets.map(Self::asset_ids_of).transpose()?.unwrap_or_default();
-        let new_associations = new_associations.map(Self::assoc_ids_of).transpose()?.unwrap_or_default();
-        let removed_asset_ids = removed_assets.map(Self::asset_ids_of).transpose()?.unwrap_or_default();
-        let removed_associations = removed_associations.map(Self::assoc_ids_of).transpose()?.unwrap_or_default();
+        let new_assets = new_assets
+            .map(Self::asset_ids_of)
+            .transpose()?
+            .unwrap_or_default();
+        let new_associations = new_associations
+            .map(Self::assoc_ids_of)
+            .transpose()?
+            .unwrap_or_default();
+        let removed_asset_ids = removed_assets
+            .map(Self::asset_ids_of)
+            .transpose()?
+            .unwrap_or_default();
+        let removed_associations = removed_associations
+            .map(Self::assoc_ids_of)
+            .transpose()?
+            .unwrap_or_default();
 
         let mut removed_snapshots: HashMap<i64, AssetSnapshot> = HashMap::new();
         for id in &removed_asset_ids {
@@ -615,17 +694,29 @@ impl PyAttackGraph {
             let core_model = model_ref.inner.borrow();
             let nodes_before: HashMap<i64, maltoolbox_attackgraph::AttackGraphNode> =
                 graph.nodes.values().map(|n| (n.id, n.clone())).collect();
-            let key_to_id_before: HashMap<AttackGraphNodeId, i64> = graph.nodes.iter().map(|(k, n)| (k, n.id)).collect();
+            let key_to_id_before: HashMap<AttackGraphNodeId, i64> =
+                graph.nodes.iter().map(|(k, n)| (k, n.id)).collect();
             let all_keys: Vec<AttackGraphNodeId> = key_to_id_before.keys().copied().collect();
-            let mut detector_snapshots_before: HashMap<i64, Vec<crate::detector_support::DetectorSnapshot>> = HashMap::new();
+            let mut detector_snapshots_before: HashMap<
+                i64,
+                Vec<crate::detector_support::DetectorSnapshot>,
+            > = HashMap::new();
             for snap in detector_snapshots_for(&graph, &all_keys) {
-                detector_snapshots_before.entry(snap.node_id).or_default().push(snap);
+                detector_snapshots_before
+                    .entry(snap.node_id)
+                    .or_default()
+                    .push(snap);
             }
             let full_names_before: HashMap<i64, String> = key_to_id_before
                 .iter()
                 .map(|(&k, &id)| (id, graph.full_name_of(k, Some(&core_model))))
                 .collect();
-            (nodes_before, key_to_id_before, detector_snapshots_before, full_names_before)
+            (
+                nodes_before,
+                key_to_id_before,
+                detector_snapshots_before,
+                full_names_before,
+            )
         };
         let node_ids_before: HashSet<i64> = nodes_before.keys().copied().collect();
 
@@ -653,7 +744,8 @@ impl PyAttackGraph {
         // for any node removed as a side effect of this call (see
         // `nodes_before`/`node_ids_before` above).
         {
-            let node_ids_after: HashSet<i64> = slf.inner.borrow().id_to_node.keys().copied().collect();
+            let node_ids_after: HashSet<i64> =
+                slf.inner.borrow().id_to_node.keys().copied().collect();
             let mut table = slf.node_detectors.borrow_mut();
             let mut extras_table = slf.node_extras.borrow_mut();
             let mut tombstones = slf.tombstones.borrow_mut();
@@ -677,8 +769,14 @@ impl PyAttackGraph {
                             state: final_state.clone(),
                             children_ids,
                             parents_ids,
-                            detector_snapshots: detector_snapshots_before.get(removed_id).cloned().unwrap_or_default(),
-                            full_name: full_names_before.get(removed_id).cloned().unwrap_or_else(|| final_state.fallback_full_name()),
+                            detector_snapshots: detector_snapshots_before
+                                .get(removed_id)
+                                .cloned()
+                                .unwrap_or_default(),
+                            full_name: full_names_before
+                                .get(removed_id)
+                                .cloned()
+                                .unwrap_or_else(|| final_state.fallback_full_name()),
                         },
                     );
                 }
@@ -691,10 +789,14 @@ impl PyAttackGraph {
         // `_create_detectors` for the newly-created nodes.
         let snapshot = {
             let graph = slf.inner.borrow();
-            let keys: Vec<AttackGraphNodeId> = created_ids.iter().filter_map(|&id| graph.id_to_node.get(&id).copied()).collect();
+            let keys: Vec<AttackGraphNodeId> = created_ids
+                .iter()
+                .filter_map(|&id| graph.id_to_node.get(&id).copied())
+                .collect();
             detector_snapshots_for(&graph, &keys)
         };
-        let mut by_node: HashMap<i64, Vec<&crate::detector_support::DetectorSnapshot>> = HashMap::new();
+        let mut by_node: HashMap<i64, Vec<&crate::detector_support::DetectorSnapshot>> =
+            HashMap::new();
         for snap in &snapshot {
             by_node.entry(snap.node_id).or_default().push(snap);
         }
@@ -703,7 +805,9 @@ impl PyAttackGraph {
             for snap in snaps {
                 dict.set_item(&snap.label, build_py_detector(py, &owner_py, snap)?)?;
             }
-            slf.node_detectors.borrow_mut().insert(node_id, dict.unbind());
+            slf.node_detectors
+                .borrow_mut()
+                .insert(node_id, dict.unbind());
         }
         if let Some(list) = &*slf.detectors_list.borrow() {
             let list = list.bind(py);
@@ -712,7 +816,10 @@ impl PyAttackGraph {
             }
         }
 
-        created_ids.into_iter().map(|id| slf.node_handle(&owner_py, py, id)).collect()
+        created_ids
+            .into_iter()
+            .map(|id| slf.node_handle(&owner_py, py, id))
+            .collect()
     }
 
     #[pyo3(signature = (lg_attack_step, node_id=None, model_asset=None, ttc_dist=None, existence_status=None, full_name=None))]
@@ -732,7 +839,8 @@ impl PyAttackGraph {
 
         let ttc_value = ttc_dist
             .map(|v| -> PyResult<serde_json::Value> {
-                pythonize::depythonize(v).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+                pythonize::depythonize(v)
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
             })
             .transpose()?;
 
@@ -795,8 +903,16 @@ impl PyAttackGraph {
         // removal doesn't touch any other node's slotmap key, so this is
         // the simplest point at which the translation is guaranteed
         // valid.
-        let children_ids: Vec<i64> = final_state.children.iter().filter_map(|k| graph.nodes.get(*k).map(|n| n.id)).collect();
-        let parents_ids: Vec<i64> = final_state.parents.iter().filter_map(|k| graph.nodes.get(*k).map(|n| n.id)).collect();
+        let children_ids: Vec<i64> = final_state
+            .children
+            .iter()
+            .filter_map(|k| graph.nodes.get(*k).map(|n| n.id))
+            .collect();
+        let parents_ids: Vec<i64> = final_state
+            .parents
+            .iter()
+            .filter_map(|k| graph.nodes.get(*k).map(|n| n.id))
+            .collect();
         drop(graph);
         self.node_detectors.borrow_mut().remove(&node_id);
         self.node_extras.borrow_mut().remove(&node_id);
@@ -819,7 +935,8 @@ impl PyAttackGraph {
     /// `fix_children_parents_int_keys`.
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let dict = self.to_dict_value(py);
-        let pythonized = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let pythonized = pythonize::pythonize(py, &dict)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let pythonized = pythonized.cast::<PyDict>()?;
         if let Some(steps) = pythonized.get_item("attack_steps")? {
             let steps = steps.cast::<PyDict>()?;
@@ -846,12 +963,18 @@ impl PyAttackGraph {
     /// delegated to `self._to_dict()`.
     fn save_to_file(&self, py: Python<'_>, filename: PathBuf) -> PyResult<()> {
         let value = self.to_dict_value(py);
-        maltoolbox_fileutil::save_dict_to_file(filename, &value).map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
+        maltoolbox_fileutil::save_dict_to_file(filename, &value)
+            .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
     }
 
     #[staticmethod]
     #[pyo3(signature = (filename, lang_graph, model=None))]
-    fn load_from_file(py: Python<'_>, filename: PathBuf, lang_graph: Py<PyLanguageGraph>, model: Option<Py<PyModel>>) -> PyResult<Self> {
+    fn load_from_file(
+        py: Python<'_>,
+        filename: PathBuf,
+        lang_graph: Py<PyLanguageGraph>,
+        model: Option<Py<PyModel>>,
+    ) -> PyResult<Self> {
         let bare_lang_graph = Self::bare_lang_graph(py, &lang_graph, model.as_ref());
         let inner = match &model {
             Some(m) => {
@@ -868,14 +991,22 @@ impl PyAttackGraph {
     fn __repr__(&self, py: Python<'_>) -> String {
         let graph = self.inner.borrow();
         let model_repr = match &self.model_py {
-            Some(m) => m.bind(py).repr().map(|r| r.to_string()).unwrap_or_else(|_| "None".to_string()),
+            Some(m) => m
+                .bind(py)
+                .repr()
+                .map(|r| r.to_string())
+                .unwrap_or_else(|_| "None".to_string()),
             None => "None".to_string(),
         };
         format!(
             "AttackGraph(Number of nodes: {}, model: {}, language: {}",
             graph.nodes.len(),
             model_repr,
-            self.lang_graph_py.bind(py).repr().map(|r| r.to_string()).unwrap_or_else(|_| "None".to_string()),
+            self.lang_graph_py
+                .bind(py)
+                .repr()
+                .map(|r| r.to_string())
+                .unwrap_or_else(|_| "None".to_string()),
         )
     }
 
@@ -894,29 +1025,34 @@ impl PyAttackGraph {
     ) -> PyResult<Self> {
         let native = py.import("maltoolbox._native")?;
 
-        let (lang_graph_py, model_py): (Py<PyLanguageGraph>, Option<Py<PyModel>>) = match model_state {
-            Some(model_dict) => {
-                // Let `Model._from_pickle_state` reconstruct the nested
-                // `LanguageGraph` itself, then pull the resulting object
-                // back off `model.lang_graph` rather than building a
-                // second, separate `LanguageGraph` here.
-                let model_cls = native.getattr("Model")?;
-                let model_obj = model_cls.call_method1("_from_pickle_state", (model_dict, lang_graph_state))?;
-                let lang_graph_obj = model_obj.getattr("lang_graph")?;
-                (lang_graph_obj.extract()?, Some(model_obj.extract()?))
-            }
-            None => {
-                let lg_cls = native.getattr("LanguageGraph")?;
-                let lang_graph_obj = lg_cls.call_method1("_from_pickle_state", (lang_graph_state,))?;
-                (lang_graph_obj.extract()?, None)
-            }
-        };
+        let (lang_graph_py, model_py): (Py<PyLanguageGraph>, Option<Py<PyModel>>) =
+            match model_state {
+                Some(model_dict) => {
+                    // Let `Model._from_pickle_state` reconstruct the nested
+                    // `LanguageGraph` itself, then pull the resulting object
+                    // back off `model.lang_graph` rather than building a
+                    // second, separate `LanguageGraph` here.
+                    let model_cls = native.getattr("Model")?;
+                    let model_obj = model_cls
+                        .call_method1("_from_pickle_state", (model_dict, lang_graph_state))?;
+                    let lang_graph_obj = model_obj.getattr("lang_graph")?;
+                    (lang_graph_obj.extract()?, Some(model_obj.extract()?))
+                }
+                None => {
+                    let lg_cls = native.getattr("LanguageGraph")?;
+                    let lang_graph_obj =
+                        lg_cls.call_method1("_from_pickle_state", (lang_graph_state,))?;
+                    (lang_graph_obj.extract()?, None)
+                }
+            };
 
-        let value: serde_json::Value = pythonize::depythonize(state).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let value: serde_json::Value = pythonize::depythonize(state)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let bare_lang_graph = Self::bare_lang_graph(py, &lang_graph_py, model_py.as_ref());
         let model_ref = model_py.as_ref().map(|m| m.borrow(py));
         let core_model = model_ref.as_ref().map(|m| m.inner.borrow());
-        let inner = AttackGraph::from_dict(&value, bare_lang_graph, core_model.as_deref()).map_err(graph_error_to_py)?;
+        let inner = AttackGraph::from_dict(&value, bare_lang_graph, core_model.as_deref())
+            .map_err(graph_error_to_py)?;
         drop(core_model);
         drop(model_ref);
         Ok(Self::wrap(inner, lang_graph_py, model_py))
@@ -936,10 +1072,18 @@ impl PyAttackGraph {
     fn __reduce__<'py>(
         &self,
         py: Python<'py>,
-    ) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>, Bound<'py, PyAny>, Option<Bound<'py, PyAny>>))> {
+    ) -> PyResult<(
+        Bound<'py, PyAny>,
+        (
+            Bound<'py, PyAny>,
+            Bound<'py, PyAny>,
+            Option<Bound<'py, PyAny>>,
+        ),
+    )> {
         let cls = py.get_type::<PyAttackGraph>();
         let func = cls.getattr("_from_pickle_state")?;
-        let state = pythonize::pythonize(py, &self.to_dict_value(py)).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let state = pythonize::pythonize(py, &self.to_dict_value(py))
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let lang_graph_state = self.lang_graph_py.bind(py).call_method0("_to_dict")?;
         let model_state = match &self.model_py {
             Some(m) => Some(m.bind(py).call_method0("_to_dict")?),
@@ -949,7 +1093,10 @@ impl PyAttackGraph {
     }
 
     /// See `deepcopy_graph`'s doc comment for the full rationale.
-    fn __deepcopy__(self_: &Bound<'_, Self>, memo: &Bound<'_, PyDict>) -> PyResult<Py<PyAttackGraph>> {
+    fn __deepcopy__(
+        self_: &Bound<'_, Self>,
+        memo: &Bound<'_, PyDict>,
+    ) -> PyResult<Py<PyAttackGraph>> {
         Self::deepcopy_graph(self_, memo)
     }
 }

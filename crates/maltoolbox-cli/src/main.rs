@@ -12,7 +12,11 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "maltoolbox", version, about = "Command-line interface for MAL toolbox operations")]
+#[command(
+    name = "maltoolbox",
+    version,
+    about = "Command-line interface for MAL toolbox operations"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -56,7 +60,10 @@ fn main() -> ExitCode {
     let cli = Cli::parse();
 
     let result = match &cli.command {
-        Command::Compile { lang_file, output_file } => compile(lang_file, output_file),
+        Command::Compile {
+            lang_file,
+            output_file,
+        } => compile(lang_file, output_file),
         Command::GenerateAttackGraph {
             model_file,
             lang_file,

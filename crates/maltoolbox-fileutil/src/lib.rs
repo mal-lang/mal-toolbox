@@ -32,7 +32,10 @@ pub enum FileUtilError {
     UnknownExtension,
 }
 
-pub fn save_dict_to_json_file(filename: impl AsRef<Path>, value: &Value) -> Result<(), FileUtilError> {
+pub fn save_dict_to_json_file(
+    filename: impl AsRef<Path>,
+    value: &Value,
+) -> Result<(), FileUtilError> {
     let path = filename.as_ref();
     let json = serde_json::to_string_pretty(value).expect("Value serialization cannot fail");
     fs::write(path, json).map_err(|e| FileUtilError::Io {
@@ -41,7 +44,10 @@ pub fn save_dict_to_json_file(filename: impl AsRef<Path>, value: &Value) -> Resu
     })
 }
 
-pub fn save_dict_to_yaml_file(filename: impl AsRef<Path>, value: &Value) -> Result<(), FileUtilError> {
+pub fn save_dict_to_yaml_file(
+    filename: impl AsRef<Path>,
+    value: &Value,
+) -> Result<(), FileUtilError> {
     let path = filename.as_ref();
     let yaml = serde_yaml::to_string(value).expect("Value serialization cannot fail");
     fs::write(path, yaml).map_err(|e| FileUtilError::Io {

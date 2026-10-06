@@ -13,7 +13,12 @@ use serde_json::{json, Value};
 
 use crate::node::PyAttackGraphNode;
 
-#[pyclass(name = "Detector", module = "maltoolbox._native", unsendable, skip_from_py_object)]
+#[pyclass(
+    name = "Detector",
+    module = "maltoolbox._native",
+    unsendable,
+    skip_from_py_object
+)]
 pub struct PyDetector {
     pub name: Option<String>,
     /// The owner-cached `Py<PyAttackGraphNode>` handle, so `.node` returns
@@ -70,7 +75,13 @@ impl PyDetector {
         let graph = owner_py.borrow(py);
         let cached_node = graph.node_handle(&owner_py, py, id)?;
         drop(graph);
-        Ok(PyDetector::new(name, cached_node, potential_context, tprate, fprate))
+        Ok(PyDetector::new(
+            name,
+            cached_node,
+            potential_context,
+            tprate,
+            fprate,
+        ))
     }
 
     #[getter]
@@ -104,11 +115,16 @@ impl PyDetector {
     /// isn't actually JSON-serializable.
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let dict: Value = json!({ "name": self.name, "tprate": self.tprate });
-        pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+        pythonize::pythonize(py, &dict)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
     }
 
     fn __repr__(&self, py: Python<'_>) -> String {
-        format!("Detector(name: {:?}, node: {})", self.name, self.node.borrow(py).full_name_or_fallback(py))
+        format!(
+            "Detector(name: {:?}, node: {})",
+            self.name,
+            self.node.borrow(py).full_name_or_fallback(py)
+        )
     }
 
     /// `potential_context` is a `dict`, which is unhashable, so Python's
@@ -126,7 +142,16 @@ impl PyDetector {
     fn __reduce__<'py>(
         &self,
         py: Python<'py>,
-    ) -> PyResult<(Bound<'py, PyAny>, (Option<String>, Py<PyAttackGraphNode>, Py<PyDict>, Option<f64>, Option<f64>))> {
+    ) -> PyResult<(
+        Bound<'py, PyAny>,
+        (
+            Option<String>,
+            Py<PyAttackGraphNode>,
+            Py<PyDict>,
+            Option<f64>,
+            Option<f64>,
+        ),
+    )> {
         let cls = py.get_type::<PyDetector>().into_any();
         Ok((
             cls,
@@ -140,7 +165,12 @@ impl PyDetector {
         ))
     }
 
-    fn __richcmp__(&self, other: &PyDetector, op: CompareOp, py: Python<'_>) -> PyResult<Py<PyAny>> {
+    fn __richcmp__(
+        &self,
+        other: &PyDetector,
+        op: CompareOp,
+        py: Python<'_>,
+    ) -> PyResult<Py<PyAny>> {
         let eq = match op {
             CompareOp::Eq | CompareOp::Ne => {
                 let fields_eq = self.name == other.name

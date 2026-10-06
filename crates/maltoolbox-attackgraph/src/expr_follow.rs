@@ -110,7 +110,9 @@ pub fn follow_expr_chain(
     };
 
     match chain {
-        ExpressionsChain::Binary { op, left, right } if op.is_binary() && *op != ExprType::Collect => {
+        ExpressionsChain::Binary { op, left, right }
+            if op.is_binary() && *op != ExprType::Collect =>
+        {
             follow_set_op_expr_chain(model, target_assets, *op, left.as_deref(), right.as_deref())
         }
         ExpressionsChain::Binary { op, left, right } if *op == ExprType::Collect => {
@@ -122,7 +124,9 @@ pub fn follow_expr_chain(
         ExpressionsChain::Field { fieldname, .. } => {
             Ok(follow_field_expr_chain(model, target_assets, fieldname))
         }
-        ExpressionsChain::Transitive { sub } => follow_transitive_expr_chain(model, target_assets, sub),
+        ExpressionsChain::Transitive { sub } => {
+            follow_transitive_expr_chain(model, target_assets, sub)
+        }
         ExpressionsChain::SubType { sub, subtype } => {
             follow_subtype_expr_chain(model, target_assets, sub, *subtype)
         }

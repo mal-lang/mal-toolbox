@@ -27,7 +27,9 @@ use pyo3::types::{PyDict, PySet};
 use pyo3::IntoPyObjectExt;
 
 use maltoolbox_language::graph::LanguageGraph;
-use maltoolbox_language_py::handle::{cached_handle, composite_hash, HandleCache, SharedLangGraphCaches};
+use maltoolbox_language_py::handle::{
+    cached_handle, composite_hash, HandleCache, SharedLangGraphCaches,
+};
 use maltoolbox_language_py::PyLanguageGraphAsset;
 
 /// `{fieldname: {other_asset_id: other_asset_name}}`'s inner keys are
@@ -37,7 +39,10 @@ use maltoolbox_language_py::PyLanguageGraphAsset;
 /// instead of `{0: "App1"}` unless corrected here, after pythonizing, by
 /// rebuilding each inner dict with parsed-back-to-int keys. Shared by
 /// `PyModelAsset::_to_dict` and `PyModel::to_dict`.
-pub fn fix_associated_assets_int_keys(py: Python<'_>, asset_dict: &Bound<'_, PyDict>) -> PyResult<()> {
+pub fn fix_associated_assets_int_keys(
+    py: Python<'_>,
+    asset_dict: &Bound<'_, PyDict>,
+) -> PyResult<()> {
     let Some(associated) = asset_dict.get_item("associated_assets")? else {
         return Ok(());
     };
@@ -184,7 +189,9 @@ impl PyModelAsset {
         let lg_id = self.with_asset(|asset| Ok(asset.lg_asset))?;
         let owner = self.lang_graph.clone();
         let caches = self.lang_caches.clone();
-        cached_handle(&self.lang_caches.assets, py, lg_id, move || PyLanguageGraphAsset::new(owner, lg_id, caches))
+        cached_handle(&self.lang_caches.assets, py, lg_id, move || {
+            PyLanguageGraphAsset::new(owner, lg_id, caches)
+        })
     }
 
     #[getter]
@@ -212,11 +219,14 @@ impl PyModelAsset {
     /// type.
     #[setter]
     fn set_extras(&self, value: &Bound<'_, PyAny>) -> PyResult<()> {
-        let parsed: serde_json::Value =
-            pythonize::depythonize(value).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let parsed: serde_json::Value = pythonize::depythonize(value)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let extras = parsed.as_object().cloned().unwrap_or_default();
         let mut model = self.owner.borrow_mut();
-        let asset = model.assets.get_mut(&self.id).ok_or_else(|| self.not_found())?;
+        let asset = model
+            .assets
+            .get_mut(&self.id)
+            .ok_or_else(|| self.not_found())?;
         asset.extras = extras;
         Ok(())
     }
@@ -242,12 +252,25 @@ impl PyModelAsset {
         })
     }
 
-    fn associations_with(&self, py: Python<'_>, other: &PyModelAsset) -> PyResult<Vec<Py<maltoolbox_language_py::PyLanguageGraphAssociation>>> {
+    fn associations_with(
+        &self,
+        py: Python<'_>,
+        other: &PyModelAsset,
+    ) -> PyResult<Vec<Py<maltoolbox_language_py::PyLanguageGraphAssociation>>> {
         let model = self.owner.borrow();
         let assocs = model.associations_with(self.id, other.id);
         assocs
             .into_iter()
-            .map(|a| Py::new(py, maltoolbox_language_py::PyLanguageGraphAssociation::new(self.lang_graph.clone(), a, self.lang_caches.clone())))
+            .map(|a| {
+                Py::new(
+                    py,
+                    maltoolbox_language_py::PyLanguageGraphAssociation::new(
+                        self.lang_graph.clone(),
+                        a,
+                        self.lang_caches.clone(),
+                    ),
+                )
+            })
             .collect()
     }
 
@@ -256,7 +279,11 @@ impl PyModelAsset {
         model.has_association_with(self.id, other.id, assoc_name)
     }
 
-    fn validate_associated_assets(&self, fieldname: &str, assets_to_add: &Bound<'_, PyAny>) -> PyResult<()> {
+    fn validate_associated_assets(
+        &self,
+        fieldname: &str,
+        assets_to_add: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
         let model = self.owner.borrow();
         let ids = ids_of(assets_to_add)?;
         model
@@ -317,7 +344,8 @@ impl PyModelAsset {
         // Built as a real `PyDict` with an *integer* key, not via
         // `pythonize` on a `serde_json::Map`: JSON objects only support
         // string keys, which would silently turn `self.id` into `"0"`.
-        let inner = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let inner = pythonize::pythonize(py, &dict)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let inner = inner.cast::<PyDict>()?;
         fix_associated_assets_int_keys(py, inner)?;
         let wrapped = PyDict::new(py);
@@ -338,7 +366,12 @@ impl PyModelAsset {
         composite_hash(self.owner_ptr(), self.id)
     }
 
-    fn __richcmp__(&self, other: &PyModelAsset, op: CompareOp, py: Python<'_>) -> PyResult<Py<PyAny>> {
+    fn __richcmp__(
+        &self,
+        other: &PyModelAsset,
+        op: CompareOp,
+        py: Python<'_>,
+    ) -> PyResult<Py<PyAny>> {
         let eq = self.owner_ptr() == other.owner_ptr() && self.id == other.id;
         match op {
             CompareOp::Eq => eq.into_py_any(py),

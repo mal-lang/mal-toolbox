@@ -16,8 +16,11 @@ use maltoolbox_model::Model;
 use serde_json::Value;
 
 fn fixture_path(name: &str) -> std::path::PathBuf {
-    std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../maltoolbox-language/tests/fixtures"))
-        .join(name)
+    std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../maltoolbox-language/tests/fixtures"
+    ))
+    .join(name)
 }
 
 fn mask_version(mut v: Value) -> Value {
@@ -32,7 +35,9 @@ fn matches_python_oracle_for_wiper_model() {
 
     let mut model = Model::new("Test Model", lang_graph);
 
-    let internet = model.add_asset("Internet", Some("internet1".into()), None, None, None, true).unwrap();
+    let internet = model
+        .add_asset("Internet", Some("internet1".into()), None, None, None, true)
+        .unwrap();
     let device = model
         .add_asset(
             "Device",
@@ -46,8 +51,12 @@ fn matches_python_oracle_for_wiper_model() {
             true,
         )
         .unwrap();
-    let data = model.add_asset("Data", Some("data1".into()), None, None, None, true).unwrap();
-    let wiper = model.add_asset("Wiper", Some("wiper1".into()), None, None, None, true).unwrap();
+    let data = model
+        .add_asset("Data", Some("data1".into()), None, None, None, true)
+        .unwrap();
+    let wiper = model
+        .add_asset("Wiper", Some("wiper1".into()), None, None, None, true)
+        .unwrap();
 
     model
         .add_associated_assets(internet, "hosts", std::collections::HashSet::from([device]))
@@ -62,12 +71,12 @@ fn matches_python_oracle_for_wiper_model() {
     let actual = mask_version(model.to_dict());
 
     let golden_path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/golden/wiper_model.json");
-    let expected: Value = mask_version(
-        serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap(),
-    );
+    let expected: Value =
+        mask_version(serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap());
 
     assert_eq!(
-        actual, expected,
+        actual,
+        expected,
         "\n--- expected ---\n{}\n--- actual ---\n{}",
         serde_json::to_string_pretty(&expected).unwrap(),
         serde_json::to_string_pretty(&actual).unwrap(),

@@ -21,7 +21,10 @@ fn fixtures_dir() -> &'static Path {
 }
 
 fn tmp_dir(tag: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("maltoolbox-langgraph-test-{tag}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!(
+        "maltoolbox-langgraph-test-{tag}-{}",
+        std::process::id()
+    ));
     std::fs::create_dir_all(&dir).unwrap();
     dir
 }
@@ -36,7 +39,8 @@ fn languagegraph_to_dict_detectors() {
 
 #[test]
 fn languagegraph_save_load_mar() {
-    let graph = from_mar_archive(fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar")).expect("load");
+    let graph =
+        from_mar_archive(fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar")).expect("load");
     let dir = tmp_dir("save-load-mar");
     let path = dir.join("langgraph.mar");
 
@@ -77,10 +81,14 @@ fn interleaved_vars() {
     let (var_a2_target, var_a2_chain) = &vars_a["A2"];
     assert_eq!(*var_a2_target, asset_a);
     let right_fieldname = |chain: &maltoolbox_language::graph::ExpressionsChain| match chain {
-        maltoolbox_language::graph::ExpressionsChain::Binary { right: Some(r), .. } => match r.as_ref() {
-            maltoolbox_language::graph::ExpressionsChain::Field { fieldname, .. } => fieldname.clone(),
-            _ => panic!("expected right_link to be a Field chain"),
-        },
+        maltoolbox_language::graph::ExpressionsChain::Binary { right: Some(r), .. } => {
+            match r.as_ref() {
+                maltoolbox_language::graph::ExpressionsChain::Field { fieldname, .. } => {
+                    fieldname.clone()
+                }
+                _ => panic!("expected right_link to be a Field chain"),
+            }
+        }
         _ => panic!("expected a binary chain"),
     };
     assert_eq!(right_fieldname(var_a2_chain.as_ref().unwrap()), "fieldA");
@@ -135,7 +143,9 @@ fn attackstep_inherit() {
     let chains_to_cc_s2 = &children[&cc_s2];
     assert_eq!(chains_to_cc_s2.len(), 2);
     let fieldname_of = |chain: &Option<maltoolbox_language::graph::ExpressionsChain>| match chain {
-        Some(maltoolbox_language::graph::ExpressionsChain::Field { fieldname, .. }) => fieldname.clone(),
+        Some(maltoolbox_language::graph::ExpressionsChain::Field { fieldname, .. }) => {
+            fieldname.clone()
+        }
         other => panic!("expected a Field chain, got {other:?}"),
     };
     assert_eq!(fieldname_of(&chains_to_cc_s2[0]), "c_of_B");
@@ -147,7 +157,14 @@ fn attackstep_override() {
     let spec = compile_file(fixtures_dir().join("attackstep_override.mal")).expect("compile");
     let graph = maltoolbox_language::generate_graph(spec).expect("build graph");
 
-    for name in ["EmptyParent", "Child1", "Child2", "Child3", "Child4", "FinalChild"] {
+    for name in [
+        "EmptyParent",
+        "Child1",
+        "Child2",
+        "Child3",
+        "Child4",
+        "FinalChild",
+    ] {
         assert!(graph.asset_id(name).is_some(), "missing asset {name}");
     }
 
@@ -163,7 +180,14 @@ fn attackstep_override() {
         assert!(graph.asset(ep).attack_steps.contains_key(step));
     }
 
-    for step in ["attack_step_with_child", "attackstep", "target1", "target2", "target3", "target4"] {
+    for step in [
+        "attack_step_with_child",
+        "attackstep",
+        "target1",
+        "target2",
+        "target3",
+        "target4",
+    ] {
         assert!(graph.asset(c1).attack_steps.contains_key(step));
     }
     let c1_attackstep = graph.asset(c1).attack_steps["attackstep"];
@@ -174,18 +198,37 @@ fn attackstep_override() {
     let c1_parent_attackstep = graph.asset(c1).attack_steps["attack_step_with_child"];
     assert!(graph.step(c1_parent_attackstep).own_children.is_empty());
     assert_eq!(
-        graph.step(c1_parent_attackstep).children(&graph).keys().copied().collect::<std::collections::HashSet<_>>(),
+        graph
+            .step(c1_parent_attackstep)
+            .children(&graph)
+            .keys()
+            .copied()
+            .collect::<std::collections::HashSet<_>>(),
         std::collections::HashSet::from([ep_target1])
     );
 
-    for step in ["attack_step_with_child", "attackstep", "target1", "target2", "target3", "target4"] {
+    for step in [
+        "attack_step_with_child",
+        "attackstep",
+        "target1",
+        "target2",
+        "target3",
+        "target4",
+    ] {
         assert!(graph.asset(c2).attack_steps.contains_key(step));
     }
     let c2_attackstep = graph.asset(c2).attack_steps["attackstep"];
     assert_eq!(graph.step(c2_attackstep).inherits, Some(c1_attackstep));
     assert!(graph.step(c2_attackstep).own_children.is_empty());
 
-    for step in ["attack_step_with_child", "attackstep", "target1", "target2", "target3", "target4"] {
+    for step in [
+        "attack_step_with_child",
+        "attackstep",
+        "target1",
+        "target2",
+        "target3",
+        "target4",
+    ] {
         assert!(graph.asset(c3).attack_steps.contains_key(step));
     }
     let c3_attackstep = graph.asset(c3).attack_steps["attackstep"];
@@ -194,12 +237,31 @@ fn attackstep_override() {
     let c3_target2 = graph.asset(c3).attack_steps["target2"];
     let c3_target3 = graph.asset(c3).attack_steps["target3"];
     let c3_target4 = graph.asset(c3).attack_steps["target4"];
-    assert!(graph.step(c3_attackstep).own_children.contains_key(&c3_target1));
-    assert!(!graph.step(c3_attackstep).own_children.contains_key(&c3_target2));
-    assert!(!graph.step(c3_attackstep).own_children.contains_key(&c3_target3));
-    assert!(!graph.step(c3_attackstep).own_children.contains_key(&c3_target4));
+    assert!(graph
+        .step(c3_attackstep)
+        .own_children
+        .contains_key(&c3_target1));
+    assert!(!graph
+        .step(c3_attackstep)
+        .own_children
+        .contains_key(&c3_target2));
+    assert!(!graph
+        .step(c3_attackstep)
+        .own_children
+        .contains_key(&c3_target3));
+    assert!(!graph
+        .step(c3_attackstep)
+        .own_children
+        .contains_key(&c3_target4));
 
-    for step in ["attack_step_with_child", "attackstep", "target1", "target2", "target3", "target4"] {
+    for step in [
+        "attack_step_with_child",
+        "attackstep",
+        "target1",
+        "target2",
+        "target3",
+        "target4",
+    ] {
         assert!(graph.asset(c4).attack_steps.contains_key(step));
     }
     let c4_attackstep = graph.asset(c4).attack_steps["attackstep"];
@@ -230,7 +292,8 @@ fn probability_distributions() {
 fn attack_step_types_are_valid() {
     use maltoolbox_language::graph::attack_step::AttackStepType;
 
-    let graph = from_mar_archive(fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar")).expect("load");
+    let graph =
+        from_mar_archive(fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar")).expect("load");
     for &asset_id in &graph.asset_order {
         for &step_id in graph.asset(asset_id).attack_steps.values() {
             let step_type = graph.step(step_id).step_type;

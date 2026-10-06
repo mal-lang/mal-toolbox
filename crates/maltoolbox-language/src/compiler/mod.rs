@@ -134,7 +134,14 @@ fn compile_inner(
         });
     }
 
-    let result = visit_source_file(root, &source, visited, active, path_stack, seen_custom_defines);
+    let result = visit_source_file(
+        root,
+        &source,
+        visited,
+        active,
+        path_stack,
+        seen_custom_defines,
+    );
     path_stack.pop();
     active.pop();
     result
@@ -319,7 +326,11 @@ fn visit_meta(node: Node, source: &[u8]) -> Result<(String, String), CompileErro
     Ok((key, raw_info[1..raw_info.len() - 1].to_string()))
 }
 
-fn visit_meta_fields(node: Node, source: &[u8], field: &'static str) -> Result<Map<String, Value>, CompileError> {
+fn visit_meta_fields(
+    node: Node,
+    source: &[u8],
+    field: &'static str,
+) -> Result<Map<String, Value>, CompileError> {
     let mut meta = Map::new();
     let mut cursor = node.walk();
     for meta_node in node.children_by_field_name(field, &mut cursor) {
@@ -363,7 +374,11 @@ fn has_abstract_keyword(node: Node) -> bool {
     })
 }
 
-fn visit_asset_declaration(node: Node, source: &[u8], category: &str) -> Result<Value, CompileError> {
+fn visit_asset_declaration(
+    node: Node,
+    source: &[u8],
+    category: &str,
+) -> Result<Value, CompileError> {
     let name = text(required_field(node, "id")?, source).to_string();
     let is_abstract = has_abstract_keyword(node);
 
@@ -612,10 +627,7 @@ fn parse_number(node: Node, source: &[u8]) -> Result<f64, CompileError> {
         .map_err(|_| CompileError::Malformed(format!("invalid number: {}", text(node, source))))
 }
 
-fn visit_tp_fp_rate(
-    node: Node,
-    source: &[u8],
-) -> Result<(Option<f64>, Option<f64>), CompileError> {
+fn visit_tp_fp_rate(node: Node, source: &[u8]) -> Result<(Option<f64>, Option<f64>), CompileError> {
     let inner = named_children_no_comments(node)
         .next()
         .ok_or_else(|| CompileError::Malformed("empty tp_fp_rate".into()))?;
@@ -653,7 +665,9 @@ fn visit_ttc(node: Node, source: &[u8]) -> Result<Value, CompileError> {
 
 fn visit_ttc_operand(node: Node, source: &[u8]) -> Result<Value, CompileError> {
     match node.kind() {
-        "float" | "integer" => Ok(json!({ "type": "number", "value": parse_number(node, source)? })),
+        "float" | "integer" => {
+            Ok(json!({ "type": "number", "value": parse_number(node, source)? }))
+        }
         "identifier" => Ok(json!({
             "type": "function",
             "name": text(node, source),
@@ -846,8 +860,9 @@ fn visit_asset_expr_binop(node: Node, source: &[u8]) -> Result<Value, CompileErr
     let left = field_operand(node, "left")?;
     let right = field_operand(node, "right")?;
     let operator = text(required_field(node, "operator")?, source);
-    let op_name = binop_name(operator)
-        .ok_or_else(|| CompileError::Malformed(format!("unknown asset expr operator: {operator}")))?;
+    let op_name = binop_name(operator).ok_or_else(|| {
+        CompileError::Malformed(format!("unknown asset expr operator: {operator}"))
+    })?;
 
     Ok(json!({
         "type": op_name,

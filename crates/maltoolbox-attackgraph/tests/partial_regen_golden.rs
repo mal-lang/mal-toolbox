@@ -19,7 +19,9 @@ fn fixture_path(name: &str) -> std::path::PathBuf {
 }
 
 fn canonicalize(attack_steps: &Value) -> HashMap<String, Value> {
-    let obj = attack_steps.as_object().expect("attack_steps must be an object");
+    let obj = attack_steps
+        .as_object()
+        .expect("attack_steps must be an object");
     let mut out = HashMap::new();
     for (full_name, node) in obj {
         let mut node = node.clone();
@@ -46,21 +48,39 @@ fn matches_python_oracle_for_partial_regeneration() {
     let lang_graph = Rc::new(generate_graph(spec).expect("build language graph"));
 
     let mut model = Model::new("Test Model", lang_graph);
-    let internet = model.add_asset("Internet", Some("internet1".into()), None, None, None, true).unwrap();
-    let device = model.add_asset("Device", Some("device1".into()), None, None, None, true).unwrap();
-    let data = model.add_asset("Data", Some("data1".into()), None, None, None, true).unwrap();
-    let wiper1 = model.add_asset("Wiper", Some("wiper1".into()), None, None, None, true).unwrap();
+    let internet = model
+        .add_asset("Internet", Some("internet1".into()), None, None, None, true)
+        .unwrap();
+    let device = model
+        .add_asset("Device", Some("device1".into()), None, None, None, true)
+        .unwrap();
+    let data = model
+        .add_asset("Data", Some("data1".into()), None, None, None, true)
+        .unwrap();
+    let wiper1 = model
+        .add_asset("Wiper", Some("wiper1".into()), None, None, None, true)
+        .unwrap();
 
-    model.add_associated_assets(internet, "hosts", HashSet::from([device])).unwrap();
-    model.add_associated_assets(device, "data", HashSet::from([data])).unwrap();
-    model.add_associated_assets(device, "malware", HashSet::from([wiper1])).unwrap();
+    model
+        .add_associated_assets(internet, "hosts", HashSet::from([device]))
+        .unwrap();
+    model
+        .add_associated_assets(device, "data", HashSet::from([data]))
+        .unwrap();
+    model
+        .add_associated_assets(device, "malware", HashSet::from([wiper1]))
+        .unwrap();
 
     let mut attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
 
     // Now add a second Wiper, associated to device1 via "malware", and
     // partially regenerate instead of rebuilding from scratch.
-    let wiper2 = model.add_asset("Wiper", Some("wiper2".into()), None, None, None, true).unwrap();
-    model.add_associated_assets(device, "malware", HashSet::from([wiper2])).unwrap();
+    let wiper2 = model
+        .add_asset("Wiper", Some("wiper2".into()), None, None, None, true)
+        .unwrap();
+    model
+        .add_associated_assets(device, "malware", HashSet::from([wiper2]))
+        .unwrap();
 
     let created = attack_graph
         .partially_regenerate_graph(
@@ -72,7 +92,11 @@ fn matches_python_oracle_for_partial_regeneration() {
         )
         .expect("partial regeneration");
 
-    assert_eq!(created.len(), 5, "expected the 5 new Wiper attack steps to be created");
+    assert_eq!(
+        created.len(),
+        5,
+        "expected the 5 new Wiper attack steps to be created"
+    );
 
     let actual_full = attack_graph.to_dict(Some(&model));
     let actual = canonicalize(&actual_full["attack_steps"]);
@@ -81,11 +105,13 @@ fn matches_python_oracle_for_partial_regeneration() {
         env!("CARGO_MANIFEST_DIR"),
         "/tests/golden/wiper_partial_regen.json"
     );
-    let expected_full: Value = serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap();
+    let expected_full: Value =
+        serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap();
     let expected = canonicalize(&expected_full["attack_steps"]);
 
     assert_eq!(
-        actual, expected,
+        actual,
+        expected,
         "\n--- expected ---\n{}\n--- actual ---\n{}",
         serde_json::to_string_pretty(&expected).unwrap(),
         serde_json::to_string_pretty(&actual).unwrap(),

@@ -171,9 +171,13 @@ impl ExpressionsChain {
 }
 
 pub fn chain_fieldnames(expr_chain: Option<&ExpressionsChain>) -> HashSet<String> {
-    expr_chain.map(ExpressionsChain::fieldnames).unwrap_or_default()
+    expr_chain
+        .map(ExpressionsChain::fieldnames)
+        .unwrap_or_default()
 }
 
 pub fn chain_is_additive(expr_chain: Option<&ExpressionsChain>) -> bool {
-    expr_chain.map(ExpressionsChain::is_additive).unwrap_or(true)
+    expr_chain
+        .map(ExpressionsChain::is_additive)
+        .unwrap_or(true)
 }

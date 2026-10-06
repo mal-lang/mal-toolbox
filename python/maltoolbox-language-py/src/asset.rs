@@ -15,8 +15,8 @@ use slotmap::Key;
 use maltoolbox_language::graph::ids::AssetId;
 use maltoolbox_language::graph::LanguageGraph;
 
-use crate::attack_step::PyLanguageGraphAttackStep;
 use crate::assoc::PyLanguageGraphAssociation;
+use crate::attack_step::PyLanguageGraphAttackStep;
 use crate::exceptions::graph_error_to_py;
 use crate::expr_chain::expr_chain_to_py;
 use crate::handle::{cached_handle, composite_hash, SharedLangGraphCaches};
@@ -30,7 +30,11 @@ pub struct PyLanguageGraphAsset {
 }
 
 impl PyLanguageGraphAsset {
-    pub fn new(owner: Rc<RefCell<LanguageGraph>>, id: AssetId, caches: SharedLangGraphCaches) -> Self {
+    pub fn new(
+        owner: Rc<RefCell<LanguageGraph>>,
+        id: AssetId,
+        caches: SharedLangGraphCaches,
+    ) -> Self {
         PyLanguageGraphAsset { owner, id, caches }
     }
 
@@ -43,15 +47,23 @@ impl PyLanguageGraphAsset {
     fn asset_handle(&self, py: Python<'_>, id: AssetId) -> PyResult<Py<PyLanguageGraphAsset>> {
         let owner = self.owner.clone();
         let caches = self.caches.clone();
-        cached_handle(&self.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
+        cached_handle(&self.caches.assets, py, id, move || {
+            PyLanguageGraphAsset::new(owner, id, caches)
+        })
     }
 
     /// Cache-aware constructor for an attack-step handle owned by the
     /// same `LanguageGraph`.
-    fn step_handle(&self, py: Python<'_>, id: maltoolbox_language::graph::ids::AttackStepId) -> PyResult<Py<PyLanguageGraphAttackStep>> {
+    fn step_handle(
+        &self,
+        py: Python<'_>,
+        id: maltoolbox_language::graph::ids::AttackStepId,
+    ) -> PyResult<Py<PyLanguageGraphAttackStep>> {
         let owner = self.owner.clone();
         let caches = self.caches.clone();
-        cached_handle(&self.caches.steps, py, id, move || PyLanguageGraphAttackStep::new(owner, id, caches))
+        cached_handle(&self.caches.steps, py, id, move || {
+            PyLanguageGraphAttackStep::new(owner, id, caches)
+        })
     }
 }
 
@@ -86,7 +98,11 @@ impl PyLanguageGraphAsset {
         for (fieldname, assoc) in &graph.asset(self.id).own_associations {
             dict.set_item(
                 fieldname,
-                PyLanguageGraphAssociation::new(self.owner.clone(), assoc.clone(), self.caches.clone()),
+                PyLanguageGraphAssociation::new(
+                    self.owner.clone(),
+                    assoc.clone(),
+                    self.caches.clone(),
+                ),
             )?;
         }
         Ok(dict)
@@ -98,8 +114,14 @@ impl PyLanguageGraphAsset {
     /// "own" vs "inherited" isn't a distinction left to make here).
     #[getter]
     fn attack_steps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let steps: Vec<(String, maltoolbox_language::graph::ids::AttackStepId)> =
-            self.owner.borrow().asset(self.id).attack_steps.iter().map(|(n, &id)| (n.clone(), id)).collect();
+        let steps: Vec<(String, maltoolbox_language::graph::ids::AttackStepId)> = self
+            .owner
+            .borrow()
+            .asset(self.id)
+            .attack_steps
+            .iter()
+            .map(|(n, &id)| (n.clone(), id))
+            .collect();
         let dict = PyDict::new(py);
         for (name, step_id) in steps {
             dict.set_item(name, self.step_handle(py, step_id)?)?;
@@ -116,7 +138,9 @@ impl PyLanguageGraphAsset {
     #[getter]
     fn own_sub_assets(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphAsset>>> {
         let ids: Vec<AssetId> = self.owner.borrow().asset(self.id).own_sub_assets.clone();
-        ids.into_iter().map(|id| self.asset_handle(py, id)).collect()
+        ids.into_iter()
+            .map(|id| self.asset_handle(py, id))
+            .collect()
     }
 
     /// This asset plus every asset that directly or indirectly extends
@@ -127,7 +151,9 @@ impl PyLanguageGraphAsset {
     #[getter]
     fn sub_assets(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphAsset>>> {
         let ids = self.owner.borrow().sub_assets(self.id);
-        ids.into_iter().map(|id| self.asset_handle(py, id)).collect()
+        ids.into_iter()
+            .map(|id| self.asset_handle(py, id))
+            .collect()
     }
 
     /// This asset plus every asset it directly or indirectly extends,
@@ -135,7 +161,9 @@ impl PyLanguageGraphAsset {
     #[getter]
     fn super_assets(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphAsset>>> {
         let ids = self.owner.borrow().super_assets(self.id);
-        ids.into_iter().map(|id| self.asset_handle(py, id)).collect()
+        ids.into_iter()
+            .map(|id| self.asset_handle(py, id))
+            .collect()
     }
 
     /// Own + inherited associations, by fieldname.
@@ -179,7 +207,9 @@ impl PyLanguageGraphAsset {
         for (name, (asset_id, expr)) in graph.variables(self.id) {
             let asset_handle = self.asset_handle(py, asset_id)?;
             let expr_obj = match &expr {
-                Some(e) => expr_chain_to_py(py, self.owner.clone(), self.caches.clone(), e)?.into_any(),
+                Some(e) => {
+                    expr_chain_to_py(py, self.owner.clone(), self.caches.clone(), e)?.into_any()
+                }
                 None => py.None(),
             };
             dict.set_item(name, (asset_handle, expr_obj))?;
@@ -191,7 +221,10 @@ impl PyLanguageGraphAsset {
         self.owner.borrow().is_subasset_of(self.id, target_asset.id)
     }
 
-    fn get_all_common_superassets(&self, other: &PyLanguageGraphAsset) -> std::collections::HashSet<String> {
+    fn get_all_common_superassets(
+        &self,
+        other: &PyLanguageGraphAsset,
+    ) -> std::collections::HashSet<String> {
         self.owner
             .borrow()
             .get_all_common_superassets(self.id, other.id)
@@ -203,10 +236,11 @@ impl PyLanguageGraphAsset {
             .asset(self.id)
             .to_dict(&graph)
             .map_err(graph_error_to_py)?;
-        pythonize::pythonize(py, &dict)
-            .map_err(|e| crate::exceptions::graph_error_to_py(
-                maltoolbox_language::graph::GraphError::Malformed(e.to_string()),
+        pythonize::pythonize(py, &dict).map_err(|e| {
+            crate::exceptions::graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
+                e.to_string(),
             ))
+        })
     }
 
     pub fn __repr__(&self) -> String {
@@ -217,7 +251,12 @@ impl PyLanguageGraphAsset {
         composite_hash(self.owner_ptr(), self.id)
     }
 
-    fn __richcmp__(&self, other: &PyLanguageGraphAsset, op: CompareOp, py: Python<'_>) -> PyResult<Py<PyAny>> {
+    fn __richcmp__(
+        &self,
+        other: &PyLanguageGraphAsset,
+        op: CompareOp,
+        py: Python<'_>,
+    ) -> PyResult<Py<PyAny>> {
         let eq = self.owner_ptr() == other.owner_ptr() && self.id == other.id;
         match op {
             CompareOp::Eq => eq.into_py_any(py),
@@ -233,7 +272,10 @@ impl PyLanguageGraphAsset {
     /// Pickle recursively pickles the temporary owner via its own
     /// `__reduce__`, so no graph-serialization logic is needed here.
     #[allow(clippy::type_complexity)]
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, (Py<crate::language_graph::PyLanguageGraph>, u64))> {
+    fn __reduce__(
+        &self,
+        py: Python<'_>,
+    ) -> PyResult<(Py<PyAny>, (Py<crate::language_graph::PyLanguageGraph>, u64))> {
         let temp_owner = Py::new(
             py,
             crate::language_graph::PyLanguageGraph {
@@ -241,7 +283,10 @@ impl PyLanguageGraphAsset {
                 caches: self.caches.clone(),
             },
         )?;
-        let func = py.import("maltoolbox._native")?.getattr("_rebuild_language_graph_asset")?.unbind();
+        let func = py
+            .import("maltoolbox._native")?
+            .getattr("_rebuild_language_graph_asset")?
+            .unbind();
         Ok((func, (temp_owner, self.id.data().as_ffi())))
     }
 }
@@ -261,4 +306,3 @@ pub fn _rebuild_language_graph_asset(
     let graph = owner.borrow(py);
     graph.asset_handle(py, id)
 }
-

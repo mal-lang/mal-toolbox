@@ -53,7 +53,8 @@ fn glob_assoc_traversal(
     instigating_assets: &HashSet<AssetId>,
     glob: &GlobAssocTraversal,
 ) -> Result<HashSet<AssetId>, GraphError> {
-    let mut next_assets = traverse_association_chain(graph, step, instigating_assets, &glob.pattern)?;
+    let mut next_assets =
+        traverse_association_chain(graph, step, instigating_assets, &glob.pattern)?;
     loop {
         let applied = traverse_association_chain(graph, step, &next_assets, &glob.pattern)?;
         let mut union = next_assets.clone();
@@ -158,7 +159,12 @@ fn resolve_terminal_traversal(
 /// Port of `validate_model_effects`.
 pub fn validate_model_effects(graph: &LanguageGraph) -> Result<(), GraphError> {
     for &asset_id in &graph.asset_order {
-        let step_ids: Vec<AttackStepId> = graph.asset(asset_id).attack_steps.values().copied().collect();
+        let step_ids: Vec<AttackStepId> = graph
+            .asset(asset_id)
+            .attack_steps
+            .values()
+            .copied()
+            .collect();
         for step_id in step_ids {
             let step = graph.step(step_id);
             let mut effects = step.additive_model_effects(graph);
@@ -173,8 +179,9 @@ pub fn validate_model_effects(graph: &LanguageGraph) -> Result<(), GraphError> {
                 )?;
 
                 for (target_index, dyn_target) in model_effect.targets.iter().enumerate() {
-                    let is_edge_addition =
-                        model_effect.model_effect_type == ModelEffectType::Additive && dyn_target.assoc_op;
+                    let is_edge_addition = model_effect.model_effect_type
+                        == ModelEffectType::Additive
+                        && dyn_target.assoc_op;
 
                     if is_edge_addition {
                         let dyn_target_resolves = resolve_terminal_traversal(
@@ -184,8 +191,10 @@ pub fn validate_model_effects(graph: &LanguageGraph) -> Result<(), GraphError> {
                             &dyn_target.assoc_traversal,
                         )?;
                         for &(_, _, terminating_asset) in &dyn_target_resolves {
-                            for &(_, ref base_field_name, base_terminating_asset) in &base_resolves {
-                                if !graph.is_subasset_of(base_terminating_asset, terminating_asset) {
+                            for &(_, ref base_field_name, base_terminating_asset) in &base_resolves
+                            {
+                                if !graph.is_subasset_of(base_terminating_asset, terminating_asset)
+                                {
                                     return Err(GraphError::Malformed(format!(
                                         "Invalid model effect for edge addition. Base terminates in field {base_field_name} with type {}, which is not a subasset of the target asset {} that terminates the dynamic target with index {target_index}, in {}.",
                                         graph.asset(base_terminating_asset).name,
@@ -198,7 +207,12 @@ pub fn validate_model_effects(graph: &LanguageGraph) -> Result<(), GraphError> {
                     } else {
                         let base_terminals: HashSet<AssetId> =
                             base_resolves.iter().map(|r| r.2).collect();
-                        resolve_terminal_traversal(graph, step_id, &base_terminals, &dyn_target.assoc_traversal)?;
+                        resolve_terminal_traversal(
+                            graph,
+                            step_id,
+                            &base_terminals,
+                            &dyn_target.assoc_traversal,
+                        )?;
                     }
                 }
             }

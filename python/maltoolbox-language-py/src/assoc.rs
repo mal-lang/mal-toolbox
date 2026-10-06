@@ -39,7 +39,11 @@ fn struct_hash<T: std::hash::Hash>(value: &T) -> isize {
 /// (they already have structural equality, per the module doc comment);
 /// this just keeps the *asset* handles they hand out consistent with
 /// every other path to the same asset.
-#[pyclass(name = "LanguageGraphAssociationField", unsendable, skip_from_py_object)]
+#[pyclass(
+    name = "LanguageGraphAssociationField",
+    unsendable,
+    skip_from_py_object
+)]
 #[derive(Clone)]
 pub struct PyLanguageGraphAssociationField {
     pub owner: Rc<RefCell<LanguageGraph>>,
@@ -54,7 +58,9 @@ impl PyLanguageGraphAssociationField {
         let owner = self.owner.clone();
         let id = self.field.asset;
         let caches = self.caches.clone();
-        cached_handle(&self.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
+        cached_handle(&self.caches.assets, py, id, move || {
+            PyLanguageGraphAsset::new(owner, id, caches)
+        })
     }
 
     #[getter]
@@ -111,8 +117,16 @@ pub struct PyLanguageGraphAssociation {
 }
 
 impl PyLanguageGraphAssociation {
-    pub fn new(owner: Rc<RefCell<LanguageGraph>>, assoc: Rc<LanguageGraphAssociation>, caches: SharedLangGraphCaches) -> Self {
-        PyLanguageGraphAssociation { owner, assoc, caches }
+    pub fn new(
+        owner: Rc<RefCell<LanguageGraph>>,
+        assoc: Rc<LanguageGraphAssociation>,
+        caches: SharedLangGraphCaches,
+    ) -> Self {
+        PyLanguageGraphAssociation {
+            owner,
+            assoc,
+            caches,
+        }
     }
 
     fn wrap_field(&self, field: &LanguageGraphAssociationField) -> PyLanguageGraphAssociationField {
@@ -178,7 +192,9 @@ impl PyLanguageGraphAssociation {
         let graph = self.owner.borrow();
         let dict = self.assoc.to_dict(&graph);
         pythonize::pythonize(py, &dict).map_err(|e| {
-            graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(e.to_string()))
+            graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
+                e.to_string(),
+            ))
         })
     }
 

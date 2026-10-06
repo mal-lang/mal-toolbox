@@ -25,7 +25,8 @@ pub use detector::{detector_to_py, PyLanguageGraphContextItem, PyLanguageGraphDe
 pub use expr_chain::{expr_chain_to_py, PyExpressionsChain};
 pub use language_graph::PyLanguageGraph;
 pub use model_effect::{
-    model_effect_to_py, PyAssocSet, PyAssocTraversal, PyDynTarget, PyGlobAssocTraversal, PyLanguageGraphModelEffect,
+    model_effect_to_py, PyAssocSet, PyAssocTraversal, PyDynTarget, PyGlobAssocTraversal,
+    PyLanguageGraphModelEffect,
 };
 
 /// Registers this layer's classes/exceptions onto the umbrella `_native`
@@ -49,7 +50,10 @@ pub fn register(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLanguageGraphDetector>()?;
     m.add_class::<PyLanguageGraphContextItem>()?;
     m.add_function(wrap_pyfunction!(asset::_rebuild_language_graph_asset, m)?)?;
-    m.add_function(wrap_pyfunction!(attack_step::_rebuild_language_graph_attack_step, m)?)?;
+    m.add_function(wrap_pyfunction!(
+        attack_step::_rebuild_language_graph_attack_step,
+        m
+    )?)?;
     exceptions::register(py, m)?;
 
     let sys_modules = py.import("sys")?.getattr("modules")?;

@@ -68,7 +68,10 @@ pub struct SearchPattern {
 
 impl SearchPattern {
     pub fn new(conditions: Vec<SearchCondition>) -> Self {
-        assert!(!conditions.is_empty(), "a search pattern needs at least one condition");
+        assert!(
+            !conditions.is_empty(),
+            "a search pattern needs at least one condition"
+        );
         SearchPattern { conditions }
     }
 
@@ -134,7 +137,14 @@ fn find_matches_recursively(
         if curr_cond.can_match_again(match_count) {
             // If we can match the current condition again, try for all children.
             for &child in &graph.nodes[node].children {
-                find_matches_recursively(graph, child, conditions, &path, matching_paths, match_count);
+                find_matches_recursively(
+                    graph,
+                    child,
+                    conditions,
+                    &path,
+                    matching_paths,
+                    match_count,
+                );
             }
         }
         if next_conds.is_empty() {

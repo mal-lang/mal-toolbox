@@ -20,11 +20,17 @@ pub enum LoadError {
     Malformed(String),
 }
 
-pub fn save_to_file(model: &Model, path: impl AsRef<Path>) -> Result<(), maltoolbox_fileutil::FileUtilError> {
+pub fn save_to_file(
+    model: &Model,
+    path: impl AsRef<Path>,
+) -> Result<(), maltoolbox_fileutil::FileUtilError> {
     maltoolbox_fileutil::save_dict_to_file(path, &model.to_dict())
 }
 
-pub fn load_from_file(path: impl AsRef<Path>, lang_graph: Rc<LanguageGraph>) -> Result<Model, LoadError> {
+pub fn load_from_file(
+    path: impl AsRef<Path>,
+    lang_graph: Rc<LanguageGraph>,
+) -> Result<Model, LoadError> {
     let dict = maltoolbox_fileutil::load_dict_from_file(path)?;
     from_dict(&dict, lang_graph).map_err(|e| LoadError::Malformed(e.to_string()))
 }
@@ -86,13 +92,23 @@ pub fn from_dict(serialized: &Value, lang_graph: Rc<LanguageGraph>) -> Result<Mo
             .collect();
 
         model
-            .add_asset(&asset_type, Some(name), Some(id), Some(defenses), extras, true)
+            .add_asset(
+                &asset_type,
+                Some(name),
+                Some(id),
+                Some(defenses),
+                extras,
+                true,
+            )
             .map_err(LoadError::Model)?;
     }
 
     for (asset_id, asset_value) in assets {
         let id: i64 = asset_id.parse().expect("validated above");
-        let Some(associated) = asset_value.get("associated_assets").and_then(Value::as_object) else {
+        let Some(associated) = asset_value
+            .get("associated_assets")
+            .and_then(Value::as_object)
+        else {
             continue;
         };
         for (fieldname, assoc_assets) in associated {

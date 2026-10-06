@@ -22,23 +22,38 @@ fn build_model() -> Model {
     let lang_graph = Rc::new(generate_graph(spec).expect("build language graph"));
 
     let mut model = Model::new("Test Model", lang_graph);
-    let internet = model.add_asset("Internet", Some("internet1".into()), None, None, None, true).unwrap();
+    let internet = model
+        .add_asset("Internet", Some("internet1".into()), None, None, None, true)
+        .unwrap();
     let device = model
         .add_asset(
             "Device",
             Some("device1".into()),
             None,
             Some(HashMap::from([("someDefense".to_string(), 0.5)])),
-            Some(serde_json::Map::from_iter([("note".to_string(), Value::String("test".into()))])),
+            Some(serde_json::Map::from_iter([(
+                "note".to_string(),
+                Value::String("test".into()),
+            )])),
             true,
         )
         .unwrap();
-    let data = model.add_asset("Data", Some("data1".into()), None, None, None, true).unwrap();
-    let wiper = model.add_asset("Wiper", Some("wiper1".into()), None, None, None, true).unwrap();
+    let data = model
+        .add_asset("Data", Some("data1".into()), None, None, None, true)
+        .unwrap();
+    let wiper = model
+        .add_asset("Wiper", Some("wiper1".into()), None, None, None, true)
+        .unwrap();
 
-    model.add_associated_assets(internet, "hosts", std::collections::HashSet::from([device])).unwrap();
-    model.add_associated_assets(device, "data", std::collections::HashSet::from([data])).unwrap();
-    model.add_associated_assets(device, "malware", std::collections::HashSet::from([wiper])).unwrap();
+    model
+        .add_associated_assets(internet, "hosts", std::collections::HashSet::from([device]))
+        .unwrap();
+    model
+        .add_associated_assets(device, "data", std::collections::HashSet::from([data]))
+        .unwrap();
+    model
+        .add_associated_assets(device, "malware", std::collections::HashSet::from([wiper]))
+        .unwrap();
 
     model
 }
@@ -58,7 +73,8 @@ fn round_trips_through_dict() {
 fn round_trips_through_file() {
     let model = build_model();
 
-    let dir = std::env::temp_dir().join(format!("maltoolbox-model-roundtrip-{}", std::process::id()));
+    let dir =
+        std::env::temp_dir().join(format!("maltoolbox-model-roundtrip-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("model.json");
 

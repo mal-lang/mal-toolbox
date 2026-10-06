@@ -51,20 +51,45 @@ fn repo_testdata_dir() -> &'static std::path::Path {
 }
 
 fn corelang() -> Rc<maltoolbox_language::graph::LanguageGraph> {
-    Rc::new(from_mar_archive(lang_fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar")).expect("load corelang"))
+    Rc::new(
+        from_mar_archive(lang_fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar"))
+            .expect("load corelang"),
+    )
 }
 
 #[test]
 fn get_node_by_full_name_suggests_similar() {
     let lang_graph = corelang();
     let mut model = Model::new("Test Model", lang_graph);
-    let app1 = model.add_asset("Application", Some("Application 1".into()), None, None, None, true).unwrap();
-    let app2 = model.add_asset("Application", Some("Application 2".into()), None, None, None, true).unwrap();
-    model.add_associated_assets(app1, "appExecutedApps", HashSet::from([app2])).unwrap();
+    let app1 = model
+        .add_asset(
+            "Application",
+            Some("Application 1".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let app2 = model
+        .add_asset(
+            "Application",
+            Some("Application 2".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    model
+        .add_associated_assets(app1, "appExecutedApps", HashSet::from([app2]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
 
-    let err = attack_graph.get_node_by_full_name("Application 2").unwrap_err();
+    let err = attack_graph
+        .get_node_by_full_name("Application 2")
+        .unwrap_err();
     let msg = err.to_string();
     assert!(msg.contains("Could not find node with name \"Application 2\""));
     assert!(msg.contains("Did you mean"));
@@ -85,9 +110,22 @@ fn create_dynamic_ag() {
     );
     let mut model = Model::new("Wiper Model", lang.clone());
 
-    let device = model.add_asset("Device", Some("InfectedDevice".into()), None, None, None, true).unwrap();
-    let wiper = model.add_asset("Wiper", Some("Wiper".into()), None, None, None, true).unwrap();
-    model.add_associated_assets(device, "malware", HashSet::from([wiper])).unwrap();
+    let device = model
+        .add_asset(
+            "Device",
+            Some("InfectedDevice".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let wiper = model
+        .add_asset("Wiper", Some("Wiper".into()), None, None, None, true)
+        .unwrap();
+    model
+        .add_associated_assets(device, "malware", HashSet::from([wiper]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
     let wiper_test = attack_graph
@@ -115,13 +153,19 @@ fn create_dynamic_ag() {
         );
         match &model_effect.base[0] {
             AssocTraversalElem::Traversal(t) => {
-                assert_eq!(t.field_name, "self", "Base field name is not correct for dynamic statement")
+                assert_eq!(
+                    t.field_name, "self",
+                    "Base field name is not correct for dynamic statement"
+                )
             }
             other => panic!("expected a plain traversal for base, got {other:?}"),
         }
 
         for dyn_target in &model_effect.targets {
-            assert!(!dyn_target.assoc_op, "Dynamic target should not operate on associations");
+            assert!(
+                !dyn_target.assoc_op,
+                "Dynamic target should not operate on associations"
+            );
             assert_eq!(
                 dyn_target.assoc_traversal.len(),
                 1,
@@ -146,58 +190,129 @@ fn create_dynamic_ag() {
         }
     }
 
-    assert_eq!(seen_filters, HashSet::from(["C2Server".to_string(), "Device".to_string()]));
+    assert_eq!(
+        seen_filters,
+        HashSet::from(["C2Server".to_string(), "Device".to_string()])
+    );
 }
 
 #[test]
 fn according_to_corelang() {
     let lang_graph = corelang();
     let mut model = Model::new("Test Model", lang_graph);
-    let app1 = model.add_asset("Application", None, None, None, None, true).unwrap();
-    let app2 = model.add_asset("Application", None, None, None, None, true).unwrap();
-    model.add_associated_assets(app1, "appExecutedApps", HashSet::from([app2])).unwrap();
+    let app1 = model
+        .add_asset("Application", None, None, None, None, true)
+        .unwrap();
+    let app2 = model
+        .add_asset("Application", None, None, None, None, true)
+        .unwrap();
+    model
+        .add_associated_assets(app1, "appExecutedApps", HashSet::from([app2]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
 
     let expected_names: HashSet<&str> = [
-        "notPresent", "attemptUseVulnerability", "successfulUseVulnerability", "useVulnerability",
-        "attemptReverseReach", "successfulReverseReach", "reverseReach", "localConnect",
-        "networkConnectUninspected", "networkConnectInspected", "networkConnect",
-        "specificAccessNetworkConnect", "accessNetworkAndConnections", "attemptNetworkConnectFromResponse",
-        "networkConnectFromResponse", "specificAccessFromLocalConnection", "specificAccessFromNetworkConnection",
-        "specificAccess", "bypassContainerization", "authenticate", "specificAccessAuthenticate",
-        "localAccess", "networkAccess", "fullAccess", "physicalAccessAchieved", "attemptUnsafeUserActivity",
-        "successfulUnsafeUserActivity", "unsafeUserActivity", "attackerUnsafeUserActivityCapability",
-        "attackerUnsafeUserActivityCapabilityWithReverseReach", "attackerUnsafeUserActivityCapabilityWithoutReverseReach",
-        "supplyChainAuditing", "bypassSupplyChainAuditing", "supplyChainAuditingBypassed",
-        "attemptFullAccessFromSupplyChainCompromise", "fullAccessFromSupplyChainCompromise",
-        "attemptReadFromSoftProdVulnerability", "attemptModifyFromSoftProdVulnerability",
-        "attemptDenyFromSoftProdVulnerability", "softwareCheck", "softwareProductVulnerabilityLocalAccessAchieved",
-        "softwareProductVulnerabilityNetworkAccessAchieved", "softwareProductVulnerabilityPhysicalAccessAchieved",
-        "softwareProductVulnerabilityLowPrivilegesAchieved", "softwareProductVulnerabilityHighPrivilegesAchieved",
-        "softwareProductVulnerabilityUserInteractionAchieved", "attemptSoftwareProductAbuse",
-        "softwareProductAbuse", "readFromSoftProdVulnerability", "modifyFromSoftProdVulnerability",
-        "denyFromSoftProdVulnerability", "attemptApplicationRespondConnectThroughData",
-        "successfulApplicationRespondConnectThroughData", "applicationRespondConnectThroughData",
-        "attemptAuthorizedApplicationRespondConnectThroughData", "successfulAuthorizedApplicationRespondConnectThroughData",
-        "authorizedApplicationRespondConnectThroughData", "attemptRead", "successfulRead", "read",
-        "specificAccessRead", "attemptModify", "successfulModify", "modify", "specificAccessModify",
-        "attemptDeny", "successfulDeny", "deny", "specificAccessDelete", "denyFromNetworkingAsset",
+        "notPresent",
+        "attemptUseVulnerability",
+        "successfulUseVulnerability",
+        "useVulnerability",
+        "attemptReverseReach",
+        "successfulReverseReach",
+        "reverseReach",
+        "localConnect",
+        "networkConnectUninspected",
+        "networkConnectInspected",
+        "networkConnect",
+        "specificAccessNetworkConnect",
+        "accessNetworkAndConnections",
+        "attemptNetworkConnectFromResponse",
+        "networkConnectFromResponse",
+        "specificAccessFromLocalConnection",
+        "specificAccessFromNetworkConnection",
+        "specificAccess",
+        "bypassContainerization",
+        "authenticate",
+        "specificAccessAuthenticate",
+        "localAccess",
+        "networkAccess",
+        "fullAccess",
+        "physicalAccessAchieved",
+        "attemptUnsafeUserActivity",
+        "successfulUnsafeUserActivity",
+        "unsafeUserActivity",
+        "attackerUnsafeUserActivityCapability",
+        "attackerUnsafeUserActivityCapabilityWithReverseReach",
+        "attackerUnsafeUserActivityCapabilityWithoutReverseReach",
+        "supplyChainAuditing",
+        "bypassSupplyChainAuditing",
+        "supplyChainAuditingBypassed",
+        "attemptFullAccessFromSupplyChainCompromise",
+        "fullAccessFromSupplyChainCompromise",
+        "attemptReadFromSoftProdVulnerability",
+        "attemptModifyFromSoftProdVulnerability",
+        "attemptDenyFromSoftProdVulnerability",
+        "softwareCheck",
+        "softwareProductVulnerabilityLocalAccessAchieved",
+        "softwareProductVulnerabilityNetworkAccessAchieved",
+        "softwareProductVulnerabilityPhysicalAccessAchieved",
+        "softwareProductVulnerabilityLowPrivilegesAchieved",
+        "softwareProductVulnerabilityHighPrivilegesAchieved",
+        "softwareProductVulnerabilityUserInteractionAchieved",
+        "attemptSoftwareProductAbuse",
+        "softwareProductAbuse",
+        "readFromSoftProdVulnerability",
+        "modifyFromSoftProdVulnerability",
+        "denyFromSoftProdVulnerability",
+        "attemptApplicationRespondConnectThroughData",
+        "successfulApplicationRespondConnectThroughData",
+        "applicationRespondConnectThroughData",
+        "attemptAuthorizedApplicationRespondConnectThroughData",
+        "successfulAuthorizedApplicationRespondConnectThroughData",
+        "authorizedApplicationRespondConnectThroughData",
+        "attemptRead",
+        "successfulRead",
+        "read",
+        "specificAccessRead",
+        "attemptModify",
+        "successfulModify",
+        "modify",
+        "specificAccessModify",
+        "attemptDeny",
+        "successfulDeny",
+        "deny",
+        "specificAccessDelete",
+        "denyFromNetworkingAsset",
         "denyFromLockout",
     ]
     .into_iter()
     .collect();
 
-    let actual_names: HashSet<&str> = attack_graph.nodes.values().map(|n| n.name.as_str()).collect();
+    let actual_names: HashSet<&str> = attack_graph
+        .nodes
+        .values()
+        .map(|n| n.name.as_str())
+        .collect();
     assert_eq!(actual_names, expected_names);
 
     let expected_notpresent_children: HashSet<&str> = [
-        "successfulUseVulnerability", "successfulReverseReach", "networkConnectFromResponse",
-        "specificAccessFromLocalConnection", "specificAccessFromNetworkConnection", "localAccess",
-        "networkAccess", "successfulUnsafeUserActivity", "fullAccessFromSupplyChainCompromise",
-        "readFromSoftProdVulnerability", "modifyFromSoftProdVulnerability", "denyFromSoftProdVulnerability",
-        "successfulApplicationRespondConnectThroughData", "successfulAuthorizedApplicationRespondConnectThroughData",
-        "successfulRead", "successfulModify", "successfulDeny",
+        "successfulUseVulnerability",
+        "successfulReverseReach",
+        "networkConnectFromResponse",
+        "specificAccessFromLocalConnection",
+        "specificAccessFromNetworkConnection",
+        "localAccess",
+        "networkAccess",
+        "successfulUnsafeUserActivity",
+        "fullAccessFromSupplyChainCompromise",
+        "readFromSoftProdVulnerability",
+        "modifyFromSoftProdVulnerability",
+        "denyFromSoftProdVulnerability",
+        "successfulApplicationRespondConnectThroughData",
+        "successfulAuthorizedApplicationRespondConnectThroughData",
+        "successfulRead",
+        "successfulModify",
+        "successfulDeny",
     ]
     .into_iter()
     .collect();
@@ -219,21 +334,37 @@ fn according_to_corelang() {
 fn remove_node() {
     let lang_graph = corelang();
     let mut model = Model::new("Test Model", lang_graph);
-    let app1 = model.add_asset("Application", None, None, None, None, true).unwrap();
-    let app2 = model.add_asset("Application", None, None, None, None, true).unwrap();
-    model.add_associated_assets(app1, "appExecutedApps", HashSet::from([app2])).unwrap();
+    let app1 = model
+        .add_asset("Application", None, None, None, None, true)
+        .unwrap();
+    let app2 = model
+        .add_asset("Application", None, None, None, None, true)
+        .unwrap();
+    model
+        .add_associated_assets(app1, "appExecutedApps", HashSet::from([app2]))
+        .unwrap();
 
     let mut attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
 
     let node_to_remove = attack_graph.nodes.keys().next().unwrap();
-    let parents: Vec<_> = attack_graph.nodes[node_to_remove].parents.iter().copied().collect();
-    let children: Vec<_> = attack_graph.nodes[node_to_remove].children.iter().copied().collect();
+    let parents: Vec<_> = attack_graph.nodes[node_to_remove]
+        .parents
+        .iter()
+        .copied()
+        .collect();
+    let children: Vec<_> = attack_graph.nodes[node_to_remove]
+        .children
+        .iter()
+        .copied()
+        .collect();
 
     attack_graph.remove_node(node_to_remove).unwrap();
 
     assert!(!attack_graph.nodes.contains_key(node_to_remove));
     for parent in parents {
-        assert!(!attack_graph.nodes[parent].children.contains(&node_to_remove));
+        assert!(!attack_graph.nodes[parent]
+            .children
+            .contains(&node_to_remove));
     }
     for child in children {
         assert!(!attack_graph.nodes[child].parents.contains(&node_to_remove));
@@ -242,25 +373,70 @@ fn remove_node() {
 
 #[test]
 fn subtype() {
-    let spec = maltoolbox_language::compile_file(lang_fixtures_dir().join("subtype_attack_step.mal")).unwrap();
+    let spec =
+        maltoolbox_language::compile_file(lang_fixtures_dir().join("subtype_attack_step.mal"))
+            .unwrap();
     let lang_graph = Rc::new(maltoolbox_language::generate_graph(spec).unwrap());
     let mut model = Model::new("Test Model", lang_graph);
 
-    let base1 = model.add_asset("BaseAsset", Some("BaseAsset 1".into()), None, None, None, true).unwrap();
-    let sub1 = model.add_asset("SubAsset", Some("SubAsset 1".into()), None, None, None, true).unwrap();
-    let other1 = model.add_asset("OtherAsset", Some("OtherAsset 1".into()), None, None, None, true).unwrap();
+    let base1 = model
+        .add_asset(
+            "BaseAsset",
+            Some("BaseAsset 1".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let sub1 = model
+        .add_asset(
+            "SubAsset",
+            Some("SubAsset 1".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let other1 = model
+        .add_asset(
+            "OtherAsset",
+            Some("OtherAsset 1".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
 
-    model.add_associated_assets(sub1, "field2", HashSet::from([other1])).unwrap();
-    model.add_associated_assets(base1, "field2", HashSet::from([other1])).unwrap();
+    model
+        .add_associated_assets(sub1, "field2", HashSet::from([other1]))
+        .unwrap();
+    model
+        .add_associated_assets(base1, "field2", HashSet::from([other1]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).unwrap();
 
-    let ba1_base1 = attack_graph.get_node_by_full_name("BaseAsset 1:base_step1").unwrap();
-    let ba1_base2 = attack_graph.get_node_by_full_name("BaseAsset 1:base_step2").unwrap();
-    let sa1_base1 = attack_graph.get_node_by_full_name("SubAsset 1:base_step1").unwrap();
-    let sa1_base2 = attack_graph.get_node_by_full_name("SubAsset 1:base_step2").unwrap();
-    let sa1_sub1 = attack_graph.get_node_by_full_name("SubAsset 1:subasset_step1").unwrap();
-    let oa1_other1 = attack_graph.get_node_by_full_name("OtherAsset 1:other_step1").unwrap();
+    let ba1_base1 = attack_graph
+        .get_node_by_full_name("BaseAsset 1:base_step1")
+        .unwrap();
+    let ba1_base2 = attack_graph
+        .get_node_by_full_name("BaseAsset 1:base_step2")
+        .unwrap();
+    let sa1_base1 = attack_graph
+        .get_node_by_full_name("SubAsset 1:base_step1")
+        .unwrap();
+    let sa1_base2 = attack_graph
+        .get_node_by_full_name("SubAsset 1:base_step2")
+        .unwrap();
+    let sa1_sub1 = attack_graph
+        .get_node_by_full_name("SubAsset 1:subasset_step1")
+        .unwrap();
+    let oa1_other1 = attack_graph
+        .get_node_by_full_name("OtherAsset 1:other_step1")
+        .unwrap();
 
     let children = &attack_graph.nodes[oa1_other1].children;
     assert!(children.contains(&ba1_base1));
@@ -276,13 +452,25 @@ fn setops() {
     let lang_graph = Rc::new(maltoolbox_language::generate_graph(spec).unwrap());
     let mut model = Model::new("Test Model", lang_graph);
 
-    let origin = model.add_asset("Origin", Some("Origin".into()), None, None, None, true).unwrap();
-    let t1 = model.add_asset("Target", Some("Target 1".into()), None, None, None, true).unwrap();
-    let t2 = model.add_asset("Target", Some("Target 2".into()), None, None, None, true).unwrap();
-    let t3 = model.add_asset("Target", Some("Target 3".into()), None, None, None, true).unwrap();
+    let origin = model
+        .add_asset("Origin", Some("Origin".into()), None, None, None, true)
+        .unwrap();
+    let t1 = model
+        .add_asset("Target", Some("Target 1".into()), None, None, None, true)
+        .unwrap();
+    let t2 = model
+        .add_asset("Target", Some("Target 2".into()), None, None, None, true)
+        .unwrap();
+    let t3 = model
+        .add_asset("Target", Some("Target 3".into()), None, None, None, true)
+        .unwrap();
 
-    model.add_associated_assets(origin, "setA", HashSet::from([t1, t2])).unwrap();
-    model.add_associated_assets(origin, "setB", HashSet::from([t2, t3])).unwrap();
+    model
+        .add_associated_assets(origin, "setA", HashSet::from([t1, t2]))
+        .unwrap();
+    model
+        .add_associated_assets(origin, "setB", HashSet::from([t2, t3]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).unwrap();
     let check = attack_graph.get_node_by_full_name("Origin:check").unwrap();
@@ -302,20 +490,39 @@ fn setops() {
 
 #[test]
 fn setops_adv() {
-    let spec = maltoolbox_language::compile_file(lang_fixtures_dir().join("set_ops_adv.mal")).unwrap();
+    let spec =
+        maltoolbox_language::compile_file(lang_fixtures_dir().join("set_ops_adv.mal")).unwrap();
     let lang_graph = Rc::new(maltoolbox_language::generate_graph(spec).unwrap());
     let mut model = Model::new("Test Model", lang_graph);
 
-    let hub1 = model.add_asset("Hub", Some("Hub 1".into()), None, None, None, true).unwrap();
-    let hub2 = model.add_asset("Hub", Some("Hub 2".into()), None, None, None, true).unwrap();
-    let hub3 = model.add_asset("Hub", Some("Hub 3".into()), None, None, None, true).unwrap();
-    let t1 = model.add_asset("Target", Some("Target 1".into()), None, None, None, true).unwrap();
-    let t2 = model.add_asset("Target", Some("Target 2".into()), None, None, None, true).unwrap();
-    let t3 = model.add_asset("Target", Some("Target 3".into()), None, None, None, true).unwrap();
+    let hub1 = model
+        .add_asset("Hub", Some("Hub 1".into()), None, None, None, true)
+        .unwrap();
+    let hub2 = model
+        .add_asset("Hub", Some("Hub 2".into()), None, None, None, true)
+        .unwrap();
+    let hub3 = model
+        .add_asset("Hub", Some("Hub 3".into()), None, None, None, true)
+        .unwrap();
+    let t1 = model
+        .add_asset("Target", Some("Target 1".into()), None, None, None, true)
+        .unwrap();
+    let t2 = model
+        .add_asset("Target", Some("Target 2".into()), None, None, None, true)
+        .unwrap();
+    let t3 = model
+        .add_asset("Target", Some("Target 3".into()), None, None, None, true)
+        .unwrap();
 
-    model.add_associated_assets(hub2, "setA", HashSet::from([t1, t2])).unwrap();
-    model.add_associated_assets(hub3, "setB", HashSet::from([t2, t3])).unwrap();
-    model.add_associated_assets(hub1, "siblings", HashSet::from([hub2, hub3])).unwrap();
+    model
+        .add_associated_assets(hub2, "setA", HashSet::from([t1, t2]))
+        .unwrap();
+    model
+        .add_associated_assets(hub3, "setB", HashSet::from([t2, t3]))
+        .unwrap();
+    model
+        .add_associated_assets(hub1, "siblings", HashSet::from([hub2, hub3]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).unwrap();
 
@@ -336,27 +543,51 @@ fn setops_adv() {
 
 #[test]
 fn transitive() {
-    let spec = maltoolbox_language::compile_file(lang_fixtures_dir().join("transitive.mal")).unwrap();
+    let spec =
+        maltoolbox_language::compile_file(lang_fixtures_dir().join("transitive.mal")).unwrap();
     let lang_graph = Rc::new(maltoolbox_language::generate_graph(spec).unwrap());
     let mut model = Model::new("Test Model", lang_graph);
 
     let assets: Vec<i64> = (1..=6)
         .map(|i| {
             model
-                .add_asset("TestAsset", Some(format!("TestAsset {i}")), None, None, None, true)
+                .add_asset(
+                    "TestAsset",
+                    Some(format!("TestAsset {i}")),
+                    None,
+                    None,
+                    None,
+                    true,
+                )
                 .unwrap()
         })
         .collect();
-    let (a1, a2, a3, a4, a5, a6) = (assets[0], assets[1], assets[2], assets[3], assets[4], assets[5]);
+    let (a1, a2, a3, a4, a5, a6) = (
+        assets[0], assets[1], assets[2], assets[3], assets[4], assets[5],
+    );
 
-    model.add_associated_assets(a1, "field2", HashSet::from([a2])).unwrap();
-    model.add_associated_assets(a2, "field2", HashSet::from([a3])).unwrap();
-    model.add_associated_assets(a3, "field2", HashSet::from([a4])).unwrap();
-    model.add_associated_assets(a3, "field2", HashSet::from([a5])).unwrap();
-    model.add_associated_assets(a6, "field2", HashSet::from([a1])).unwrap();
+    model
+        .add_associated_assets(a1, "field2", HashSet::from([a2]))
+        .unwrap();
+    model
+        .add_associated_assets(a2, "field2", HashSet::from([a3]))
+        .unwrap();
+    model
+        .add_associated_assets(a3, "field2", HashSet::from([a4]))
+        .unwrap();
+    model
+        .add_associated_assets(a3, "field2", HashSet::from([a5]))
+        .unwrap();
+    model
+        .add_associated_assets(a6, "field2", HashSet::from([a1]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).unwrap();
-    let step = |i: usize| attack_graph.get_node_by_full_name(&format!("TestAsset {i}:test_step")).unwrap();
+    let step = |i: usize| {
+        attack_graph
+            .get_node_by_full_name(&format!("TestAsset {i}:test_step"))
+            .unwrap()
+    };
 
     let expected_reachable: [&[usize]; 6] = [
         &[1, 2, 3, 4, 5],
@@ -385,20 +616,66 @@ fn transitive() {
 
 #[test]
 fn transitive_advanced() {
-    let spec = maltoolbox_language::compile_file(lang_fixtures_dir().join("transitive_advanced.mal")).unwrap();
+    let spec =
+        maltoolbox_language::compile_file(lang_fixtures_dir().join("transitive_advanced.mal"))
+            .unwrap();
     let lang_graph = Rc::new(maltoolbox_language::generate_graph(spec).unwrap());
     let mut model = Model::new("Test Model", lang_graph);
 
-    let a1 = model.add_asset("TestAsset", Some("TestAsset 1".into()), None, None, None, true).unwrap();
-    let a2 = model.add_asset("TestAsset", Some("TestAsset 2".into()), None, None, None, true).unwrap();
-    let a3 = model.add_asset("TestAsset", Some("TestAsset 3".into()), None, None, None, true).unwrap();
-    let a4 = model.add_asset("TestAsset", Some("TestAsset 4".into()), None, None, None, true).unwrap();
+    let a1 = model
+        .add_asset(
+            "TestAsset",
+            Some("TestAsset 1".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let a2 = model
+        .add_asset(
+            "TestAsset",
+            Some("TestAsset 2".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let a3 = model
+        .add_asset(
+            "TestAsset",
+            Some("TestAsset 3".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
+    let a4 = model
+        .add_asset(
+            "TestAsset",
+            Some("TestAsset 4".into()),
+            None,
+            None,
+            None,
+            true,
+        )
+        .unwrap();
 
-    model.add_associated_assets(a1, "fieldA2", HashSet::from([a2, a3])).unwrap();
-    model.add_associated_assets(a1, "fieldB2", HashSet::from([a3, a4])).unwrap();
+    model
+        .add_associated_assets(a1, "fieldA2", HashSet::from([a2, a3]))
+        .unwrap();
+    model
+        .add_associated_assets(a1, "fieldB2", HashSet::from([a3, a4]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).unwrap();
-    let step = |n: &str| attack_graph.get_node_by_full_name(&format!("{n}:test_step")).unwrap();
+    let step = |n: &str| {
+        attack_graph
+            .get_node_by_full_name(&format!("{n}:test_step"))
+            .unwrap()
+    };
     let children = &attack_graph.nodes[step("TestAsset 1")].children;
 
     assert!(children.contains(&step("TestAsset 1")));
@@ -411,7 +688,8 @@ fn transitive_advanced() {
 fn create_attack_graph_wrapper() {
     let mar = lang_fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar");
     let model = fixtures_dir().join("simple_example_model.yml");
-    maltoolbox_attackgraph::create_attack_graph(mar, model).expect("create_attack_graph should not error");
+    maltoolbox_attackgraph::create_attack_graph(mar, model)
+        .expect("create_attack_graph should not error");
 }
 
 #[test]
@@ -422,7 +700,8 @@ fn create_ag_from_model() {
     //            Data:2
     let mar = fixtures_dir().join("org.mal-lang.trainingLang-1.0.0.mar");
     let model_path = fixtures_dir().join("simple_traininglang_model.yml");
-    let (attack_graph, model) = maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
+    let (attack_graph, model) =
+        maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
 
     let full_names: HashSet<String> = attack_graph
         .nodes
@@ -430,10 +709,20 @@ fn create_ag_from_model() {
         .map(|k| attack_graph.full_name_of(k, Some(&model)))
         .collect();
     let expected: HashSet<String> = [
-        "Host:0:notPresent", "Host:0:authenticate", "Host:0:connect", "Host:0:access",
-        "Host:1:notPresent", "Host:1:authenticate", "Host:1:connect", "Host:1:access",
-        "Data:2:notPresent", "Data:2:read", "Data:2:modify",
-        "User:3:notPresent", "User:3:compromise", "User:3:phishing",
+        "Host:0:notPresent",
+        "Host:0:authenticate",
+        "Host:0:connect",
+        "Host:0:access",
+        "Host:1:notPresent",
+        "Host:1:authenticate",
+        "Host:1:connect",
+        "Host:1:access",
+        "Data:2:notPresent",
+        "Data:2:read",
+        "Data:2:modify",
+        "User:3:notPresent",
+        "User:3:compromise",
+        "User:3:phishing",
         "Network:3:access",
     ]
     .into_iter()
@@ -448,8 +737,12 @@ fn create_ag_from_model() {
             .iter()
             .map(|&c| attack_graph.full_name_of(c, Some(&model)))
             .collect();
-        let expected_children: HashSet<String> = children_fns.iter().map(|s| s.to_string()).collect();
-        assert_eq!(actual_children, expected_children, "children of {parent_fn}");
+        let expected_children: HashSet<String> =
+            children_fns.iter().map(|s| s.to_string()).collect();
+        assert_eq!(
+            actual_children, expected_children,
+            "children of {parent_fn}"
+        );
 
         for child_fn in children_fns {
             let child = attack_graph.get_node_by_full_name(child_fn).unwrap();
@@ -458,14 +751,20 @@ fn create_ag_from_model() {
                 .iter()
                 .map(|&p| attack_graph.full_name_of(p, Some(&model)))
                 .collect();
-            assert!(parent_names.contains(parent_fn), "{child_fn} should have parent {parent_fn}");
+            assert!(
+                parent_names.contains(parent_fn),
+                "{child_fn} should have parent {parent_fn}"
+            );
         }
     };
 
     check("Host:0:notPresent", &["Host:0:connect", "Host:0:access"]);
     check("Host:0:authenticate", &["Host:0:access"]);
     check("Host:0:connect", &["Host:0:access"]);
-    check("Host:0:access", &["Data:2:modify", "Data:2:read", "Network:3:access"]);
+    check(
+        "Host:0:access",
+        &["Data:2:modify", "Data:2:read", "Network:3:access"],
+    );
     check("Host:1:notPresent", &["Host:1:connect", "Host:1:access"]);
     check("Host:1:authenticate", &["Host:1:access"]);
     check("Host:1:connect", &["Host:1:access"]);
@@ -483,12 +782,15 @@ fn create_ag_from_model() {
 fn create_ag_step_lists() {
     let mar = fixtures_dir().join("org.mal-lang.trainingLang-1.0.0.mar");
     let model_path = fixtures_dir().join("simple_traininglang_model.yml");
-    let (attack_graph, _model) = maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
+    let (attack_graph, _model) =
+        maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
 
     let defenses: HashSet<_> = attack_graph
         .nodes
         .iter()
-        .filter(|(_, n)| n.step_type == maltoolbox_language::graph::attack_step::AttackStepType::Defense)
+        .filter(|(_, n)| {
+            n.step_type == maltoolbox_language::graph::attack_step::AttackStepType::Defense
+        })
         .map(|(k, _)| k)
         .collect();
     let attacks: HashSet<_> = attack_graph
@@ -504,17 +806,28 @@ fn create_ag_step_lists() {
         .map(|(k, _)| k)
         .collect();
 
-    assert_eq!(defenses, attack_graph.defense_steps.iter().copied().collect());
+    assert_eq!(
+        defenses,
+        attack_graph.defense_steps.iter().copied().collect()
+    );
     assert_eq!(attacks, attack_graph.attack_steps.iter().copied().collect());
 }
 
 #[test]
 fn load_attack_graph_json_and_yaml_agree() {
     let lang_graph = corelang();
-    let json_ag = AttackGraph::load_from_file(repo_testdata_dir().join("attackgraph.json"), lang_graph.clone(), None)
-        .expect("load attackgraph.json");
-    let yml_ag = AttackGraph::load_from_file(repo_testdata_dir().join("attackgraph.yml"), lang_graph, None)
-        .expect("load attackgraph.yml");
+    let json_ag = AttackGraph::load_from_file(
+        repo_testdata_dir().join("attackgraph.json"),
+        lang_graph.clone(),
+        None,
+    )
+    .expect("load attackgraph.json");
+    let yml_ag = AttackGraph::load_from_file(
+        repo_testdata_dir().join("attackgraph.yml"),
+        lang_graph,
+        None,
+    )
+    .expect("load attackgraph.yml");
 
     assert_eq!(json_ag.nodes.len(), 545);
     assert_eq!(json_ag.to_dict(None), yml_ag.to_dict(None));
@@ -532,7 +845,8 @@ fn load_attack_graph_json_and_yaml_agree() {
 fn attackgraph_save_load_round_trip_no_model() {
     let mar = lang_fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar");
     let model_path = fixtures_dir().join("simple_example_model.yml");
-    let (mut attack_graph, model) = maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
+    let (mut attack_graph, model) =
+        maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
 
     let node_with_reward = attack_graph.nodes.keys().next().unwrap();
     attack_graph.nodes[node_with_reward]
@@ -540,24 +854,40 @@ fn attackgraph_save_load_round_trip_no_model() {
         .insert("reward".to_string(), serde_json::json!(1));
     let node_with_reward_id = attack_graph.nodes[node_with_reward].id;
 
-    let dir = std::env::temp_dir().join(format!("maltoolbox-attackgraph-roundtrip-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!(
+        "maltoolbox-attackgraph-roundtrip-{}",
+        std::process::id()
+    ));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("example_graph.yml");
-    attack_graph.save_to_file(Some(&model), &path).expect("save");
+    attack_graph
+        .save_to_file(Some(&model), &path)
+        .expect("save");
 
-    let loaded = AttackGraph::load_from_file(&path, attack_graph.lang_graph.clone(), None).expect("load");
+    let loaded =
+        AttackGraph::load_from_file(&path, attack_graph.lang_graph.clone(), None).expect("load");
     std::fs::remove_dir_all(&dir).ok();
 
     assert_eq!(attack_graph.nodes.len(), loaded.nodes.len());
 
-    let loaded_key = *loaded.id_to_node.get(&node_with_reward_id).expect("reloaded node by id");
-    assert_eq!(loaded.nodes[loaded_key].extras.get("reward"), Some(&serde_json::json!(1)));
+    let loaded_key = *loaded
+        .id_to_node
+        .get(&node_with_reward_id)
+        .expect("reloaded node by id");
+    assert_eq!(
+        loaded.nodes[loaded_key].extras.get("reward"),
+        Some(&serde_json::json!(1))
+    );
 
     // Loaded-without-model nodes have no "asset" key, so compare every
     // other field: the saved dict (with model) minus "asset" should equal
     // the reloaded dict (without model).
     let mut original = attack_graph.to_dict(Some(&model));
-    for node in original["attack_steps"].as_object_mut().unwrap().values_mut() {
+    for node in original["attack_steps"]
+        .as_object_mut()
+        .unwrap()
+        .values_mut()
+    {
         node.as_object_mut().unwrap().remove("asset");
     }
     assert_eq!(original, loaded.to_dict(None));
@@ -567,21 +897,33 @@ fn attackgraph_save_load_round_trip_no_model() {
 fn attackgraph_save_and_load_round_trip_with_model() {
     let mar = lang_fixtures_dir().join("org.mal-lang.coreLang-1.0.0.mar");
     let model_path = fixtures_dir().join("simple_example_model.yml");
-    let (attack_graph, model) = maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
+    let (attack_graph, model) =
+        maltoolbox_attackgraph::create_attack_graph(mar, model_path).unwrap();
 
-    let dir = std::env::temp_dir().join(format!("maltoolbox-attackgraph-roundtrip-model-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!(
+        "maltoolbox-attackgraph-roundtrip-model-{}",
+        std::process::id()
+    ));
     std::fs::create_dir_all(&dir).unwrap();
 
     for ext in ["yml", "json"] {
         let path = dir.join(format!("attackgraph.{ext}"));
-        attack_graph.save_to_file(Some(&model), &path).expect("save");
+        attack_graph
+            .save_to_file(Some(&model), &path)
+            .expect("save");
         let loaded =
-            AttackGraph::load_from_file(&path, attack_graph.lang_graph.clone(), Some(&model)).expect("load");
+            AttackGraph::load_from_file(&path, attack_graph.lang_graph.clone(), Some(&model))
+                .expect("load");
 
-        assert_eq!(attack_graph.to_dict(Some(&model)), loaded.to_dict(Some(&model)));
+        assert_eq!(
+            attack_graph.to_dict(Some(&model)),
+            loaded.to_dict(Some(&model))
+        );
 
         for (loaded_key, loaded_node) in loaded.nodes.iter() {
-            let asset_id = loaded_node.model_asset.expect("node should get an asset when loaded with model");
+            let asset_id = loaded_node
+                .model_asset
+                .expect("node should get an asset when loaded with model");
             let asset = model.get_asset_by_id(asset_id).unwrap();
             let full_name = loaded.full_name_of(loaded_key, Some(&model));
             assert_eq!(full_name, format!("{}:{}", asset.name, loaded_node.name));

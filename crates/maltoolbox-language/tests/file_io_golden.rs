@@ -17,11 +17,16 @@ fn fixture_path(name: &str) -> std::path::PathBuf {
 /// hand-picked synthetic .mal fixtures used elsewhere.
 #[test]
 fn mar_archive_matches_python_oracle_for_corelang() {
-    let graph = from_mar_archive(fixture_path("org.mal-lang.coreLang-1.0.0.mar")).expect("load .mar");
+    let graph =
+        from_mar_archive(fixture_path("org.mal-lang.coreLang-1.0.0.mar")).expect("load .mar");
     let actual = language_graph_to_dict(&graph).expect("to_dict");
 
-    let golden_path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/golden_graph_mar/coreLang.json");
-    let expected: Value = serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap();
+    let golden_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/golden_graph_mar/coreLang.json"
+    );
+    let expected: Value =
+        serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap();
 
     assert_eq!(actual, expected);
 }
@@ -33,9 +38,10 @@ fn mar_archive_matches_python_oracle_for_corelang() {
 /// any Python oracle, since it's a self-consistency property.
 #[test]
 fn round_trips_through_to_dict_and_from_dict() {
-    let spec = maltoolbox_language::compile_file(
-        Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/wiperLang.mal")),
-    )
+    let spec = maltoolbox_language::compile_file(Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/wiperLang.mal"
+    )))
     .expect("compile");
     let graph = generate_graph(spec).expect("build graph");
     let dict = language_graph_to_dict(&graph).expect("to_dict");
@@ -51,7 +57,8 @@ fn round_trips_through_to_dict_and_from_dict() {
 /// many associations, detectors).
 #[test]
 fn round_trips_corelang_through_to_dict_and_from_dict() {
-    let graph = from_mar_archive(fixture_path("org.mal-lang.coreLang-1.0.0.mar")).expect("load .mar");
+    let graph =
+        from_mar_archive(fixture_path("org.mal-lang.coreLang-1.0.0.mar")).expect("load .mar");
     let dict = language_graph_to_dict(&graph).expect("to_dict");
 
     let reloaded = language_graph_from_dict(&dict).expect("from_dict");

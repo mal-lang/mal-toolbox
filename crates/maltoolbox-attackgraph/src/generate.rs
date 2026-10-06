@@ -46,7 +46,10 @@ pub fn get_existence_status(
     lg_step_id: AttackStepId,
 ) -> Result<Option<bool>, GraphError> {
     let lg_step = model.lang_graph.step(lg_step_id);
-    if !matches!(lg_step.step_type, AttackStepType::Exist | AttackStepType::NotExist) {
+    if !matches!(
+        lg_step.step_type,
+        AttackStepType::Exist | AttackStepType::NotExist
+    ) {
         return Ok(None);
     }
 
@@ -63,7 +66,13 @@ pub fn create_nodes_from_model(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     model: &Model,
 ) -> Result<CreatedNodes, GraphError> {
-    create_nodes_for(nodes, model.asset_order.iter().copied(), 0, model, &HashMap::new())
+    create_nodes_for(
+        nodes,
+        model.asset_order.iter().copied(),
+        0,
+        model,
+        &HashMap::new(),
+    )
 }
 
 /// Port of `partially_generate.py`'s `create_nodes_from_assets`: build nodes
@@ -79,7 +88,13 @@ pub fn create_nodes_from_assets(
     model: &Model,
     removed_assets: &HashMap<i64, AssetSnapshot>,
 ) -> Result<CreatedNodes, GraphError> {
-    create_nodes_for(nodes, asset_ids.iter().copied(), starting_id, model, removed_assets)
+    create_nodes_for(
+        nodes,
+        asset_ids.iter().copied(),
+        starting_id,
+        model,
+        removed_assets,
+    )
 }
 
 fn create_nodes_for(
@@ -178,13 +193,16 @@ pub fn link_node_children(
 ) -> Result<(), GraphError> {
     let (model_asset_id, lg_attack_step_id) = {
         let node = &nodes[ag_node_key];
-        let asset_id = node
-            .model_asset
-            .ok_or_else(|| GraphError::Malformed("Attack graph node is missing asset link".into()))?;
+        let asset_id = node.model_asset.ok_or_else(|| {
+            GraphError::Malformed("Attack graph node is missing asset link".into())
+        })?;
         (asset_id, node.lg_attack_step)
     };
 
-    let children = model.lang_graph.step(lg_attack_step_id).children(&model.lang_graph);
+    let children = model
+        .lang_graph
+        .step(lg_attack_step_id)
+        .children(&model.lang_graph);
 
     for (child_lg_step, chains) in children {
         let child_step_name = model.lang_graph.step(child_lg_step).name.clone();
@@ -289,9 +307,9 @@ pub fn create_detectors(
     for node_key in node_keys {
         let (model_asset_id, lg_step_id) = {
             let node = &nodes[node_key];
-            let asset_id = node
-                .model_asset
-                .ok_or_else(|| GraphError::Malformed("Attack graph node is missing asset link".into()))?;
+            let asset_id = node.model_asset.ok_or_else(|| {
+                GraphError::Malformed("Attack graph node is missing asset link".into())
+            })?;
             (asset_id, node.lg_attack_step)
         };
 

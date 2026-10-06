@@ -20,7 +20,11 @@ use maltoolbox_attackgraph::GraphError;
 use maltoolbox_language_py::exceptions::MalToolboxException;
 
 create_exception!(_native, AttackGraphException, MalToolboxException);
-create_exception!(_native, AttackGraphStepExpressionError, AttackGraphException);
+create_exception!(
+    _native,
+    AttackGraphStepExpressionError,
+    AttackGraphException
+);
 
 /// Context-free default mapping for a [`GraphError`]:
 /// - `DuplicateNodeId` -> `PyValueError`, matching `AttackGraph.add_node`'s
@@ -57,7 +61,10 @@ pub fn graph_error_to_lookup(err: GraphError) -> PyErr {
 }
 
 pub fn register(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("AttackGraphException", py.get_type::<AttackGraphException>())?;
+    m.add(
+        "AttackGraphException",
+        py.get_type::<AttackGraphException>(),
+    )?;
     m.add(
         "AttackGraphStepExpressionError",
         py.get_type::<AttackGraphStepExpressionError>(),

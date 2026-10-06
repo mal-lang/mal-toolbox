@@ -6,4 +6,4 @@ pub mod file;
 pub mod model;
 
 pub use file::{from_dict, load_from_file, save_to_file, LoadError};
-pub use model::{Model, ModelAsset, ModelError, AssetSnapshot, MALTOOLBOX_VERSION};
+pub use model::{AssetSnapshot, Model, ModelAsset, ModelError, MALTOOLBOX_VERSION};

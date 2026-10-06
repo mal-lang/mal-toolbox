@@ -44,7 +44,10 @@ fn compile_src(tag: &str, src: &str) -> Result<serde_json::Value, String> {
 
 fn assert_rejected(tag: &str, src: &str) {
     let result = compile_src(tag, src);
-    assert!(result.is_err(), "expected '{tag}' to be rejected, got {result:?}");
+    assert!(
+        result.is_err(),
+        "expected '{tag}' to be rejected, got {result:?}"
+    );
 }
 
 const HEADER: &str = "#id: \"test-lang\"\n#version: \"0.0.0\"\n\n";
@@ -103,9 +106,7 @@ fn duplicate_asset_name_rejected() {
 fn duplicate_meta_key_rejected() {
     assert_rejected(
         "dup_meta",
-        &format!(
-            "{HEADER}category C {{ asset A meta info: \"x\" meta info: \"y\" {{ | s1 }} }}"
-        ),
+        &format!("{HEADER}category C {{ asset A meta info: \"x\" meta info: \"y\" {{ | s1 }} }}"),
     );
 }
 
@@ -241,9 +242,7 @@ fn invalid_distribution_parameters_rejected() {
 fn requires_on_non_exist_step_rejected() {
     assert_rejected(
         "requires_on_and",
-        &format!(
-            "{HEADER}category C {{ asset A {{ | right\n & s1 <- right }} }}"
-        ),
+        &format!("{HEADER}category C {{ asset A {{ | right\n & s1 <- right }} }}"),
     );
 }
 
@@ -259,9 +258,7 @@ fn exist_step_without_requires_rejected() {
 fn variable_cycle_rejected() {
     assert_rejected(
         "var_cycle",
-        &format!(
-            "{HEADER}category C {{ asset A {{ let x = (y()) let y = (x()) | s1 }} }}"
-        ),
+        &format!("{HEADER}category C {{ asset A {{ let x = (y()) let y = (x()) | s1 }} }}"),
     );
 }
 
@@ -296,9 +293,15 @@ fn mutual_include_raises() {
     .unwrap();
 
     let result = compile_file(&a_path);
-    assert!(result.is_err(), "expected mutual include to be rejected, got {result:?}");
+    assert!(
+        result.is_err(),
+        "expected mutual include to be rejected, got {result:?}"
+    );
     let message = result.unwrap_err().to_string();
-    assert!(message.contains("cycle"), "expected cycle error, got {message:?}");
+    assert!(
+        message.contains("cycle"),
+        "expected cycle error, got {message:?}"
+    );
     std::fs::remove_dir_all(&dir).ok();
 }
 
@@ -332,7 +335,10 @@ fn diamond_include_does_not_error() {
     std::fs::write(&shared_path, "category F { asset Shared { | s4 } }").unwrap();
 
     let result = compile_file(&root_path);
-    assert!(result.is_ok(), "expected diamond include to compile, got {result:?}");
+    assert!(
+        result.is_ok(),
+        "expected diamond include to compile, got {result:?}"
+    );
     std::fs::remove_dir_all(&dir).ok();
 }
 

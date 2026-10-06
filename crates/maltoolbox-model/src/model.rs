@@ -20,12 +20,21 @@ pub const MALTOOLBOX_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub enum ModelError {
     #[error("Asset index {0} already in use.")]
     DuplicateAssetId(i64),
-    #[error("Asset type \"{asset_type}\" does not exist in language, must be one of:\n -{available}")]
-    UnknownAssetType { asset_type: String, available: String },
+    #[error(
+        "Asset type \"{asset_type}\" does not exist in language, must be one of:\n -{available}"
+    )]
+    UnknownAssetType {
+        asset_type: String,
+        available: String,
+    },
     #[error("Asset name {0} is a duplicate and we do not allow duplicates.")]
     DuplicateAssetName(String),
     #[error("Asset \"{name}\"({id}) is not part of model \"{model}\".")]
-    AssetNotFound { name: String, id: i64, model: String },
+    AssetNotFound {
+        name: String,
+        id: i64,
+        model: String,
+    },
     #[error("Fieldname '{fieldname}' is not an accepted association fieldname from asset type {asset_type}. Did you mean one of {accepted}?")]
     UnknownFieldname {
         fieldname: String,
@@ -51,7 +60,9 @@ pub enum ModelError {
     },
     #[error("Asset with id {0} not found in model.")]
     UnknownAssetId(i64),
-    #[error("Asset '{asset_name}' is not associated via fieldname '{fieldname}' on '{owner_name}'.")]
+    #[error(
+        "Asset '{asset_name}' is not associated via fieldname '{fieldname}' on '{owner_name}'."
+    )]
     NotAssociated {
         owner_name: String,
         fieldname: String,
@@ -167,18 +178,19 @@ impl Model {
             Some(n) => n,
         };
 
-        let lg_asset = self.lang_graph.asset_id(asset_type).ok_or_else(|| {
-            ModelError::UnknownAssetType {
-                asset_type: asset_type.to_string(),
-                available: self
-                    .lang_graph
-                    .asset_order
-                    .iter()
-                    .map(|id| self.lang_graph.asset(*id).name.as_str())
-                    .collect::<Vec<_>>()
-                    .join("\n -"),
-            }
-        })?;
+        let lg_asset =
+            self.lang_graph
+                .asset_id(asset_type)
+                .ok_or_else(|| ModelError::UnknownAssetType {
+                    asset_type: asset_type.to_string(),
+                    available: self
+                        .lang_graph
+                        .asset_order
+                        .iter()
+                        .map(|id| self.lang_graph.asset(*id).name.as_str())
+                        .collect::<Vec<_>>()
+                        .join("\n -"),
+                })?;
 
         let asset = ModelAsset {
             name: name.clone(),
@@ -198,11 +210,14 @@ impl Model {
     }
 
     pub fn remove_asset(&mut self, asset_id: i64) -> Result<AssetSnapshot, ModelError> {
-        let asset = self.assets.get(&asset_id).ok_or_else(|| ModelError::AssetNotFound {
-            name: String::new(),
-            id: asset_id,
-            model: self.name.clone(),
-        })?;
+        let asset = self
+            .assets
+            .get(&asset_id)
+            .ok_or_else(|| ModelError::AssetNotFound {
+                name: String::new(),
+                id: asset_id,
+                model: self.name.clone(),
+            })?;
         let name = asset.name.clone();
         let lg_asset = asset.lg_asset;
 
@@ -238,7 +253,9 @@ impl Model {
     }
 
     pub fn get_asset_by_name(&self, name: &str) -> Option<&ModelAsset> {
-        self.name_to_asset_id.get(name).and_then(|id| self.assets.get(id))
+        self.name_to_asset_id
+            .get(name)
+            .and_then(|id| self.assets.get(id))
     }
 
     pub fn associations_with(
@@ -273,7 +290,12 @@ impl Model {
             return false;
         };
         for (fieldname, assoc_assets) in &asset.associated_assets {
-            let Some(assoc) = self.lang_graph.associations(asset.lg_asset).get(fieldname).cloned() else {
+            let Some(assoc) = self
+                .lang_graph
+                .associations(asset.lg_asset)
+                .get(fieldname)
+                .cloned()
+            else {
                 continue;
             };
             if assoc.name == assoc_name && assoc_assets.contains(&other_id) {
@@ -303,7 +325,10 @@ impl Model {
 
         for &other_id in assets_to_add {
             let other = self.assets.get(&other_id).expect("asset must exist");
-            if !self.lang_graph.is_subasset_of(other.lg_asset, assoc_field.asset) {
+            if !self
+                .lang_graph
+                .is_subasset_of(other.lg_asset, assoc_field.asset)
+            {
                 return Err(ModelError::WrongAssociatedAssetType {
                     asset_name: other.name.clone(),
                     asset_type: other.asset_type.clone(),
@@ -314,7 +339,11 @@ impl Model {
             }
         }
 
-        let before = asset.associated_assets.get(fieldname).cloned().unwrap_or_default();
+        let before = asset
+            .associated_assets
+            .get(fieldname)
+            .cloned()
+            .unwrap_or_default();
         let after_len = before.union(assets_to_add).count();
         if let Some(max) = assoc_field.maximum {
             if after_len as i64 > max {
@@ -335,24 +364,20 @@ impl Model {
         let associations = self.lang_graph.associations(asset.lg_asset);
 
         let Some(lg_assoc) = associations.get(fieldname).cloned() else {
-            let (to_asset_type, possible): (String, Vec<String>) = if let Some(&first_other) =
-                assets.iter().next()
-            {
-                let other_lg_asset = self.assets[&first_other].lg_asset;
-                let to_name = self.lang_graph.asset(other_lg_asset).name.clone();
-                let possible = self
-                    .lang_graph
-                    .associations_to(asset.lg_asset, other_lg_asset)
-                    .keys()
-                    .cloned()
-                    .collect();
-                (to_name, possible)
-            } else {
-                (
-                    "Any".to_string(),
-                    associations.keys().cloned().collect(),
-                )
-            };
+            let (to_asset_type, possible): (String, Vec<String>) =
+                if let Some(&first_other) = assets.iter().next() {
+                    let other_lg_asset = self.assets[&first_other].lg_asset;
+                    let to_name = self.lang_graph.asset(other_lg_asset).name.clone();
+                    let possible = self
+                        .lang_graph
+                        .associations_to(asset.lg_asset, other_lg_asset)
+                        .keys()
+                        .cloned()
+                        .collect();
+                    (to_name, possible)
+                } else {
+                    ("Any".to_string(), associations.keys().cloned().collect())
+                };
             return Err(ModelError::UnknownAssociation {
                 fieldname: fieldname.to_string(),
                 from_type: self.lang_graph.asset(asset.lg_asset).name.clone(),
@@ -364,7 +389,11 @@ impl Model {
 
         self.validate_associated_assets(asset_id, fieldname, &assets)?;
         for &other_id in &assets {
-            self.validate_associated_assets(other_id, &other_fieldname, &HashSet::from([asset_id]))?;
+            self.validate_associated_assets(
+                other_id,
+                &other_fieldname,
+                &HashSet::from([asset_id]),
+            )?;
         }
 
         self.assets

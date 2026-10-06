@@ -41,7 +41,10 @@ struct Ctx<'a> {
 }
 
 pub fn analyze(langspec: &Value) -> Result<(), CompileError> {
-    let assets: &[Value] = langspec["assets"].as_array().map(Vec::as_slice).unwrap_or(&[]);
+    let assets: &[Value] = langspec["assets"]
+        .as_array()
+        .map(Vec::as_slice)
+        .unwrap_or(&[]);
     let associations: &[Value] = langspec["associations"]
         .as_array()
         .map(Vec::as_slice)
@@ -151,11 +154,19 @@ fn analyse_defines(langspec: &Value) -> Result<(), CompileError> {
 /// match, not a full-string one.
 fn is_semver_prefix(version: &str) -> bool {
     let mut parts = version.split('.');
-    let is_digits = |s: Option<&str>| s.map(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit())).unwrap_or(false);
-    is_digits(parts.next()) && is_digits(parts.next()) && parts.next().map(|p| {
-        let digits: String = p.chars().take_while(|c| c.is_ascii_digit()).collect();
-        !digits.is_empty()
-    }).unwrap_or(false)
+    let is_digits = |s: Option<&str>| {
+        s.map(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()))
+            .unwrap_or(false)
+    };
+    is_digits(parts.next())
+        && is_digits(parts.next())
+        && parts
+            .next()
+            .map(|p| {
+                let digits: String = p.chars().take_while(|c| c.is_ascii_digit()).collect();
+                !digits.is_empty()
+            })
+            .unwrap_or(false)
 }
 
 // ---------------------------------------------------------------------
@@ -380,11 +391,25 @@ fn analyse_fields(
 
                 if left_asset == parent {
                     let right_field = assoc["rightField"].as_str().unwrap_or_default();
-                    add_field(&mut fields, steps, parent, asset_name, right_field, right_asset)?;
+                    add_field(
+                        &mut fields,
+                        steps,
+                        parent,
+                        asset_name,
+                        right_field,
+                        right_asset,
+                    )?;
                 }
                 if right_asset == parent {
                     let left_field = assoc["leftField"].as_str().unwrap_or_default();
-                    add_field(&mut fields, steps, parent, asset_name, left_field, left_asset)?;
+                    add_field(
+                        &mut fields,
+                        steps,
+                        parent,
+                        asset_name,
+                        left_field,
+                        left_asset,
+                    )?;
                 }
             }
         }
@@ -401,7 +426,11 @@ fn add_field(
     field: &str,
     target_asset: &str,
 ) -> Result<(), CompileError> {
-    if fields.get(asset).map(|m| m.contains_key(field)).unwrap_or(false) {
+    if fields
+        .get(asset)
+        .map(|m| m.contains_key(field))
+        .unwrap_or(false)
+    {
         return Err(err(format!("Field {parent}.{field} previously defined")));
     }
     if steps.get(asset).map(|s| s.contains(field)).unwrap_or(false) {

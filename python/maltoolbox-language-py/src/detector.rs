@@ -26,7 +26,11 @@ struct Ctx {
     caches: SharedLangGraphCaches,
 }
 
-#[pyclass(name = "LanguageGraphContextItem", module = "maltoolbox._native", unsendable)]
+#[pyclass(
+    name = "LanguageGraphContextItem",
+    module = "maltoolbox._native",
+    unsendable
+)]
 pub struct PyLanguageGraphContextItem {
     label: String,
     asset_type: maltoolbox_language::graph::ids::AssetId,
@@ -49,7 +53,9 @@ impl PyLanguageGraphContextItem {
         let owner = self.ctx.owner.clone();
         let caches = self.ctx.caches.clone();
         let id = self.asset_type;
-        cached_handle(&self.ctx.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
+        cached_handle(&self.ctx.caches.assets, py, id, move || {
+            PyLanguageGraphAsset::new(owner, id, caches)
+        })
     }
 
     #[getter]
@@ -73,7 +79,11 @@ impl PyLanguageGraphContextItem {
     }
 }
 
-#[pyclass(name = "LanguageGraphDetector", module = "maltoolbox._native", unsendable)]
+#[pyclass(
+    name = "LanguageGraphDetector",
+    module = "maltoolbox._native",
+    unsendable
+)]
 pub struct PyLanguageGraphDetector {
     name: Option<String>,
     context: Vec<(String, LanguageGraphContextItem)>,
@@ -152,7 +162,11 @@ pub fn detector_to_py(
         py,
         PyLanguageGraphDetector {
             name: detector.name.clone(),
-            context: detector.context.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+            context: detector
+                .context
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
             detector_type: detector.detector_type.clone(),
             tprate: detector.tprate,
             fprate: detector.fprate,

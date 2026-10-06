@@ -11,7 +11,10 @@ use super::{GraphError, LanguageGraph};
 /// mirrors Python's `StepResult` triplet.
 pub type StepResult = (AssetId, Option<ExpressionsChain>, Option<String>);
 
-pub fn process_attack_step_expression(target_asset: AssetId, step_expression: &Value) -> StepResult {
+pub fn process_attack_step_expression(
+    target_asset: AssetId,
+    step_expression: &Value,
+) -> StepResult {
     let name = step_expression["name"].as_str().map(str::to_string);
     (target_asset, None, name)
 }
@@ -137,9 +140,10 @@ pub fn process_transitive_step_expression(
         &step_expression["stepExpression"],
     )?;
     let new_chain = ExpressionsChain::Transitive {
-        sub: Box::new(result_expr_chain.ok_or_else(|| {
-            GraphError::Malformed("TRANSITIVE requires sub_link".into())
-        })?),
+        sub: Box::new(
+            result_expr_chain
+                .ok_or_else(|| GraphError::Malformed("TRANSITIVE requires sub_link".into()))?,
+        ),
     };
     Ok((result_target_asset, Some(new_chain), None))
 }
@@ -160,9 +164,9 @@ pub fn process_sub_type_step_expression(
         &step_expression["stepExpression"],
     )?;
 
-    let subtype_asset = graph.asset_id(subtype_name).ok_or_else(|| {
-        GraphError::Malformed(format!("Failed to find subtype {subtype_name}"))
-    })?;
+    let subtype_asset = graph
+        .asset_id(subtype_name)
+        .ok_or_else(|| GraphError::Malformed(format!("Failed to find subtype {subtype_name}")))?;
 
     if !graph.is_subasset_of(subtype_asset, result_target_asset) {
         return Err(GraphError::Malformed(format!(
@@ -172,9 +176,10 @@ pub fn process_sub_type_step_expression(
     }
 
     let new_chain = ExpressionsChain::SubType {
-        sub: Box::new(result_expr_chain.ok_or_else(|| {
-            GraphError::Malformed("SUBTYPE requires sub_link".into())
-        })?),
+        sub: Box::new(
+            result_expr_chain
+                .ok_or_else(|| GraphError::Malformed("SUBTYPE requires sub_link".into()))?,
+        ),
         subtype: subtype_asset,
     };
     Ok((subtype_asset, Some(new_chain), None))
@@ -201,9 +206,10 @@ pub fn process_multiplicity_step_expression(
     }
 
     let new_chain = ExpressionsChain::Multiplicity {
-        sub: Box::new(result_expr_chain.ok_or_else(|| {
-            GraphError::Malformed("MULTIPLICITY requires sub_link".into())
-        })?),
+        sub: Box::new(
+            result_expr_chain
+                .ok_or_else(|| GraphError::Malformed("MULTIPLICITY requires sub_link".into()))?,
+        ),
         multiplicity,
     };
     Ok((result_target_asset, Some(new_chain), None))
@@ -249,9 +255,10 @@ pub fn process_assoc_op_step_expression(
     }
 
     let new_chain = ExpressionsChain::AssocOp {
-        sub: Box::new(result_expr_chain.ok_or_else(|| {
-            GraphError::Malformed("ASSOC_OP requires sub_link".into())
-        })?),
+        sub: Box::new(
+            result_expr_chain
+                .ok_or_else(|| GraphError::Malformed("ASSOC_OP requires sub_link".into()))?,
+        ),
     };
     Ok((result_target_asset, Some(new_chain), None))
 }
@@ -263,7 +270,10 @@ pub fn process_step_expression(
     step_expression: &Value,
 ) -> Result<StepResult, GraphError> {
     match step_expression["type"].as_str() {
-        Some("attackStep") => Ok(process_attack_step_expression(target_asset, step_expression)),
+        Some("attackStep") => Ok(process_attack_step_expression(
+            target_asset,
+            step_expression,
+        )),
         Some("union") | Some("intersection") | Some("difference") => {
             process_set_operation_step_expression(graph, target_asset, expr_chain, step_expression)
         }
@@ -319,9 +329,11 @@ pub fn reverse_expr_chain(
         ExpressionsChain::Transitive { sub } => {
             let result = reverse_expr_chain(Some(sub))?;
             Ok(Some(ExpressionsChain::Transitive {
-                sub: Box::new(result.ok_or_else(|| {
-                    GraphError::Malformed("TRANSITIVE requires sub_link".into())
-                })?),
+                sub: Box::new(
+                    result.ok_or_else(|| {
+                        GraphError::Malformed("TRANSITIVE requires sub_link".into())
+                    })?,
+                ),
             }))
         }
         ExpressionsChain::Field {
@@ -337,9 +349,10 @@ pub fn reverse_expr_chain(
         ExpressionsChain::SubType { sub, subtype } => {
             let result = reverse_expr_chain(Some(sub))?;
             Ok(Some(ExpressionsChain::SubType {
-                sub: Box::new(result.ok_or_else(|| {
-                    GraphError::Malformed("SUBTYPE requires sub_link".into())
-                })?),
+                sub: Box::new(
+                    result
+                        .ok_or_else(|| GraphError::Malformed("SUBTYPE requires sub_link".into()))?,
+                ),
                 subtype: *subtype,
             }))
         }
@@ -360,7 +373,8 @@ pub fn resolve_variable(
         return Ok((*target, chain.clone()));
     }
 
-    let var_expr = get_var_expr_for_asset(&graph.asset(asset).name.clone(), var_name, &graph.lang_spec)?;
+    let var_expr =
+        get_var_expr_for_asset(&graph.asset(asset).name.clone(), var_name, &graph.lang_spec)?;
     let (target_asset, expr_chain, _) = process_step_expression(graph, asset, None, &var_expr)?;
     Ok((target_asset, expr_chain))
 }

@@ -13,8 +13,8 @@ use indexmap::IndexMap;
 use serde_json::Value;
 use slotmap::SlotMap;
 
-use super::assoc::{LanguageGraphAssociation, LanguageGraphAssociationField};
 use super::asset::LanguageGraphAsset;
+use super::assoc::{LanguageGraphAssociation, LanguageGraphAssociationField};
 use super::attack_step::{AttackStepType, CausalMode, LanguageGraphAttackStep};
 use super::expr_chain::ExpressionsChain;
 use super::ids::AttackStepId;
@@ -73,8 +73,8 @@ pub fn to_mar_archive(graph: &LanguageGraph, path: impl AsRef<Path>) -> Result<(
     writer
         .start_file("langspec.json", options)
         .map_err(|e| LoadError::Archive(path.display().to_string(), e.to_string()))?;
-    let langspec_json = serde_json::to_string_pretty(&graph.lang_spec)
-        .expect("Value serialization cannot fail");
+    let langspec_json =
+        serde_json::to_string_pretty(&graph.lang_spec).expect("Value serialization cannot fail");
     use std::io::Write;
     writer
         .write_all(langspec_json.as_bytes())
@@ -120,9 +120,9 @@ pub fn load_from_file(path: impl AsRef<Path>) -> Result<LanguageGraph, LoadError
 /// builder entirely - matches the Python original's
 /// `language_graph_from_dict`.
 pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, GraphError> {
-    let obj = serialized
-        .as_object()
-        .ok_or_else(|| GraphError::Malformed("serialized language graph must be an object".into()))?;
+    let obj = serialized.as_object().ok_or_else(|| {
+        GraphError::Malformed("serialized language graph must be an object".into())
+    })?;
 
     let metadata = Metadata {
         version: obj
@@ -174,12 +174,14 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
     for (name, asset) in &asset_dicts {
         let asset_id = graph.asset_id_by_name[*name];
         if let Some(super_name) = asset["super_asset"].as_str().filter(|s| !s.is_empty()) {
-            let super_id = graph.asset_id_by_name.get(super_name).copied().ok_or_else(|| {
-                GraphError::SuperAssetNotFound {
+            let super_id = graph
+                .asset_id_by_name
+                .get(super_name)
+                .copied()
+                .ok_or_else(|| GraphError::SuperAssetNotFound {
                     asset_name: (*name).clone(),
                     super_name: super_name.to_string(),
-                }
-            })?;
+                })?;
             graph.assets[super_id].own_sub_assets.push(asset_id);
             graph.assets[asset_id].own_super_asset = Some(super_id);
         }
@@ -189,7 +191,12 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
     for (name, asset) in &asset_dicts {
         let asset_id = graph.asset_id_by_name[*name];
         let _ = asset_id;
-        for assoc in asset["associations"].as_object().into_iter().flatten().map(|(_, v)| v) {
+        for assoc in asset["associations"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .map(|(_, v)| v)
+        {
             let left_name = assoc["left"]["asset"].as_str().unwrap_or_default();
             let right_name = assoc["right"]["asset"].as_str().unwrap_or_default();
             let left_id = *graph.asset_id_by_name.get(left_name).ok_or_else(|| {
@@ -209,13 +216,19 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
                 name: assoc["name"].as_str().unwrap_or_default().to_string(),
                 left_field: LanguageGraphAssociationField {
                     asset: left_id,
-                    fieldname: assoc["left"]["fieldname"].as_str().unwrap_or_default().to_string(),
+                    fieldname: assoc["left"]["fieldname"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
                     minimum: assoc["left"]["min"].as_i64().unwrap_or(0),
                     maximum: assoc["left"]["max"].as_i64(),
                 },
                 right_field: LanguageGraphAssociationField {
                     asset: right_id,
-                    fieldname: assoc["right"]["fieldname"].as_str().unwrap_or_default().to_string(),
+                    fieldname: assoc["right"]["fieldname"]
+                        .as_str()
+                        .unwrap_or_default()
+                        .to_string(),
                     minimum: assoc["right"]["min"].as_i64().unwrap_or(0),
                     maximum: assoc["right"]["max"].as_i64(),
                 },
@@ -224,8 +237,12 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
 
             let left_fieldname = assoc_node.left_field.fieldname.clone();
             let right_fieldname = assoc_node.right_field.fieldname.clone();
-            graph.assets[left_id].own_associations.insert(right_fieldname, assoc_node.clone());
-            graph.assets[right_id].own_associations.insert(left_fieldname, assoc_node);
+            graph.assets[left_id]
+                .own_associations
+                .insert(right_fieldname, assoc_node.clone());
+            graph.assets[right_id]
+                .own_associations
+                .insert(left_fieldname, assoc_node);
         }
     }
 
@@ -276,18 +293,22 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
             let full_name = format!("{name}:{step_name}");
             let id = graph.steps.insert(node);
             step_ids_by_full_name.insert(full_name, id);
-            graph.assets[asset_id].attack_steps.insert(step_name.clone(), id);
+            graph.assets[asset_id]
+                .attack_steps
+                .insert(step_name.clone(), id);
         }
     }
 
     // Pass 6: inheritance for attack steps.
     for (name, asset) in &asset_dicts {
         for (step_name, step) in asset["attack_steps"].as_object().into_iter().flatten() {
-            let Some(inh) = step["inherits"].as_str() else { continue };
+            let Some(inh) = step["inherits"].as_str() else {
+                continue;
+            };
             let step_id = step_ids_by_full_name[&format!("{name}:{step_name}")];
-            let inh_id = *step_ids_by_full_name
-                .get(inh)
-                .ok_or_else(|| GraphError::Malformed(format!("Unknown inherited step \"{inh}\"")))?;
+            let inh_id = *step_ids_by_full_name.get(inh).ok_or_else(|| {
+                GraphError::Malformed(format!("Unknown inherited step \"{inh}\""))
+            })?;
             graph.steps[step_id].inherits = Some(inh_id);
         }
     }
@@ -298,24 +319,32 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
             let step_id = step_ids_by_full_name[&format!("{name}:{step_name}")];
 
             for (tgt_name, exprs) in step["own_children"].as_object().into_iter().flatten() {
-                let tgt_id = *step_ids_by_full_name
-                    .get(tgt_name)
-                    .ok_or_else(|| GraphError::Malformed(format!("Unknown attack step \"{tgt_name}\"")))?;
+                let tgt_id = *step_ids_by_full_name.get(tgt_name).ok_or_else(|| {
+                    GraphError::Malformed(format!("Unknown attack step \"{tgt_name}\""))
+                })?;
                 let mut chains = Vec::new();
                 for expr in exprs.as_array().into_iter().flatten() {
                     chains.push(parse_expr_chain(&graph, expr)?);
                 }
-                graph.steps[step_id].own_children.entry(tgt_id).or_default().extend(chains);
+                graph.steps[step_id]
+                    .own_children
+                    .entry(tgt_id)
+                    .or_default()
+                    .extend(chains);
             }
             for (tgt_name, exprs) in step["own_parents"].as_object().into_iter().flatten() {
-                let tgt_id = *step_ids_by_full_name
-                    .get(tgt_name)
-                    .ok_or_else(|| GraphError::Malformed(format!("Unknown attack step \"{tgt_name}\"")))?;
+                let tgt_id = *step_ids_by_full_name.get(tgt_name).ok_or_else(|| {
+                    GraphError::Malformed(format!("Unknown attack step \"{tgt_name}\""))
+                })?;
                 let mut chains = Vec::new();
                 for expr in exprs.as_array().into_iter().flatten() {
                     chains.push(parse_expr_chain(&graph, expr)?);
                 }
-                graph.steps[step_id].own_parents.entry(tgt_id).or_default().extend(chains);
+                graph.steps[step_id]
+                    .own_parents
+                    .entry(tgt_id)
+                    .or_default()
+                    .extend(chains);
             }
 
             let step_type = AttackStepType::parse(step["type"].as_str().unwrap_or_default())?;
@@ -346,7 +375,10 @@ fn str_map(v: &Value) -> HashMap<String, String> {
 /// by searching every asset's own associations for a name+fieldname
 /// match (mirrors `_resolve_association`, which does the same via
 /// `asset.associations`).
-fn parse_expr_chain(graph: &LanguageGraph, data: &Value) -> Result<Option<ExpressionsChain>, GraphError> {
+fn parse_expr_chain(
+    graph: &LanguageGraph,
+    data: &Value,
+) -> Result<Option<ExpressionsChain>, GraphError> {
     if data.is_null() || (data.is_object() && data.as_object().unwrap().is_empty()) {
         return Ok(None);
     }
@@ -406,18 +438,20 @@ fn parse_expr_chain(graph: &LanguageGraph, data: &Value) -> Result<Option<Expres
                 .filter(|k| k.as_str() != "type")
                 .collect();
             let [assoc_name] = assoc_keys[..] else {
-                return Err(GraphError::Malformed("Invalid field expression format".into()));
+                return Err(GraphError::Malformed(
+                    "Invalid field expression format".into(),
+                ));
             };
             let field_data = &data[assoc_name];
-            let asset_name = field_data["asset type"]
-                .as_str()
-                .ok_or_else(|| GraphError::Malformed("field expression missing asset type".into()))?;
-            let fieldname = field_data["fieldname"]
-                .as_str()
-                .ok_or_else(|| GraphError::Malformed("field expression missing fieldname".into()))?;
-            let target_asset = graph
-                .asset_id(asset_name)
-                .ok_or_else(|| GraphError::Malformed(format!("Unknown asset type \"{asset_name}\"")))?;
+            let asset_name = field_data["asset type"].as_str().ok_or_else(|| {
+                GraphError::Malformed("field expression missing asset type".into())
+            })?;
+            let fieldname = field_data["fieldname"].as_str().ok_or_else(|| {
+                GraphError::Malformed("field expression missing fieldname".into())
+            })?;
+            let target_asset = graph.asset_id(asset_name).ok_or_else(|| {
+                GraphError::Malformed(format!("Unknown asset type \"{asset_name}\""))
+            })?;
             let association = graph
                 .associations(target_asset)
                 .values()

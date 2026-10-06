@@ -46,7 +46,10 @@ pub struct PyModel {
 }
 
 impl PyModel {
-    fn lang_graph_rc(py: Python<'_>, lang_graph_py: &Py<PyLanguageGraph>) -> Rc<RefCell<maltoolbox_language::graph::LanguageGraph>> {
+    fn lang_graph_rc(
+        py: Python<'_>,
+        lang_graph_py: &Py<PyLanguageGraph>,
+    ) -> Rc<RefCell<maltoolbox_language::graph::LanguageGraph>> {
         lang_graph_py.borrow(py).inner.clone()
     }
 
@@ -111,7 +114,10 @@ impl PyModel {
     /// every dict key run through `.str()`, leaving values and list
     /// contents otherwise untouched. Returns a new object; does not
     /// mutate `value` in place.
-    fn stringify_all_keys<'py>(py: Python<'py>, value: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyAny>> {
+    fn stringify_all_keys<'py>(
+        py: Python<'py>,
+        value: &Bound<'py, PyAny>,
+    ) -> PyResult<Bound<'py, PyAny>> {
         if let Ok(dict) = value.cast::<PyDict>() {
             let fixed = PyDict::new(py);
             for (key, val) in dict.iter() {
@@ -134,7 +140,12 @@ impl PyModel {
 impl PyModel {
     #[new]
     #[pyo3(signature = (name, lang_graph, mt_version=None))]
-    fn new(py: Python<'_>, name: String, lang_graph: Py<PyLanguageGraph>, mt_version: Option<String>) -> PyResult<Self> {
+    fn new(
+        py: Python<'_>,
+        name: String,
+        lang_graph: Py<PyLanguageGraph>,
+        mt_version: Option<String>,
+    ) -> PyResult<Self> {
         let lg_rc = Self::lang_graph_rc(py, &lang_graph);
         let cloned_graph = lg_rc.borrow().clone();
         let mut model = Model::new(name, Rc::new(cloned_graph));
@@ -201,16 +212,25 @@ impl PyModel {
         allow_duplicate_names: bool,
     ) -> PyResult<Py<PyModelAsset>> {
         let extras_map = extras
-            .map(|e| -> PyResult<serde_json::Map<String, serde_json::Value>> {
-                let value: serde_json::Value =
-                    pythonize::depythonize(e).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
-                Ok(value.as_object().cloned().unwrap_or_default())
-            })
+            .map(
+                |e| -> PyResult<serde_json::Map<String, serde_json::Value>> {
+                    let value: serde_json::Value = pythonize::depythonize(e)
+                        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+                    Ok(value.as_object().cloned().unwrap_or_default())
+                },
+            )
             .transpose()?;
         let id = {
             let mut model = self.inner.borrow_mut();
             model
-                .add_asset(asset_type, name, asset_id, defenses, extras_map, allow_duplicate_names)
+                .add_asset(
+                    asset_type,
+                    name,
+                    asset_id,
+                    defenses,
+                    extras_map,
+                    allow_duplicate_names,
+                )
                 .map_err(model_error_to_py)?
         };
         // A caller-chosen `asset_id` can legitimately collide with a
@@ -224,7 +244,9 @@ impl PyModel {
             let mut model = self.inner.borrow_mut();
             model.remove_asset(asset.id).map_err(model_error_to_py)?
         };
-        self.tombstones.borrow_mut().insert(asset.id, snapshot.final_state);
+        self.tombstones
+            .borrow_mut()
+            .insert(asset.id, snapshot.final_state);
         Ok(())
     }
 
@@ -237,8 +259,16 @@ impl PyModel {
         }
     }
 
-    fn get_asset_by_name(&self, py: Python<'_>, asset_name: &str) -> PyResult<Option<Py<PyModelAsset>>> {
-        let id = self.inner.borrow().get_asset_by_name(asset_name).map(|a| a.id);
+    fn get_asset_by_name(
+        &self,
+        py: Python<'_>,
+        asset_name: &str,
+    ) -> PyResult<Option<Py<PyModelAsset>>> {
+        let id = self
+            .inner
+            .borrow()
+            .get_asset_by_name(asset_name)
+            .map(|a| a.id);
         match id {
             Some(id) => Ok(Some(self.asset_handle(py, id)?)),
             None => Ok(None),
@@ -253,7 +283,8 @@ impl PyModel {
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let model = self.inner.borrow();
         let dict = model.to_dict();
-        let pythonized = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+        let pythonized = pythonize::pythonize(py, &dict)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let pythonized = pythonized.cast::<PyDict>()?;
         if let Some(assets) = pythonized.get_item("assets")? {
             let assets = assets.cast::<PyDict>()?;
@@ -285,10 +316,15 @@ impl PyModel {
     }
 
     #[staticmethod]
-    pub fn load_from_file(py: Python<'_>, filename: PathBuf, lang_graph: Py<PyLanguageGraph>) -> PyResult<Self> {
+    pub fn load_from_file(
+        py: Python<'_>,
+        filename: PathBuf,
+        lang_graph: Py<PyLanguageGraph>,
+    ) -> PyResult<Self> {
         let lg_rc = Self::lang_graph_rc(py, &lang_graph);
         let cloned_graph = lg_rc.borrow().clone();
-        let mut model = model_file::load_from_file(filename, Rc::new(cloned_graph)).map_err(load_error_to_py)?;
+        let mut model = model_file::load_from_file(filename, Rc::new(cloned_graph))
+            .map_err(load_error_to_py)?;
         if model.maltoolbox_version == maltoolbox_model::MALTOOLBOX_VERSION {
             model.maltoolbox_version = Self::live_version(py)?;
         }
@@ -310,13 +346,18 @@ impl PyModel {
     /// dict) so an int-keyed `assets` dict depythonizes either way.
     #[staticmethod]
     #[pyo3(name = "_from_dict")]
-    fn from_dict_py<'py>(py: Python<'py>, serialized: &Bound<'py, PyAny>, lang_graph: Py<PyLanguageGraph>) -> PyResult<Self> {
+    fn from_dict_py<'py>(
+        py: Python<'py>,
+        serialized: &Bound<'py, PyAny>,
+        lang_graph: Py<PyLanguageGraph>,
+    ) -> PyResult<Self> {
         let serialized = Self::stringify_all_keys(py, serialized)?;
         let value: serde_json::Value = pythonize::depythonize(&serialized)
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let lg_rc = Self::lang_graph_rc(py, &lang_graph);
         let cloned_graph = lg_rc.borrow().clone();
-        let mut model = model_file::from_dict(&value, Rc::new(cloned_graph)).map_err(from_dict_error_to_py)?;
+        let mut model =
+            model_file::from_dict(&value, Rc::new(cloned_graph)).map_err(from_dict_error_to_py)?;
         if model.maltoolbox_version == maltoolbox_model::MALTOOLBOX_VERSION {
             model.maltoolbox_version = Self::live_version(py)?;
         }
@@ -329,7 +370,11 @@ impl PyModel {
     /// `_from_dict` the normal way - so a pickled `Model` never needs
     /// the original `LanguageGraph` Python object to still be around.
     #[staticmethod]
-    fn _from_pickle_state(py: Python<'_>, state: &Bound<'_, PyAny>, lang_graph_state: &Bound<'_, PyAny>) -> PyResult<Self> {
+    fn _from_pickle_state(
+        py: Python<'_>,
+        state: &Bound<'_, PyAny>,
+        lang_graph_state: &Bound<'_, PyAny>,
+    ) -> PyResult<Self> {
         let lg_cls = py.import("maltoolbox._native")?.getattr("LanguageGraph")?;
         let lang_graph_obj = lg_cls.call_method1("_from_pickle_state", (lang_graph_state,))?;
         let lang_graph_py: Py<PyLanguageGraph> = lang_graph_obj.extract()?;
@@ -337,7 +382,10 @@ impl PyModel {
     }
 
     #[allow(clippy::type_complexity)]
-    fn __reduce__<'py>(&self, py: Python<'py>) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>, Bound<'py, PyAny>))> {
+    fn __reduce__<'py>(
+        &self,
+        py: Python<'py>,
+    ) -> PyResult<(Bound<'py, PyAny>, (Bound<'py, PyAny>, Bound<'py, PyAny>))> {
         let cls = py.get_type::<PyModel>();
         let func = cls.getattr("_from_pickle_state")?;
         let lang_graph_state = self.lang_graph_py.bind(py).call_method0("_to_dict")?;

@@ -28,7 +28,9 @@ fn fixture_path(name: &str) -> std::path::PathBuf {
 }
 
 fn canonicalize(attack_steps: &Value) -> HashMap<String, Value> {
-    let obj = attack_steps.as_object().expect("attack_steps must be an object");
+    let obj = attack_steps
+        .as_object()
+        .expect("attack_steps must be an object");
     let mut out = HashMap::new();
     for (full_name, node) in obj {
         let mut node = node.clone();
@@ -71,12 +73,22 @@ fn matches_python_oracle_for_wiper_attackgraph() {
             true,
         )
         .unwrap();
-    let data = model.add_asset("Data", Some("data1".into()), None, None, None, true).unwrap();
-    let wiper = model.add_asset("Wiper", Some("wiper1".into()), None, None, None, true).unwrap();
+    let data = model
+        .add_asset("Data", Some("data1".into()), None, None, None, true)
+        .unwrap();
+    let wiper = model
+        .add_asset("Wiper", Some("wiper1".into()), None, None, None, true)
+        .unwrap();
 
-    model.add_associated_assets(internet, "hosts", HashSet::from([device])).unwrap();
-    model.add_associated_assets(device, "data", HashSet::from([data])).unwrap();
-    model.add_associated_assets(device, "malware", HashSet::from([wiper])).unwrap();
+    model
+        .add_associated_assets(internet, "hosts", HashSet::from([device]))
+        .unwrap();
+    model
+        .add_associated_assets(device, "data", HashSet::from([data]))
+        .unwrap();
+    model
+        .add_associated_assets(device, "malware", HashSet::from([wiper]))
+        .unwrap();
 
     let attack_graph = AttackGraph::from_model(&model).expect("build attack graph");
     let actual_full = attack_graph.to_dict(Some(&model));
@@ -86,11 +98,13 @@ fn matches_python_oracle_for_wiper_attackgraph() {
         env!("CARGO_MANIFEST_DIR"),
         "/tests/golden/wiper_attackgraph.json"
     );
-    let expected_full: Value = serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap();
+    let expected_full: Value =
+        serde_json::from_str(&std::fs::read_to_string(golden_path).unwrap()).unwrap();
     let expected = canonicalize(&expected_full["attack_steps"]);
 
     assert_eq!(
-        actual, expected,
+        actual,
+        expected,
         "\n--- expected ---\n{}\n--- actual ---\n{}",
         serde_json::to_string_pretty(&expected).unwrap(),
         serde_json::to_string_pretty(&actual).unwrap(),

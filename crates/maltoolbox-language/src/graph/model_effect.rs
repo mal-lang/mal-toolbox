@@ -99,9 +99,14 @@ fn parse_quantity(quantity: &Value) -> Result<Option<QuantityFilter>, GraphError
     let max = quantity.get("max").filter(|v| !v.is_null());
     match (min, max) {
         (None, None) => Ok(None),
-        (Some(mn), Some(mx)) => Ok(Some(QuantityFilter::Range(value_to_i64(mn)?, value_to_i64(mx)?))),
+        (Some(mn), Some(mx)) => Ok(Some(QuantityFilter::Range(
+            value_to_i64(mn)?,
+            value_to_i64(mx)?,
+        ))),
         (Some(mn), None) => Ok(Some(QuantityFilter::Exact(value_to_i64(mn)?))),
-        (None, Some(_)) => Err(GraphError::Malformed(format!("Invalid quantity: {quantity}"))),
+        (None, Some(_)) => Err(GraphError::Malformed(format!(
+            "Invalid quantity: {quantity}"
+        ))),
     }
 }
 
@@ -142,13 +147,13 @@ fn parse_assoc_traversal(
                 other.as_str()
             ))),
         },
-        ExpressionsChain::Field { fieldname, .. } => Ok(vec![AssocTraversalElem::Traversal(
-            AssocTraversal {
+        ExpressionsChain::Field { fieldname, .. } => {
+            Ok(vec![AssocTraversalElem::Traversal(AssocTraversal {
                 field_name: fieldname.clone(),
                 asset_filter: None,
                 quantity_filter: None,
-            },
-        )]),
+            })])
+        }
         ExpressionsChain::Multiplicity { sub, multiplicity } => {
             let mut ret = parse_assoc_traversal(Some(sub))?;
             let quantity_filter = parse_quantity(multiplicity)?;
@@ -231,7 +236,10 @@ pub fn build_model_effect(
     };
 
     let base_expr = &step_expression["base"];
-    let target_exprs = step_expression["targets"].as_array().cloned().unwrap_or_default();
+    let target_exprs = step_expression["targets"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
 
     let (base_target_asset, base_expr_chain, base_step) =
         process_step_expression(graph, target_asset, None, base_expr)?;
@@ -270,7 +278,10 @@ pub fn build_model_effect(
                     other => (false, Some(other)),
                 };
                 let assoc_traversal = build_assoc_traversals(unwrapped.as_ref())?;
-                targets.push(DynTarget { assoc_op, assoc_traversal });
+                targets.push(DynTarget {
+                    assoc_op,
+                    assoc_traversal,
+                });
             }
             None => targets.push(DynTarget {
                 assoc_op: false,
