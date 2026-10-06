@@ -288,13 +288,8 @@ pub fn process_step_expression(
 }
 
 /// Port of `reverse_expr_chain`. The Python original threads a
-/// `reverse_chain` accumulator parameter through the recursion, but every
-/// call site passes `None` for it and no branch ever assigns anything
-/// else into it - it only ever surfaces, unchanged, as the result of the
-/// `if not expr_chain: return reverse_chain` base case. Since it is
-/// therefore always `None` in practice, this port drops the dead
-/// parameter rather than threading a value that can never be anything
-/// else.
+/// `reverse_chain` accumulator parameter through the recursion, but it is
+/// always `None` in practice, so this port drops it.
 pub fn reverse_expr_chain(
     expr_chain: Option<&ExpressionsChain>,
 ) -> Result<Option<ExpressionsChain>, GraphError> {

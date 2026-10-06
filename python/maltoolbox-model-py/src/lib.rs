@@ -1,9 +1,6 @@
 //! PyO3 compatibility layer mirroring `maltoolbox/model.py`'s public
 //! surface (`Model`, `ModelAsset`) on top of the pure-Rust
-//! `maltoolbox-model` crate. See
-//! `python/maltoolbox-language-py/src/lib.rs`'s module doc for the
-//! shared conventions this follows, and
-//! `PYTHON_BINDINGS_IMPLEMENTATION.md` for the plan/status.
+//! `maltoolbox-model` crate.
 
 pub mod asset;
 pub mod exceptions;

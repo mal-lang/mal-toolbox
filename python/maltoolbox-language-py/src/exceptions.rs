@@ -1,12 +1,9 @@
 //! Exception hierarchy mirroring `maltoolbox/exceptions.py` (the
-//! `LanguageGraphException` branch) plus the two *separate* compiler
+//! `LanguageGraphException` branch) plus two separate compiler
 //! hierarchies that are NOT under `MalToolboxException`:
 //! `maltoolbox.language.compiler.exceptions.MalCompilerError` and
-//! `maltoolbox.language.compiler.mal_analyzer.malAnalyzerException`.
-//! See PYTHON_BINDINGS_IMPLEMENTATION.md's "Phase 1 decisions" section
-//! for the exact Rust-error -> Python-exception mapping and the
-//! evidence for why both hierarchies are required (not just the
-//! `MalToolboxException` one).
+//! `maltoolbox.language.compiler.mal_analyzer.malAnalyzerException`,
+//! matching the Python originals which subclass `Exception` directly.
 
 use pyo3::create_exception;
 use pyo3::exceptions::{PyException, PyOSError};
@@ -16,10 +13,9 @@ use maltoolbox_language::compiler::CompileError;
 use maltoolbox_language::graph::file::LoadError;
 use maltoolbox_language::graph::GraphError;
 
-// As with the compiler hierarchy below, the module string given here
-// becomes `__module__` (what `pickle`/`repr` use), set to where these
-// live in `maltoolbox/exceptions.py` today, not this crate's own
-// `_native` module.
+// The module string given here becomes `__module__` (what `pickle`/
+// `repr` use), set to where these live in `maltoolbox/exceptions.py`,
+// not this crate's own `_native` module.
 create_exception!(maltoolbox.exceptions, MalToolboxException, PyException);
 create_exception!(maltoolbox.exceptions, LanguageGraphException, MalToolboxException);
 create_exception!(
@@ -30,16 +26,11 @@ create_exception!(
 create_exception!(maltoolbox.exceptions, LanguageGraphAssociationError, LanguageGraphException);
 create_exception!(maltoolbox.exceptions, LanguageGraphStepExpressionError, LanguageGraphException);
 
-// `maltoolbox.language.compiler.exceptions` - a *separate* hierarchy,
-// not under `MalToolboxException` (matches the Python originals in
-// `maltoolbox/language/compiler/exceptions.py`, which subclass `Exception`
-// directly).
-// The module string given here becomes `__module__` on the resulting
-// exception type, which is what `pickle`/`repr` use to locate it - set
-// to the path these will live at after Phase 4's cutover
-// (`maltoolbox.language.compiler.exceptions`), not this crate's own
-// `_native.language.compiler.exceptions` nesting, so a pickled instance
-// survives the eventual shim swap.
+// `maltoolbox.language.compiler.exceptions` - a separate hierarchy, not
+// under `MalToolboxException`. `__module__` is set to
+// `maltoolbox.language.compiler.exceptions` (not this crate's own
+// `_native.language.compiler.exceptions` nesting) so pickling/repr
+// resolve to the same path as the Python originals.
 create_exception!(maltoolbox.language.compiler.exceptions, MalCompilerError, PyException);
 create_exception!(maltoolbox.language.compiler.exceptions, MalSyntaxError, MalCompilerError);
 create_exception!(maltoolbox.language.compiler.exceptions, MalParseError, MalCompilerError);
@@ -48,8 +39,8 @@ create_exception!(maltoolbox.language.compiler.exceptions, MalNameError, MalComp
 create_exception!(maltoolbox.language.compiler.exceptions, MalCompilationError, MalCompilerError);
 
 // `maltoolbox.language.compiler.mal_analyzer.malAnalyzerException` - yet
-// another separate hierarchy. Exact (unconventional, lowercase-`m`)
-// name preserved: `assoc_traversal_processor.py` imports and raises it
+// another separate hierarchy. The unconventional lowercase-`m` name is
+// preserved as-is: `assoc_traversal_processor.py` imports and raises it
 // by this exact name.
 #[allow(non_camel_case_types)]
 mod mal_analyzer_exception {
@@ -72,11 +63,11 @@ pub fn graph_error_to_py(err: GraphError) -> PyErr {
     }
 }
 
-/// `CompileError` -> Python exception, per PYTHON_BINDINGS_IMPLEMENTATION.md
-/// Phase 1 decision 3. Note this is a many-to-fewer mapping: the Rust
-/// compiler doesn't distinguish parse/type/name sub-cases as finely as
-/// Python's `MalCompilerError` hierarchy does, so `Malformed` collapses
-/// to the base `MalCompilerError` rather than picking one of
+/// Maps a `CompileError` to the corresponding Python exception. This is a
+/// many-to-fewer mapping: the Rust compiler doesn't distinguish
+/// parse/type/name sub-cases as finely as Python's `MalCompilerError`
+/// hierarchy does, so `Malformed` collapses to the base
+/// `MalCompilerError` rather than picking one of
 /// `MalParseError`/`MalTypeError`/`MalNameError` arbitrarily.
 pub fn compile_error_to_py(err: CompileError) -> PyErr {
     let msg = err.to_string();
@@ -112,12 +103,11 @@ pub fn load_error_to_py(err: LoadError) -> PyErr {
     }
 }
 
-/// Registers the `_native` module's top-level exceptions
-/// (`MalToolboxException` + the `LanguageGraphException` branch) and
-/// returns the two compiler-error submodules
-/// (`language.compiler.exceptions`, `language.compiler.mal_analyzer`)
-/// for the caller to nest and register in `sys.modules` - see
-/// `lib.rs::register`.
+/// Registers the `_native` module's top-level exceptions:
+/// `MalToolboxException` and the `LanguageGraphException` branch. The
+/// compiler-error submodules are registered separately by
+/// `register_compiler_exceptions`/`register_analyzer_exceptions` below;
+/// see `lib.rs::register` for how the caller nests them.
 pub fn register(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("MalToolboxException", py.get_type::<MalToolboxException>())?;
     m.add("LanguageGraphException", py.get_type::<LanguageGraphException>())?;

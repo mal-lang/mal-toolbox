@@ -18,21 +18,18 @@ use crate::GraphError;
 
 pub struct GeneratedGraph {
     pub nodes: SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    /// `IndexMap`, matching `AttackGraph::id_to_node`/`full_name_to_node`
-    /// (Phase 4 decision 7, widened) - insertion order here is node
-    /// creation order, which must be deterministic.
+    /// `IndexMap`, matching `AttackGraph::id_to_node`/`full_name_to_node`:
+    /// insertion order here is node creation order, which must be deterministic.
     pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
     pub defense_steps: Vec<AttackGraphNodeId>,
     pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
 }
 
-/// Just-created nodes, as produced by [`create_nodes_for`] directly into
-/// a caller-supplied `SlotMap` (as opposed to [`GeneratedGraph`], which
-/// owns a fresh one) - the shape partial regeneration needs, since
-/// slotmap keys are only valid within the `SlotMap` instance that
-/// created them and can't be transplanted into a different one the way
-/// Python's plain integer-keyed dicts can.
+/// Just-created nodes, produced by [`create_nodes_for`] directly into a
+/// caller-supplied `SlotMap` (as opposed to [`GeneratedGraph`], which owns a
+/// fresh one). Needed for partial regeneration, since slotmap keys are only
+/// valid within the `SlotMap` instance that created them.
 pub struct CreatedNodes {
     pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
     pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
@@ -69,16 +66,12 @@ pub fn create_nodes_from_model(
     create_nodes_for(nodes, model.asset_order.iter().copied(), 0, model, &HashMap::new())
 }
 
-/// Port of `partially_generate.py`'s `create_nodes_from_assets`: build
-/// nodes only for `asset_ids`, continuing node-id assignment from
-/// `starting_id`. Shares the node-building logic with
-/// `create_nodes_from_model` via `create_nodes_for`.
+/// Port of `partially_generate.py`'s `create_nodes_from_assets`: build nodes
+/// only for `asset_ids`, continuing node-id assignment from `starting_id`.
 ///
-/// `removed_assets` is consulted as a fallback when an id in `asset_ids`
-/// is no longer in `model.assets` - a DynaMAL model effect can add and
-/// remove the same asset within one `partially_regenerate_graph` batch
-/// (mirrors `partially_generate::switch_fieldname_possibly_removed`'s
-/// reason for existing).
+/// `removed_assets` is consulted as a fallback when an id in `asset_ids` is
+/// no longer in `model.assets` - a DynaMAL model effect can add and remove
+/// the same asset within one `partially_regenerate_graph` batch.
 pub fn create_nodes_from_assets(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     asset_ids: &std::collections::HashSet<i64>,
@@ -103,13 +96,11 @@ fn create_nodes_for(
     let mut node_id: i64 = starting_id;
 
     for asset_id in asset_ids {
-        // `asset_id` may already be gone from `model.assets` - a
-        // same-batch add-then-remove (e.g. a DynaMAL step whose `A>`/`R>`
-        // model effects both touch the same asset) leaves it present in
-        // both `new_assets` and `removed_assets` for this call. The node(s)
-        // built here are transient in that case: `nodes_to_be_removed`
-        // (which already resolves purely from `removed_assets`, never
-        // `model.assets`) removes them again right after.
+        // `asset_id` may already be gone from `model.assets` - a same-batch
+        // add-then-remove (e.g. a DynaMAL step whose `A>`/`R>` model effects
+        // both touch the same asset) leaves it in both `new_assets` and
+        // `removed_assets`. Any node built here is transient in that case:
+        // `nodes_to_be_removed` removes it again right after.
         let asset: &ModelAsset = match model.assets.get(&asset_id) {
             Some(asset) => asset,
             None => removed_assets
@@ -174,14 +165,11 @@ fn create_nodes_for(
     })
 }
 
-/// Port of `link_node_children`. Unlike the Python original, this calls
-/// `LanguageGraphAttackStep::children` (already own+inherited, unless
-/// overridden) exactly once rather than additionally walking the
-/// `inherits` chain and recombining at each ancestor: that walk recomputes
-/// children `children()` already includes recursively, and since
-/// `ag_node.children`/`target_node.parents` are sets, the duplicate adds
-/// it produces are no-ops. The two are behaviorally identical; this port
-/// skips the redundant work.
+/// Port of `link_node_children`. Calls `LanguageGraphAttackStep::children`
+/// (already own+inherited, unless overridden) once; the Python original
+/// also walks the `inherits` chain, but that only recomputes children
+/// already included recursively, which are no-ops against the
+/// `children`/`parents` sets. Behaviorally identical, less redundant work.
 pub fn link_node_children(
     model: &Model,
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,

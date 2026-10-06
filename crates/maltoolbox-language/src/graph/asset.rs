@@ -1,11 +1,11 @@
 //! Port of `maltoolbox/language/language_graph_asset.py`.
 //!
-//! Unlike the Python dataclass, graph-traversal helpers that need to walk
-//! `own_super_asset`/`own_sub_assets` (is_subasset_of, sub_assets,
-//! super_assets, associations, variables, associations_to,
-//! get_all_common_superassets) live as `LanguageGraph` methods in
-//! `graph::mod` instead of on this struct, since in the arena/id design
-//! they need access to the asset arena, not just `&self`.
+//! Traversal helpers that walk `own_super_asset`/`own_sub_assets`
+//! (`is_subasset_of`, `sub_assets`, `super_assets`, `associations`,
+//! `variables`, `associations_to`, `get_all_common_superassets`) live as
+//! `LanguageGraph` methods in `graph::mod` rather than on this struct,
+//! since the arena/id design needs access to the asset arena, not just
+//! `&self`.
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -21,20 +21,15 @@ use super::{GraphError, LanguageGraph};
 #[derive(Debug, Clone)]
 pub struct LanguageGraphAsset {
     pub name: String,
-    /// Insertion order here matters - it feeds attack-graph node
-    /// creation order via `attack_steps` (see this struct's doc) and the
-    /// association-field iteration order surfaced in diagnostics, and
-    /// must match the original MAL spec's dict order the way Python's
-    /// plain `dict` naturally does. `IndexMap` preserves insertion
-    /// order; `HashMap` here would make generation output
-    /// nondeterministic across process runs (Phase 4 decision 7).
+    /// Insertion order must match the MAL spec's declaration order (as
+    /// Python's `dict` preserves it) since it feeds attack-graph node
+    /// creation order; `IndexMap` keeps this deterministic where a
+    /// `HashMap` would not.
     pub own_associations: IndexMap<String, Rc<LanguageGraphAssociation>>,
-    /// Both directly-defined and inherited attack steps, by name - mirrors
-    /// the Python `attack_steps` dict, which `_inherit_attack_steps` also
-    /// populates with synthesized inherited entries. Iteration order
-    /// feeds attack-graph node id assignment order directly
-    /// (`generate.rs`'s `create_nodes_for`), so this must be an
-    /// `IndexMap`, not a `HashMap` (Phase 4 decision 7).
+    /// Both directly-defined and inherited attack steps, by name.
+    /// Iteration order feeds attack-graph node id assignment
+    /// (`generate.rs`'s `create_nodes_for`), so this must stay an
+    /// `IndexMap`.
     pub attack_steps: IndexMap<String, AttackStepId>,
     pub info: HashMap<String, String>,
     pub own_super_asset: Option<AssetId>,

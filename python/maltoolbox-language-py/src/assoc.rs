@@ -3,15 +3,13 @@
 //!
 //! Unlike `LanguageGraphAsset`/`LanguageGraphAttackStep`, these wrap the
 //! actual `Rc<LanguageGraphAssociation>`/cloned `LanguageGraphAssociationField`
-//! value directly rather than an owner+id pair, since the core crate
-//! already gives `LanguageGraphAssociation` real structural `PartialEq`/
-//! `Hash` (excluding `info`, matching the Python dataclass's
-//! `field(compare=False)`) - delegating to it is both simpler and *more*
-//! faithful than an owner-pointer+id scheme would be here, since
-//! `own_associations` on both sides of an association already share the
-//! same `Rc`, matching Python's `left_asset.own_associations[...] =
-//! assoc; right_asset.own_associations[...] = assoc` (literally the same
-//! object on both sides).
+//! value directly rather than an owner+id pair: the core crate already
+//! gives `LanguageGraphAssociation` structural `PartialEq`/`Hash`
+//! (excluding `info`, matching the Python dataclass's
+//! `field(compare=False)`), and both sides of an association already
+//! share the same `Rc`, matching Python's `left_asset.own_associations[...]
+//! = assoc; right_asset.own_associations[...] = assoc` (the same object
+//! on both sides).
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -36,13 +34,11 @@ fn struct_hash<T: std::hash::Hash>(value: &T) -> isize {
 }
 
 /// `caches` is threaded through so `.asset` resolves to the same
-/// per-owner-cached `PyLanguageGraphAsset` handle everywhere else uses
-/// (Phase 4 decision 1) - `LanguageGraphAssociation`/`Field` themselves
-/// are *not* one of the four cached handle types (they already have
-/// real structural equality via the core's own `PartialEq`/`Hash` - see
-/// the module doc comment), this is purely about keeping the *asset*
-/// handles they hand out consistent with every other path to the same
-/// asset.
+/// per-owner-cached `PyLanguageGraphAsset` handle used everywhere else.
+/// `LanguageGraphAssociation`/`Field` themselves aren't cached handles
+/// (they already have structural equality, per the module doc comment);
+/// this just keeps the *asset* handles they hand out consistent with
+/// every other path to the same asset.
 #[pyclass(name = "LanguageGraphAssociationField", unsendable, skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyLanguageGraphAssociationField {

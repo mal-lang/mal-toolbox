@@ -3,11 +3,9 @@
 //! Represents the model-instance mutations ("dynamic sentences",
 //! `append_reaches`/`remove_reaches`) a compromised attack step can
 //! trigger: adding or removing assets/associations reachable via an
-//! association-traversal chain. mal-toolbox itself only *builds* and
-//! *validates* these structures (see [`super::assoc_traversal`]) - it
-//! never applies them to a live [`crate::Model`]; that's left to a
-//! downstream consumer (e.g. mal-simulator), exactly as in the Python
-//! original (`AttackGraphNode` just copies them through verbatim).
+//! association-traversal chain. mal-toolbox only *builds* and *validates*
+//! these structures; applying them to a live [`crate::Model`] is left to
+//! a downstream consumer (e.g. mal-simulator).
 
 use serde_json::Value;
 
@@ -86,14 +84,10 @@ pub struct LanguageGraphModelEffect {
     pub targets: Vec<DynTarget>,
 }
 
-/// Port of `_parse_quantity`. Unlike an association's multiplicity (which
-/// the compiler normalizes into integers via `normalize_multiplicity`), a
-/// step-expression multiplicity (`asset_expr_multiplicity`, e.g.
-/// `field:4..10`) is compiled straight from source text with no
-/// normalization pass - so `min`/`max` here are still raw strings like
-/// `"4"`. Python's `_parse_quantity` is forgiving of this because
-/// `int(x)` accepts both an int and a numeric string; mirror that
-/// instead of assuming already-numeric JSON values.
+/// Port of `_parse_quantity`. A step-expression multiplicity (e.g.
+/// `field:4..10`) is compiled straight from source text without
+/// normalization, so `min`/`max` may still be raw strings like `"4"`
+/// rather than numbers; parse both forms to mirror Python's `int(x)`.
 fn value_to_i64(v: &Value) -> Result<i64, GraphError> {
     v.as_i64()
         .or_else(|| v.as_str().and_then(|s| s.parse::<i64>().ok()))
@@ -158,11 +152,8 @@ fn parse_assoc_traversal(
         ExpressionsChain::Multiplicity { sub, multiplicity } => {
             let mut ret = parse_assoc_traversal(Some(sub))?;
             let quantity_filter = parse_quantity(multiplicity)?;
-            // `quantity_filter` is a field on all three element types in
-            // the Python original (`AssocTraversal`, `GlobAssocTraversal`,
-            // `AssocSet` are all NamedTuples with it as their last field),
-            // so a multiplicity qualifier can land on whichever one is
-            // last in the chain - not just a plain field traversal.
+            // A multiplicity qualifier applies to whichever element type
+            // is last in the chain, not just a plain field traversal.
             match ret
                 .last_mut()
                 .ok_or_else(|| GraphError::Malformed("empty traversal chain".into()))?
@@ -254,10 +245,8 @@ pub fn build_model_effect(
     let mut targets = Vec::new();
     for target_expr in &target_exprs {
         let is_assoc_op = target_expr["type"].as_str() == Some("assoc_op");
-        // If we are doing link addition the instigating asset is the asset
-        // which defines the step, otherwise the instigating asset is the
-        // asset(s) collected from the base expression. See:
-        // https://github.com/mal-lang/mal-toolbox/pull/244#issuecomment-5190495429
+        // For link addition, the instigating asset is the one defining the
+        // step; otherwise it's the asset(s) collected from the base expression.
         let starting_asset = if is_assoc_op && model_effect_type == ModelEffectType::Additive {
             target_asset
         } else {

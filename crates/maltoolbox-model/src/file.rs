@@ -31,13 +31,9 @@ pub fn load_from_file(path: impl AsRef<Path>, lang_graph: Rc<LanguageGraph>) -> 
 
 /// Port of `Model._from_dict`.
 ///
-/// NOTE: the Python oracle has a confirmed bug here - `to_dict` writes
-/// `"MAL-Toolbox Version"` (hyphenated) but `_from_dict` reads
-/// `"MAL Toolbox Version"` (spaced), so the field never actually
-/// round-trips there and always falls back to the running tool's own
-/// version. This Rust port intentionally diverges and reads the same
-/// hyphenated key `to_dict` (`model.rs`) actually writes, so the field
-/// round-trips correctly here instead of silently losing data.
+/// Reads the `"MAL-Toolbox Version"` (hyphenated) metadata key, matching
+/// what `to_dict` (`model.rs`) writes; see `PORTING_NOTES.md` for why
+/// this diverges from the Python original.
 pub fn from_dict(serialized: &Value, lang_graph: Rc<LanguageGraph>) -> Result<Model, LoadError> {
     let metadata = &serialized["metadata"];
     let name = metadata["name"]
@@ -60,7 +56,7 @@ pub fn from_dict(serialized: &Value, lang_graph: Rc<LanguageGraph>) -> Result<Mo
             .parse()
             .map_err(|_| LoadError::Malformed(format!("invalid asset id \"{asset_id}\"")))?;
 
-        // Allow defining an asset via type only (a bare string).
+        // An asset may be given as a bare type-name string instead of an object.
         let (asset_type, name, defenses_raw, extras) = match asset_value {
             Value::Object(obj) => (
                 obj["type"].as_str().unwrap_or_default().to_string(),
@@ -76,13 +72,8 @@ pub fn from_dict(serialized: &Value, lang_graph: Rc<LanguageGraph>) -> Result<Mo
             }
         };
 
-        // `v.as_f64()` alone silently drops any defense value serialized
-        // as a JSON *string* (e.g. `"1.0"`) rather than a number -
-        // confirmed to matter for real: `maltoolbox/translators/
-        // updater.py`'s old-model-version conversion functions produce
-        // exactly this shape, and the Python original's `_from_dict`
-        // does `float(value)`, which tolerates either. Falling back to
-        // parsing a string value matches that tolerance.
+        // Defense values may be JSON numbers or numeric strings (older
+        // model versions serialize them as strings); accept either.
         let defenses: HashMap<String, f64> = defenses_raw
             .and_then(|d| d.as_object().cloned())
             .into_iter()

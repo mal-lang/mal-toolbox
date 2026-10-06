@@ -1,8 +1,7 @@
 //! Mirrors `maltoolbox/language/language_graph_attack_step.py`'s
-//! `LanguageGraphAttackStep`. A handle (`owner` + `AttackStepId`) - per
-//! Phase 4 decision 1, cached per-owner (`caches.steps`) so repeated
-//! lookups for the same id return the identical Python object; see
-//! `handle.rs` / PYTHON_BINDINGS_IMPLEMENTATION.md.
+//! `LanguageGraphAttackStep`. A handle (`owner` + `AttackStepId`), cached
+//! per-owner (`caches.steps`) so repeated lookups for the same id return
+//! the identical Python object; see `handle.rs`.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -52,12 +51,9 @@ impl PyLanguageGraphAttackStep {
         cached_handle(&self.caches.assets, py, id, move || PyLanguageGraphAsset::new(owner, id, caches))
     }
 
-    /// Builds a `list[ExpressionsChain | None]` of real wrapper objects
-    /// (closes Phase 1 gap #2 - these used to be exposed via their
-    /// pythonized `to_dict()` form instead of a live object; confirmed
-    /// necessary for real by `tests/language/test_languagegraph.py::
-    /// test_interleaved_vars`/`test_attackstep_inherit`, which read
-    /// `.right_link.fieldname`/`.fieldname` directly on these).
+    /// Builds a `list[ExpressionsChain | None]` of real wrapper objects,
+    /// since callers access attributes like `.right_link.fieldname`/
+    /// `.fieldname` directly on them rather than a pythonized dict form.
     fn chains_to_pylist<'py>(
         &self,
         py: Python<'py>,
@@ -201,18 +197,10 @@ impl PyLanguageGraphAttackStep {
         self.chains_to_pylist(py, &wrapped)
     }
 
-    /// `own_additive_model_effects`/`own_subtractive_model_effects`/
-    /// `additive_model_effects`/`subtractive_model_effects` - closes
-    /// Phase 1 gap #3 ("not exposed, no usage found"), since
-    /// `tests/language/test_compiler.py::test_compile_wiperlang`/
-    /// `test_compile_multiplicity_lang` turned out to need these
-    /// directly on `LanguageGraphAttackStep` (distinct from
-    /// `AttackGraphNode.additive_model_effects`, Phase 4 decision 3,
-    /// which already wraps the same core `LanguageGraphModelEffect`
-    /// type - this just needed a second call site, no new wrapper
-    /// classes). `own_*` is the step's own (non-inherited) list; the
-    /// non-`own_` getters add inherited effects, mirroring the core's
-    /// own `additive_model_effects(&graph)`/`subtractive_model_effects(&graph)`.
+    /// `own_*` is the step's own (non-inherited) list of model effects;
+    /// the non-`own_` getters add inherited effects, mirroring the
+    /// core's own `additive_model_effects(&graph)`/
+    /// `subtractive_model_effects(&graph)`.
     #[getter]
     fn own_additive_model_effects(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphModelEffect>>> {
         let graph = self.owner.borrow();
@@ -263,9 +251,8 @@ impl PyLanguageGraphAttackStep {
         graph.step(self.id).full_name(&graph)
     }
 
-    /// Task B: `{name: LanguageGraphDetector}` - matches the deleted
-    /// pure-Python original's `detectors: dict[str, LanguageGraphDetector]`
-    /// field shape exactly (see `detector.rs`'s module doc).
+    /// `{name: LanguageGraphDetector}`, matching the Python original's
+    /// `detectors: dict[str, LanguageGraphDetector]` field shape.
     #[getter]
     fn detectors<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let graph = self.owner.borrow();
@@ -310,28 +297,16 @@ impl PyLanguageGraphAttackStep {
         }
     }
 
-    /// Phase 4 decision 9 - see `PyLanguageGraphAsset::__reduce__`'s
-    /// identical rationale (fresh temporary `PyLanguageGraph` owner, no
-    /// identity requirement since `test_pickle_languagegraph_attack_step`
-    /// only checks `to_dict()` equality).
-    ///
-    /// Unlike assets (and unlike the original raw-ffi-id approach this
-    /// replaced), attack steps are pickled by `(asset_name, step_name)`
-    /// rather than by raw slotmap `KeyData` ffi id. Asset creation
-    /// (`generate_graph`'s pass 1 and `language_graph_from_dict`'s pass 1)
-    /// both insert assets in the same single-pass `asset_order`, so ffi
-    /// ids round-trip correctly for assets. Attack steps don't have that
-    /// property: `generate_graph` creates each asset's *own* declared
-    /// steps first across all assets, then synthesizes inherited-copy
-    /// steps in a second pass (`inherit_attack_steps`), interleaved in a
-    /// different (deferred-pending-queue) order - whereas
-    /// `language_graph_from_dict` creates all of an asset's steps (own +
-    /// inherited) in one shot per asset. Both produce the same *logical*
-    /// graph (same `to_dict()`), but the raw slotmap insertion order (and
-    /// hence the ffi id) differs between the two construction paths, so a
-    /// pickled ffi id resolves to the wrong step after a round-trip
-    /// through `_to_dict`/`_from_pickle_state`. Resolving by name instead
-    /// sidesteps the discrepancy entirely.
+    /// Pickles as `(owner, asset_name, step_name)`, where `owner` is a
+    /// fresh temporary `PyLanguageGraph` (see
+    /// `PyLanguageGraphAsset::__reduce__`). Unlike assets, attack steps
+    /// are resolved by name rather than by raw slotmap ffi id: step
+    /// insertion order (and hence ffi id) differs between
+    /// `generate_graph`'s two-pass construction (own steps for all
+    /// assets, then synthesized inherited copies) and
+    /// `language_graph_from_dict`'s one-shot-per-asset construction, even
+    /// though both produce the same logical graph. Resolving by name
+    /// sidesteps that discrepancy.
     #[allow(clippy::type_complexity)]
     fn __reduce__(
         &self,
@@ -356,9 +331,8 @@ impl PyLanguageGraphAttackStep {
 
 /// Rebuilds a `PyLanguageGraphAttackStep` handle from a pickled
 /// `(owner, asset_name, step_name)` triple - the `__reduce__` target; see
-/// `PyLanguageGraphAttackStep::__reduce__`'s doc comment for why this
-/// resolves by name instead of by raw ffi id (unlike
-/// `asset.rs::_rebuild_language_graph_asset`).
+/// `PyLanguageGraphAttackStep::__reduce__` for why this resolves by name
+/// instead of by raw ffi id.
 #[pyfunction]
 pub fn _rebuild_language_graph_attack_step(
     py: Python<'_>,

@@ -1,9 +1,8 @@
 //! Port of `maltoolbox/language/language_graph_attack_step.py`.
 //!
-//! `own_additive_model_effects`/`own_subtractive_model_effects` (driven by
-//! `append_reaches`/`remove_reaches`) are *not* part of `to_dict()`'s
-//! output in the Python original either, so leaving them out of
-//! [`LanguageGraphAttackStep::to_dict`] here is faithful, not a gap.
+//! `own_additive_model_effects`/`own_subtractive_model_effects` are not
+//! part of `to_dict()`'s output in the Python original, so
+//! [`LanguageGraphAttackStep::to_dict`] omits them too.
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -82,10 +81,8 @@ pub struct LanguageGraphAttackStep {
     pub causal_mode: Option<CausalMode>,
     pub ttc: Option<serde_json::Value>,
     pub overrides: bool,
-    /// Iteration order feeds node-linking order downstream (`generate.rs`'s
-    /// `link_node_children` walks `children()`, which starts from this
-    /// map) and `to_dict`'s `own_children` key order - must stay
-    /// insertion-ordered like Python's `dict` (Phase 4 decision 7).
+    /// Insertion-ordered (like Python's `dict`): iteration order feeds
+    /// node-linking order in `generate.rs` and `to_dict`'s key order.
     pub own_children: IndexMap<AttackStepId, Vec<Option<ExpressionsChain>>>,
     pub own_parents: IndexMap<AttackStepId, Vec<Option<ExpressionsChain>>>,
     pub own_additive_model_effects: Vec<LanguageGraphModelEffect>,
@@ -142,8 +139,8 @@ impl LanguageGraphAttackStep {
 
     /// Own + inherited additive model effects, mirroring the
     /// `additive_model_effects` property.
-    // TODO (carried from the Python original): figure out if `overrides`
-    // is the right gate here, or only for "static" (reaches) steps.
+    // TODO (from Python original): confirm whether `overrides` should
+    // gate this, or only "static" (reaches) steps.
     pub fn additive_model_effects(&self, graph: &LanguageGraph) -> Vec<LanguageGraphModelEffect> {
         let mut all = self.own_additive_model_effects.clone();
         let Some(inherits) = self.inherits else {
@@ -228,11 +225,10 @@ impl LanguageGraphAttackStep {
     }
 }
 
-/// Structural equality good enough for the "already present, skip" check
-/// `children()` performs (`c not in all_children[child]`), mirroring
-/// Python dataclass `__eq__` by value. `ExpressionsChain` doesn't derive
-/// `PartialEq` because `Rc<LanguageGraphAssociation>` comparisons should
-/// go by the association's own value equality, which it already derives.
+/// Structural (by-value) equality for `ExpressionsChain`, used by
+/// `children()`'s "already present" dedup check. Not a `PartialEq` impl
+/// because `Field`'s `Rc<LanguageGraphAssociation>` is compared by
+/// pointer identity here rather than derived value equality.
 fn expr_eq(a: &Option<ExpressionsChain>, b: &Option<ExpressionsChain>) -> bool {
     match (a, b) {
         (None, None) => true,

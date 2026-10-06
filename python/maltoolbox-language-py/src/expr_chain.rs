@@ -1,14 +1,13 @@
-//! Mirrors `maltoolbox/language/expression_chain.py`'s `ExpressionsChain`
-//! - closes Phase 1 gap #2. The core represents this as an enum (one
-//! variant per shape - see `maltoolbox_language::graph::expr_chain`'s
-//! module doc), but the Python original is one flat dataclass with many
-//! `Option` fields; this wrapper exposes that same flat shape
+//! Mirrors `maltoolbox/language/expression_chain.py`'s `ExpressionsChain`.
+//! The core represents this as an enum (one variant per shape - see
+//! `maltoolbox_language::graph::expr_chain`'s module doc), but the Python
+//! original is one flat dataclass with many `Option` fields; this wrapper
+//! exposes that same flat shape
 //! (`type`/`left_link`/`right_link`/`sub_link`/`fieldname`/`association`/
 //! `subtype`/`multiplicity`), reading `None` for whichever fields don't
 //! apply to the wrapped variant.
 //!
-//! Per the same scope relaxation as `model_effect.rs` (user-approved):
-//! no identity caching, `__richcmp__`, or `__hash__` - a plain,
+//! No identity caching, `__richcmp__`, or `__hash__` - this is a plain,
 //! freely-constructible value snapshot. `association`/`subtype` resolve
 //! through the owning graph's real handles/caches for consistency with
 //! every other path to the same asset/association.
@@ -132,8 +131,8 @@ fn chain_to_py(py: Python<'_>, ctx: Ctx, chain: ExpressionsChain) -> PyResult<Py
 }
 
 /// Converts a core `ExpressionsChain` into its Python wrapper. `owner`/
-/// `caches` identify the `LanguageGraph` any `association`/`subtype`
-/// should resolve its handles against.
+/// `caches` identify the `LanguageGraph` that `association`/`subtype`
+/// resolve their handles against.
 pub fn expr_chain_to_py(
     py: Python<'_>,
     owner: Rc<RefCell<LanguageGraph>>,

@@ -2,8 +2,7 @@
 //! surface (`AttackGraph`, `AttackGraphNode`, `Detector`,
 //! `create_attack_graph`) on top of the pure-Rust `maltoolbox-attackgraph`
 //! crate. See `python/maltoolbox-language-py/src/lib.rs`'s module doc for
-//! the shared conventions this follows, and
-//! `PYTHON_BINDINGS_IMPLEMENTATION.md` for the plan/status.
+//! the shared conventions this follows.
 
 mod detector;
 mod detector_support;

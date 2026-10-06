@@ -1,14 +1,11 @@
 //! Port of `maltoolbox/model.py`.
 //!
-//! Unlike the Python original's `dict[int, ModelAsset]` holding live
-//! object references in `associated_assets: dict[str, set[ModelAsset]]`,
-//! this crate addresses `ModelAsset`s by their (already stable,
-//! user-facing) integer id rather than introducing a second arena/key
-//! type: unlike the attack graph, a `Model` has no partial-regeneration
-//! style churn that would make a plain id-keyed `HashMap` risk aliasing a
-//! stale reference onto a reused slot, so the extra generational-key
-//! machinery used for the language/attack graphs wouldn't pull its
-//! weight here.
+//! Assets are keyed by their stable, user-facing integer id in a plain
+//! `HashMap`, rather than the generational-key arena used by the
+//! language/attack graphs - a `Model` has no partial-regeneration churn
+//! that would risk a stale reference aliasing a reused slot, so that
+//! extra machinery isn't needed here. See `PORTING_NOTES.md` for the
+//! full comparison.
 
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -43,18 +40,6 @@ pub enum ModelError {
         fieldname: String,
         expected_type: String,
     },
-    /// Opportunistic fix, flagged: the stored value is the already-
-    /// unwrapped `max` from the one call site that constructs this
-    /// (only ever reached when `assoc_field.maximum` is `Some(_)`) - was
-    /// previously `Option<i64>` with a `{0:?}` Display format, producing
-    /// `"You can have maximum Some(1) assets..."` instead of matching
-    /// the real Python message (`f'You can have maximum
-    /// {assoc_field.maximum} ...'`, always a bare int there too, for the
-    /// same reason). Caught by running `tests/attackgraph/
-    /// test_attackgraph.py::test_create_dynamic_ag`'s exact scenario
-    /// against the native bindings directly - this error path wasn't
-    /// exercised by any `maltoolbox-model`/`-py` test or oracle diff
-    /// before now.
     #[error("You can have maximum {0} assets for association field {1}")]
     TooManyAssetsInField(i64, String),
     #[error("Association fieldname \"{fieldname}\" does not exist from <{from_type}> to <{to_type}>, must be one of:\n -{possible}")]
@@ -78,22 +63,16 @@ pub enum ModelError {
     Malformed(String),
 }
 
-/// What's needed to resolve language-level facts (attack step names, the
-/// opposite fieldname of an association) about an asset *after* it has
-/// been removed from the model - the Rust-port equivalent of the fact
-/// that Python's `ModelAsset` objects stay fully readable even once
-/// unlinked from `Model.assets`. Returned by [`Model::remove_asset`] so
-/// callers (e.g. `AttackGraph::partially_regenerate_graph`) never need
-/// `model.get_asset_by_id` to still succeed for a removed id.
+/// Snapshot of an asset's data at the moment it is removed from the
+/// model, letting callers (e.g. `AttackGraph::partially_regenerate_graph`)
+/// resolve a removed asset's language type/name without needing
+/// `Model::get_asset_by_id` to keep working for its id. Returned by
+/// [`Model::remove_asset`].
 ///
-/// `final_state` additionally carries a full clone of the asset's data
-/// as it stood immediately before removal from `Model.assets` - i.e.
-/// *after* the associated-assets cleanup loop in [`Model::remove_asset`]
-/// has already run, so `final_state.associated_assets` reflects the
-/// post-cleanup (typically empty) state, not the pre-removal one. This
-/// lets a binding layer (e.g. `maltoolbox-model-py`) keep a read-only
-/// "tombstone" per removed id, matching Python's `ModelAsset` objects
-/// staying fully readable after `Model.remove_asset`.
+/// `final_state` is captured *after* the associated-assets cleanup loop
+/// in [`Model::remove_asset`] has run, so its `associated_assets` field
+/// reflects the post-cleanup (typically empty) state, not the
+/// pre-removal one.
 #[derive(Debug, Clone)]
 pub struct AssetSnapshot {
     pub name: String,
@@ -122,8 +101,7 @@ impl ModelAsset {
             dict.insert("defenses".into(), json!(self.defenses));
         }
 
-        // `associated_assets` needs id->name resolution, which requires
-        // the owning `Model`; `Model::to_dict` fills this key in itself.
+        // Filled in by `Model::to_dict`, which has the id->name mapping needed.
         dict.insert("associated_assets".into(), Value::Object(Map::new()));
 
         if !self.extras.is_empty() {
@@ -140,11 +118,10 @@ pub struct Model {
     pub next_id: i64,
     pub assets: HashMap<i64, ModelAsset>,
     pub name_to_asset_id: HashMap<String, i64>,
-    /// Insertion order of assets, mirroring Python dict iteration order
-    /// over `self.assets` - needed because attack graph generation
-    /// assigns node ids by iterating assets in this order, and that
-    /// assignment must be deterministic (and oracle-matching) rather
-    /// than following a `HashMap`'s arbitrary order.
+    /// Insertion order of assets. Attack graph generation iterates
+    /// assets in this order to assign node ids deterministically, so it
+    /// must match Python dict iteration order rather than `HashMap`'s
+    /// arbitrary order.
     pub asset_order: Vec<i64>,
     pub lang_graph: Rc<LanguageGraph>,
 }
@@ -238,10 +215,7 @@ impl Model {
             self.remove_associated_assets(asset_id, &fieldname, &assoc_assets)?;
         }
 
-        // Captured *after* the cleanup loop above, so `final_state`
-        // reflects the post-cleanup state (e.g. `associated_assets`
-        // already emptied), matching what a still-held Python
-        // `ModelAsset` reference would show post-removal.
+        // Captured after the cleanup loop above, so `associated_assets` is already emptied.
         let final_state = self
             .assets
             .get(&asset_id)

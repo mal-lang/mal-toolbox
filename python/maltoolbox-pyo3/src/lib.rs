@@ -1,8 +1,7 @@
 //! Umbrella crate: assembles each layer's compat crate
-//! (`maltoolbox-language-py`, and `maltoolbox-model-py`/
-//! `maltoolbox-attackgraph-py` once they land) into the single
-//! importable native extension module, `maltoolbox._native`. See
-//! PYTHON_BINDINGS_IMPLEMENTATION.md at the repo root.
+//! (`maltoolbox-language-py`, `maltoolbox-model-py`,
+//! `maltoolbox-attackgraph-py`) into the single importable native
+//! extension module, `maltoolbox._native`.
 //!
 //! This is the only crate in `python/` that enables pyo3's
 //! `extension-module` feature - the layer crates stay plain `rlib`s so

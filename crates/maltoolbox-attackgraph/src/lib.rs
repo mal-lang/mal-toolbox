@@ -7,13 +7,9 @@
 //! method that needs one (`to_dict`, regeneration, full-name resolution)
 //! takes `&Model` as an explicit parameter instead. Python's
 //! `self.model` works because the same mutable object is shared between
-//! caller and graph; replicating that in Rust would mean wrapping
-//! `Model` in `Rc<RefCell<_>>` just so external code can mutate it out
-//! from under a struct that otherwise only reads it. Taking `&Model`
-//! per-call avoids that for a cost of zero extra arguments at any call
-//! site that already has the model in hand (which is every one - you
-//! just mutated it to decide what to pass to `partially_regenerate_graph`
-//! in the first place).
+//! caller and graph; doing that in Rust would require wrapping `Model`
+//! in `Rc<RefCell<_>>` just so external code can mutate it out from
+//! under a struct that otherwise only reads it.
 
 pub mod detector;
 pub mod expr_follow;

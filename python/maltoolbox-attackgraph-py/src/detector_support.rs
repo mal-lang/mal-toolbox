@@ -1,18 +1,16 @@
-//! Shared plumbing for seeding the Phase 3 decision 1 "live, compat-layer-
-//! owned" detector containers (`PyAttackGraph.detectors`,
-//! `PyAttackGraphNode.detectors`) from the Rust core's generation-time
-//! data - see `graph.rs`/`node.rs`'s `.detectors` getters and
-//! PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 3 decision 1.
+//! Shared plumbing for seeding the compat-layer-owned detector containers
+//! (`PyAttackGraph.detectors`, `PyAttackGraphNode.detectors`) from the Rust
+//! core's generation-time data - see `graph.rs`/`node.rs`'s `.detectors`
+//! getters.
 //!
-//! The core's [`maltoolbox_attackgraph::Detector`] stores the *label* it
-//! was generated under only as the surrounding `HashMap`'s key, and
-//! identifies its own node/context via [`maltoolbox_attackgraph::ids::AttackGraphNodeId`]
-//! (a slotmap key, not the stable Python-facing `i64`) - both need
-//! resolving against a live `&AttackGraph` borrow. [`DetectorSnapshot`]
-//! captures everything needed to build a `PyDetector` with no further
-//! core-graph borrow, so seeding never needs to hold a `graph.inner`
-//! borrow while also constructing Python objects (which could otherwise
-//! re-borrow the same `RefCell` reentrantly).
+//! The core's [`maltoolbox_attackgraph::Detector`] stores its *label* only
+//! as the surrounding `HashMap`'s key, and identifies its node/context via
+//! [`maltoolbox_attackgraph::ids::AttackGraphNodeId`] (a slotmap key, not
+//! the stable Python-facing `i64`) - both need resolving against a live
+//! `&AttackGraph` borrow. [`DetectorSnapshot`] captures everything needed
+//! to build a `PyDetector` with no further core-graph borrow, avoiding a
+//! reentrant re-borrow of the same `RefCell` while constructing Python
+//! objects.
 
 use std::collections::HashMap;
 

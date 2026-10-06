@@ -1,25 +1,18 @@
 //! Exception hierarchy mirroring `maltoolbox/exceptions.py`'s
-//! `ModelException` branch, built on top of the `MalToolboxException`
-//! type `maltoolbox-language-py` already created in Phase 1 - see
-//! PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 2 decision 1 for why this
-//! crate depends on that one instead of redefining a second,
-//! incompatible `MalToolboxException` type.
+//! `ModelException` branch, built on the `MalToolboxException` type
+//! from `maltoolbox-language-py`.
 //!
-//! Important, confirmed-by-reading-the-source subtlety: unlike
-//! `maltoolbox/language/compiler`'s errors, `maltoolbox/model.py`'s own
-//! methods (`add_asset`/`remove_asset`/`add_associated_assets`/etc.)
-//! almost never raise `ModelException` itself - they raise plain
-//! built-in `ValueError`/`LookupError`/`TypeError` directly. The
-//! `ModelException` subclasses in `exceptions.py`
-//! (`ModelAssociationException`, `DuplicateModelAssociationError`) are
-//! defined but never actually raised anywhere in the current codebase
-//! (confirmed by grep) - dead exception classes, kept here only so the
-//! same importable names exist, not because anything produces them.
-//! `ModelException` itself is raised exactly once in the real source:
-//! `Model.load_from_file`'s broad `except Exception as e: raise
-//! ModelException(...) from e` wrapper. See `model_error_to_py` (plain
-//! builtins, for direct method calls) vs `load_error_to_py` (always
-//! `ModelException`, for the `load_from_file` entry point) below.
+//! `maltoolbox/model.py`'s own methods (`add_asset`/`remove_asset`/
+//! `add_associated_assets`/etc.) almost never raise `ModelException`
+//! itself - they raise plain built-in `ValueError`/`LookupError`/
+//! `TypeError` directly. `ModelAssociationException` and
+//! `DuplicateModelAssociationError` are dead exception classes in the
+//! Python original (defined but never raised); they're kept here only
+//! so the same importable names exist. `ModelException` itself is
+//! raised only by `Model.load_from_file`'s broad exception wrapper. See
+//! `model_error_to_py` (plain builtins, for direct method calls) vs
+//! `load_error_to_py` (always `ModelException`, for `load_from_file`)
+//! below.
 
 use pyo3::create_exception;
 use pyo3::exceptions::{PyKeyError, PyLookupError, PyTypeError, PyValueError};
@@ -35,16 +28,13 @@ create_exception!(_native, DuplicateModelAssociationError, ModelException);
 
 /// Maps a `ModelError` to the same plain built-in exception type
 /// `maltoolbox/model.py`'s own code raises for the equivalent
-/// condition - confirmed line-by-line against the real source, not
-/// assumed. Two variants have no exact Python precedent (the Rust core
-/// validates a couple of things Python doesn't check explicitly before
-/// a raw dict/set operation would fail): `UnknownAssetId` (approximated
-/// as `LookupError`, consistent with the other "not found" cases) and
-/// `NotAssociated` (approximated as `KeyError`, matching the raw
-/// `KeyError` Python's `_associated_assets[...].remove(...)` would
-/// raise in the equivalent situation). Logged as a known approximation
-/// in PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 2 status, not silently
-/// picked.
+/// condition. Two variants have no exact Python precedent, since the
+/// Rust core validates a couple of things Python doesn't check
+/// explicitly before a raw dict/set operation would fail:
+/// `UnknownAssetId` is approximated as `LookupError` (consistent with
+/// the other "not found" cases) and `NotAssociated` as `KeyError`
+/// (matching the raw `KeyError` Python's
+/// `_associated_assets[...].remove(...)` would raise).
 pub fn model_error_to_py(err: ModelError) -> PyErr {
     let msg = err.to_string();
     match err {

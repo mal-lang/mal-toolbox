@@ -31,11 +31,8 @@ pub struct LanguageGraphDetector {
     pub name: Option<String>,
     pub context: HashMap<String, LanguageGraphContextItem>,
     pub detector_type: Option<String>,
-    /// Mirrors the Python original exactly: the `_create_detector` call
-    /// site always passes `tprate=det.get('tprate')` explicitly, so this
-    /// is `None` whenever the MAL source omitted a rate - the dataclass's
-    /// `= 1.0`/`= 0.0` defaults never actually kick in at runtime, and
-    /// `to_dict` only ever emits `tprate` (not `fprate`) regardless.
+    /// `None` when the MAL source omits a rate; `to_dict` only emits
+    /// `tprate`, never `fprate`.
     pub tprate: Option<f64>,
     pub fprate: Option<f64>,
 }

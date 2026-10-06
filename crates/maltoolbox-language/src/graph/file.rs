@@ -60,11 +60,9 @@ pub fn from_mar_archive(path: impl AsRef<Path>) -> Result<LanguageGraph, LoadErr
 
 /// Save `graph.lang_spec` (the compiled langspec, *not* the full
 /// `language_graph_to_dict` form) into a `.mar` zip archive as
-/// `langspec.json` - matches `to_mar_archive`. Note: a graph rebuilt via
-/// `language_graph_from_dict` never had a `lang_spec` set (same gap as
-/// the Python original, whose `language_graph_from_dict` never sets
-/// `self.lang_spec` either), so round-tripping such a graph through
-/// `.mar` writes `null`.
+/// `langspec.json`. A graph rebuilt via `language_graph_from_dict` never
+/// has `lang_spec` set (matches the Python original), so round-tripping
+/// such a graph through `.mar` writes `null`.
 pub fn to_mar_archive(graph: &LanguageGraph, path: impl AsRef<Path>) -> Result<(), LoadError> {
     let path = path.as_ref();
     let file = std::fs::File::create(path)

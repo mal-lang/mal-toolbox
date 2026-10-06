@@ -1,29 +1,21 @@
 //! Shared helper for the owner+id "handle" pattern used by
-//! `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep`, with `__hash__`/
-//! `__richcmp__` keyed on `(owner pointer identity, id)` rather than
-//! CPython's default object-identity hash/eq, so two separately-built
-//! handles for the same logical item compare equal and hash the same
-//! (required for `dict`/`set` keying - see
-//! PYTHON_BINDINGS_IMPLEMENTATION.md's "Container / handle pattern").
+//! `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep`: each handle borrows
+//! its owner transiently and looks itself up by id rather than holding a
+//! copy. `__hash__`/`__richcmp__` are keyed on `(owner pointer identity,
+//! id)` rather than CPython's default object-identity hash/eq, so two
+//! separately-built handles for the same logical item compare equal and
+//! hash the same, which `dict`/`set` keying requires.
 //!
-//! **Per-owner handle cache (Phase 4 decision 1).** Originally these
-//! handles were *also* never cached - a fresh Rust value (and therefore
-//! a fresh Python object) was built on every access, relying solely on
-//! `composite_hash`/structural `__richcmp__` for `dict`/`set` keying.
-//! Phase 4 found this incomplete: `tests/attackgraph/
-//! test_attackgraph.py::test_attackgraph_deepcopy` asserts `id(same_node)
-//! == id(node)` across two *separate* attribute accesses - real Python
-//! object identity, not just `==` - and the user confirmed mal-simulator
-//! relies on this too. `HandleCache`/`new_handle_cache`/`cached_handle`
-//! below implement a per-owner cache (one `HashMap<id, Py<Handle>>` per
-//! container instance) so repeated lookups for the same id within the
-//! same owner return the identical Python object, while two different
-//! owner instances (even structurally identical ones) never share
-//! identity, since each owns a separate cache. This is additive to, not
-//! a replacement for, `composite_hash`/`__richcmp__`: those still matter
-//! on a cache miss (a freshly-built handle comparing against something
-//! already in a `set`/`dict`) and for cross-owner comparisons (which the
-//! cache deliberately doesn't unify).
+//! On top of that, `HandleCache`/`new_handle_cache`/`cached_handle` add a
+//! per-owner cache (one `HashMap<id, Py<Handle>>` per container instance)
+//! so repeated lookups for the same id on the same owner return the
+//! identical Python object (`id(a) == id(b)`), which Python code that
+//! relies on object identity (not just `==`) needs. Two different owner
+//! instances never share identity, even if structurally identical, since
+//! each owns a separate cache. This is additive to `composite_hash`/
+//! `__richcmp__`, not a replacement: those still matter on a cache miss
+//! and for cross-owner comparisons, which the cache deliberately doesn't
+//! unify.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -39,9 +31,9 @@ use crate::asset::PyLanguageGraphAsset;
 use crate::attack_step::PyLanguageGraphAttackStep;
 
 /// Computes a stable `isize` hash for a `(owner ptr, id)` pair, suitable
-/// for returning directly from `__hash__`. Wrapping the `u64` down to
-/// `isize` is fine: Python only requires equal objects hash equally
-/// within a single process, not a specific range.
+/// for returning directly from `__hash__`. Truncating the `u64` to
+/// `isize` is fine: Python only requires equal objects to hash equally
+/// within a process, not within a specific range.
 pub fn composite_hash<T: Hash>(owner_ptr: usize, id: T) -> isize {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     owner_ptr.hash(&mut hasher);
@@ -56,12 +48,10 @@ pub fn new_handle_cache<K, V>() -> HandleCache<K, V> {
     Rc::new(RefCell::new(HashMap::new()))
 }
 
-/// Looks up `key` in `cache`. On a hit, returns the same `Py<V>` (via
-/// `clone_ref` - bumping the refcount, not constructing a new Python
+/// Looks up `key` in `cache`. On a hit, returns the same `Py<V>` via
+/// `clone_ref` (bumps the refcount, doesn't construct a new Python
 /// object). On a miss, builds a fresh `V` via `build`, wraps it in a new
-/// `Py<V>`, inserts it into the cache, and returns it - `build` only
-/// runs on a miss, so it's fine for it to do real work (clone an `Rc`,
-/// etc.).
+/// `Py<V>`, inserts it into the cache, and returns it.
 pub fn cached_handle<K, V>(cache: &HandleCache<K, V>, py: Python<'_>, key: K, build: impl FnOnce() -> V) -> PyResult<Py<V>>
 where
     K: Eq + Hash,
@@ -76,13 +66,9 @@ where
 }
 
 /// Bundles every handle-type cache a `LanguageGraph` needs into one
-/// `Rc`, so `PyLanguageGraph`/`PyLanguageGraphAsset`/
-/// `PyLanguageGraphAttackStep` (and cross-crate consumers like
-/// `PyModelAsset`/`PyAttackGraphNode`, which each need to build a
-/// `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep` of their own) can
-/// all share the *same* two caches via a single extra field and one
-/// cheap `Rc` clone, rather than threading two separate cache fields
-/// everywhere.
+/// `Rc`, so `PyLanguageGraph`, its handles, and cross-crate consumers
+/// (e.g. `PyModelAsset`, `PyAttackGraphNode`) can all share the same
+/// caches via one field and a cheap `Rc` clone.
 pub struct LangGraphCaches {
     pub assets: HandleCache<AssetId, PyLanguageGraphAsset>,
     pub steps: HandleCache<AttackStepId, PyLanguageGraphAttackStep>,

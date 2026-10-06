@@ -2,10 +2,9 @@
 //! surface (class names, method names/signatures, exception hierarchy)
 //! on top of the pure-Rust `maltoolbox-language` crate.
 //!
-//! This is a *faithfulness* layer, not a natural Rust API: see
+//! This is a faithfulness layer, not a natural Rust API; see
 //! `PYTHON_BINDINGS_IMPLEMENTATION.md` at the repo root for the overall
-//! plan, status, and the reasoning behind choices like `Rc<RefCell<_>>`
-//! containers and on-demand (uncached) child handles.
+//! plan and rationale.
 
 mod asset;
 mod assoc;
@@ -29,13 +28,12 @@ pub use model_effect::{
     model_effect_to_py, PyAssocSet, PyAssocTraversal, PyDynTarget, PyGlobAssocTraversal, PyLanguageGraphModelEffect,
 };
 
-/// Registers this layer's classes/exceptions onto the umbrella
-/// `_native` module, including the nested `language.compiler.exceptions`/
-/// `language.compiler.mal_analyzer` submodules (so Phase 4's eventual
-/// re-export shims can present them at the same import path Python code
-/// uses today: `maltoolbox.language.compiler.exceptions.MalCompilerError`,
-/// `maltoolbox.language.compiler.mal_analyzer.malAnalyzerException`).
-/// Called from `maltoolbox-pyo3`'s `#[pymodule]`.
+/// Registers this layer's classes/exceptions onto the umbrella `_native`
+/// module, including the nested `language.compiler.exceptions`/
+/// `language.compiler.mal_analyzer` submodules so they're importable at
+/// the same paths as the Python originals (e.g.
+/// `maltoolbox.language.compiler.exceptions.MalCompilerError`). Called
+/// from `maltoolbox-pyo3`'s `#[pymodule]`.
 pub fn register(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLanguageGraph>()?;
     m.add_class::<PyLanguageGraphAsset>()?;

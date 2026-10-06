@@ -13,9 +13,8 @@ pub struct LanguageGraphAssociationField {
     pub maximum: Option<i64>,
 }
 
-/// `info` is deliberately excluded from `PartialEq`/`Hash`, mirroring the
-/// Python dataclass's `field(default_factory=dict, compare=False)` -
-/// metadata doesn't affect association identity.
+/// `info` is excluded from `PartialEq`/`Hash` - metadata doesn't affect
+/// association identity.
 #[derive(Debug, Clone)]
 pub struct LanguageGraphAssociation {
     pub name: String,

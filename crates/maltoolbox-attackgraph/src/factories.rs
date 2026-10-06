@@ -1,11 +1,8 @@
 //! Port of `maltoolbox/attackgraph/factories.py`.
 //!
-//! The Python original also writes debug dumps of the loaded
-//! langspec/langgraph/model to paths from a `maltoolbox.yml`
-//! config-driven `log_configs` dict (`log_configs['langspec_file']`
-//! etc.). That config/logging subsystem isn't ported (it's orthogonal
-//! to graph construction and has no equivalent elsewhere in this
-//! rewrite), so those side-effect dumps are intentionally dropped here.
+//! The Python original's `maltoolbox.yml`-driven debug dumps of the
+//! loaded langspec/langgraph/model are not ported; that config/logging
+//! subsystem has no equivalent here.
 
 use std::path::Path;
 use std::rc::Rc;
@@ -25,12 +22,11 @@ pub enum FactoryError {
 }
 
 /// Build an [`AttackGraph`] from a language file path (`.mar` or `.mal`,
-/// trying `.mar` first and falling back to `.mal` on failure - mirroring
-/// Python's `except zipfile.BadZipFile` fallback) and a model file path.
+/// trying `.mar` first and falling back to `.mal` on failure) and a model
+/// file path.
 ///
-/// Returns the loaded [`Model`] alongside the graph (unlike the Python
-/// original, which stashes it on `self.model`): callers need it for
-/// anything that resolves node names from model assets, e.g.
+/// Returns the loaded [`Model`] alongside the graph, since callers need
+/// it for anything that resolves node names from model assets, e.g.
 /// `AttackGraph::to_dict`/`save_to_file`.
 pub fn create_attack_graph(
     lang_path: impl AsRef<Path>,

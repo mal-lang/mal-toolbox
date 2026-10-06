@@ -1,14 +1,11 @@
 //! Mirrors `maltoolbox/language/language_graph_detector.py`'s
-//! `LanguageGraphDetector`/`LanguageGraphContextItem` (recovered via
-//! `git show HEAD~30:maltoolbox/language/language_graph_detector.py` -
-//! see PYTHON_BINDINGS_IMPLEMENTATION.md's Task B notes), wrapping the
-//! Rust core's `maltoolbox_language::graph::detector` types exposed on
+//! `LanguageGraphDetector`/`LanguageGraphContextItem`, wrapping the Rust
+//! core's `maltoolbox_language::graph::detector` types exposed on
 //! `LanguageGraphAttackStep.detectors`.
 //!
-//! Per the same scope relaxation as `model_effect.rs`/`expr_chain.rs`
-//! (Phase 4 decision 3, user-approved): no identity caching,
-//! `__richcmp__`, or `__hash__` - a plain, freely-constructible value
-//! snapshot, not an owner+id handle.
+//! Like `model_effect.rs`/`expr_chain.rs`, these are plain,
+//! freely-constructible value snapshots rather than owner+id handles:
+//! no identity caching, `__richcmp__`, or `__hash__`.
 
 use std::cell::RefCell;
 use std::rc::Rc;

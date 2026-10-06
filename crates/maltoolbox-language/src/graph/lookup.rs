@@ -14,12 +14,9 @@ fn find_asset<'a>(lang_spec: &'a Value, asset_type: &str) -> Option<&'a Value> {
 
 /// Attack step dicts for `asset_type`, keyed by step name.
 ///
-/// Must preserve the declaration order of `attackSteps` in the language
-/// spec (matches the pure-Python original's `{step['name']: step for step
-/// in asset['attackSteps']}` dict comprehension, which preserves insertion
-/// order) - this order determines attack-step/node-id assignment order
-/// downstream, so a `HashMap` here would make graph generation
-/// nondeterministic.
+/// Preserves the declaration order of `attackSteps` in the language spec;
+/// that order determines attack-step/node-id assignment downstream, so a
+/// `HashMap` here would make graph generation nondeterministic.
 pub fn get_attacks_for_asset_type(asset_type: &str, lang_spec: &Value) -> IndexMap<String, Value> {
     let Some(asset) = find_asset(lang_spec, asset_type) else {
         return IndexMap::new();

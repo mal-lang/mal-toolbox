@@ -54,23 +54,19 @@ pub struct Metadata {
     pub id: String,
 }
 
-/// `Clone` added for `maltoolbox-model-py`'s `PyModel`: the core
-/// `maltoolbox_model::Model` needs a bare `Rc<LanguageGraph>` (no
-/// `RefCell`), but the PyO3 `PyLanguageGraph` wraps `Rc<RefCell<
-/// LanguageGraph>>` (so `regenerate_graph` can mutate it) - the two
-/// don't compose without copying the data once. See
-/// PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 2 status for the narrow,
-/// confirmed-unused-in-practice divergence this introduces
-/// (`regenerate_graph` on the original `LanguageGraph` object isn't
-/// reflected in a `Model` already built from it).
+/// `Clone` is needed because `maltoolbox_model::Model` holds a bare
+/// `Rc<LanguageGraph>`, while the PyO3 wrapper holds `Rc<RefCell<
+/// LanguageGraph>>` (so it can be mutated via `regenerate_graph`); the two
+/// don't compose without copying the data once. Note that this means a
+/// `Model` already built from a graph won't see later mutations to that
+/// graph.
 #[derive(Clone)]
 pub struct LanguageGraph {
     pub assets: SlotMap<AssetId, LanguageGraphAsset>,
     pub steps: SlotMap<AttackStepId, LanguageGraphAttackStep>,
     pub asset_id_by_name: HashMap<String, AssetId>,
-    /// Insertion order of assets, mirroring Python dict iteration order
-    /// over `lang_spec['assets']` - needed because some builder passes
-    /// (e.g. `_inherit_attack_steps`'s deferral loop) are order-sensitive.
+    /// Insertion order of assets; some builder passes (e.g. the
+    /// `_inherit_attack_steps` deferral loop) are order-sensitive.
     pub asset_order: Vec<AssetId>,
     pub metadata: Metadata,
     pub lang_spec: Value,
@@ -123,10 +119,9 @@ impl LanguageGraph {
     }
 
     /// Own + inherited associations (`LanguageGraphAsset.associations`).
-    /// `IndexMap` to preserve insertion order from `own_associations`
-    /// (Phase 4 decision 7) - this feeds step-expression association
-    /// resolution (`step_expr.rs`) and is exposed to Python callers as
-    /// ordered dict-like iteration.
+    /// `IndexMap` preserves insertion order from `own_associations`, which
+    /// feeds step-expression association resolution (`step_expr.rs`) and
+    /// is exposed to Python callers as ordered dict-like iteration.
     pub fn associations(
         &self,
         asset: AssetId,
@@ -186,10 +181,8 @@ impl LanguageGraph {
 
     /// Maps each association fieldname to the `(asset_type, attack_step_name)`
     /// pairs whose children expression chains can traverse that field.
-    /// Computed fresh each call (the Python original caches it as a
-    /// `cached_property`; not performance-critical enough here to
-    /// justify the extra bookkeeping of invalidating a cache on graph
-    /// mutation).
+    /// Computed fresh each call rather than cached, to avoid invalidation
+    /// bookkeeping on graph mutation.
     pub fn fieldname_to_candidate_steps(&self) -> HashMap<String, HashSet<(String, String)>> {
         let mut mapping: HashMap<String, HashSet<(String, String)>> = HashMap::new();
         for &asset_id in &self.asset_order {

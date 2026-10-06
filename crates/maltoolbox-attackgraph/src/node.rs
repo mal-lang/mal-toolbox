@@ -1,17 +1,13 @@
-//! Port of `maltoolbox/attackgraph/node.py`.
+//! Port of `maltoolbox/attackgraph/node.py`'s `AttackGraphNode`.
 //!
-//! `full_name` and `to_dict` need to resolve the owning model asset's
-//! name, which (per this port's convention of not storing a persistent
-//! `Model` reference on `AttackGraph` - see `crate::graph` module docs)
-//! requires a `&Model` passed in; see `AttackGraph::full_name_of` and
-//! `AttackGraph::to_dict`.
+//! `AttackGraph` does not keep a persistent `Model` reference, so
+//! resolving a node's full name requires a `&Model` passed in; see
+//! `AttackGraph::full_name_of` and `AttackGraph::to_dict`.
 //!
-//! `additive_model_effects`/`subtractive_model_effects` are copied
-//! straight through from the language-graph attack step at construction
-//! time, exactly as the Python original does (`None` when empty, never
-//! an empty list) - mal-toolbox itself never applies them to a `Model`;
-//! they're exposed as plain data for a downstream consumer (e.g.
-//! mal-simulator) to interpret.
+//! `additive_model_effects`/`subtractive_model_effects` are plain data
+//! copied through from the language graph; mal-toolbox itself never
+//! applies them to a `Model` - a downstream consumer (e.g. mal-simulator)
+//! interprets them.
 
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -46,8 +42,7 @@ pub struct AttackGraphNode {
     pub full_name_override: Option<String>,
 }
 
-/// `Some(effects)` when non-empty, else `None` - mirrors
-/// `lg_attack_step.additive_model_effects if len(...) > 0 else None`.
+/// Returns `Some(effects)` when non-empty, else `None`.
 pub fn non_empty(effects: Vec<LanguageGraphModelEffect>) -> Option<Vec<LanguageGraphModelEffect>> {
     if effects.is_empty() {
         None
@@ -57,9 +52,8 @@ pub fn non_empty(effects: Vec<LanguageGraphModelEffect>) -> Option<Vec<LanguageG
 }
 
 impl AttackGraphNode {
-    /// Fallback full name when no model asset is available to resolve a
-    /// name from: `"{id}:{name}"`, mirroring the Python original's
-    /// `full_name` fallback branch. Prefer `AttackGraph::full_name_of`
+    /// Fallback full name (`"{id}:{name}"`) used when no model asset is
+    /// available to resolve a name from. Prefer `AttackGraph::full_name_of`
     /// when a model is available, since it also honors
     /// `full_name_override` and the model-asset-derived name.
     pub fn fallback_full_name(&self) -> String {

@@ -27,12 +27,10 @@ pub fn switch_fieldname(model: &Model, asset_id: i64, fieldname: &str) -> Result
     switch_fieldname_for_lg_asset(model, asset.lg_asset, &asset.name, fieldname)
 }
 
-/// Same lookup `switch_fieldname` does, but keyed off an already-known
-/// language-graph asset type + name instead of an instance id that needs
-/// resolving via `model.get_asset_by_id`. This is what makes it possible
-/// to resolve the opposite fieldname of a *removed* association without
-/// the removed asset still being present in `model` - the caller supplies
-/// the type/name straight from a [`AssetSnapshot`] instead.
+/// Same lookup as `switch_fieldname`, but keyed off an already-known
+/// language-graph asset type + name rather than an instance id, so it
+/// works even if the asset has been removed from `model` (the caller
+/// supplies the type/name from an [`AssetSnapshot`]).
 fn switch_fieldname_for_lg_asset(
     model: &Model,
     lg_asset: AssetId,
@@ -63,9 +61,7 @@ fn switch_fieldname_for_lg_asset(
 
 /// Resolves the opposite fieldname for `(asset_id, fieldname)`, where
 /// `asset_id` may already have been removed from `model` - in which case
-/// `removed` must contain its snapshot. Used for `removed_associations`
-/// in `AttackGraph::partially_regenerate_graph`, where either side of a
-/// severed association might be the one that's gone.
+/// `removed` must contain its snapshot.
 pub fn switch_fieldname_possibly_removed(
     model: &Model,
     asset_id: i64,
@@ -140,11 +136,9 @@ pub fn correct_node_children_on_modified_assoc(
     Ok(())
 }
 
-/// `removed_assets` carries a [`AssetSnapshot`] per id rather than
-/// a bare `HashSet<i64>`, specifically so this never needs
-/// `model.get_asset_by_id` to still succeed for an id that may already be
-/// gone from `model` - only `model.lang_graph` (the compiled language,
-/// untouched by instance-model mutation) is used here.
+/// `removed_assets` carries a [`AssetSnapshot`] per id rather than a bare
+/// `HashSet<i64>` so this works for ids already gone from `model`; only
+/// `model.lang_graph` (unaffected by instance-model mutation) is needed.
 pub fn nodes_to_be_removed(
     removed_assets: &HashMap<i64, AssetSnapshot>,
     model: &Model,

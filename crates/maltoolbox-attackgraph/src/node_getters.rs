@@ -1,6 +1,6 @@
-//! Port of `maltoolbox/attackgraph/node_getters.py` (plus the
-//! `levenshtein_distance` helper it borrows from `maltoolbox/str_utils.py`
-//! - inlined here since it has no other caller in this rewrite's scope).
+//! Port of `maltoolbox/attackgraph/node_getters.py`, plus the
+//! `levenshtein_distance` helper from `maltoolbox/str_utils.py` (inlined
+//! here since it has no other caller in this crate).
 
 use indexmap::IndexMap;
 

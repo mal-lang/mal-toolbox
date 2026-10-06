@@ -1,17 +1,15 @@
 //! Port of `maltoolbox/attackgraph/factories.py::create_attack_graph`.
 //!
-//! Unlike the Rust core's own `maltoolbox_attackgraph::factories::create_attack_graph`
-//! (path-only, returns `(AttackGraph, Model)` since the core doesn't
-//! store `model` on `AttackGraph` - see `PORTING_NOTES.md` §2), this
-//! mirrors Python's actual signature exactly: `lang`/`model` each accept
-//! either a path string or an already-loaded object, and only the
-//! `AttackGraph` is returned (with `.model`/`.lang_graph` set via this
+//! Unlike the Rust core's `maltoolbox_attackgraph::factories::create_attack_graph`
+//! (path-only, returns `(AttackGraph, Model)` since the core doesn't store
+//! `model` on `AttackGraph`), this mirrors Python's signature: `lang`/`model`
+//! each accept either a path string or an already-loaded object, and only
+//! the `AttackGraph` is returned (with `.model`/`.lang_graph` set via this
 //! compat layer's own back-reference).
 //!
-//! The debug-dump side effects Python's original has
-//! (`log_configs['langspec_file']`/etc.) are dropped, matching the Rust
-//! core's own `factories.rs` module doc for the same reason: that
-//! config/logging subsystem isn't ported anywhere in this project.
+//! The debug-dump side effects of Python's original
+//! (`log_configs['langspec_file']`/etc.) are dropped - that config/logging
+//! subsystem isn't ported anywhere in this project.
 
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;

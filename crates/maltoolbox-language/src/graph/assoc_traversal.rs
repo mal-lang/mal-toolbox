@@ -38,19 +38,15 @@ fn assoc_traversal(
     Ok(next_assets)
 }
 
-/// Resolves MAL's `*` operator as an actual transitive closure of
-/// `pattern`: repeatedly re-applies the pattern to the assets reached so
-/// far, feeding the growing result back in, until a fixed point is
-/// reached (no new assets are discovered).
+/// Resolves MAL's `*` operator as a transitive closure of `pattern`:
+/// repeatedly re-applies it to the assets reached so far until a fixed
+/// point is reached.
 ///
-/// NOTE: the Python oracle (`assoc_traversal_processor.py`'s
-/// `_glob_assoc_traversal`) has a confirmed bug where it recomputes both
-/// the seed and every loop iteration from the same unchanging
-/// `instigating_assets` instead of the growing result, so it always
-/// resolves to exactly one application of `pattern` rather than a real
-/// closure. This Rust port intentionally diverges from that behavior and
-/// implements the closure correctly, since reproducing the bug here
-/// would silently under-resolve `X.field*` in language validation.
+/// NOTE: the Python original (`_glob_assoc_traversal`) recomputes each
+/// iteration from the original `instigating_assets` rather than the
+/// growing result, so it only ever applies `pattern` once instead of
+/// computing a real closure. This port intentionally diverges and
+/// implements the closure correctly.
 fn glob_assoc_traversal(
     graph: &LanguageGraph,
     step: AttackStepId,
@@ -143,8 +139,7 @@ fn resolve_terminal_traversal(
             }
             Ok(result)
         }
-        // `*` is a repeated application of the pattern, so the
-        // termination is whatever the pattern itself terminates in.
+        // `*` terminates in whatever its inner pattern terminates in.
         AssocTraversalElem::Glob(g) => {
             resolve_terminal_traversal(graph, step, &current_assets, &g.pattern)
         }

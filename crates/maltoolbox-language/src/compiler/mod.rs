@@ -2,19 +2,14 @@
 //!
 //! Walks a tree-sitter-mal parse tree into the same loosely-typed
 //! `langspec` JSON shape the Python compiler produces (formatVersion /
-//! defines / categories / assets / associations), so downstream language-
-//! graph building and file I/O can stay wire-compatible with the Python
-//! mal-toolbox. This module (`compile_file`/`compile_inner`) only
-//! replicates the structural visitor; semantic validation (port of
-//! `mal_analyzer.py`) lives in the sibling [`semantic`] module and runs
-//! once, at the end of `compile_file`, over the fully-merged langspec.
+//! defines / categories / assets / associations). Structural visiting
+//! only; semantic validation lives in the sibling [`semantic`] module and
+//! runs once, at the end of `compile_file`, over the fully-merged
+//! langspec.
 //!
-//! Unlike the Python original, this walks the tree via tree-sitter's
-//! *field* API (`child_by_field_name` / `children_by_field_name`) rather
-//! than a raw cursor sibling-walk. Fields never include `comment` nodes
-//! (tree-sitter `extra`s are only ever attached positionally), so this
-//! sidesteps the comment-skipping dance `go_to_sibling` existed for in
-//! the Python code. Positional (non-field) child iteration still has to
+//! Walks the tree via tree-sitter's field API
+//! (`child_by_field_name`/`children_by_field_name`), which never yields
+//! `comment` nodes. Positional (non-field) child iteration still has to
 //! filter `comment` out explicitly - see `named_children_no_comments`.
 
 use std::collections::HashSet;
@@ -50,9 +45,8 @@ pub enum CompileError {
 }
 
 /// Compile a `.mal` file (and any `include`d files) into the langspec
-/// JSON shape used by [`maltoolbox-model`]/the language-graph builder,
-/// after running the semantic analyzer (port of `mal_analyzer.py`) over
-/// the fully-merged result.
+/// JSON shape, then run the semantic analyzer over the fully-merged
+/// result.
 pub fn compile_file(path: impl AsRef<Path>) -> Result<Value, CompileError> {
     let mut visited = HashSet::new();
     let mut active: Vec<PathBuf> = Vec::new();
@@ -70,23 +64,14 @@ pub fn compile_file(path: impl AsRef<Path>) -> Result<Value, CompileError> {
 }
 
 /// `active` holds the chain of files currently being compiled (the
-/// include "call stack"), used for real cycle detection: finding
+/// include "call stack"), used for cycle detection: finding
 /// `current_file` in it means an include chain has looped back on
 /// itself, anywhere in the chain - including back to the root file.
 ///
-/// NOTE: the Python oracle's cycle detection (`mal_analyzer.py`'s
-/// `_include_stack`) is confirmed buggy - it never raises for an include
-/// cycle that loops back to the root file specifically, because the root
-/// is never itself pushed as an "include" target (only files reached via
-/// an `include_declaration` are). `mal_compiler.py`'s own `visited_files`
-/// dedup also runs *before* the analyzer's per-include cycle check can
-/// fire for such a cycle, since the root is already marked visited by
-/// the time its own name is seen again. A genuine two-file mutual include
-/// (A includes B includes A) therefore silently compiles with no error
-/// in the real implementation. This Rust port intentionally diverges and
-/// implements real cycle detection, since silently accepting a
-/// structurally circular language spec seemed worse than matching that
-/// bug.
+/// This intentionally diverges from the Python original, whose cycle
+/// detection misses a mutual include that loops back to the root file
+/// specifically (see `PORTING_NOTES.md`); this port always detects such
+/// cycles rather than matching that bug.
 fn compile_inner(
     malfile: &Path,
     visited: &mut HashSet<PathBuf>,
@@ -173,9 +158,8 @@ fn text<'a>(node: Node, source: &'a [u8]) -> &'a str {
     node.utf8_text(source).unwrap_or("")
 }
 
-/// Positional children, skipping `comment` extras (which, unlike field
-/// lookups, are *not* excluded from `named_child` iteration - verified
-/// empirically against tree-sitter-mal 1.3.0).
+/// Positional children, skipping `comment` extras - unlike field lookups,
+/// `named_child` iteration does not exclude them.
 fn named_children_no_comments<'a>(node: Node<'a>) -> impl Iterator<Item = Node<'a>> {
     (0..node.named_child_count())
         .filter_map(move |i| node.named_child(i))
@@ -529,14 +513,9 @@ fn visit_attack_step(node: Node, source: &[u8], asset_name: &str) -> Result<Valu
     }))
 }
 
-/// Port of `visit_cias`, plus `mal_analyzer.py`'s `_validate_CIA`
-/// duplicate-classification warning (e.g. `C, C, I`), which Python emits
-/// as a side effect of the same walk. Only the first duplicate warns,
-/// matching the Python original's early `return` after it finds one -
-/// but unlike Python, finding a duplicate never skips building `risk`
-/// for the remaining letters, since that part of the original walk is
-/// not analyzer-gated and skipping it here would change serialized
-/// output.
+/// Builds the CIA risk flags and warns (once) on a duplicate
+/// classification (e.g. `C, C, I`), but still sets `risk` for every
+/// letter even after warning.
 fn visit_cias(node: Node, source: &[u8], asset_name: &str, step_name: &str) -> Value {
     let mut risk = json!({
         "isConfidentiality": false,
@@ -905,21 +884,16 @@ fn visit_asset_expr_unop(node: Node, source: &[u8]) -> Result<Value, CompileErro
     Ok(json!({ "type": "transitive", "stepExpression": step_expression }))
 }
 
-/// Port of `_resolve_part_ID_type` from mal_compiler.py. For a bare
-/// identifier used as an asset expression, decides whether it denotes a
-/// `field` or an `attackStep`.
+/// For a bare identifier used as an asset expression, decides whether it
+/// denotes a `field` or an `attackStep`.
 ///
-/// This replicates the *exact* (slightly surprising) behaviour of the
-/// Python original rather than a "cleaner" structural reinterpretation:
-/// walk up to the nearest ancestor of type `reaching` or
-/// `detector_context_reference` *specifically* (not `append_reaching`/
-/// `remove_reaching`/`dyn_sentence`, which are not matched); if none is
-/// found, the identifier is always a `field` (covers `let` bindings and
-/// preconditions, but also - as a quirk - every identifier reached only
-/// through `append_reaching`/`remove_reaching`). If found, scan the
-/// ancestor's raw source text starting right after the identifier: the
-/// first `.` byte means `field` (more chain follows), the first `,` or
-/// end-of-text means `attackStep`.
+/// Only walks up to a `reaching` or `detector_context_reference` ancestor
+/// (not `append_reaching`/`remove_reaching`/`dyn_sentence`); if none is
+/// found - including every identifier reached only through
+/// `append_reaching`/`remove_reaching` - it's always a `field`. Otherwise,
+/// scan the ancestor's source text right after the identifier: the first
+/// `.` means `field` (chain continues), the first `,` or end-of-text means
+/// `attackStep`.
 fn resolve_identifier_role(identifier: Node, source: &[u8]) -> &'static str {
     let mut parent = identifier.parent();
     while let Some(p) = parent {

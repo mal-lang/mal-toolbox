@@ -125,12 +125,9 @@ impl ExpressionsChain {
         }
     }
 
-    /// Mirrors `ExpressionsChain.to_dict`. Returns an error for
-    /// `Multiplicity` chains, matching the Python original - which falls
-    /// through to `raise LanguageGraphAssociationError` for that type
-    /// since multiplicity-qualified expressions are only ever consumed by
-    /// model-effect processing, never serialized directly as a
-    /// reaches/requires chain.
+    /// Mirrors `ExpressionsChain.to_dict`. Errors on `Multiplicity` chains,
+    /// which are only ever consumed by model-effect processing and never
+    /// serialized directly as a reaches/requires chain.
     pub fn to_dict(&self, graph: &super::LanguageGraph) -> Result<Value, GraphError> {
         match self {
             ExpressionsChain::Binary { op, left, right } => Ok(json!({

@@ -1,25 +1,16 @@
 //! Port of `maltoolbox/language/compiler/mal_analyzer.py`'s semantic
-//! validation, including its two purely-cosmetic warnings (abstract-
-//! asset-never-extended, duplicate-CIA-classification), which have no
-//! effect on compilation success or on any serialized output but are
-//! still useful diagnostics for language authors. Printed to stderr with
-//! `eprintln!` rather than routed through a logging framework, since no
-//! logging subsystem is ported in this project (see `PORTING_NOTES.md`
-//! §8). The abstract-asset check lives here, over the compiled langspec;
-//! the duplicate-CIA check lives in `visit_cias` in the sibling
-//! `compiler` module instead, since by the time a langspec reaches this
-//! pass its `risk` flags are already deduplicated booleans - the raw,
-//! possibly-repeated CIA letters only exist during that earlier walk.
+//! validation, run as a single pass over the already-built `langspec`
+//! [`Value`], re-deriving the inheritance-aware step/field/variable
+//! resolution that the Python original's incrementally-built dicts get
+//! for free. Diagnostic text drops tree-sitter line numbers and otherwise
+//! mirrors the original's checks and their relative error precedence.
 //!
-//! Unlike the Python original - a stateful visitor hooked into the same
-//! tree-sitter walk the compiler performs, accumulating state incrementally
-//! node-by-node - this operates as a single pass over the already-built
-//! `langspec` [`Value`], re-deriving the inheritance-aware step/field/
-//! variable resolution Python's incrementally-built dicts provided for
-//! free. Diagnostic text intentionally drops tree-sitter line numbers
-//! (wire compatibility covers the serialized Model/LanguageGraph/
-//! AttackGraph schema, not diagnostic strings), but otherwise mirrors the
-//! original's checks and their relative error precedence.
+//! Includes two purely-cosmetic warnings (abstract-asset-never-extended,
+//! duplicate-CIA-classification) with no effect on compilation success or
+//! serialized output, printed with `eprintln!` (see `PORTING_NOTES.md`).
+//! The duplicate-CIA check actually lives in `visit_cias` in the sibling
+//! `compiler` module, since by the time a langspec reaches this pass its
+//! `risk` flags are already deduplicated booleans.
 
 use std::collections::{HashMap, HashSet};
 
@@ -33,15 +24,13 @@ fn err(msg: impl Into<String>) -> CompileError {
 }
 
 /// `asset -> field_name -> target asset name`, the flattened (own +
-/// inherited) association fields available on an asset. Port of
-/// `_analyse_fields`/`_add_field`'s `self._associations`.
+/// inherited) association fields available on an asset.
 type FieldMap = HashMap<String, HashMap<String, String>>;
 /// `asset -> variable_name -> raw stepExpression`, flattened (own +
-/// inherited, pre-resolution). Port of `self._vars`.
+/// inherited, pre-resolution).
 type RawVarMap = HashMap<String, HashMap<String, Value>>;
-/// `asset -> attack step names`, flattened (own + inherited). Port of
-/// `self._steps`'s keys (values aren't needed downstream - only whether a
-/// name resolves).
+/// `asset -> attack step names`, flattened (own + inherited); only
+/// membership is needed, not the step values.
 type StepMap = HashMap<String, HashSet<String>>;
 
 struct Ctx<'a> {
@@ -91,7 +80,7 @@ pub fn analyze(langspec: &Value) -> Result<(), CompileError> {
 }
 
 // ---------------------------------------------------------------------
-// duplicate-name checks (the Python original's incremental check_* hooks)
+// duplicate-name checks
 // ---------------------------------------------------------------------
 
 fn check_duplicate_assets(assets: &[Value]) -> Result<(), CompileError> {
@@ -185,9 +174,8 @@ fn analyse_extends(assets: &[Value]) -> Result<(), CompileError> {
     Ok(())
 }
 
-/// Port of `_analyse_abstract`'s warning: an abstract asset that no other
-/// asset extends is almost certainly dead weight in the language, but
-/// it's not an error - just worth flagging.
+/// Warns if an abstract asset is never extended - not an error, just a
+/// diagnostic for likely dead weight in the language.
 fn warn_abstract_never_extended(assets: &[Value]) {
     for asset in assets {
         if asset["isAbstract"].as_bool() != Some(true) {
@@ -230,9 +218,9 @@ fn analyse_parents(assets: &[Value]) -> Result<(), CompileError> {
     Ok(())
 }
 
-/// Port of `_get_parents`: an asset's ancestor chain, root-first, ending
-/// with the asset itself. Assumes `analyse_parents` already ran (no
-/// cycle-checking here, only a defensive break mirroring the original).
+/// An asset's ancestor chain, root-first, ending with the asset itself.
+/// Assumes `analyse_parents` already ran to rule out cycles; the break
+/// below is just a defensive fallback.
 fn get_parents(assets_by_name: &HashMap<&str, &Value>, asset_name: &str) -> Vec<String> {
     let mut parents = vec![asset_name.to_string()];
     let mut current = asset_name.to_string();
@@ -309,10 +297,7 @@ fn analyse_association(associations: &[Value], assets: &[Value]) -> Result<(), C
 /// Whether an attack step's `reaches` operator is an override form
 /// (`->`/`A>`/`R>`) rather than an append form (`+>`/`+A>`/`+R>`), or the
 /// step has no reaches clause at all (vacuously fine to be a first
-/// definition). Port of `_read_steps`'s inline operator check - note it
-/// only ever looks at whichever single reaches-like clause is present,
-/// mirroring `attackStep_node.child_by_field_name('reaches')` matching
-/// any of `reaching`/`append_reaching`/`remove_reaching`.
+/// definition). Only the first present reaches-like clause is checked.
 fn step_overrides_or_absent(step: &Value) -> bool {
     for key in ["reaches", "append_reaches", "remove_reaches"] {
         let clause = &step[key];
@@ -444,12 +429,10 @@ fn own_vars_of(asset: &Value) -> HashMap<String, Value> {
         .collect()
 }
 
-/// Port of `_analyse_variables`'s hierarchy-flattening half: for every
-/// asset, merges its own variables with every ancestor's own variables,
-/// raising if the SAME name is independently declared (not merely
-/// inherited) at more than one level in the chain - this holds even if
-/// the two declarations are identical, since Python's check compares AST
-/// node identity, never content.
+/// For every asset, merges its own variables with every ancestor's own
+/// variables, raising if the same name is independently declared (not
+/// merely inherited) at more than one level in the chain - even if the
+/// two declarations are identical.
 fn analyse_variables(
     assets: &[Value],
     assets_by_name: &HashMap<&str, &Value>,
@@ -488,9 +471,8 @@ fn analyse_variables(
     Ok(resolved)
 }
 
-/// Port of `_analyse_variables`'s final loop + `_variable_to_asset`: every
-/// variable (own or inherited) must resolve to an asset, with cycle
-/// detection.
+/// Every variable (own or inherited) must resolve to an asset, with
+/// cycle detection.
 fn validate_variables_resolve(ctx: &Ctx) -> Result<(), CompileError> {
     for (asset, vars) in &ctx.raw_vars {
         for (var_name, expr) in vars {
@@ -509,7 +491,7 @@ fn validate_variables_resolve(ctx: &Ctx) -> Result<(), CompileError> {
 }
 
 // ---------------------------------------------------------------------
-// step-expression resolution (unifies _check_to_asset's family)
+// step-expression resolution
 // ---------------------------------------------------------------------
 
 fn resolve_to_asset(

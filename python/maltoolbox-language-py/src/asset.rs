@@ -1,8 +1,7 @@
 //! Mirrors `maltoolbox/language/language_graph_asset.py`'s
-//! `LanguageGraphAsset`. A handle (`owner` + `AssetId`) - per Phase 4
-//! decision 1, cached per-owner (`caches.assets`) so repeated lookups
-//! for the same id return the identical Python object; see `handle.rs`
-//! / PYTHON_BINDINGS_IMPLEMENTATION.md.
+//! `LanguageGraphAsset`. A handle (`owner` + `AssetId`), cached per-owner
+//! (`caches.assets`) so repeated lookups for the same id return the
+//! identical Python object; see `handle.rs`.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -40,7 +39,7 @@ impl PyLanguageGraphAsset {
     }
 
     /// Cache-aware constructor for a sibling asset handle owned by the
-    /// same `LanguageGraph` - see `handle.rs`'s Phase 4 decision 1 note.
+    /// same `LanguageGraph`.
     fn asset_handle(&self, py: Python<'_>, id: AssetId) -> PyResult<Py<PyLanguageGraphAsset>> {
         let owner = self.owner.clone();
         let caches = self.caches.clone();
@@ -121,12 +120,10 @@ impl PyLanguageGraphAsset {
     }
 
     /// This asset plus every asset that directly or indirectly extends
-    /// it. Not cached (Python's is a `cached_property`) - see
-    /// `LanguageGraph::fieldname_to_candidate_steps`'s doc comment for
-    /// why that tradeoff is accepted throughout this layer. (The
-    /// returned *handles* are cached per Phase 4 decision 1 - this just
-    /// means the *list* itself is recomputed each access, not that the
-    /// objects inside it are fresh each time.)
+    /// it. The list is recomputed on each access (Python's is a
+    /// `cached_property`, this isn't); the handles it returns are still
+    /// cached, so the objects inside are stable even though the list
+    /// itself is not.
     #[getter]
     fn sub_assets(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphAsset>>> {
         let ids = self.owner.borrow().sub_assets(self.id);
@@ -172,11 +169,9 @@ impl PyLanguageGraphAsset {
     }
 
     /// Own + inherited variables: name -> (target asset, optional
-    /// expression chain) - the expression chain is a real
-    /// `ExpressionsChain` wrapper (closes Phase 1 gap #2; confirmed
-    /// necessary for real by `tests/language/test_languagegraph.py::
-    /// test_interleaved_vars`, which reads `.right_link.fieldname`
-    /// directly on it).
+    /// expression chain). The expression chain is a real `ExpressionsChain`
+    /// wrapper, not a dict, since callers access attributes like
+    /// `.right_link.fieldname` directly on it.
     #[getter]
     fn variables<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let graph = self.owner.borrow();
@@ -231,17 +226,12 @@ impl PyLanguageGraphAsset {
         }
     }
 
-    /// Phase 4 decision 9: delegate to a fresh, temporary
-    /// `PyLanguageGraph` wrapping the same underlying `Rc<RefCell<_>>` +
-    /// `id` (round-tripped through slotmap's stable `KeyData` ffi repr,
-    /// since `AssetId` itself isn't picklable) - pickle recursively
-    /// pickles that temporary owner via `PyLanguageGraph`'s own
-    /// `__reduce__`, so this doesn't need its own graph-serialization
-    /// logic. No object-identity requirement here (unlike
-    /// `PyAttackGraphNode`) - `test_pickle_languagegraph_asset` only
-    /// checks `to_dict()` equality - so a temporary owner handle is
-    /// sufficient; see PYTHON_BINDINGS_IMPLEMENTATION.md's "New Phase 4
-    /// decision 9".
+    /// Pickles as `(owner, ffi_id)`, where `owner` is a fresh temporary
+    /// `PyLanguageGraph` wrapping the same `Rc<RefCell<_>>` and `ffi_id`
+    /// is the `AssetId` round-tripped through slotmap's stable `KeyData`
+    /// ffi representation (since `AssetId` itself isn't picklable).
+    /// Pickle recursively pickles the temporary owner via its own
+    /// `__reduce__`, so no graph-serialization logic is needed here.
     #[allow(clippy::type_complexity)]
     fn __reduce__(&self, py: Python<'_>) -> PyResult<(Py<PyAny>, (Py<crate::language_graph::PyLanguageGraph>, u64))> {
         let temp_owner = Py::new(
@@ -259,8 +249,8 @@ impl PyLanguageGraphAsset {
 /// Rebuilds a `PyLanguageGraphAsset` handle from a pickled
 /// `(owner, ffi_id)` pair - the `__reduce__` target. A plain function
 /// (registered in `lib.rs`), not a method, since `__reduce__`'s callable
-/// must be importable by name. Goes through the owner's cache (Phase 4
-/// decision 1) exactly like live access would.
+/// must be importable by name. Goes through the owner's handle cache,
+/// same as live access.
 #[pyfunction]
 pub fn _rebuild_language_graph_asset(
     py: Python<'_>,

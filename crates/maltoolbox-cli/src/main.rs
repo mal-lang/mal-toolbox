@@ -1,17 +1,10 @@
-//! Port of `maltoolbox/__main__.py`, minus the subcommands excluded
-//! from this rewrite's scope:
+//! Port of `maltoolbox/__main__.py`. The `upgrade-model`/`visualize-model`
+//! subcommands and the `--graphviz`/`--neo4j` flags are out of scope (no
+//! visualization/translator subsystem ported).
 //!
-//! - `upgrade-model`: depends on `translators.updater`, out of scope.
-//! - `visualize-model`: entirely visualization-dependent, out of scope.
-//! - `generate-attack-graph`'s `--graphviz`/`--neo4j` flags: same.
-//!
-//! `generate-attack-graph` also takes an explicit `<output_file>`
-//! argument here, where the Python original instead wrote to a
-//! `maltoolbox.yml`-configured debug path (defaulting to
-//! `logs/attackgraph.yml`) as a side effect - that config/logging
-//! subsystem isn't ported (see `maltoolbox_attackgraph::factories`),
-//! so an explicit argument is the straightforward replacement for an
-//! otherwise-silent command.
+//! `generate-attack-graph` takes an explicit `<output_file>` argument here,
+//! replacing the Python original's implicit write to a
+//! `maltoolbox.yml`-configured debug path.
 
 use std::path::PathBuf;
 use std::process::ExitCode;

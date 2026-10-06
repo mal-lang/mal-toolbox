@@ -1,6 +1,6 @@
 //! Mirrors `maltoolbox/language/languagegraph.py`'s `LanguageGraph`.
 //! The one "container" type in this crate - see
-//! PYTHON_BINDINGS_IMPLEMENTATION.md's "Container / handle pattern".
+//! PYTHON_BINDINGS_IMPLEMENTATION.md's "Container / handle pattern" section.
 
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -29,11 +29,11 @@ use crate::handle::{cached_handle, LangGraphCaches, SharedLangGraphCaches};
 #[pyclass(name = "LanguageGraph", module = "maltoolbox._native", unsendable)]
 pub struct PyLanguageGraph {
     pub inner: Rc<RefCell<LanguageGraph>>,
-    /// Per-owner asset/attack-step handle caches (Phase 4 decision 1) -
-    /// shared (same `Rc`) with every `PyLanguageGraphAsset`/
-    /// `PyLanguageGraphAttackStep`/`PyLanguageGraphAssociation`(`Field`)
-    /// this graph ever hands out, so repeated lookups for the same id
-    /// return the identical Python object.
+    /// Per-owner asset/attack-step handle caches, shared (same `Rc`) with
+    /// every `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep`/
+    /// `PyLanguageGraphAssociation`(`Field`) this graph hands out, so
+    /// repeated lookups for the same id return the identical Python
+    /// object.
     pub caches: SharedLangGraphCaches,
 }
 
@@ -63,23 +63,12 @@ impl PyLanguageGraph {
     /// Matches the Python original's `LanguageGraph(lang_spec: dict)`
     /// constructor - builds a graph directly from an already-compiled
     /// langspec dict (the shape `MalCompiler().compile(...)` produces,
-    /// same as what's inside a `.mar` archive's `langspec.json`),
-    /// without going through a file at all. Reuses the core's existing
-    /// `generate_graph(Value) -> LanguageGraph` (already exercised by
-    /// `from_mal_spec`/`from_mar_archive` internally) - no new core
-    /// logic, just a second entry point into it.
+    /// same as what's inside a `.mar` archive's `langspec.json`).
     ///
     /// Deliberately **not** `Option<...>` defaulting to `None` the way
-    /// Python's `lang_spec: dict | None = None` is - that default
-    /// builds an empty, freeform-mutable graph (`self.assets = {}`, no
-    /// `generate_graph` call), which is exactly the construction mode
-    /// Phase 1's "freeform/mutable construction" finding deliberately
-    /// chose *not* to support (rewriting the one affected fixture
-    /// instead - see PYTHON_BINDINGS_IMPLEMENTATION.md). Confirmed via
-    /// grep that nothing calls `LanguageGraph()`/`LanguageGraph(None)`
-    /// anywhere in `tests/`/`maltoolbox/` - every real call site
-    /// (`tests/language/test_compiler.py`) always passes a real,
-    /// non-empty compiled dict.
+    /// Python's `lang_spec: dict | None = None` is: that default builds
+    /// an empty, freeform-mutable graph, a construction mode this crate
+    /// doesn't support (see PYTHON_BINDINGS_IMPLEMENTATION.md).
     #[new]
     fn new(lang_spec: &Bound<'_, PyAny>) -> PyResult<Self> {
         let value: serde_json::Value =
@@ -91,9 +80,7 @@ impl PyLanguageGraph {
     /// `PathBuf`, not `&str`, for every path parameter in this impl block
     /// - pyo3 extracts `PathBuf` from both a plain `str` and any
     /// `os.PathLike` (e.g. `pathlib.Path`), matching the Python
-    /// original's file APIs, which accept both (confirmed necessary:
-    /// `tests/language/test_compiler.py` passes `Path.glob(...)` results
-    /// directly).
+    /// original's file APIs, which accept both.
     #[staticmethod]
     fn load_from_file(path: PathBuf) -> PyResult<Self> {
         let graph = lang_file::load_from_file(path).map_err(load_error_to_py)?;
@@ -133,11 +120,10 @@ impl PyLanguageGraph {
             .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
     }
 
-    /// Rebuild `.assets` from the `lang_spec` given at construction time
-    /// (or loaded from a `.mal`/`.mar` file - *not* available on a graph
-    /// rebuilt via `from_dict`/a plain JSON/YAML load, same gap as the
-    /// Python original: `self.assets = generate_graph(self.lang_spec)`
-    /// fails there too if `lang_spec` is `None`).
+    /// Rebuilds `.assets` from the `lang_spec` given at construction time
+    /// (or loaded from a `.mal`/`.mar` file) - *not* available on a graph
+    /// rebuilt via `from_dict`/a plain JSON/YAML load, matching the
+    /// Python original's same gap.
     fn regenerate_graph(&self) -> PyResult<()> {
         let lang_spec = self.inner.borrow().lang_spec.clone();
         let regenerated = maltoolbox_language::generate_graph(lang_spec).map_err(graph_error_to_py)?;
@@ -175,8 +161,7 @@ impl PyLanguageGraph {
         Ok(dict)
     }
 
-    /// All associations in the language graph (a Python `set`, matching
-    /// the original's `@property associations`).
+    /// All associations in the language graph, as a Python `set`.
     #[getter]
     fn associations<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PySet>> {
         let graph = self.inner.borrow();
@@ -189,8 +174,7 @@ impl PyLanguageGraph {
         Ok(set)
     }
 
-    /// All attack steps in the language graph (a Python `set`, matching
-    /// the original's `@property attack_steps`).
+    /// All attack steps in the language graph, as a Python `set`.
     #[getter]
     fn attack_steps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PySet>> {
         let step_ids: Vec<AttackStepId> = {
@@ -207,10 +191,7 @@ impl PyLanguageGraph {
     /// Maps each association fieldname to the `(asset_type,
     /// attack_step_name)` pairs whose children expression chains can
     /// traverse that field. Computed fresh each call, not cached - see
-    /// `LanguageGraph::fieldname_to_candidate_steps`'s doc comment in
-    /// the core crate for why that tradeoff is accepted (same reasoning
-    /// as the `.assets`/`.associations`/`.attack_steps` dict/set
-    /// rebuild-per-access decision for this layer).
+    /// `LanguageGraph::fieldname_to_candidate_steps` in the core crate.
     #[getter]
     fn fieldname_to_candidate_steps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let graph = self.inner.borrow();
@@ -241,11 +222,8 @@ impl PyLanguageGraph {
         )
     }
 
-    /// Pickling target for `__reduce__` - a plain function (not the class
-    /// itself), since `PyLanguageGraph` has no `#[new]` (matches the real
-    /// Python original's `_from_dict`-based reconstruction path, not a
-    /// bare constructor call) - see PYTHON_BINDINGS_IMPLEMENTATION.md's
-    /// Phase 3 decision 4.
+    /// Pickling target for `__reduce__` - a plain function, since
+    /// `PyLanguageGraph` has no `#[new]` that takes a dict directly.
     #[staticmethod]
     fn _from_pickle_state(py: Python<'_>, state: &Bound<'_, PyAny>) -> PyResult<Self> {
         let value: serde_json::Value = pythonize::depythonize(state)

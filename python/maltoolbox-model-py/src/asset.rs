@@ -1,16 +1,10 @@
 //! Mirrors `maltoolbox/model.py`'s `ModelAsset`. A handle (`owner` +
-//! `i64` id) - per Phase 4 decision 1, cached per-owner (`handle_cache`)
-//! so repeated lookups for the same id return the identical Python
-//! object, same scheme as Phase 1's `PyLanguageGraphAsset`/
-//! `PyLanguageGraphAttackStep`. No `#[new]`:
-//! the real Python `ModelAsset.__init__` takes no `Model` argument at
-//! all (fully detached construction), which is incompatible with this
-//! handle design the same way Phase 1's `LanguageGraphAsset`/
-//! `LanguageGraphAttackStep` detached construction was - resolved there
-//! by rewriting the one affected test (Phase 1 gap #1); the
-//! `ModelAsset` analog (`test_model_remove_nonexisting_asset`) is
-//! resolved the same way per Phase 2 decision 2. `ModelAsset` is only
-//! ever handed out by `PyModel`.
+//! `i64` id), cached per-owner (`handle_cache`) so repeated lookups for
+//! the same id return the identical Python object, same scheme as
+//! `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep`. No `#[new]`: the
+//! real Python `ModelAsset.__init__` takes no `Model` argument at all
+//! (fully detached construction), which is incompatible with this
+//! handle design. `ModelAsset` is only ever handed out by `PyModel`.
 //!
 //! **Post-removal readability**: a handle whose `id` has been removed
 //! from `owner.assets` (via `Model.remove_asset`) falls back to
@@ -20,10 +14,7 @@
 //! removal. Mutating methods (`add_associated_assets`/
 //! `remove_associated_assets`/`validate_associated_assets`) do *not* get
 //! this fallback - they delegate straight to the core `Model` methods,
-//! which correctly reject an unknown/removed id on their own, and
-//! nothing requires a removed asset to support further mutation. See
-//! PYTHON_BINDINGS_IMPLEMENTATION.md's Phase 2 status for the full
-//! rationale (this resolves what was previously an open gap there).
+//! which correctly reject an unknown/removed id on their own.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -40,18 +31,12 @@ use maltoolbox_language_py::handle::{cached_handle, composite_hash, HandleCache,
 use maltoolbox_language_py::PyLanguageGraphAsset;
 
 /// `{fieldname: {other_asset_id: other_asset_name}}`'s inner keys are
-/// *integers* in the Python original (`{asset.id: asset.name for asset
-/// in assets}`), but the core's own `to_dict()` can only produce
-/// `serde_json::Map` (string keys only - a JSON limitation) - `pythonize`
-/// therefore hands back `{"0": "App1"}` instead of `{0: "App1"}` unless
-/// corrected here, after pythonizing, by rebuilding each inner dict with
-/// parsed-back-to-int keys. Shared by `PyModelAsset::_to_dict` and
-/// `PyModel::to_dict` (called once per asset dict either way). Caught by
-/// `tests/test_model.py::test_serialize`/`tests/translators/
-/// test_networkx.py` indexing `associated_assets`/`assets` by a real
-/// `int`, not a string - not caught by Phase 2's own oracle diff, which
-/// JSON-round-tripped both sides before comparing (erasing the int/str
-/// key distinction on both sides equally).
+/// *integers* in the Python original, but the core's own `to_dict()`
+/// can only produce `serde_json::Map` (string keys only, a JSON
+/// limitation) - `pythonize` therefore hands back `{"0": "App1"}`
+/// instead of `{0: "App1"}` unless corrected here, after pythonizing, by
+/// rebuilding each inner dict with parsed-back-to-int keys. Shared by
+/// `PyModelAsset::_to_dict` and `PyModel::to_dict`.
 pub fn fix_associated_assets_int_keys(py: Python<'_>, asset_dict: &Bound<'_, PyDict>) -> PyResult<()> {
     let Some(associated) = asset_dict.get_item("associated_assets")? else {
         return Ok(());
@@ -80,11 +65,9 @@ use crate::exceptions::model_error_to_py;
 pub type Tombstones = Rc<RefCell<HashMap<i64, ModelAsset>>>;
 
 /// Extracts `.id` from every `ModelAsset` in an arbitrary Python
-/// iterable (`set`/`list`/etc.) - `Vec<PyRef<PyModelAsset>>` only
-/// accepts `Sequence`s, not sets, and Python's real
-/// `add_associated_assets`/`remove_associated_assets`/
-/// `validate_associated_assets` are called with `set[ModelAsset]`
-/// almost everywhere.
+/// iterable (`set`/`list`/etc.), since `Vec<PyRef<PyModelAsset>>` only
+/// accepts `Sequence`s, not sets, and Python callers pass
+/// `set[ModelAsset]` almost everywhere.
 fn ids_of(obj: &Bound<'_, PyAny>) -> PyResult<std::collections::HashSet<i64>> {
     obj.try_iter()?
         .map(|item| Ok(item?.extract::<PyRef<'_, PyModelAsset>>()?.id))
@@ -102,17 +85,15 @@ pub struct PyModelAsset {
     /// `owner.borrow().lang_graph` (that's a bare `Rc<LanguageGraph>`,
     /// not `Rc<RefCell<LanguageGraph>>`).
     pub lang_graph: Rc<RefCell<LanguageGraph>>,
-    /// The owning `PyModel`'s `PyLanguageGraph.caches` - needed so
+    /// The owning `PyModel`'s `PyLanguageGraph.caches`, needed so
     /// `.lg_asset` resolves to the same per-owner-cached
-    /// `PyLanguageGraphAsset` handle as every other path to it (Phase 4
-    /// decision 1).
+    /// `PyLanguageGraphAsset` handle as every other path to it.
     pub lang_caches: SharedLangGraphCaches,
     pub tombstones: Tombstones,
-    /// This type's own per-owner handle cache (Phase 4 decision 1) -
-    /// shared (same `Rc`) with `PyModel` and every sibling
-    /// `PyModelAsset` handle, so e.g. `model.assets[id]` and
-    /// `asset.associated_assets['field']`'s members return the identical
-    /// Python object for the same id.
+    /// This type's own per-owner handle cache, shared (same `Rc`) with
+    /// `PyModel` and every sibling `PyModelAsset` handle, so e.g.
+    /// `model.assets[id]` and `asset.associated_assets['field']`'s
+    /// members return the identical Python object for the same id.
     pub handle_cache: HandleCache<i64, PyModelAsset>,
 }
 
@@ -140,7 +121,7 @@ impl PyModelAsset {
     }
 
     /// Cache-aware constructor for a sibling `ModelAsset` handle owned by
-    /// the same `Model` - see the module doc comment / Phase 4 decision 1.
+    /// the same `Model`.
     fn asset_handle(&self, py: Python<'_>, id: i64) -> PyResult<Py<PyModelAsset>> {
         let owner = self.owner.clone();
         let lang_graph = self.lang_graph.clone();
@@ -226,12 +207,9 @@ impl PyModelAsset {
     }
 
     /// Plain mutable attribute in the Python original
-    /// (`self.extras: dict = {}`, freely reassignable) - confirmed
-    /// load-bearing by `tests/test_model.py::
-    /// test_model_save_and_load_model_from_scratch` (`asset1.extras =
-    /// {...}`). Live-only, no tombstone fallback - same as every other
-    /// mutating method on this type (nothing requires mutating a removed
-    /// asset).
+    /// (`self.extras: dict = {}`, freely reassignable). Live-only, no
+    /// tombstone fallback - same as every other mutating method on this
+    /// type.
     #[setter]
     fn set_extras(&self, value: &Bound<'_, PyAny>) -> PyResult<()> {
         let parsed: serde_json::Value =
@@ -244,12 +222,11 @@ impl PyModelAsset {
     }
 
     /// `dict[str, set[ModelAsset]]`, matching the Python `@property
-    /// associated_assets`. Rebuilt fresh per access, not cached - same
-    /// convention as every other mapping-shaped attribute in this
-    /// layer. For a tombstoned (removed) asset, `final_state
-    /// .associated_assets` was captured *after* `remove_asset`'s own
-    /// cleanup already emptied it, so this correctly yields `{}` rather
-    /// than the pre-removal associations.
+    /// associated_assets`. Rebuilt fresh per access, not cached. For a
+    /// tombstoned (removed) asset, `final_state.associated_assets` was
+    /// captured *after* `remove_asset`'s own cleanup already emptied it,
+    /// so this correctly yields `{}` rather than the pre-removal
+    /// associations.
     #[getter]
     fn associated_assets<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         self.with_asset(|asset| {
@@ -308,25 +285,15 @@ impl PyModelAsset {
     }
 
     /// Matches the Python original's `ModelAsset._to_dict()` exactly:
-    /// returns `{self.id: {name, type, ...}}` - a single-key dict keyed
-    /// by this asset's own id, *not* just the inner field dict (that's
-    /// what `Model::to_dict()` does per-asset internally via
-    /// `contents['assets'].update(asset._to_dict())` in the original).
-    /// The core's own `ModelAsset::to_dict()` deliberately returns the
-    /// unwrapped inner dict (by design - `Model::to_dict` wraps it
-    /// per-asset itself, see that method's doc comment), so this
-    /// id-wrapping step belongs here, not in the core. Caught by
-    /// `tests/test_model.py::test_model_asset_to_dict` calling
-    /// `asset._to_dict()` standalone - Phase 2's own oracle diff never
-    /// caught this because it only ever compared the *whole model's*
-    /// `to_dict()`, which doesn't go through each asset handle's own
-    /// `_to_dict()` method at all.
+    /// returns `{self.id: {name, type, ...}}`, a single-key dict keyed
+    /// by this asset's own id, *not* just the inner field dict. The
+    /// core's own `ModelAsset::to_dict()` deliberately returns the
+    /// unwrapped inner dict (`Model::to_dict` wraps it per-asset
+    /// itself), so this id-wrapping step belongs here, not in the core.
     fn _to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         // `associated_assets` needs id->name resolution against the
-        // live model, same as the core crate's own `Model::to_dict` -
-        // only meaningful in the live-asset branch, since a tombstoned
-        // asset's `associated_assets` is already empty (captured after
-        // `remove_asset`'s own cleanup ran).
+        // live model; only meaningful in the live-asset branch, since a
+        // tombstoned asset's `associated_assets` is already empty.
         let model = self.owner.borrow();
         let dict = if let Some(asset) = model.assets.get(&self.id) {
             let mut dict = asset.to_dict();
@@ -348,9 +315,8 @@ impl PyModelAsset {
             asset.to_dict()
         };
         // Built as a real `PyDict` with an *integer* key, not via
-        // `pythonize` on a `serde_json::Map` - JSON objects only support
-        // string keys, which would silently turn `self.id` into `"0"`
-        // instead of `0` and break `asset._to_dict()`'s id-keyed contract.
+        // `pythonize` on a `serde_json::Map`: JSON objects only support
+        // string keys, which would silently turn `self.id` into `"0"`.
         let inner = pythonize::pythonize(py, &dict).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let inner = inner.cast::<PyDict>()?;
         fix_associated_assets_int_keys(py, inner)?;

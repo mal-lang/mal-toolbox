@@ -1,29 +1,16 @@
 //! Port of `maltoolbox/attackgraph/attackgraph.py`'s `AttackGraph` class,
 //! including `attack_graph_from_dict`/`attack_graph_from_file`
-//! (`AttackGraph::from_dict`/`AttackGraph::load_from_file` here). Neither
-//! CLI subcommand (`compile`, `generate-attack-graph`) actually reads an
-//! attack graph back in, but the deserialization path is kept at parity
-//! with the Python original for downstream consumers (e.g.
-//! mal-simulator) that may; see `PORTING_NOTES.md` at the repo root.
+//! (`AttackGraph::from_dict`/`AttackGraph::load_from_file` here).
 //!
 //! Holds `lang_graph` persistently (compiled once, never mutated, so an
-//! `Rc` is safe to share) but *not* `model` - see the crate-level docs
-//! for why methods that need the model take `&Model` explicitly instead.
-//! Unlike Python, where `attack_graph_from_dict` stashes `model` directly
-//! on the returned `AttackGraph` (`attack_graph.model = model`), this
-//! port never stores it: callers that loaded with a model back in hand
-//! simply keep passing `Some(&model)` to `to_dict`/`full_name_of`/etc.,
-//! same as every other method here.
+//! `Rc` is safe to share) but *not* `model` - methods that need the model
+//! take `&Model` explicitly instead, unlike the Python original which
+//! stashes `model` on the returned `AttackGraph`.
 //!
-//! Two behaviors are intentionally *not* reconstructed, matching what
-//! the Python original effectively discards too:
-//! - `Detector`s: `node_dict['detectors']` is read by nothing in
-//!   `attack_graph_from_dict` - only `tags`/`extras`/the topology fields
-//!   are. A loaded graph's `detectors` are always empty.
-//! - `ModelAsset.attack_step_nodes`: a `# TODO: deprecate this` Python-only
-//!   back-reference list `attack_graph_from_dict` populates on the model
-//!   asset as a side effect; this port's `ModelAsset` never had this
-//!   field to begin with, so there is nothing to populate.
+//! Two behaviors are intentionally not reconstructed on load, matching what
+//! the Python original effectively discards too: `Detector`s (a loaded
+//! graph's `detectors` are always empty), and `ModelAsset.attack_step_nodes`
+//! (a Python-only back-reference list this port's `ModelAsset` never had).
 
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -43,25 +30,21 @@ use crate::partially_generate::{
 };
 use crate::GraphError;
 
-/// `Clone` deep-copies node storage (the `SlotMap`/`IndexMap`s, each
-/// holding `Clone`-able `AttackGraphNode`s) while cheaply sharing
-/// `lang_graph` (an `Rc`, never mutated after construction - see this
-/// module's top doc comment) - exactly the semantics
-/// `PyAttackGraph::__deepcopy__` needs: a structurally distinct graph
-/// whose `AttackGraphNodeId` keys (and hence every node's `children`/
-/// `parents` cross-references, which are just those keys) stay valid
-/// and already mutually consistent, with no manual re-linking required.
+/// `Clone` deep-copies node storage (the `SlotMap`/`IndexMap`s, each holding
+/// `Clone`-able `AttackGraphNode`s) while cheaply sharing `lang_graph` (an
+/// `Rc`, never mutated after construction). The cloned graph's
+/// `AttackGraphNodeId` keys, and hence every node's `children`/`parents`
+/// cross-references, stay valid and mutually consistent with no manual
+/// re-linking required.
 #[derive(Clone)]
 pub struct AttackGraph {
     pub lang_graph: Rc<LanguageGraph>,
     pub nodes: SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    /// `IndexMap`, not `HashMap`: iteration order over these two maps
-    /// feeds node-by-id/by-name lookups whose failure paths
-    /// (`node_getters.rs`'s `get_similar_full_names`) and whose
-    /// downstream consumers rely on deterministic, insertion-matching
-    /// order - a plain `HashMap`'s randomized per-process order made
-    /// attack-graph generation output nondeterministic (Phase 4 decision
-    /// 7, widened).
+    /// `IndexMap`, not `HashMap`: iteration order over these two maps feeds
+    /// node-by-id/by-name lookups whose failure paths and downstream
+    /// consumers rely on deterministic, insertion-matching order. A plain
+    /// `HashMap`'s randomized per-process order would make attack-graph
+    /// generation output nondeterministic.
     pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
     pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
@@ -112,8 +95,8 @@ impl AttackGraph {
         Ok(())
     }
 
-    /// Port of `AttackGraph.partially_regenerate_graph`. Updates the
-    /// graph incrementally for the given model changes instead of a full
+    /// Port of `AttackGraph.partially_regenerate_graph`. Updates the graph
+    /// incrementally for the given model changes instead of a full
     /// `regenerate_graph` rebuild. `new_associations`/`removed_associations`
     /// are `(left_asset_id, fieldname, right_asset_id)` triples, mirroring
     /// the Python original's `(ModelAsset, str, ModelAsset)` tuples.
@@ -121,16 +104,10 @@ impl AttackGraph {
     ///
     /// Unlike the Python original, `removed_assets` carries a
     /// [`maltoolbox_model::AssetSnapshot`] per id (returned by
-    /// `Model::remove_asset`) rather than a bare id: nodes only ever store
-    /// a `model_asset: i64`, not a live asset reference the way Python's
-    /// `ModelAsset` objects stay readable even after being unlinked from
-    /// `model.assets`, so this needs *some* way to recover a removed
-    /// asset's language type and name without `model` still containing
-    /// it. Carrying the snapshot (rather than re-deriving it with a
-    /// `model.get_asset_by_id` call, which would only work if this is
-    /// called *before* `model.remove_asset`) means `model.remove_asset`
-    /// and this method can now be called in either order - there's no
-    /// ordering contract between them.
+    /// `Model::remove_asset`) rather than a bare id, since nodes only store
+    /// `model_asset: i64` and can't recover a removed asset's type/name from
+    /// `model` once it's gone. This also means `model.remove_asset` and this
+    /// method can be called in either order.
     pub fn partially_regenerate_graph(
         &mut self,
         model: &Model,
@@ -165,8 +142,7 @@ impl AttackGraph {
                 .entry(fieldname.clone())
                 .or_default()
                 .insert(*right_id);
-            // `left_id` may already be gone from `model` (removed_assets
-            // is processed below, independent of order), hence the
+            // `left_id` may already be gone from `model`, hence the
             // snapshot-aware lookup rather than a plain `switch_fieldname`.
             let opposite = partially_generate::switch_fieldname_possibly_removed(
                 model,
@@ -190,8 +166,7 @@ impl AttackGraph {
                 .entry(fieldname.clone())
                 .or_default()
                 .insert(*right_id);
-            // `left_id` may already be gone from `model` (removed_assets
-            // is processed below, independent of order), hence the
+            // `left_id` may already be gone from `model`, hence the
             // snapshot-aware lookup rather than a plain `switch_fieldname`.
             let opposite = partially_generate::switch_fieldname_possibly_removed(
                 model,
@@ -333,17 +308,12 @@ impl AttackGraph {
         Ok(key)
     }
 
-    /// Removes a node, returning its final state - captured *after* the
-    /// parent/child unlinking loops below have already mutated it (so
-    /// `children`/`parents` on the returned value are empty, matching
-    /// what a still-held Python `AttackGraphNode` reference would show
-    /// post-removal), but before the node is actually dropped from
-    /// `self.nodes`. Mirrors `maltoolbox_model::Model::remove_asset`'s
-    /// `AssetSnapshot::final_state` capture-point placement exactly -
-    /// this is the PyO3 compat layer's only way to keep a removed node's
-    /// handle readable afterward (see `AttackGraphNode`'s own doc
-    /// comment in `maltoolbox-attackgraph-py`'s Phase 4 status), the
-    /// same shape of gap `AssetSnapshot` already solves for `ModelAsset`.
+    /// Removes a node, returning its final state - captured after the
+    /// parent/child unlinking loops below (so `children`/`parents` on the
+    /// returned value are empty) but before the node is dropped from
+    /// `self.nodes`. Mirrors `Model::remove_asset`'s `AssetSnapshot`
+    /// capture-point placement, for the same reason: it's the only way to
+    /// keep a removed node's handle readable afterward.
     pub fn remove_node(&mut self, key: AttackGraphNodeId) -> Result<AttackGraphNode, GraphError> {
         let (id, children, parents) = {
             let node = &self.nodes[key];
@@ -360,10 +330,8 @@ impl AttackGraph {
 
         let final_state = self.nodes[key].clone();
         self.nodes.remove(key);
-        // `shift_remove` (not `swap_remove`): preserves the relative
-        // order of the remaining entries, matching Python `del dict[k]`
-        // semantics (Phase 4 decision 7) - `swap_remove` would move the
-        // last entry into the removed slot instead.
+        // `shift_remove` (not `swap_remove`): preserves relative order of
+        // the remaining entries, matching Python's `del dict[k]` semantics.
         self.id_to_node.shift_remove(&id);
         if let Some(name) = full_name {
             self.full_name_to_node.shift_remove(&name);
@@ -523,11 +491,8 @@ impl AttackGraph {
         Self::from_dict(&serialized, lang_graph, model)
     }
 
-    /// Made `pub` (opportunistic, additive-only change) so the PyO3 compat
-    /// layer (`maltoolbox-attackgraph-py`) can serialize a single node the
-    /// same way `to_dict` does, for `AttackGraphNode.to_dict` - mirrors
-    /// the real Python original having `to_dict` on the node itself, not
-    /// just on the graph. No behavior change to any existing caller.
+    /// Serializes a single node the same way `to_dict` does, mirroring the
+    /// Python original's `AttackGraphNode.to_dict`.
     pub fn node_to_dict(&self, key: AttackGraphNodeId, model: Option<&Model>) -> Value {
         let node = &self.nodes[key];
 
@@ -556,12 +521,9 @@ impl AttackGraph {
             "parents": parents,
         });
 
-        // Python's `Detector.to_dict()` embeds the live `node` and
-        // `potential_context` object references directly, which is not
-        // actually JSON-serializable - saving a graph with detectors to
-        // a file would crash the original. This port serializes name
-        // and tprate only, which is what the original's intent clearly
-        // was (the rest never round-trips either way).
+        // Python's `Detector.to_dict()` embeds live object references that
+        // aren't actually JSON-serializable; this port serializes just
+        // `name` and `tprate`.
         if !node.detectors.is_empty() {
             let mut detectors = Map::new();
             for detector in node.detectors.values() {

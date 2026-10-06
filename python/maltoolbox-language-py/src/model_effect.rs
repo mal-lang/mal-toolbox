@@ -1,15 +1,9 @@
 //! Mirrors `maltoolbox/language/language_graph_model_effect.py`'s
 //! `LanguageGraphModelEffect`/`AssocTraversal`/`GlobAssocTraversal`/
 //! `AssocSet`/`DynTarget`/`ModelEffectType`, wrapping the Rust core's
-//! `maltoolbox_language::graph::model_effect` types. Built for Phase 4
-//! decision 3 (`AttackGraphNode.additive_model_effects`/
-//! `subtractive_model_effects` were `NotImplementedError` stubs for the
-//! non-empty case until this).
+//! `maltoolbox_language::graph::model_effect` types.
 //!
-//! Per the user's explicit scope relaxation for these types: no
-//! identity caching, `__richcmp__`, or `__hash__` is implemented here -
-//! only correct attribute access, which is all `test_create_dynamic_ag`
-//! (the one test exercising this) actually reads. These are plain,
+//! No identity caching, `__richcmp__`, or `__hash__` - these are plain,
 //! freely-constructible value snapshots, not owner+id handles.
 
 use std::cell::RefCell;
@@ -29,8 +23,7 @@ use crate::handle::SharedLangGraphCaches;
 
 /// Everything needed to resolve an `asset_filter: AssetId` into a real
 /// `PyLanguageGraphAsset` handle while converting a core model-effect
-/// value into its Python wrapper - bundled since every conversion
-/// function below needs both.
+/// value into its Python wrapper.
 #[derive(Clone)]
 struct Ctx {
     owner: Rc<RefCell<LanguageGraph>>,
@@ -79,9 +72,8 @@ impl PyAssocTraversal {
 }
 
 /// Resolves an `asset_filter: AssetId` to a `PyLanguageGraphAsset`
-/// handle via the owning graph's real cache (Phase 4 decision 1 applies
-/// here too, for consistency, even though `LanguageGraphModelEffect`
-/// itself isn't one of the four cached handle types).
+/// handle via the owning graph's real cache, for consistency with every
+/// other path to the same asset.
 fn cached_asset(py: Python<'_>, ctx: &Ctx, id: maltoolbox_language::graph::ids::AssetId) -> PyResult<Py<PyLanguageGraphAsset>> {
     let owner = ctx.owner.clone();
     let caches = ctx.caches.clone();
@@ -280,10 +272,8 @@ fn chain_to_pylist<'py>(py: Python<'py>, ctx: &Ctx, chain: &AssocTraversalChain)
 }
 
 /// Converts a core `LanguageGraphModelEffect` into its Python wrapper.
-/// `owner`/`caches` identify the `LanguageGraph` any `asset_filter`
-/// should resolve its `PyLanguageGraphAsset` handles against (Phase 4
-/// decision 1's cache applies here too, for consistency, even though
-/// `LanguageGraphModelEffect` itself isn't a cached handle type).
+/// `owner`/`caches` identify the `LanguageGraph` that any `asset_filter`
+/// resolves its `PyLanguageGraphAsset` handles against.
 pub fn model_effect_to_py(
     py: Python<'_>,
     owner: Rc<RefCell<LanguageGraph>>,

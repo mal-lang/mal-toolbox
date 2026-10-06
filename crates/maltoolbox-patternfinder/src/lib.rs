@@ -9,11 +9,8 @@ use maltoolbox_attackgraph::{AttackGraph, AttackGraphNode, AttackGraphNodeId};
 
 /// A condition that has to be true for a node to match.
 ///
-/// Unlike the Python `@dataclass(frozen=True, eq=True)`, this doesn't
-/// derive `PartialEq`/`Hash` - `matches` is a closure, and Python's own
-/// dataclass equality over a `Callable` field is really just identity
-/// comparison in practice (two different lambdas are never `==`), so
-/// there's no meaningful value-equality to preserve here.
+/// Doesn't derive `PartialEq`/`Hash` since `matches` is a closure with
+/// no meaningful value-equality.
 pub struct SearchCondition {
     pub matches: Box<dyn Fn(&AttackGraphNode) -> bool>,
     pub greedy: bool,
@@ -99,8 +96,7 @@ impl SearchPattern {
 }
 
 /// Find all paths of nodes that match `conditions`, recursively,
-/// following children edges. See the Python original's docstring for
-/// the full algorithm description; this is a direct structural port.
+/// following children edges.
 fn find_matches_recursively(
     graph: &AttackGraph,
     node: AttackGraphNodeId,
@@ -110,7 +106,7 @@ fn find_matches_recursively(
     condition_match_count: usize,
 ) {
     if current_path.contains(&node) {
-        // Stop the chain, infinite loop.
+        // Avoid infinite loops through cycles.
         return;
     }
 
