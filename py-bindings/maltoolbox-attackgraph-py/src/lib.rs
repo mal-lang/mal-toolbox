@@ -1,7 +1,7 @@
 //! PyO3 compatibility layer mirroring `maltoolbox/attackgraph/`'s public
 //! surface (`AttackGraph`, `AttackGraphNode`, `Detector`,
 //! `create_attack_graph`) on top of the pure-Rust `maltoolbox-attackgraph`
-//! crate. See `python/maltoolbox-language-py/src/lib.rs`'s module doc for
+//! crate. See `py-bindings/maltoolbox-language-py/src/lib.rs`'s module doc for
 //! the shared conventions this follows.
 
 mod detector;

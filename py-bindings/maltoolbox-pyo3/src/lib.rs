@@ -3,7 +3,7 @@
 //! `maltoolbox-attackgraph-py`) into the single importable native
 //! extension module, `maltoolbox._native`.
 //!
-//! This is the only crate in `python/` that enables pyo3's
+//! This is the only crate in `py-bindings/` that enables pyo3's
 //! `extension-module` feature - the layer crates stay plain `rlib`s so
 //! they (and their tests) link against libpython normally.
 
