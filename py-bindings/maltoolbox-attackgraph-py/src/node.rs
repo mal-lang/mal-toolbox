@@ -348,7 +348,7 @@ impl PyAttackGraphNode {
             .map(|item| -> PyResult<i64> {
                 let node_ref = item
                     .extract::<PyRef<'_, PyAttackGraphNode>>()
-                    .map_err(|e| pyo3::PyErr::from(e))?;
+                    .map_err(pyo3::PyErr::from)?;
                 Ok(node_ref.id())
             })
             .collect::<PyResult<Vec<_>>>()?;

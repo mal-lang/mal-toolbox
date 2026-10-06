@@ -30,6 +30,10 @@ use crate::detector_support::{build_py_detector, detector_snapshots_for};
 use crate::exceptions::{graph_error_to_lookup, graph_error_to_py};
 use crate::node::{PyAttackGraphNode, PyAttackGraphNodesView};
 
+/// Per-node `(children, parents)` `PySet` pair cache - see
+/// `PyAttackGraph::node_edges_cache`'s doc comment.
+type NodeEdgesCache = Rc<RefCell<HashMap<i64, (Py<PySet>, Py<PySet>)>>>;
+
 #[pyclass(
     name = "AttackGraph",
     module = "maltoolbox._native",
@@ -76,7 +80,7 @@ pub struct PyAttackGraph {
     /// `evict_edges_cache`), never on per-node state-only changes
     /// (`enabled_defenses`, `existence_status`, ...) that don't touch
     /// topology.
-    pub node_edges_cache: Rc<RefCell<HashMap<i64, (Py<PySet>, Py<PySet>)>>>,
+    pub node_edges_cache: NodeEdgesCache,
     /// When `Some`, `.nodes` returns this dict as-is instead of
     /// constructing a `PyAttackGraphNodesView`, letting
     /// `attack_graph.nodes = {...}` freely override the live view -
@@ -683,12 +687,7 @@ impl PyAttackGraph {
         // for an unrelated new node (see `PyNodeTombstone`'s doc
         // comment). `detector_snapshots_before`/`full_names_before` do
         // the same for `.detectors`/`.full_name`.
-        let (nodes_before, key_to_id_before, detector_snapshots_before, full_names_before): (
-            HashMap<i64, maltoolbox_attackgraph::AttackGraphNode>,
-            HashMap<AttackGraphNodeId, i64>,
-            HashMap<i64, Vec<crate::detector_support::DetectorSnapshot>>,
-            HashMap<i64, String>,
-        ) = {
+        let (nodes_before, key_to_id_before, detector_snapshots_before, full_names_before) = {
             let graph = slf.inner.borrow();
             let model_ref = model_py.borrow(py);
             let core_model = model_ref.inner.borrow();
