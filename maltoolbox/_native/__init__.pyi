@@ -417,6 +417,10 @@ class Model:
     @staticmethod
     def load_from_file(filename: str, lang_graph: LanguageGraph) -> Model:
         """Create from json or yaml file depending on file extension."""
+    @staticmethod
+    def _from_dict(serialized: dict[str, Any], lang_graph: LanguageGraph) -> Model:
+        """Deserialize a previously-`_to_dict`'d model dict. Used by
+        `maltoolbox.translators.updater` to rebuild older-schema models."""
     def __reduce__(self) -> tuple[Any, ...]: ...
 
 # ---------------------------------------------------------------------------
