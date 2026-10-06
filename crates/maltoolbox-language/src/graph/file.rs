@@ -9,6 +9,7 @@ use std::io::Read;
 use std::path::Path;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde_json::Value;
 use slotmap::SlotMap;
 
@@ -158,12 +159,12 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
     for (name, asset) in &asset_dicts {
         let node = LanguageGraphAsset {
             name: (*name).clone(),
-            own_associations: HashMap::new(),
-            attack_steps: HashMap::new(),
+            own_associations: IndexMap::new(),
+            attack_steps: IndexMap::new(),
             info: str_map(&asset["info"]),
             own_super_asset: None,
             own_sub_assets: Vec::new(),
-            own_variables: HashMap::new(),
+            own_variables: IndexMap::new(),
             is_abstract: asset["is_abstract"].as_bool().unwrap_or(false),
         };
         let id = graph.assets.insert(node);
@@ -259,8 +260,8 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
                 causal_mode: step["causal_mode"].as_str().and_then(CausalMode::parse),
                 ttc: Some(step["ttc"].clone()).filter(|v| !v.is_null()),
                 overrides: step["overrides"].as_bool().unwrap_or(false),
-                own_children: HashMap::new(),
-                own_parents: HashMap::new(),
+                own_children: IndexMap::new(),
+                own_parents: IndexMap::new(),
                 own_additive_model_effects: Vec::new(),
                 own_subtractive_model_effects: Vec::new(),
                 info: str_map(&step["info"]),
@@ -272,7 +273,7 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
                     .flatten()
                     .filter_map(|t| t.as_str().map(str::to_string))
                     .collect(),
-                detectors: HashMap::new(),
+                detectors: IndexMap::new(),
             };
             let full_name = format!("{name}:{step_name}");
             let id = graph.steps.insert(node);

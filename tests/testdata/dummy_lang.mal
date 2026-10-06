@@ -1,0 +1,24 @@
+// Minimal language used by tests/conftest.py's `dummy_lang_graph` fixture:
+// one asset with one attack step of each type. Replaces an earlier version
+// of this fixture that hand-built LanguageGraphAsset/LanguageGraphAttackStep
+// dataclasses directly with no backing LanguageGraph - incompatible with the
+// Rust bindings' owner+id handle design (see PYTHON_BINDINGS_IMPLEMENTATION.md).
+#id: "org.maltoolbox.test.dummy"
+#version: "1.0.0"
+
+category DummyCategory {
+  asset DummyAsset {
+    | DummyOrAttackStep
+      -> relatedDummies.DummyAndAttackStep
+    & DummyAndAttackStep
+    # DummyDefenseAttackStep
+    E DummyExistAttackStep
+      <- relatedDummies
+    !E DummyNotExistAttackStep
+      <- relatedDummies
+  }
+}
+
+associations {
+  DummyAsset [dummy] * <-- DummyAssoc --> * [relatedDummies] DummyAsset
+}

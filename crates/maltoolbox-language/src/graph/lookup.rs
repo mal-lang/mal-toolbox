@@ -1,7 +1,7 @@
 //! Port of `maltoolbox/language/language_graph_lookup.py`.
 
+use indexmap::IndexMap;
 use serde_json::Value;
-use std::collections::HashMap;
 
 use super::GraphError;
 
@@ -13,9 +13,16 @@ fn find_asset<'a>(lang_spec: &'a Value, asset_type: &str) -> Option<&'a Value> {
 }
 
 /// Attack step dicts for `asset_type`, keyed by step name.
-pub fn get_attacks_for_asset_type(asset_type: &str, lang_spec: &Value) -> HashMap<String, Value> {
+///
+/// Must preserve the declaration order of `attackSteps` in the language
+/// spec (matches the pure-Python original's `{step['name']: step for step
+/// in asset['attackSteps']}` dict comprehension, which preserves insertion
+/// order) - this order determines attack-step/node-id assignment order
+/// downstream, so a `HashMap` here would make graph generation
+/// nondeterministic.
+pub fn get_attacks_for_asset_type(asset_type: &str, lang_spec: &Value) -> IndexMap<String, Value> {
     let Some(asset) = find_asset(lang_spec, asset_type) else {
-        return HashMap::new();
+        return IndexMap::new();
     };
     asset["attackSteps"]
         .as_array()

@@ -2,9 +2,10 @@
 
 use std::collections::{HashMap, HashSet};
 
+use indexmap::IndexMap;
 use maltoolbox_language::graph::attack_step::AttackStepType;
 use maltoolbox_language::graph::AttackStepId;
-use maltoolbox_model::Model;
+use maltoolbox_model::{AssetSnapshot, Model, ModelAsset};
 use serde_json::Map;
 use slotmap::SlotMap;
 
@@ -17,10 +18,13 @@ use crate::GraphError;
 
 pub struct GeneratedGraph {
     pub nodes: SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    pub id_to_node: HashMap<i64, AttackGraphNodeId>,
+    /// `IndexMap`, matching `AttackGraph::id_to_node`/`full_name_to_node`
+    /// (Phase 4 decision 7, widened) - insertion order here is node
+    /// creation order, which must be deterministic.
+    pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
     pub defense_steps: Vec<AttackGraphNodeId>,
-    pub full_name_to_node: HashMap<String, AttackGraphNodeId>,
+    pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
 }
 
 /// Just-created nodes, as produced by [`create_nodes_for`] directly into
@@ -30,8 +34,8 @@ pub struct GeneratedGraph {
 /// created them and can't be transplanted into a different one the way
 /// Python's plain integer-keyed dicts can.
 pub struct CreatedNodes {
-    pub id_to_node: HashMap<i64, AttackGraphNodeId>,
-    pub full_name_to_node: HashMap<String, AttackGraphNodeId>,
+    pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
+    pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
     pub defense_steps: Vec<AttackGraphNodeId>,
 }
@@ -62,20 +66,27 @@ pub fn create_nodes_from_model(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     model: &Model,
 ) -> Result<CreatedNodes, GraphError> {
-    create_nodes_for(nodes, model.asset_order.iter().copied(), 0, model)
+    create_nodes_for(nodes, model.asset_order.iter().copied(), 0, model, &HashMap::new())
 }
 
 /// Port of `partially_generate.py`'s `create_nodes_from_assets`: build
 /// nodes only for `asset_ids`, continuing node-id assignment from
 /// `starting_id`. Shares the node-building logic with
 /// `create_nodes_from_model` via `create_nodes_for`.
+///
+/// `removed_assets` is consulted as a fallback when an id in `asset_ids`
+/// is no longer in `model.assets` - a DynaMAL model effect can add and
+/// remove the same asset within one `partially_regenerate_graph` batch
+/// (mirrors `partially_generate::switch_fieldname_possibly_removed`'s
+/// reason for existing).
 pub fn create_nodes_from_assets(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     asset_ids: &std::collections::HashSet<i64>,
     starting_id: i64,
     model: &Model,
+    removed_assets: &HashMap<i64, AssetSnapshot>,
 ) -> Result<CreatedNodes, GraphError> {
-    create_nodes_for(nodes, asset_ids.iter().copied(), starting_id, model)
+    create_nodes_for(nodes, asset_ids.iter().copied(), starting_id, model, removed_assets)
 }
 
 fn create_nodes_for(
@@ -83,15 +94,29 @@ fn create_nodes_for(
     asset_ids: impl Iterator<Item = i64>,
     starting_id: i64,
     model: &Model,
+    removed_assets: &HashMap<i64, AssetSnapshot>,
 ) -> Result<CreatedNodes, GraphError> {
-    let mut id_to_node = HashMap::new();
-    let mut full_name_to_node = HashMap::new();
+    let mut id_to_node = IndexMap::new();
+    let mut full_name_to_node = IndexMap::new();
     let mut attack_steps = Vec::new();
     let mut defense_steps = Vec::new();
     let mut node_id: i64 = starting_id;
 
     for asset_id in asset_ids {
-        let asset = &model.assets[&asset_id];
+        // `asset_id` may already be gone from `model.assets` - a
+        // same-batch add-then-remove (e.g. a DynaMAL step whose `A>`/`R>`
+        // model effects both touch the same asset) leaves it present in
+        // both `new_assets` and `removed_assets` for this call. The node(s)
+        // built here are transient in that case: `nodes_to_be_removed`
+        // (which already resolves purely from `removed_assets`, never
+        // `model.assets`) removes them again right after.
+        let asset: &ModelAsset = match model.assets.get(&asset_id) {
+            Some(asset) => asset,
+            None => removed_assets
+                .get(&asset_id)
+                .map(|snapshot| &snapshot.final_state)
+                .ok_or_else(|| GraphError::Malformed(format!("Unknown asset id {asset_id}")))?,
+        };
         let lg_step_ids: Vec<AttackStepId> = model
             .lang_graph
             .asset(asset.lg_asset)
@@ -161,7 +186,7 @@ pub fn link_node_children(
     model: &Model,
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     ag_node_key: AttackGraphNodeId,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
 ) -> Result<(), GraphError> {
     let (model_asset_id, lg_attack_step_id) = {
         let node = &nodes[ag_node_key];
@@ -197,7 +222,7 @@ fn link_from_expr_chain(
     model_asset_id: i64,
     child_step_name: &str,
     expr_chain: Option<&maltoolbox_language::graph::ExpressionsChain>,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
 ) -> Result<(), GraphError> {
     let target_assets = follow_expr_chain(model, &HashSet::from([model_asset_id]), expr_chain)?;
 
@@ -230,7 +255,7 @@ fn link_from_expr_chain(
 pub fn link_nodes_by_language(
     model: &Model,
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
 ) -> Result<(), GraphError> {
     let keys: Vec<AttackGraphNodeId> = full_name_to_node.values().copied().collect();
     for key in keys {
@@ -242,7 +267,7 @@ pub fn link_nodes_by_language(
 fn get_potential_context(
     model: &Model,
     asset_id: i64,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
     lg_detector: &maltoolbox_language::graph::LanguageGraphDetector,
 ) -> Result<HashMap<String, HashSet<AttackGraphNodeId>>, GraphError> {
     let mut context: HashMap<String, HashSet<AttackGraphNodeId>> = HashMap::new();
@@ -268,7 +293,7 @@ fn get_potential_context(
 
 pub fn create_detectors(
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
-    full_name_to_node: &HashMap<String, AttackGraphNodeId>,
+    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
     model: &Model,
 ) -> Result<(), GraphError> {
     let node_keys: Vec<AttackGraphNodeId> = full_name_to_node.values().copied().collect();

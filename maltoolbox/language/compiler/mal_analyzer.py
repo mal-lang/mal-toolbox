@@ -4,15 +4,13 @@ from typing import Any
 
 from tree_sitter import Node
 
+from maltoolbox._native.language.compiler.mal_analyzer import (
+    malAnalyzerException as malAnalyzerException,
+)
+
 from .distributions import Distributions, DistributionsException
 
 logger = logging.getLogger(__name__)
-
-
-class malAnalyzerException(Exception):
-    def __init__(self, error_message):
-        self._error_message = error_message
-        super().__init__(self._error_message)
 
 
 class malAnalyzer:

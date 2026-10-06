@@ -16,6 +16,7 @@
 //! little over that. Two cheap error-path unit tests are kept
 //! (`switch_fieldname`/`nodes_to_be_removed` raising on bad input).
 
+use indexmap::IndexMap;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -47,20 +48,21 @@ fn compile_lang(name: &str) -> Rc<LanguageGraph> {
     Rc::new(maltoolbox_language::generate_graph(spec).unwrap())
 }
 
-/// Captures a [`maltoolbox_model::RemovedAssetSnapshot`] per id from the
+/// Captures a [`maltoolbox_model::AssetSnapshot`] per id from the
 /// still-live `model`, for tests that call `partially_regenerate_graph`
 /// before `model.remove_asset` (both orders are valid; `snapshot` just
 /// captures from wherever the asset currently lives instead of from
 /// `remove_asset`'s return value).
-fn snapshot(model: &Model, ids: &HashSet<i64>) -> HashMap<i64, maltoolbox_model::RemovedAssetSnapshot> {
+fn snapshot(model: &Model, ids: &HashSet<i64>) -> HashMap<i64, maltoolbox_model::AssetSnapshot> {
     ids.iter()
         .map(|&id| {
             let asset = model.get_asset_by_id(id).unwrap();
             (
                 id,
-                maltoolbox_model::RemovedAssetSnapshot {
+                maltoolbox_model::AssetSnapshot {
                     name: asset.name.clone(),
                     lg_asset: asset.lg_asset,
+                    final_state: asset.clone(),
                 },
             )
         })
@@ -654,6 +656,156 @@ fn partial_regeneration_corelang() {
 }
 
 #[test]
+fn partial_regeneration_new_association_on_asset_removed_same_batch() {
+    // Regression test: DynaMAL-style model effect that both adds a new
+    // association *and* removes an asset in the same batch, where the
+    // newly-added association's left-hand asset is the one being removed
+    // (e.g. a rule like `R> victim / malware ^ ~data` firing a `trigger`
+    // that both severs/removes assets and creates a fresh association in
+    // one go). Before the fix, the `new_associations` loop in
+    // `partially_regenerate_graph` resolved the opposite fieldname via
+    // the plain `switch_fieldname(model, *left_id, fieldname)`, which
+    // calls `model.get_asset_by_id(*left_id)` - this panicked with
+    // `GraphError::Malformed("Unknown asset id ...")` whenever `left_id`
+    // was simultaneously present in `removed_assets` for the same call,
+    // since by the time `partially_regenerate_graph` runs it may already
+    // be gone from `model.assets` (no ordering contract between
+    // `model.remove_asset` and this call - see the doc comment on
+    // `partially_regenerate_graph`). The fix mirrors the
+    // `removed_associations` loop by using
+    // `switch_fieldname_possibly_removed` instead.
+    let lang_graph = compile_lang("wiperLang.mal");
+    let mut model = Model::new("Test Model", lang_graph.clone());
+
+    let internet = model.add_asset("Internet", Some("internet1".into()), None, None, None, true).unwrap();
+    let device = model.add_asset("Device", Some("device1".into()), None, None, None, true).unwrap();
+    let data = model.add_asset("Data", Some("data1".into()), None, None, None, true).unwrap();
+    let wiper1 = model.add_asset("Wiper", Some("wiper1".into()), None, None, None, true).unwrap();
+
+    model.add_associated_assets(internet, "hosts", HashSet::from([device])).unwrap();
+    model.add_associated_assets(device, "data", HashSet::from([data])).unwrap();
+    model.add_associated_assets(device, "malware", HashSet::from([wiper1])).unwrap();
+
+    let mut ag = AttackGraph::from_model(&model).unwrap();
+
+    // Simultaneously: remove `device1` (which also severs its `hosts`,
+    // `data` and `malware` associations), and add a brand new `Wiper`
+    // asset associated to `device1` via `malware` - i.e. a new
+    // association whose left_id (`device`) is also a key in
+    // `removed_assets` for this exact same call.
+    let removed_assets_set = HashSet::from([device]);
+    let removed_assets_snapshot = snapshot(&model, &removed_assets_set);
+    let removed_associations = HashSet::from([
+        (internet, "hosts".to_string(), device),
+        (device, "data".to_string(), data),
+        (device, "malware".to_string(), wiper1),
+    ]);
+
+    let wiper2 = model.add_asset("Wiper", Some("wiper2".into()), None, None, None, true).unwrap();
+    model.add_associated_assets(device, "malware", HashSet::from([wiper2])).unwrap();
+    let new_assets = HashSet::from([wiper2]);
+    let new_associations = HashSet::from([(device, "malware".to_string(), wiper2)]);
+
+    model.remove_asset(device).unwrap();
+
+    // Must not raise `GraphError::Malformed("Unknown asset id ...")`.
+    ag.partially_regenerate_graph(
+        &model,
+        &new_assets,
+        &new_associations,
+        &removed_assets_snapshot,
+        &removed_associations,
+    )
+    .expect("partial regeneration must handle a new association whose left_id was removed in the same batch");
+
+    // `device1` is gone from the graph entirely (only `device1`, the
+    // asset actually in `removed_assets`, is expected to vanish -
+    // `data1`/`wiper1`/`wiper2` remain as assets in the model, just
+    // stripped of their association to the now-gone `device1`).
+    assert!(
+        !ag.full_name_to_node.keys().any(|k| k.starts_with("device1:")),
+        "expected no nodes left for removed asset device1, found: {:?}",
+        ag.full_name_to_node.keys().filter(|k| k.starts_with("device1:")).collect::<Vec<_>>()
+    );
+
+    // `wiper2`'s `test` step (`A> self / victim[C2Server]`) depends on
+    // `malware`/`victim`, so it must be present and - since the new
+    // association's opposite fieldname was resolved correctly despite
+    // `device` being simultaneously removed - must show no children
+    // (device is gone, so there's no live `victim` to reach through the
+    // severed association).
+    let wiper2_test = ag.get_node_by_full_name("wiper2:test").expect("wiper2:test node must exist");
+    assert!(
+        ag.nodes[wiper2_test].children.is_empty(),
+        "wiper2:test should have no children once device1 (its only would-be victim) is removed"
+    );
+
+    // Independently rebuilding from the current model (device1 gone,
+    // wiper2 now an orphaned, unassociated Wiper asset) must match.
+    let regenerated = AttackGraph::from_model(&model).unwrap();
+    check_graph_equivalence(&model, &regenerated, &ag);
+}
+
+#[test]
+fn partial_regeneration_new_asset_removed_same_batch() {
+    // Regression test: DynaMAL-style model effect that adds a brand new
+    // asset *and* removes that same asset in the same
+    // `partially_regenerate_graph` batch (e.g. `baseDynamicTestLang4.mal`'s
+    // `Bowl.tamper`: `A> self / apples` immediately followed by
+    // `R> self / apples` on the same step - the new `Apple` ends up in
+    // both `new_assets` and `removed_assets` for this one call). Before
+    // the fix, `generate::create_nodes_for` indexed `model.assets[&id]`
+    // directly for every id in `new_assets`, which panics
+    // ("no entry found for key") once `model.remove_asset` has already
+    // run for that id - unlike the association-resolution path
+    // (`switch_fieldname_possibly_removed`), node creation had no
+    // removed-assets fallback at all.
+    let lang_graph = compile_lang("dynamal_test_langs/basic/baseDynamicTestLang4.mal");
+    let mut model = Model::new("Test Model", lang_graph.clone());
+
+    let bowl = model.add_asset("Bowl", Some("bowl1".into()), None, None, None, true).unwrap();
+
+    let mut ag = AttackGraph::from_model(&model).unwrap();
+
+    // Simulate the same-step A>/R> model effect: add a new Apple,
+    // associate it to the Bowl via "apples", then remove it again -
+    // all before `partially_regenerate_graph` is ever called.
+    let apple = model.add_asset("Apple", Some("apple1".into()), None, None, None, true).unwrap();
+    model.add_associated_assets(bowl, "apples", HashSet::from([apple])).unwrap();
+
+    let new_assets = HashSet::from([apple]);
+    let new_associations = HashSet::from([(bowl, "apples".to_string(), apple)]);
+    let removed_assets_snapshot = snapshot(&model, &HashSet::from([apple]));
+    let removed_associations = HashSet::from([(bowl, "apples".to_string(), apple)]);
+
+    model.remove_asset(apple).unwrap();
+
+    // Must not panic.
+    ag.partially_regenerate_graph(
+        &model,
+        &new_assets,
+        &new_associations,
+        &removed_assets_snapshot,
+        &removed_associations,
+    )
+    .expect("partial regeneration must handle a new asset removed in the same batch");
+
+    // `Apple` has no attack steps (`asset Apple {}`), so no nodes are
+    // expected for it either way - the real assertion is that
+    // regeneration didn't panic. Confirm nothing stray survives.
+    assert!(
+        !ag.full_name_to_node.keys().any(|k| k.starts_with("apple1:")),
+        "expected no nodes left for the transient, same-batch-removed apple1, found: {:?}",
+        ag.full_name_to_node.keys().filter(|k| k.starts_with("apple1:")).collect::<Vec<_>>()
+    );
+
+    // Independently rebuilding from the current model (apple1 gone,
+    // bowl1 with no apples left) must match.
+    let regenerated = AttackGraph::from_model(&model).unwrap();
+    check_graph_equivalence(&model, &regenerated, &ag);
+}
+
+#[test]
 fn switch_fieldname_unknown_fieldname_raises() {
     let lang_graph = training_lang();
     let mut model = Model::new("Test Model", lang_graph);
@@ -672,7 +824,7 @@ fn nodes_to_be_removed_missing_node_raises() {
     let err = maltoolbox_attackgraph::partially_generate::nodes_to_be_removed(
         &snapshot(&model, &HashSet::from([network])),
         &model,
-        &HashMap::new(),
+        &IndexMap::new(),
     )
     .unwrap_err();
     assert!(err.to_string().contains("Failed to find"));

@@ -9,6 +9,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde_json::Value;
 
 use super::assoc::{LanguageGraphAssociation, LanguageGraphAssociationField};
@@ -44,12 +45,12 @@ fn create_lg_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
             .to_string();
         let node = LanguageGraphAsset {
             name: name.clone(),
-            own_associations: HashMap::new(),
-            attack_steps: HashMap::new(),
+            own_associations: IndexMap::new(),
+            attack_steps: IndexMap::new(),
             info: meta_map(&asset_dict["meta"]),
             own_super_asset: None,
             own_sub_assets: Vec::new(),
-            own_variables: HashMap::new(),
+            own_variables: IndexMap::new(),
             is_abstract: asset_dict["isAbstract"].as_bool().unwrap_or(false),
         };
         let id = graph.assets.insert(node);
@@ -154,8 +155,8 @@ fn build_detectors(
     graph: &LanguageGraph,
     target_asset: AssetId,
     step_dict: &Value,
-) -> Result<HashMap<String, LanguageGraphDetector>, GraphError> {
-    let mut detectors = HashMap::new();
+) -> Result<IndexMap<String, LanguageGraphDetector>, GraphError> {
+    let mut detectors = IndexMap::new();
     let Some(dets) = step_dict.get("detectors").and_then(Value::as_object) else {
         return Ok(detectors);
     };
@@ -233,8 +234,8 @@ fn create_lg_attack_step_nodes(graph: &mut LanguageGraph) -> Result<HashMap<Stri
                 causal_mode,
                 ttc,
                 overrides,
-                own_children: HashMap::new(),
-                own_parents: HashMap::new(),
+                own_children: IndexMap::new(),
+                own_parents: IndexMap::new(),
                 own_additive_model_effects: Vec::new(),
                 own_subtractive_model_effects: Vec::new(),
                 info: meta_map(&step_dict["meta"]),
@@ -286,15 +287,15 @@ fn inherit_attack_steps(graph: &mut LanguageGraph) -> Result<(), GraphError> {
                         causal_mode: super_step.causal_mode,
                         ttc: super_step.ttc,
                         overrides: false,
-                        own_children: HashMap::new(),
-                        own_parents: HashMap::new(),
+                        own_children: IndexMap::new(),
+                        own_parents: IndexMap::new(),
                         own_additive_model_effects: Vec::new(),
                         own_subtractive_model_effects: Vec::new(),
                         info: super_step.info,
                         inherits: Some(super_step_id),
                         own_requires: Vec::new(),
                         tags: super_step.tags,
-                        detectors: HashMap::new(),
+                        detectors: IndexMap::new(),
                     };
                     let new_id = graph.steps.insert(node);
                     graph.assets[asset_id].attack_steps.insert(step_name, new_id);

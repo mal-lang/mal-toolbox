@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde_json::json;
 
 use super::detector::LanguageGraphDetector;
@@ -81,15 +82,19 @@ pub struct LanguageGraphAttackStep {
     pub causal_mode: Option<CausalMode>,
     pub ttc: Option<serde_json::Value>,
     pub overrides: bool,
-    pub own_children: HashMap<AttackStepId, Vec<Option<ExpressionsChain>>>,
-    pub own_parents: HashMap<AttackStepId, Vec<Option<ExpressionsChain>>>,
+    /// Iteration order feeds node-linking order downstream (`generate.rs`'s
+    /// `link_node_children` walks `children()`, which starts from this
+    /// map) and `to_dict`'s `own_children` key order - must stay
+    /// insertion-ordered like Python's `dict` (Phase 4 decision 7).
+    pub own_children: IndexMap<AttackStepId, Vec<Option<ExpressionsChain>>>,
+    pub own_parents: IndexMap<AttackStepId, Vec<Option<ExpressionsChain>>>,
     pub own_additive_model_effects: Vec<LanguageGraphModelEffect>,
     pub own_subtractive_model_effects: Vec<LanguageGraphModelEffect>,
     pub info: HashMap<String, String>,
     pub inherits: Option<AttackStepId>,
     pub own_requires: Vec<ExpressionsChain>,
     pub tags: Vec<String>,
-    pub detectors: HashMap<String, LanguageGraphDetector>,
+    pub detectors: IndexMap<String, LanguageGraphDetector>,
 }
 
 impl LanguageGraphAttackStep {
@@ -101,7 +106,7 @@ impl LanguageGraphAttackStep {
     pub fn children(
         &self,
         graph: &LanguageGraph,
-    ) -> HashMap<AttackStepId, Vec<Option<ExpressionsChain>>> {
+    ) -> IndexMap<AttackStepId, Vec<Option<ExpressionsChain>>> {
         let mut all_children = self.own_children.clone();
         if self.overrides {
             return all_children;

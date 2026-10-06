@@ -76,11 +76,22 @@ pub fn from_dict(serialized: &Value, lang_graph: Rc<LanguageGraph>) -> Result<Mo
             }
         };
 
+        // `v.as_f64()` alone silently drops any defense value serialized
+        // as a JSON *string* (e.g. `"1.0"`) rather than a number -
+        // confirmed to matter for real: `maltoolbox/translators/
+        // updater.py`'s old-model-version conversion functions produce
+        // exactly this shape, and the Python original's `_from_dict`
+        // does `float(value)`, which tolerates either. Falling back to
+        // parsing a string value matches that tolerance.
         let defenses: HashMap<String, f64> = defenses_raw
             .and_then(|d| d.as_object().cloned())
             .into_iter()
             .flatten()
-            .filter_map(|(k, v)| v.as_f64().map(|f| (k, f)))
+            .filter_map(|(k, v)| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+                    .map(|f| (k, f))
+            })
             .collect();
 
         model

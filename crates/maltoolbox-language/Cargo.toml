@@ -9,6 +9,7 @@ repository.workspace = true
 maltoolbox-fileutil = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-mal = { workspace = true }
+indexmap = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }
