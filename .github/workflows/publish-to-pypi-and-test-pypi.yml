@@ -29,7 +29,7 @@ jobs:
       - name: Test wheel (native target only)
         if: matrix.platform.target == 'x86_64'
         run: |
-          pip install mal-toolbox --no-index --find-links dist --force-reinstall
+          pip install mal-toolbox --find-links dist --force-reinstall
           python -c "import maltoolbox"
       - name: Upload wheels
         uses: actions/upload-artifact@v6
@@ -89,7 +89,7 @@ jobs:
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
       - name: Test wheel
         run: |
-          pip install mal-toolbox --no-index --find-links dist --force-reinstall
+          pip install mal-toolbox --find-links dist --force-reinstall
           python -c "import maltoolbox"
       - name: Upload wheels
         uses: actions/upload-artifact@v6
@@ -121,7 +121,7 @@ jobs:
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
       - name: Test wheel
         run: |
-          pip install mal-toolbox --no-index --find-links dist --force-reinstall
+          pip install mal-toolbox --find-links dist --force-reinstall
           python -c "import maltoolbox"
       - name: Upload wheels
         uses: actions/upload-artifact@v6
