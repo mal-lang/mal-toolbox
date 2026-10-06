@@ -57,17 +57,17 @@ build-backend = "maturin"
 [tool.maturin]
 manifest-path = "py-bindings/maltoolbox-pyo3/Cargo.toml"
 module-name = "maltoolbox._native"
-python-source = "."
+python-source = "python"
 include = ["maltoolbox/py.typed", "maltoolbox/*.conf*", "maltoolbox/_native-stubs/**/*.pyi"]
 
 [tool.pytest.ini_options]
-pythonpath = ['.']
+pythonpath = ['python']
 filterwarnings = "ignore:invalid escape sequence"
 
 [tool.mypy]
 exclude = [
-  'maltoolbox/ingestors',
-  'maltoolbox/translators',
+  'python/maltoolbox/ingestors',
+  'python/maltoolbox/translators',
 ]
 allow_redefinition = true
 
@@ -98,7 +98,7 @@ ignore = ["PLC0414"]
     "S101",    # Allow `assert` statements
     "S311",    # Allow use of the `random` module (no need for cryptographic security)
 ]
-"maltoolbox/language/compiler/*.py" = [
+"python/maltoolbox/language/compiler/*.py" = [
     "F405", # Allow defined from star import
     "F403", # Allow star import
     "E741", # Allow ambiguous variable name

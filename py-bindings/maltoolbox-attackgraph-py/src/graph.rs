@@ -963,7 +963,7 @@ impl PyAttackGraph {
     /// delegated to `self._to_dict()`.
     fn save_to_file(&self, py: Python<'_>, filename: PathBuf) -> PyResult<()> {
         let value = self.to_dict_value(py);
-        maltoolbox_fileutil::save_dict_to_file(filename, &value)
+        maltoolbox_io::save_dict_to_file(filename, &value)
             .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
     }
 

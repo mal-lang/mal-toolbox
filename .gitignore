@@ -67,15 +67,15 @@ nosetests.xml
 
 # Rust crate test fixtures/golden files (.json/.yml), not covered by the
 # blanket Python-oriented *.json/*.yaml/*.yml ignores above
-!crates/**/*.json
-!crates/**/*.yml
-!crates/**/*.yaml
+!core/**/*.json
+!core/**/*.yml
+!core/**/*.yaml
 
 # Rust
 /target
-# Each py-bindings/*-py crate is its own standalone Cargo workspace (see
-# PYTHON_BINDINGS_IMPLEMENTATION.md), so /target above doesn't reach them
-py-bindings/*/target
+# py-bindings/ is its own standalone Cargo workspace, so /target above
+# doesn't reach it
+/py-bindings/target
 **/*.rs.bk
 *.pdb
 

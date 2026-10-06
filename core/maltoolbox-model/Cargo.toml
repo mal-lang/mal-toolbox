@@ -1,0 +1,15 @@
+[package]
+name = "maltoolbox-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+maltoolbox-io = { workspace = true }
+maltoolbox-language = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }

@@ -9,7 +9,7 @@
 //! Building `inner` requires cloning the `LanguageGraph` data out of
 //! `lang_graph_py`'s `Rc<RefCell<_>>` once at construction time, since
 //! the two Rc flavors can't otherwise compose; see
-//! `crates/maltoolbox-language/src/graph/mod.rs`'s `Clone` doc comment
+//! `core/maltoolbox-language/src/graph/mod.rs`'s `Clone` doc comment
 //! on `LanguageGraph` for the rationale and the narrow divergence this
 //! introduces around `regenerate_graph`.
 
