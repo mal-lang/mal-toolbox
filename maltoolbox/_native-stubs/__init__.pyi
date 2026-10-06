@@ -3,7 +3,7 @@
 This is a PEP 561 stub-only package: there is no real ``maltoolbox/_native/``
 package on disk at runtime (the real thing is the compiled
 ``maltoolbox/_native.*.so`` extension module, built via maturin from
-``python/maltoolbox-pyo3``). These ``.pyi`` files exist purely to give
+``py-bindings/maltoolbox-pyo3``). These ``.pyi`` files exist purely to give
 type checkers (mypy) and editors (Pylance) full type/autocomplete
 information for that compiled module's API.
 

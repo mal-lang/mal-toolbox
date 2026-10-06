@@ -18,10 +18,10 @@ jobs:
       matrix:
         workspace:
           - .
-          - python/maltoolbox-attackgraph-py
-          - python/maltoolbox-language-py
-          - python/maltoolbox-model-py
-          - python/maltoolbox-pyo3
+          - py-bindings/maltoolbox-attackgraph-py
+          - py-bindings/maltoolbox-language-py
+          - py-bindings/maltoolbox-model-py
+          - py-bindings/maltoolbox-pyo3
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -39,10 +39,10 @@ jobs:
       matrix:
         workspace:
           - .
-          - python/maltoolbox-attackgraph-py
-          - python/maltoolbox-language-py
-          - python/maltoolbox-model-py
-          - python/maltoolbox-pyo3
+          - py-bindings/maltoolbox-attackgraph-py
+          - py-bindings/maltoolbox-language-py
+          - py-bindings/maltoolbox-model-py
+          - py-bindings/maltoolbox-pyo3
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

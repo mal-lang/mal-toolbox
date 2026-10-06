@@ -55,7 +55,7 @@ requires = ["maturin>=1,<2"]
 build-backend = "maturin"
 
 [tool.maturin]
-manifest-path = "python/maltoolbox-pyo3/Cargo.toml"
+manifest-path = "py-bindings/maltoolbox-pyo3/Cargo.toml"
 module-name = "maltoolbox._native"
 python-source = "."
 include = ["maltoolbox/py.typed", "maltoolbox/*.conf*", "maltoolbox/_native-stubs/**/*.pyi"]
