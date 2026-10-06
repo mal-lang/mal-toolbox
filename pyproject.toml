@@ -58,7 +58,7 @@ build-backend = "maturin"
 manifest-path = "python/maltoolbox-pyo3/Cargo.toml"
 module-name = "maltoolbox._native"
 python-source = "."
-include = ["maltoolbox/py.typed", "maltoolbox/*.conf*"]
+include = ["maltoolbox/py.typed", "maltoolbox/*.conf*", "maltoolbox/_native/**/*.pyi"]
 
 [tool.pytest.ini_options]
 pythonpath = ['.']

@@ -90,7 +90,7 @@ def _load_from_file_with_git_support(filename: str) -> LanguageGraph:
     return _native_load_from_file(filename)
 
 
-LanguageGraph.load_from_file = staticmethod(_load_from_file_with_git_support)  # type: ignore[method-assign]
+LanguageGraph.load_from_file = staticmethod(_load_from_file_with_git_support)  # type: ignore[method-assign, assignment]
 
 
 def load_language_graph_from_file(filename: str) -> LanguageGraph:
