@@ -11,11 +11,13 @@
 
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::ffi::c_void;
 use std::path::PathBuf;
+use std::ptr::NonNull;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PySet};
+use pyo3::types::{PyCapsule, PyDict, PyList, PySet};
 use pyo3::IntoPyObjectExt;
 
 use maltoolbox_attackgraph::ids::AttackGraphNodeId;
@@ -33,6 +35,21 @@ use crate::node::{PyAttackGraphNode, PyAttackGraphNodesView};
 /// Per-node `(children, parents)` `PySet` pair cache - see
 /// `PyAttackGraph::node_edges_cache`'s doc comment.
 type NodeEdgesCache = Rc<RefCell<HashMap<i64, (Py<PySet>, Py<PySet>)>>>;
+
+/// Shared contract with consumers (currently mal-simulator's `malsim-pyo3`,
+/// see its PORTING_NOTES.md §2.2/§10 for why this exists).
+const INNER_CAPSULE_NAME: &std::ffi::CStr = c"maltoolbox._native.AttackGraph.inner";
+
+/// Destructor for the capsule handed out by `PyAttackGraph::__inner_capsule__`.
+/// Reclaims exactly the one `Rc` strong reference that capsule's creation
+/// cloned - see that method's doc comment.
+unsafe extern "C" fn drop_inner_capsule(capsule: *mut pyo3::ffi::PyObject) {
+    let name = unsafe { pyo3::ffi::PyCapsule_GetName(capsule) };
+    let ptr = unsafe { pyo3::ffi::PyCapsule_GetPointer(capsule, name) };
+    if !ptr.is_null() {
+        drop(unsafe { Rc::from_raw(ptr as *const RefCell<AttackGraph>) });
+    }
+}
 
 #[pyclass(
     name = "AttackGraph",
@@ -1089,6 +1106,32 @@ impl PyAttackGraph {
             None => None,
         };
         Ok((func, (state, lang_graph_state, model_state)))
+    }
+
+    /// Hands out a new strong reference to this graph's shared
+    /// `Rc<RefCell<AttackGraph>>`, wrapped in a `PyCapsule` - the standard
+    /// CPython mechanism for passing a native pointer between two
+    /// independently-compiled extension modules. Needed because a pyo3
+    /// `pyclass` from a shared dependency crate gets a separate, unrelated
+    /// type object in every cdylib that statically links it, so a direct
+    /// downcast across e.g. `maltoolbox._native` and `malsim._native`
+    /// doesn't work even from identical pinned source - see
+    /// `INNER_CAPSULE_NAME`'s doc comment. Each call clones the `Rc`
+    /// (bumping the strong count); the capsule's destructor
+    /// (`drop_inner_capsule`) drops exactly that one clone when the
+    /// capsule itself is garbage-collected, so callers don't need to track
+    /// this `PyAttackGraph`'s own lifetime.
+    fn __inner_capsule__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyCapsule>> {
+        let raw = Rc::into_raw(self.inner.clone()) as *mut c_void;
+        let ptr = NonNull::new(raw).expect("Rc::into_raw is never null");
+        unsafe {
+            PyCapsule::new_with_pointer_and_destructor(
+                py,
+                ptr,
+                INNER_CAPSULE_NAME,
+                Some(drop_inner_capsule),
+            )
+        }
     }
 
     /// See `deepcopy_graph`'s doc comment for the full rationale.
