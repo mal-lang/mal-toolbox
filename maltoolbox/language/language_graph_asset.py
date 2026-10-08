@@ -72,8 +72,8 @@ class LanguageGraphAsset:
         return False
 
     @cached_property
-    def sub_assets(self) -> set[LanguageGraphAsset]:
-        """Return a list of all of the assets that directly or indirectly extend
+    def sub_assets(self) -> frozenset[LanguageGraphAsset]:
+        """Return a frozenset of all assets that directly or indirectly extend
         this asset.
 
         Return:
@@ -88,7 +88,7 @@ class LanguageGraphAsset:
         subassets.extend(self.own_sub_assets)
         subassets.append(self)
 
-        return set(subassets)
+        return frozenset(subassets)
 
     @cached_property
     def super_assets(self) -> list[LanguageGraphAsset]:
@@ -153,10 +153,12 @@ class LanguageGraphAsset:
             all_vars |= self.own_super_asset.variables
         return all_vars
 
-    def get_all_common_superassets(self, other: LanguageGraphAsset) -> set[str]:
-        """Return a set of all common ancestors between this asset
+    def get_all_common_superassets(
+        self, other: LanguageGraphAsset
+    ) -> frozenset[str]:
+        """Return a frozenset of all common ancestors between this asset
         and the other asset given as parameter
         """
         self_superassets = {asset.name for asset in self.super_assets}
         other_superassets = {asset.name for asset in other.super_assets}
-        return self_superassets.intersection(other_superassets)
+        return frozenset(self_superassets.intersection(other_superassets))

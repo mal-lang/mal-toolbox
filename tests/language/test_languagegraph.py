@@ -5,7 +5,11 @@ import pickle
 import pytest
 from conftest import path_testdata
 
-from maltoolbox.language import LanguageGraph, LanguageGraphAssociation
+from maltoolbox.language import (
+    LanguageGraph,
+    LanguageGraphAsset,
+    LanguageGraphAssociation,
+)
 from maltoolbox.language.compiler import MalCompiler
 from maltoolbox.language.languagegraph import load_language_graph_from_file
 
@@ -87,6 +91,23 @@ def test_interleaved_vars():
 
 def test_inherited_vars():
     LanguageGraph(MalCompiler().compile('tests/testdata/inherited_vars.mal'))
+
+
+def test_immutable_language_collections(corelang_lang_graph: LanguageGraph):
+    assert isinstance(corelang_lang_graph.associations, frozenset)
+    assert isinstance(corelang_lang_graph.attack_steps, frozenset)
+    assert all(
+        isinstance(candidate_steps, frozenset)
+        for candidate_steps in corelang_lang_graph.fieldname_to_candidate_steps.values()
+    )
+
+    parent = LanguageGraphAsset(name='Parent')
+    child = LanguageGraphAsset(name='Child', own_super_asset=parent)
+    other_child = LanguageGraphAsset(name='OtherChild', own_super_asset=parent)
+    parent.own_sub_assets = [child, other_child]
+
+    assert parent.sub_assets == frozenset({parent, child, other_child})
+    assert child.get_all_common_superassets(other_child) == frozenset({'Parent'})
 
 
 def test_associations():
