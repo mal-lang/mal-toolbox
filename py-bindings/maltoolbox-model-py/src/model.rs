@@ -15,11 +15,13 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ffi::c_void;
 use std::path::PathBuf;
+use std::ptr::NonNull;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyCapsule, PyDict};
 
 use maltoolbox_language_py::handle::{cached_handle, new_handle_cache, HandleCache};
 use maltoolbox_language_py::PyLanguageGraph;
@@ -27,6 +29,22 @@ use maltoolbox_model::{file as model_file, Model, ModelAsset};
 
 use crate::asset::{fix_associated_assets_int_keys, PyModelAsset, Tombstones};
 use crate::exceptions::{from_dict_error_to_py, load_error_to_py, model_error_to_py};
+
+/// Shared contract with consumers (currently mal-simulator's `malsim-pyo3`,
+/// see its PORTING_NOTES.md §6/B3 for why this exists) - mirrors
+/// `maltoolbox-attackgraph-py`'s `PyAttackGraph::INNER_CAPSULE_NAME`.
+const INNER_CAPSULE_NAME: &std::ffi::CStr = c"maltoolbox._native.Model.inner";
+
+/// Destructor for the capsule handed out by `PyModel::__inner_capsule__`.
+/// Reclaims exactly the one `Rc` strong reference that capsule's creation
+/// cloned - see that method's doc comment.
+unsafe extern "C" fn drop_inner_capsule(capsule: *mut pyo3::ffi::PyObject) {
+    let name = unsafe { pyo3::ffi::PyCapsule_GetName(capsule) };
+    let ptr = unsafe { pyo3::ffi::PyCapsule_GetPointer(capsule, name) };
+    if !ptr.is_null() {
+        drop(unsafe { Rc::from_raw(ptr as *const RefCell<Model>) });
+    }
+}
 
 #[pyclass(name = "Model", module = "maltoolbox._native", unsendable)]
 pub struct PyModel {
@@ -391,6 +409,33 @@ impl PyModel {
         let lang_graph_state = self.lang_graph_py.bind(py).call_method0("_to_dict")?;
         let model_state = self._to_dict(py)?;
         Ok((func, (model_state, lang_graph_state)))
+    }
+
+    /// Hands out a new strong reference to this model's shared
+    /// `Rc<RefCell<Model>>`, wrapped in a `PyCapsule` - the standard
+    /// CPython mechanism for passing a native pointer between two
+    /// independently-compiled extension modules. Needed because a pyo3
+    /// `pyclass` from a shared dependency crate gets a separate, unrelated
+    /// type object in every cdylib that statically links it, so a direct
+    /// downcast across e.g. `maltoolbox._native` and `malsim._native`
+    /// doesn't work even from identical pinned source - see
+    /// `INNER_CAPSULE_NAME`'s doc comment and
+    /// `maltoolbox-attackgraph-py`'s `PyAttackGraph::__inner_capsule__`,
+    /// which this mirrors. Each call clones the `Rc` (bumping the strong
+    /// count); the capsule's destructor (`drop_inner_capsule`) drops
+    /// exactly that one clone when the capsule itself is garbage-collected,
+    /// so callers don't need to track this `PyModel`'s own lifetime.
+    fn __inner_capsule__<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyCapsule>> {
+        let raw = Rc::into_raw(self.inner.clone()) as *mut c_void;
+        let ptr = NonNull::new(raw).expect("Rc::into_raw is never null");
+        unsafe {
+            PyCapsule::new_with_pointer_and_destructor(
+                py,
+                ptr,
+                INNER_CAPSULE_NAME,
+                Some(drop_inner_capsule),
+            )
+        }
     }
 
     fn __repr__(&self, py: Python<'_>) -> String {
