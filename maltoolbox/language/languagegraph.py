@@ -106,17 +106,19 @@ class LanguageGraph:
             archive.writestr('langspec.json', langspec_json)
 
     @property
-    def associations(self) -> set[LanguageGraphAssociation]:
+    def associations(self) -> frozenset[LanguageGraphAssociation]:
         """Return all associations in the language graph."""
         return get_language_graph_associations(self)
 
     @property
-    def attack_steps(self) -> set[LanguageGraphAttackStep]:
+    def attack_steps(self) -> frozenset[LanguageGraphAttackStep]:
         """Return all attack steps in the language graph."""
         return get_language_graph_attack_steps(self)
 
     @cached_property
-    def fieldname_to_candidate_steps(self) -> dict[str, set[tuple[str, str]]]:
+    def fieldname_to_candidate_steps(
+        self,
+    ) -> dict[str, frozenset[tuple[str, str]]]:
         """Map each association fieldname to the (asset_type, attack_step_name)
         pairs whose children expression chains can traverse that field."""
         mapping: dict[str, set[tuple[str, str]]] = {}
@@ -128,7 +130,7 @@ class LanguageGraph:
                         fieldnames |= chain_fieldnames(expr_chain)
                 for fieldname in fieldnames:
                     mapping.setdefault(fieldname, set()).add((asset_type, step_name))
-        return mapping
+        return {fieldname: frozenset(steps) for fieldname, steps in mapping.items()}
 
     @staticmethod
     def _link_association_to_assets(
@@ -482,19 +484,23 @@ def load_language_graph_from_file(filename: str) -> LanguageGraph:
     )
 
 
-def get_language_graph_associations(language_graph: LanguageGraph):
-    return {
+def get_language_graph_associations(
+    language_graph: LanguageGraph,
+) -> frozenset[LanguageGraphAssociation]:
+    return frozenset({
         assoc
         for asset in language_graph.assets.values()
         for assoc in asset.associations.values()
-    }
+    })
 
-def get_language_graph_attack_steps(language_graph: LanguageGraph) -> set[LanguageGraphAttackStep]:
-    return {
+def get_language_graph_attack_steps(
+    language_graph: LanguageGraph,
+) -> frozenset[LanguageGraphAttackStep]:
+    return frozenset({
         step
         for asset in language_graph.assets.values()
         for step in asset.attack_steps.values()
-    }
+    })
 
 
 def language_graph_from_git_url(git_url: str) -> LanguageGraph:
