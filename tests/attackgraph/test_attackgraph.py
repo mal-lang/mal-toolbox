@@ -2,7 +2,6 @@
 
 import copy
 import pickle
-from unittest.mock import patch
 
 import pytest
 from conftest import path_testdata
@@ -15,18 +14,15 @@ from maltoolbox.language.language_graph_lookup import get_attacks_for_asset_type
 from maltoolbox.model import Model, ModelAsset
 
 
-def test_attackgraph_init(corelang_lang_graph, model):
+def test_attackgraph_init(corelang_lang_graph, example_model):
     """Test init with different params given"""
-    # _generate_graph is called when langspec and model is given to init
-    with patch('maltoolbox.attackgraph.attackgraph.generate_graph') as _generate_graph:
-        _generate_graph.return_value = None, None, None, None, None
-        AttackGraph(lang_graph=corelang_lang_graph, model=model)
-        assert _generate_graph.call_count == 1
+    # Graph is populated when langspec and model is given to init
+    ag_with_model = AttackGraph(lang_graph=corelang_lang_graph, model=example_model)
+    assert len(ag_with_model.nodes) > 0
 
-    # _generate_graph is not called when no model is given
-    with patch('maltoolbox.attackgraph.attackgraph.generate_graph') as _generate_graph:
-        AttackGraph(lang_graph=corelang_lang_graph, model=None)
-        assert _generate_graph.call_count == 0
+    # Graph stays empty when no model is given
+    ag_without_model = AttackGraph(lang_graph=corelang_lang_graph, model=None)
+    assert len(ag_without_model.nodes) == 0
 
 
 def test_load_attack_graph(corelang_lang_graph: LanguageGraph):
@@ -168,13 +164,14 @@ def test_attackgraph_generate_graph(example_attackgraph: AttackGraph):
 
 def test_attackgraph_get_node_by_full_name(example_attackgraph: AttackGraph):
 
-    with pytest.raises(LookupError) as e:
+    with pytest.raises(
+        LookupError,
+        match=(
+            r'Could not find node with name "Application 2"\. '
+            r'Did you mean: Application 2:read, Application 2:deny\?'
+        ),
+    ):
         example_attackgraph.get_node_by_full_name('Application 2')
-    assert repr(e) == (
-        "<ExceptionInfo LookupError('Could not find node with name "
-        '"Application 2". Did you mean: '
-        "Application 2:read, Application 2:deny?') tblen=3>"
-    )
 
 
 def test_attackgraph_according_to_corelang(corelang_lang_graph, model):
@@ -313,6 +310,26 @@ def test_attackgraph_remove_node(example_attackgraph: AttackGraph):
         assert node_to_remove not in parent.children
     for child in children:
         assert node_to_remove not in child.parents
+
+
+def test_attackgraph_remove_node_children_parents_still_readable(
+    example_attackgraph: AttackGraph,
+):
+    """A removed node's own .children/.parents must stay readable and
+    correct, matching its pre-removal state - a caller elsewhere (e.g.
+    mal-simulator holding a node in `performed_nodes`) can legitimately
+    still hold a handle to a node after it's been removed from the
+    graph, and removal doesn't invalidate held handles anywhere else in
+    this codebase either."""
+    node_to_remove = example_attackgraph.nodes[10]
+    parent_ids = {parent.id for parent in node_to_remove.parents}
+    children_ids = {child.id for child in node_to_remove.children}
+    assert parent_ids and children_ids  # make sure this node is a meaningful case
+
+    example_attackgraph.remove_node(node_to_remove)
+
+    assert {parent.id for parent in node_to_remove.parents} == parent_ids
+    assert {child.id for child in node_to_remove.children} == children_ids
 
 
 def test_attackgraph_deepcopy(example_attackgraph: AttackGraph):

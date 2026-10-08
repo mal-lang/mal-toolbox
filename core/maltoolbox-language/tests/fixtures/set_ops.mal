@@ -1,0 +1,23 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset Origin {
+    | check
+      -> (setA \/ setB).unionResult,
+         (setA /\ setB).intersectionResult,
+         (setA - setB).differenceResult
+  }
+
+  asset Target {
+    | unionResult
+    | intersectionResult
+    | differenceResult
+  }
+}
+
+associations {
+  Origin [inSetA] * <-- HasSetA --> * [setA] Target
+  Origin [inSetB] * <-- HasSetB --> * [setB] Target
+}

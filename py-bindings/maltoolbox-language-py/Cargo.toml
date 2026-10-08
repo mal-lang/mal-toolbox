@@ -1,0 +1,20 @@
+[package]
+name = "maltoolbox-language-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "maltoolbox_language_py"
+path = "src/lib.rs"
+
+[dependencies]
+maltoolbox-language = { path = "../../core/maltoolbox-language" }
+maltoolbox-io = { path = "../../core/maltoolbox-io" }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+pythonize = { workspace = true }
+pyo3 = { workspace = true }
+indexmap = { workspace = true }
+slotmap = { workspace = true }

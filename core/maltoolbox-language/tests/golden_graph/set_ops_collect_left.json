@@ -1,0 +1,245 @@
+{
+  "Node": {
+    "associations": {
+      "inSetA": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetA",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetA",
+        "right": {
+          "asset": "Node",
+          "fieldname": "setA",
+          "max": null,
+          "min": 0
+        }
+      },
+      "inSetB": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetB",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetB",
+        "right": {
+          "asset": "Node",
+          "fieldname": "setB",
+          "max": null,
+          "min": 0
+        }
+      },
+      "next": {
+        "info": {},
+        "left": {
+          "asset": "Node",
+          "fieldname": "nodeOf",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasNext",
+        "right": {
+          "asset": "Target",
+          "fieldname": "next",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "Node",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Node",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Origin": {
+    "associations": {
+      "setA": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetA",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetA",
+        "right": {
+          "asset": "Node",
+          "fieldname": "setA",
+          "max": null,
+          "min": 0
+        }
+      },
+      "setB": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetB",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetB",
+        "right": {
+          "asset": "Node",
+          "fieldname": "setB",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "check": {
+        "asset": "Origin",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "check",
+        "overrides": true,
+        "own_children": {
+          "Target:reach": [
+            {
+              "collect": {
+                "left": {
+                  "difference": {
+                    "left": {
+                      "HasSetA": {
+                        "asset type": "Node",
+                        "fieldname": "setA"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HasSetB": {
+                        "asset type": "Node",
+                        "fieldname": "setB"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "difference"
+                },
+                "right": {
+                  "HasNext": {
+                    "asset type": "Target",
+                    "fieldname": "next"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Origin",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Target": {
+    "associations": {
+      "nodeOf": {
+        "info": {},
+        "left": {
+          "asset": "Node",
+          "fieldname": "nodeOf",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasNext",
+        "right": {
+          "asset": "Target",
+          "fieldname": "next",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "Target",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Origin:check": [
+            {
+              "collect": {
+                "left": {
+                  "HasNext": {
+                    "asset type": "Node",
+                    "fieldname": "nodeOf"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "difference": {
+                    "left": {
+                      "HasSetA": {
+                        "asset type": "Origin",
+                        "fieldname": "inSetA"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "HasSetB": {
+                        "asset type": "Origin",
+                        "fieldname": "inSetB"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "difference"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Target",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

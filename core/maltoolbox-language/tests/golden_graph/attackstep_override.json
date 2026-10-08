@@ -1,0 +1,582 @@
+{
+  "Child1": {
+    "associations": {},
+    "attack_steps": {
+      "attack_step_with_child": {
+        "asset": "Child1",
+        "detectors": {},
+        "info": {},
+        "inherits": "EmptyParent:attack_step_with_child",
+        "name": "attack_step_with_child",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "attackstep": {
+        "asset": "Child1",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "attackstep",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target1": {
+        "asset": "Child1",
+        "detectors": {},
+        "info": {},
+        "inherits": "EmptyParent:target1",
+        "name": "target1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target2": {
+        "asset": "Child1",
+        "detectors": {},
+        "info": {},
+        "inherits": "EmptyParent:target2",
+        "name": "target2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target3": {
+        "asset": "Child1",
+        "detectors": {},
+        "info": {},
+        "inherits": "EmptyParent:target3",
+        "name": "target3",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target4": {
+        "asset": "Child1",
+        "detectors": {},
+        "info": {},
+        "inherits": "EmptyParent:target4",
+        "name": "target4",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Child1",
+    "sub_assets": [
+      "Child2"
+    ],
+    "super_asset": "EmptyParent",
+    "variables": {}
+  },
+  "Child2": {
+    "associations": {},
+    "attack_steps": {
+      "attack_step_with_child": {
+        "asset": "Child2",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child1:attack_step_with_child",
+        "name": "attack_step_with_child",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "attackstep": {
+        "asset": "Child2",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child1:attackstep",
+        "name": "attackstep",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target1": {
+        "asset": "Child2",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child1:target1",
+        "name": "target1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target2": {
+        "asset": "Child2",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child1:target2",
+        "name": "target2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target3": {
+        "asset": "Child2",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child1:target3",
+        "name": "target3",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target4": {
+        "asset": "Child2",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child1:target4",
+        "name": "target4",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Child2",
+    "sub_assets": [
+      "Child3"
+    ],
+    "super_asset": "Child1",
+    "variables": {}
+  },
+  "Child3": {
+    "associations": {},
+    "attack_steps": {
+      "attack_step_with_child": {
+        "asset": "Child3",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child2:attack_step_with_child",
+        "name": "attack_step_with_child",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "attackstep": {
+        "asset": "Child3",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child2:attackstep",
+        "name": "attackstep",
+        "overrides": false,
+        "own_children": {
+          "Child3:target1": [
+            null
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target1": {
+        "asset": "Child3",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child2:target1",
+        "name": "target1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Child3:attackstep": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target2": {
+        "asset": "Child3",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child2:target2",
+        "name": "target2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target3": {
+        "asset": "Child3",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child2:target3",
+        "name": "target3",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target4": {
+        "asset": "Child3",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child2:target4",
+        "name": "target4",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Child3",
+    "sub_assets": [
+      "Child4"
+    ],
+    "super_asset": "Child2",
+    "variables": {}
+  },
+  "Child4": {
+    "associations": {},
+    "attack_steps": {
+      "attack_step_with_child": {
+        "asset": "Child4",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child3:attack_step_with_child",
+        "name": "attack_step_with_child",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "attackstep": {
+        "asset": "Child4",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child3:attackstep",
+        "name": "attackstep",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target1": {
+        "asset": "Child4",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child3:target1",
+        "name": "target1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target2": {
+        "asset": "Child4",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child3:target2",
+        "name": "target2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target3": {
+        "asset": "Child4",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child3:target3",
+        "name": "target3",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target4": {
+        "asset": "Child4",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child3:target4",
+        "name": "target4",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Child4",
+    "sub_assets": [
+      "FinalChild"
+    ],
+    "super_asset": "Child3",
+    "variables": {}
+  },
+  "EmptyParent": {
+    "associations": {},
+    "attack_steps": {
+      "attack_step_with_child": {
+        "asset": "EmptyParent",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "attack_step_with_child",
+        "overrides": true,
+        "own_children": {
+          "EmptyParent:target1": [
+            null
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target1": {
+        "asset": "EmptyParent",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "target1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "EmptyParent:attack_step_with_child": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target2": {
+        "asset": "EmptyParent",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "target2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target3": {
+        "asset": "EmptyParent",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "target3",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target4": {
+        "asset": "EmptyParent",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "target4",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "EmptyParent",
+    "sub_assets": [
+      "Child1"
+    ],
+    "super_asset": "",
+    "variables": {}
+  },
+  "FinalChild": {
+    "associations": {},
+    "attack_steps": {
+      "attack_step_with_child": {
+        "asset": "FinalChild",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child4:attack_step_with_child",
+        "name": "attack_step_with_child",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "attackstep": {
+        "asset": "FinalChild",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child4:attackstep",
+        "name": "attackstep",
+        "overrides": false,
+        "own_children": {
+          "FinalChild:target1": [
+            null
+          ],
+          "FinalChild:target2": [
+            null
+          ],
+          "FinalChild:target3": [
+            null
+          ],
+          "FinalChild:target4": [
+            null
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target1": {
+        "asset": "FinalChild",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child4:target1",
+        "name": "target1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "FinalChild:attackstep": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target2": {
+        "asset": "FinalChild",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child4:target2",
+        "name": "target2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "FinalChild:attackstep": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target3": {
+        "asset": "FinalChild",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child4:target3",
+        "name": "target3",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "FinalChild:attackstep": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "target4": {
+        "asset": "FinalChild",
+        "detectors": {},
+        "info": {},
+        "inherits": "Child4:target4",
+        "name": "target4",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "FinalChild:attackstep": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "FinalChild",
+    "sub_assets": [],
+    "super_asset": "Child4",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

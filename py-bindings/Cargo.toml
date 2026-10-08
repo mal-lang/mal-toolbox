@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "maltoolbox-language-py",
+    "maltoolbox-model-py",
+    "maltoolbox-attackgraph-py",
+    "maltoolbox-pyo3",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+maltoolbox-language-py = { path = "maltoolbox-language-py" }
+maltoolbox-model-py = { path = "maltoolbox-model-py" }
+maltoolbox-attackgraph-py = { path = "maltoolbox-attackgraph-py" }
+
+pyo3 = "0.29.3"
+pythonize = "0.29.0"
+serde_json = { version = "1", features = ["preserve_order"] }
+thiserror = "2"
+indexmap = "2"
+slotmap = "1"

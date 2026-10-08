@@ -1,0 +1,45 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang5"
+#version: "0.1.0"
+category intDynamicTestLang5 {
+	asset Business {}
+
+	abstract asset BusinessResource {}
+
+	abstract asset Perishable extends BusinessResource {
+		| consume
+			R> self / self
+	}
+
+	abstract asset NonPerishable extends BusinessResource {}
+
+	asset Typewriter extends NonPerishable {}
+	asset Apple extends Perishable {}
+	asset Banana extends Perishable {}
+
+	asset Monkey {
+	        | eatPerishables
+	                -> business.goodies[Perishable].consume
+
+	        | eatApples
+	                -> business.goodies[Apple].consume
+
+	        | eatBananas
+	                -> business.goodies[Banana].consume
+
+	        | breakTypewriters
+	                R> business.goodies[Typewriter] / self
+
+	}
+
+}
+
+associations {
+  Business [organization] 1 <-- trades --> * [goodies] BusinessResource
+  Business [business] 1 <-- employs --> * [monkeys] Monkey
+}

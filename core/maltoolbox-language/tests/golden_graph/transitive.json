@@ -1,0 +1,89 @@
+{
+  "TestAsset": {
+    "associations": {
+      "field1": {
+        "info": {},
+        "left": {
+          "asset": "TestAsset",
+          "fieldname": "field1",
+          "max": null,
+          "min": 0
+        },
+        "name": "TransitiveTestAssoc",
+        "right": {
+          "asset": "TestAsset",
+          "fieldname": "field2",
+          "max": null,
+          "min": 0
+        }
+      },
+      "field2": {
+        "info": {},
+        "left": {
+          "asset": "TestAsset",
+          "fieldname": "field1",
+          "max": null,
+          "min": 0
+        },
+        "name": "TransitiveTestAssoc",
+        "right": {
+          "asset": "TestAsset",
+          "fieldname": "field2",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "test_step": {
+        "asset": "TestAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "test_step",
+        "overrides": true,
+        "own_children": {
+          "TestAsset:test_step": [
+            {
+              "transitive": {
+                "TransitiveTestAssoc": {
+                  "asset type": "TestAsset",
+                  "fieldname": "field2"
+                },
+                "type": "field"
+              },
+              "type": "transitive"
+            }
+          ]
+        },
+        "own_parents": {
+          "TestAsset:test_step": [
+            {
+              "transitive": {
+                "TransitiveTestAssoc": {
+                  "asset type": "TestAsset",
+                  "fieldname": "field1"
+                },
+                "type": "field"
+              },
+              "type": "transitive"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "TestAsset",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

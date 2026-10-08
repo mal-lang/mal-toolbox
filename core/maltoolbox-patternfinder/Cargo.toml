@@ -1,0 +1,15 @@
+[package]
+name = "maltoolbox-patternfinder"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+maltoolbox-attackgraph = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+maltoolbox-language = { workspace = true }
+maltoolbox-model = { workspace = true }
