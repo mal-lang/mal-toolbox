@@ -1,11 +1,13 @@
 """Type stubs for the compiled PyO3 extension module ``maltoolbox._native``.
 
-This is a PEP 561 stub-only package: there is no real ``maltoolbox/_native/``
-package on disk at runtime (the real thing is the compiled
-``maltoolbox/_native.*.so`` extension module, built via maturin from
-``py-bindings/maltoolbox-pyo3``). These ``.pyi`` files exist purely to give
-type checkers (mypy) and editors (Pylance) full type/autocomplete
-information for that compiled module's API.
+This directory holds stubs only: there is no real ``maltoolbox/_native/``
+package at runtime (the real thing is the compiled
+``maltoolbox/_native.*.so`` extension module next to it, built via maturin
+from ``py-bindings/maltoolbox-pyo3``, which the import system prefers over
+this ``__init__.py``-less directory). It must be named exactly ``_native``
+- type checkers (mypy, pyright/Pylance) only resolve a submodule's stubs
+from a same-named ``.pyi`` file or directory beside it; the PEP 561
+``-stubs`` suffix applies to top-level distributions only.
 
 The native module is assembled from three PyO3 "compat layer" crates:
 ``maltoolbox-language-py``, ``maltoolbox-model-py``, and
