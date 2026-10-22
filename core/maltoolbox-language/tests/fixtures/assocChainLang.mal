@@ -1,0 +1,94 @@
+// vim:ft=mal
+#id: "org.mal-lang.assocChainLang"
+#version: "1.0.0"
+
+category LongAssocChains {
+
+    asset A {
+        | access
+            ->  reach,
+                b.reach,
+                b.c.reach,
+                b.c.d.reach,
+                b.c.d.e.reach,
+                b.c.d.e.f.reach,
+                b.c.d.e.f.g.reach,
+                b.c.d.e.f.g.h.reach,
+                b.c.d.e.f.g.h.i.reach
+        
+        | reach
+            ->  b.reach,
+                b.c.reach,
+                b.c.d.reach,
+                b.c.d.e.reach,
+                b.c.d.e.f.reach,
+                b.c.d.e.f.g.reach,
+                b.c.d.e.f.g.h.reach,
+                b.c.d.e.f.g.h.i.reach
+        
+    }
+    asset B {
+        | reach
+            ->  c.reach,
+                c.d.reach,
+                c.d.e.reach,
+                c.d.e.f.reach,
+                c.d.e.f.g.reach,
+                c.d.e.f.g.h.reach,
+                c.d.e.f.g.h.i.reach
+    }
+    asset C {
+        | reach
+            ->  d.reach,
+                d.e.reach,
+                d.e.f.reach,
+                d.e.f.g.reach,
+                d.e.f.g.h.reach,
+                d.e.f.g.h.i.reach
+    }
+    asset D {
+        | reach
+            ->  e.reach,
+                e.f.reach,
+                e.f.g.reach,
+                e.f.g.h.reach,
+                e.f.g.h.i.reach
+    }
+    asset E {
+        | reach
+            ->  f.reach,
+                f.g.reach,
+                f.g.h.reach,
+                f.g.h.i.reach
+    }
+    asset F {
+        | reach
+            ->  g.reach,
+                g.h.reach,
+                g.h.i.reach
+    }
+    asset G {
+        | reach
+            ->  h.reach,
+                h.i.reach
+    }
+    asset H {
+        | reach
+            ->  i.reach
+    }
+    asset I {
+        | reach
+    }
+
+}
+
+associations {
+  A [a] * <-- A2B --> * [b] B
+  B [b] * <-- B2C --> * [c] C
+  C [c] * <-- C2D --> * [d] D
+  D [d] * <-- D2E --> * [e] E
+  E [e] * <-- E2F --> * [f] F
+  F [f] * <-- F2G --> * [g] G
+  G [g] * <-- G2H --> * [h] H
+  H [h] * <-- H2I --> * [i] I
+}

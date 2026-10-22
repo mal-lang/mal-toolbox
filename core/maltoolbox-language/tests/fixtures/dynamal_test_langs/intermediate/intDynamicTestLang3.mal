@@ -1,0 +1,36 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang3"
+#version: "0.0.1"
+
+category Business {
+	asset Alarm {}
+	asset Poison {}
+
+	asset BananaTree {
+		| access
+			-> contaminateBananas
+
+		| contaminateBananas
+		user info: "Deactivate alarms, then poison reachable bananas."
+		developer info: "Order of operations!"
+			R> self / ~alarm
+			A> bananas / poison
+			-> bananas.poison.banana.poisoned
+	}
+
+	asset Banana {
+		| poisoned
+		user info: "Flag this banana as poisoned!"
+	}
+}
+
+associations {
+	Alarm [alarm] 1 <-- protects --> * [trees] BananaTree
+	BananaTree [tree] 1 <-- contains --> * [bananas] Banana
+	Banana [banana] 1 <-- contamination --> 0..1 [poison] Poison
+}

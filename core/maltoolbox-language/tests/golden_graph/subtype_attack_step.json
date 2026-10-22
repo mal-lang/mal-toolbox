@@ -1,0 +1,227 @@
+{
+  "BaseAsset": {
+    "associations": {
+      "field2": {
+        "info": {},
+        "left": {
+          "asset": "BaseAsset",
+          "fieldname": "field1",
+          "max": null,
+          "min": 0
+        },
+        "name": "SubtypeTestAssoc",
+        "right": {
+          "asset": "OtherAsset",
+          "fieldname": "field2",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "base_step1": {
+        "asset": "BaseAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "base_step1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "OtherAsset:other_step1": [
+            {
+              "SubtypeTestAssoc": {
+                "asset type": "OtherAsset",
+                "fieldname": "field2"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "base_step2": {
+        "asset": "BaseAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "base_step2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "BaseAsset",
+    "sub_assets": [
+      "SubAsset"
+    ],
+    "super_asset": "",
+    "variables": {}
+  },
+  "OtherAsset": {
+    "associations": {
+      "field1": {
+        "info": {},
+        "left": {
+          "asset": "BaseAsset",
+          "fieldname": "field1",
+          "max": null,
+          "min": 0
+        },
+        "name": "SubtypeTestAssoc",
+        "right": {
+          "asset": "OtherAsset",
+          "fieldname": "field2",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "other_step1": {
+        "asset": "OtherAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "other_step1",
+        "overrides": true,
+        "own_children": {
+          "BaseAsset:base_step1": [
+            {
+              "SubtypeTestAssoc": {
+                "asset type": "BaseAsset",
+                "fieldname": "field1"
+              },
+              "type": "field"
+            }
+          ],
+          "SubAsset:base_step2": [
+            {
+              "expression": {
+                "SubtypeTestAssoc": {
+                  "asset type": "BaseAsset",
+                  "fieldname": "field1"
+                },
+                "type": "field"
+              },
+              "subType": "SubAsset",
+              "type": "subType"
+            }
+          ],
+          "SubAsset:subasset_step1": [
+            {
+              "expression": {
+                "SubtypeTestAssoc": {
+                  "asset type": "BaseAsset",
+                  "fieldname": "field1"
+                },
+                "type": "field"
+              },
+              "subType": "SubAsset",
+              "type": "subType"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "OtherAsset",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "SubAsset": {
+    "associations": {},
+    "attack_steps": {
+      "base_step1": {
+        "asset": "SubAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": "BaseAsset:base_step1",
+        "name": "base_step1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "base_step2": {
+        "asset": "SubAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": "BaseAsset:base_step2",
+        "name": "base_step2",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "OtherAsset:other_step1": [
+            {
+              "expression": {
+                "SubtypeTestAssoc": {
+                  "asset type": "OtherAsset",
+                  "fieldname": "field2"
+                },
+                "type": "field"
+              },
+              "subType": "SubAsset",
+              "type": "subType"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "subasset_step1": {
+        "asset": "SubAsset",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "subasset_step1",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "OtherAsset:other_step1": [
+            {
+              "expression": {
+                "SubtypeTestAssoc": {
+                  "asset type": "OtherAsset",
+                  "fieldname": "field2"
+                },
+                "type": "field"
+              },
+              "subType": "SubAsset",
+              "type": "subType"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "SubAsset",
+    "sub_assets": [],
+    "super_asset": "BaseAsset",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

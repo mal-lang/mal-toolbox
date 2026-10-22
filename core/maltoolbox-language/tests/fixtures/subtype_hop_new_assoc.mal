@@ -1,0 +1,28 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test {
+  asset Xattr {
+    | setxattr
+  }
+
+  abstract asset OpenableIO {
+  }
+
+  asset File extends OpenableIO {
+  }
+
+  asset Pipe extends OpenableIO {
+  }
+
+  asset FileDescriptor {
+    | setxattr
+      -> io[File].xattrs.setxattr
+  }
+}
+
+associations {
+  OpenableIO [io] 1 <-- DescribedIO --> * [descriptors] FileDescriptor
+  File [file] 1 <-- FileXattr --> * [xattrs] Xattr
+}

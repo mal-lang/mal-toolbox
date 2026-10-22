@@ -1,0 +1,217 @@
+{
+  "File": {
+    "associations": {
+      "modifyingProcs": {
+        "info": {},
+        "left": {
+          "asset": "Proc",
+          "fieldname": "modifyingProcs",
+          "max": null,
+          "min": 0
+        },
+        "name": "modifies",
+        "right": {
+          "asset": "File",
+          "fieldname": "openFiles",
+          "max": null,
+          "min": 0
+        }
+      },
+      "onHost": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "onHost",
+          "max": 1,
+          "min": 1
+        },
+        "name": "disk",
+        "right": {
+          "asset": "File",
+          "fieldname": "files",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "read": {
+        "asset": "File",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "read",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Host:access": [
+            {
+              "disk": {
+                "asset type": "Host",
+                "fieldname": "onHost"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "File",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Host": {
+    "associations": {
+      "files": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "onHost",
+          "max": 1,
+          "min": 1
+        },
+        "name": "disk",
+        "right": {
+          "asset": "File",
+          "fieldname": "files",
+          "max": null,
+          "min": 0
+        }
+      },
+      "procs": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "onHost",
+          "max": 1,
+          "min": 1
+        },
+        "name": "running",
+        "right": {
+          "asset": "Proc",
+          "fieldname": "procs",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "access": {
+        "asset": "Host",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "access",
+        "overrides": true,
+        "own_children": {
+          "File:read": [
+            {
+              "disk": {
+                "asset type": "File",
+                "fieldname": "files"
+              },
+              "type": "field"
+            }
+          ],
+          "Host:createRandomFiles": [
+            null
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "createRandomFiles": {
+        "asset": "Host",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "createRandomFiles",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Host:access": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Host",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Proc": {
+    "associations": {
+      "onHost": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "onHost",
+          "max": 1,
+          "min": 1
+        },
+        "name": "running",
+        "right": {
+          "asset": "Proc",
+          "fieldname": "procs",
+          "max": null,
+          "min": 0
+        }
+      },
+      "openFiles": {
+        "info": {},
+        "left": {
+          "asset": "Proc",
+          "fieldname": "modifyingProcs",
+          "max": null,
+          "min": 0
+        },
+        "name": "modifies",
+        "right": {
+          "asset": "File",
+          "fieldname": "openFiles",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "createFile": {
+        "asset": "Proc",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "createFile",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Proc",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "org.mal-lang.multiplicityLang",
+    "version": "1.0.0"
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "test_step",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "stepExpression": {
+                    "lhs": {
+                      "name": "fieldA2",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "fieldB2",
+                      "type": "field"
+                    },
+                    "type": "intersection"
+                  },
+                  "type": "transitive"
+                },
+                "rhs": {
+                  "name": "test_step",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "TestAsset",
+      "superAsset": null,
+      "variables": []
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "TestAsset",
+      "leftField": "fieldA1",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "TransitiveTestAssocA",
+      "rightAsset": "TestAsset",
+      "rightField": "fieldA2",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "TestAsset",
+      "leftField": "fieldB1",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "TransitiveTestAssocB",
+      "rightAsset": "TestAsset",
+      "rightField": "fieldB2",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "Test"
+    }
+  ],
+  "defines": {
+    "id": "test",
+    "version": "0.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

@@ -1,0 +1,255 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "access",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "createRandomFiles",
+                "type": "attackStep"
+              },
+              {
+                "lhs": {
+                  "name": "files",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "read",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "base": {
+                  "name": "self",
+                  "type": "field"
+                },
+                "targets": [
+                  {
+                    "multiplicity": {
+                      "max": "10",
+                      "min": "4"
+                    },
+                    "stepExpression": {
+                      "name": "files",
+                      "type": "field"
+                    },
+                    "type": "multiplicity"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "createRandomFiles",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Main",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Host",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "base": {
+                  "name": "onHost",
+                  "type": "field"
+                },
+                "targets": [
+                  {
+                    "name": "files",
+                    "type": "field"
+                  }
+                ],
+                "type": "dyn_sentence"
+              },
+              {
+                "base": {
+                  "name": "self",
+                  "type": "field"
+                },
+                "targets": [
+                  {
+                    "operand": {
+                      "multiplicity": {
+                        "max": null,
+                        "min": "1"
+                      },
+                      "stepExpression": {
+                        "lhs": {
+                          "name": "openFiles",
+                          "type": "field"
+                        },
+                        "rhs": {
+                          "lhs": {
+                            "lhs": {
+                              "name": "onHost",
+                              "type": "field"
+                            },
+                            "rhs": {
+                              "name": "procs",
+                              "type": "field"
+                            },
+                            "type": "collect"
+                          },
+                          "rhs": {
+                            "name": "openFiles",
+                            "type": "field"
+                          },
+                          "type": "collect"
+                        },
+                        "type": "difference"
+                      },
+                      "type": "multiplicity"
+                    },
+                    "type": "assoc_op"
+                  }
+                ],
+                "type": "dyn_sentence"
+              }
+            ]
+          },
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "createFile",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Main",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Proc",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "read",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Main",
+      "isAbstract": false,
+      "meta": {},
+      "name": "File",
+      "superAsset": null,
+      "variables": []
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "Host",
+      "leftField": "onHost",
+      "leftMultiplicity": {
+        "max": 1,
+        "min": 1
+      },
+      "meta": {},
+      "name": "running",
+      "rightAsset": "Proc",
+      "rightField": "procs",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Host",
+      "leftField": "onHost",
+      "leftMultiplicity": {
+        "max": 1,
+        "min": 1
+      },
+      "meta": {},
+      "name": "disk",
+      "rightAsset": "File",
+      "rightField": "files",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Proc",
+      "leftField": "modifyingProcs",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "modifies",
+      "rightAsset": "File",
+      "rightField": "openFiles",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "Main"
+    }
+  ],
+  "defines": {
+    "id": "org.mal-lang.multiplicityLang",
+    "version": "1.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

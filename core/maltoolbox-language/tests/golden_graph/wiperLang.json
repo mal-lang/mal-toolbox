@@ -1,0 +1,452 @@
+{
+  "C2Server": {
+    "associations": {},
+    "attack_steps": {},
+    "info": {},
+    "is_abstract": false,
+    "name": "C2Server",
+    "sub_assets": [],
+    "super_asset": "Host",
+    "variables": {}
+  },
+  "Data": {
+    "associations": {
+      "node": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "node",
+          "max": 1,
+          "min": 1
+        },
+        "name": "store",
+        "right": {
+          "asset": "Data",
+          "fieldname": "data",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {},
+    "info": {},
+    "is_abstract": false,
+    "name": "Data",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Device": {
+    "associations": {},
+    "attack_steps": {
+      "infect": {
+        "asset": "Device",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "infect",
+        "overrides": true,
+        "own_children": {
+          "Malware:activate": [
+            {
+              "infect": {
+                "asset type": "Malware",
+                "fieldname": "malware"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Device",
+    "sub_assets": [],
+    "super_asset": "Host",
+    "variables": {}
+  },
+  "Host": {
+    "associations": {
+      "data": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "node",
+          "max": 1,
+          "min": 1
+        },
+        "name": "store",
+        "right": {
+          "asset": "Data",
+          "fieldname": "data",
+          "max": null,
+          "min": 0
+        }
+      },
+      "inet": {
+        "info": {},
+        "left": {
+          "asset": "Internet",
+          "fieldname": "inet",
+          "max": 1,
+          "min": 1
+        },
+        "name": "contains",
+        "right": {
+          "asset": "Host",
+          "fieldname": "hosts",
+          "max": null,
+          "min": 0
+        }
+      },
+      "malware": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "victim",
+          "max": 1,
+          "min": 1
+        },
+        "name": "infect",
+        "right": {
+          "asset": "Malware",
+          "fieldname": "malware",
+          "max": null,
+          "min": 0
+        }
+      },
+      "receiveFrom": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "receiveFrom",
+          "max": null,
+          "min": 0
+        },
+        "name": "neighbor",
+        "right": {
+          "asset": "Host",
+          "fieldname": "sendTo",
+          "max": null,
+          "min": 0
+        }
+      },
+      "sendTo": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "receiveFrom",
+          "max": null,
+          "min": 0
+        },
+        "name": "neighbor",
+        "right": {
+          "asset": "Host",
+          "fieldname": "sendTo",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {},
+    "info": {},
+    "is_abstract": true,
+    "name": "Host",
+    "sub_assets": [
+      "C2Server",
+      "Device"
+    ],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Internet": {
+    "associations": {
+      "hosts": {
+        "info": {},
+        "left": {
+          "asset": "Internet",
+          "fieldname": "inet",
+          "max": 1,
+          "min": 1
+        },
+        "name": "contains",
+        "right": {
+          "asset": "Host",
+          "fieldname": "hosts",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {},
+    "info": {},
+    "is_abstract": false,
+    "name": "Internet",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Malware": {
+    "associations": {
+      "victim": {
+        "info": {},
+        "left": {
+          "asset": "Host",
+          "fieldname": "victim",
+          "max": 1,
+          "min": 1
+        },
+        "name": "infect",
+        "right": {
+          "asset": "Malware",
+          "fieldname": "malware",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "activate": {
+        "asset": "Malware",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "activate",
+        "overrides": true,
+        "own_children": {
+          "Malware:trigger": [
+            null
+          ]
+        },
+        "own_parents": {
+          "Device:infect": [
+            {
+              "infect": {
+                "asset type": "Host",
+                "fieldname": "victim"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "test": {
+        "asset": "Malware",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "test",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "trigger": {
+        "asset": "Malware",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "trigger",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Malware:activate": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": true,
+    "name": "Malware",
+    "sub_assets": [
+      "Wiper"
+    ],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Wiper": {
+    "associations": {},
+    "attack_steps": {
+      "activate": {
+        "asset": "Wiper",
+        "detectors": {},
+        "info": {},
+        "inherits": "Malware:activate",
+        "name": "activate",
+        "overrides": false,
+        "own_children": {
+          "Wiper:exfiltrate": [
+            null
+          ],
+          "Wiper:propagate": [
+            null
+          ]
+        },
+        "own_parents": {
+          "Wiper:propagate": [
+            {
+              "collect": {
+                "left": {
+                  "expression": {
+                    "infect": {
+                      "asset type": "Host",
+                      "fieldname": "victim"
+                    },
+                    "type": "field"
+                  },
+                  "subType": "Wiper",
+                  "type": "subType"
+                },
+                "right": {
+                  "collect": {
+                    "left": {
+                      "neighbor": {
+                        "asset type": "Host",
+                        "fieldname": "receiveFrom"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "infect": {
+                        "asset type": "Malware",
+                        "fieldname": "malware"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "exfiltrate": {
+        "asset": "Wiper",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "exfiltrate",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Wiper:activate": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "propagate": {
+        "asset": "Wiper",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "propagate",
+        "overrides": true,
+        "own_children": {
+          "Wiper:activate": [
+            {
+              "collect": {
+                "left": {
+                  "collect": {
+                    "left": {
+                      "infect": {
+                        "asset type": "Host",
+                        "fieldname": "victim"
+                      },
+                      "type": "field"
+                    },
+                    "right": {
+                      "neighbor": {
+                        "asset type": "Host",
+                        "fieldname": "sendTo"
+                      },
+                      "type": "field"
+                    }
+                  },
+                  "type": "collect"
+                },
+                "right": {
+                  "expression": {
+                    "infect": {
+                      "asset type": "Malware",
+                      "fieldname": "malware"
+                    },
+                    "type": "field"
+                  },
+                  "subType": "Wiper",
+                  "type": "subType"
+                }
+              },
+              "type": "collect"
+            }
+          ]
+        },
+        "own_parents": {
+          "Wiper:activate": [
+            null
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "test": {
+        "asset": "Wiper",
+        "detectors": {},
+        "info": {},
+        "inherits": "Malware:test",
+        "name": "test",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "trigger": {
+        "asset": "Wiper",
+        "detectors": {},
+        "info": {},
+        "inherits": "Malware:trigger",
+        "name": "trigger",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Wiper",
+    "sub_assets": [],
+    "super_asset": "Malware",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "org.mal-lang.wiperLang",
+    "version": "1.0.0"
+  }
+}

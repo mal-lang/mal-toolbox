@@ -1,0 +1,55 @@
+assets:
+  0:
+    associated_assets:
+      data:
+        2: Data:2
+      networks:
+        4: Network:3
+      users:
+        3: User:3
+    name: Host:0
+    type: Host
+  1:
+    associated_assets:
+      networks:
+        4: Network:3
+    name: Host:1
+    type: Host
+  2:
+    associated_assets:
+      hosts:
+        0: Host:0
+    name: Data:2
+    type: Data
+  3:
+    associated_assets:
+      hosts:
+        0: Host:0
+    name: User:3
+    type: User
+  4:
+    associated_assets:
+      hosts:
+        0: Host:0
+        1: Host:1
+    name: Network:3
+    type: Network
+attackers:
+  5:
+    entry_points:
+      Host:0:
+        asset_id: 0
+        attack_steps:
+        - connect
+      User:3:
+        asset_id: 3
+        attack_steps:
+        - phishing
+    name: Attacker1
+metadata:
+  MAL-Toolbox Version: 0.2.0
+  info: Created by the mal-toolbox model python module.
+  langID: org.mal-lang.trainingLang
+  langVersion: 1.0.0
+  malVersion: 0.1.0-SNAPSHOT
+  name: Simple Example Model for trainingLang

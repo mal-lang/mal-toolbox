@@ -1,0 +1,177 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "testStepA",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "A2",
+                  "type": "variable"
+                },
+                "rhs": {
+                  "name": "testStepA",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "name": "A1",
+                  "type": "variable"
+                },
+                "rhs": {
+                  "name": "testStepB",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "AssetA",
+      "superAsset": null,
+      "variables": [
+        {
+          "name": "A1",
+          "stepExpression": {
+            "name": "fieldB",
+            "type": "field"
+          }
+        },
+        {
+          "name": "A2",
+          "stepExpression": {
+            "lhs": {
+              "name": "fieldB",
+              "type": "field"
+            },
+            "rhs": {
+              "name": "B1",
+              "type": "variable"
+            },
+            "type": "collect"
+          }
+        }
+      ]
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "testStepB",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "B1",
+                  "type": "variable"
+                },
+                "rhs": {
+                  "name": "testStepA",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "name": "B2",
+                  "type": "variable"
+                },
+                "rhs": {
+                  "name": "testStepB",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "AssetB",
+      "superAsset": null,
+      "variables": [
+        {
+          "name": "B1",
+          "stepExpression": {
+            "name": "fieldA",
+            "type": "field"
+          }
+        },
+        {
+          "name": "B2",
+          "stepExpression": {
+            "lhs": {
+              "name": "fieldA",
+              "type": "field"
+            },
+            "rhs": {
+              "name": "A1",
+              "type": "variable"
+            },
+            "type": "collect"
+          }
+        }
+      ]
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "AssetA",
+      "leftField": "fieldA",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "InterleaveVarsAssoc",
+      "rightAsset": "AssetB",
+      "rightField": "fieldB",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "Test"
+    }
+  ],
+  "defines": {
+    "id": "test",
+    "version": "0.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

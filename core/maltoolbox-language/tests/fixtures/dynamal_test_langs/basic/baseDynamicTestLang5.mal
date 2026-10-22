@@ -1,0 +1,29 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "baseDynamicTestLang5"
+#version: "0.0.1"
+
+category Business {
+	asset Monkey {}
+	asset Typewriter {}
+
+	asset Storage {
+		| access
+			-> giveTypewriter
+
+		| giveTypewriter
+		user info: "With enough monkeys and typewriters, we can create the complete works of Shakespeare."
+			A> monkeys / ~typewriters.writer
+	}
+}
+
+associations {
+	Storage [storage] 1 <-- contains --> * [typewriters] Typewriter
+	Storage [storage] * <-- provision --> * [monkeys] Monkey
+	Monkey [writer] * <-- instrument --> * [instrument] Typewriter
+
+}

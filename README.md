@@ -27,7 +27,7 @@ To run all tests, use the `pytest` command. To run just a specific file or test 
 
 ## Making a release
 
-1. Make a PR with one commit that updates the version number in `pyproject.toml` and `maltoolbox/__init__.py`.
+1. Make a PR with one commit that updates the version number in `pyproject.toml` and `python/maltoolbox/__init__.py`.
 Follow [Semantic versioning](https://semver.org/).
 
 2. Get the PR reviewed and merged to `main`.
@@ -83,7 +83,7 @@ export MALTOOLBOX_CONFIG=path/to/yml/config/file
 
 The default configuration can be found here:
 
-https://github.com/mal-lang/mal-toolbox/blob/main/maltoolbox/__init__.py#L39-L53
+https://github.com/mal-lang/mal-toolbox/blob/main/python/maltoolbox/__init__.py#L39-L53
 
 ## Command Line Client
 

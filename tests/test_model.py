@@ -4,7 +4,7 @@ import pytest
 from conftest import path_testdata
 
 from maltoolbox.language.languagegraph import LanguageGraph
-from maltoolbox.model import Model, ModelAsset
+from maltoolbox.model import Model
 
 # Helper functions
 
@@ -93,12 +93,9 @@ def test_model_remove_asset_with_association(model: Model):
 
 def test_model_remove_nonexisting_asset(model: Model):
     """Removing a non existing asset leads to lookup error"""
-    # Create an asset but don't add it to the model before removing it
-    asset1 = ModelAsset(
-        name='TestAsset',
-        asset_id=1,
-        lg_asset=model.lang_graph.assets['Application'],
-    )
+    # Create a real asset, but in a different model - not part of `model`
+    other_model = Model('Other Model', model.lang_graph)
+    asset1 = other_model.add_asset(asset_type='Application', name='TestAsset')
     with pytest.raises(LookupError):
         model.remove_asset(asset1)
 

@@ -1,0 +1,131 @@
+{
+  "Base": {
+    "associations": {
+      "target": {
+        "info": {},
+        "left": {
+          "asset": "Base",
+          "fieldname": "base",
+          "max": null,
+          "min": 0
+        },
+        "name": "BaseTarget",
+        "right": {
+          "asset": "Target",
+          "fieldname": "target",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {},
+    "info": {},
+    "is_abstract": true,
+    "name": "Base",
+    "sub_assets": [
+      "SiblingA",
+      "SiblingB"
+    ],
+    "super_asset": "",
+    "variables": {}
+  },
+  "SiblingA": {
+    "associations": {},
+    "attack_steps": {
+      "onlyA": {
+        "asset": "SiblingA",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "onlyA",
+        "overrides": true,
+        "own_children": {
+          "Target:reach": [
+            {
+              "BaseTarget": {
+                "asset type": "Target",
+                "fieldname": "target"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "SiblingA",
+    "sub_assets": [],
+    "super_asset": "Base",
+    "variables": {}
+  },
+  "SiblingB": {
+    "associations": {},
+    "attack_steps": {},
+    "info": {},
+    "is_abstract": false,
+    "name": "SiblingB",
+    "sub_assets": [],
+    "super_asset": "Base",
+    "variables": {}
+  },
+  "Target": {
+    "associations": {
+      "base": {
+        "info": {},
+        "left": {
+          "asset": "Base",
+          "fieldname": "base",
+          "max": null,
+          "min": 0
+        },
+        "name": "BaseTarget",
+        "right": {
+          "asset": "Target",
+          "fieldname": "target",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "reach": {
+        "asset": "Target",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "reach",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "SiblingA:onlyA": [
+            {
+              "BaseTarget": {
+                "asset type": "Base",
+                "fieldname": "base"
+              },
+              "type": "field"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Target",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

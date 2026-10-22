@@ -1,0 +1,23 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset Hub {
+    | innerIntersection
+      -> siblings.(setA /\ setB).intersectionResult
+
+    | outerIntersection
+      -> (siblings.setA /\ siblings.setB).intersectionResult
+  }
+
+  asset Target {
+    | intersectionResult
+  }
+}
+
+associations {
+  Hub [inSetA]    * <-- HasSetA    --> * [setA]     Target
+  Hub [inSetB]    * <-- HasSetB    --> * [setB]     Target
+  Hub [siblingOf] * <-- HubSibling --> * [siblings] Hub
+}

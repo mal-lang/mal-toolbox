@@ -1,0 +1,34 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "baseDynamicTestLang8"
+#version: "0.0.1"
+
+
+category Business {
+	asset Plantation {
+		| access
+			-> pilferBananas
+
+		| pilferBananas
+			R> trees / bananas
+		
+	}
+
+	asset PlantationWithSmallTrees extends Plantation
+	{
+		| pilferBananas
+			+R> trees / self
+	}
+
+	asset BananaTree{}
+	asset Banana {}
+}
+
+associations {
+	Plantation [plant] 1 <-- Cultivate --> * [trees] BananaTree
+	BananaTree [tree] 1 <-- Contains --> * [bananas] Banana
+}

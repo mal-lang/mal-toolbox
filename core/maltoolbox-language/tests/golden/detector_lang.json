@@ -1,0 +1,294 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "physicalAccess",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "attemptAuthenticate",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "and"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "attemptAuthenticate",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "authenticate",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": {
+            "arguments": [],
+            "name": "HardAndCertain",
+            "type": "function"
+          },
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": "effect",
+          "detectors": {},
+          "meta": {},
+          "name": "authenticate",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "computerApps",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "attemptExploit",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "and"
+        }
+      ],
+      "category": "System",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Computer",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "shutDown",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "exploit",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "defense"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "attemptExploit",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "exploit",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": {
+            "arguments": [],
+            "name": "HardAndCertain",
+            "type": "function"
+          },
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": "effect",
+          "detectors": {
+            "logExploit": {
+              "context": {
+                "comp": {
+                  "lhs": {
+                    "name": "computerOfApp",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "name": "authenticate",
+                    "type": "attackStep"
+                  },
+                  "type": "collect"
+                }
+              },
+              "fprate": 0.1,
+              "name": "logExploit",
+              "tprate": 0.9,
+              "type": null
+            }
+          },
+          "meta": {},
+          "name": "exploit",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "toApplications",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "attemptExploit",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              },
+              {
+                "lhs": {
+                  "name": "dataOnApp",
+                  "type": "field"
+                },
+                "rhs": {
+                  "name": "read",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "and"
+        }
+      ],
+      "category": "System",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Application",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "read",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "System",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Data",
+      "superAsset": null,
+      "variables": []
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "Computer",
+      "leftField": "computerOfApp",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "appExecution",
+      "rightAsset": "Application",
+      "rightField": "computerApps",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Application",
+      "leftField": "fromApplications",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "AppToAppCommunication",
+      "rightAsset": "Application",
+      "rightField": "toApplications",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Data",
+      "leftField": "dataOnApp",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "AppData",
+      "rightAsset": "Application",
+      "rightField": "appWithData",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "System"
+    }
+  ],
+  "defines": {
+    "id": "test-actions-effects",
+    "version": "0.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

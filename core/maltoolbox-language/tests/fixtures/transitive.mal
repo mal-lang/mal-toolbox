@@ -1,0 +1,15 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset TestAsset {
+    | test_step
+      -> field2*.test_step
+  }
+
+}
+
+associations {
+  TestAsset [field1] * <-- TransitiveTestAssoc --> * [field2] TestAsset
+}

@@ -1,0 +1,192 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "innerIntersection",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "lhs": {
+                    "name": "siblings",
+                    "type": "field"
+                  },
+                  "rhs": {
+                    "lhs": {
+                      "name": "setA",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "setB",
+                      "type": "field"
+                    },
+                    "type": "intersection"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "intersectionResult",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "outerIntersection",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "siblings",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "setA",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "rhs": {
+                    "lhs": {
+                      "name": "siblings",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "setB",
+                      "type": "field"
+                    },
+                    "type": "collect"
+                  },
+                  "type": "intersection"
+                },
+                "rhs": {
+                  "name": "intersectionResult",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Hub",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "intersectionResult",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Target",
+      "superAsset": null,
+      "variables": []
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "Hub",
+      "leftField": "inSetA",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "HasSetA",
+      "rightAsset": "Target",
+      "rightField": "setA",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Hub",
+      "leftField": "inSetB",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "HasSetB",
+      "rightAsset": "Target",
+      "rightField": "setB",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Hub",
+      "leftField": "siblingOf",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "HubSibling",
+      "rightAsset": "Hub",
+      "rightField": "siblings",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "Test"
+    }
+  ],
+  "defines": {
+    "id": "test",
+    "version": "0.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

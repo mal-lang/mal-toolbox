@@ -20,4 +20,4 @@ jobs:
       - name: Type checking with MyPy
         run: |
           pip install mypy types-PyYAML
-          mypy maltoolbox tests --ignore-missing-imports
+          mypy python/maltoolbox tests --ignore-missing-imports

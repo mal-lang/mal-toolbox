@@ -1,0 +1,51 @@
+name: Rust
+
+on:
+  push:
+    branches:
+      - main
+  pull_request: ~
+
+permissions:
+  contents: read
+
+jobs:
+  fmt:
+    name: fmt (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - .
+          - py-bindings
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: cargo fmt --check
+        working-directory: ${{ matrix.workspace }}
+        run: cargo fmt --all --check
+
+  build:
+    name: build (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - .
+          - py-bindings
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.workspace }}
+      - name: cargo build
+        working-directory: ${{ matrix.workspace }}
+        run: cargo build --workspace --all-targets --locked
