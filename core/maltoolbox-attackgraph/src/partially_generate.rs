@@ -6,12 +6,11 @@ use std::collections::{HashMap, HashSet};
 
 use indexmap::IndexMap;
 
-use maltoolbox_language::graph::step_expr::reverse_expr_chain;
 use maltoolbox_language::graph::{AssetId, ExprType, ExpressionsChain};
 use maltoolbox_model::{AssetSnapshot, Model};
 use slotmap::SlotMap;
 
-use crate::expr_follow::follow_expr_chain;
+use crate::expr_follow::{follow_expr_chain, follow_field_expr_chain};
 use crate::ids::AttackGraphNodeId;
 use crate::node::AttackGraphNode;
 use crate::GraphError;
@@ -365,11 +364,10 @@ pub fn assoc_left_assets(
                     modified_fieldnames,
                 )?;
                 if !right_roots.is_empty() {
-                    let reverse_left = reverse_expr_chain(left.as_deref())?;
-                    roots.extend(follow_expr_chain(
+                    roots.extend(follow_reverse_expr_chain(
                         model,
                         &right_roots,
-                        reverse_left.as_ref(),
+                        left.as_deref(),
                     )?);
                 }
             }
@@ -381,11 +379,10 @@ pub fn assoc_left_assets(
         ExpressionsChain::Transitive { sub } => {
             let seed_roots =
                 assoc_left_assets(model, affected_assoc_dict, Some(sub), modified_fieldnames)?;
-            let reverse_sub = reverse_expr_chain(Some(sub))?;
             let mut roots = seed_roots.clone();
             let mut frontier = seed_roots;
             while !frontier.is_empty() {
-                let stepped = follow_expr_chain(model, &frontier, reverse_sub.as_ref())?;
+                let stepped = follow_reverse_expr_chain(model, &frontier, Some(sub))?;
                 frontier = stepped.difference(&roots).copied().collect();
                 roots.extend(&frontier);
             }
@@ -393,6 +390,79 @@ pub fn assoc_left_assets(
         }
         other => Err(GraphError::Malformed(format!(
             "Unknown expression chain type: {:?}",
+            other.expr_type()
+        ))),
+    }
+}
+
+/// Walks `expr_chain` backwards from `target_assets`: returns the assets
+/// that following `expr_chain` forwards could reach `target_assets` from.
+/// Unlike following [`reverse_expr_chain`]'s output, this applies a
+/// `[Subtype]` filter to the assets the reversed hop starts from (where the
+/// forward chain applies it), not to the assets it ends at.
+///
+/// [`reverse_expr_chain`]: maltoolbox_language::graph::step_expr::reverse_expr_chain
+fn follow_reverse_expr_chain(
+    model: &Model,
+    target_assets: &HashSet<i64>,
+    expr_chain: Option<&ExpressionsChain>,
+) -> Result<HashSet<i64>, GraphError> {
+    let Some(chain) = expr_chain else {
+        return Ok(target_assets.clone());
+    };
+
+    match chain {
+        ExpressionsChain::Binary { op, left, right } if *op == ExprType::Collect => {
+            let rh_sources = follow_reverse_expr_chain(model, target_assets, right.as_deref())?;
+            follow_reverse_expr_chain(model, &rh_sources, left.as_deref())
+        }
+        ExpressionsChain::Binary { op, left, right } => {
+            let lh_sources = follow_reverse_expr_chain(model, target_assets, left.as_deref())?;
+            let rh_sources = follow_reverse_expr_chain(model, target_assets, right.as_deref())?;
+            Ok(match op {
+                ExprType::Union => lh_sources.union(&rh_sources).copied().collect(),
+                ExprType::Intersection => lh_sources.intersection(&rh_sources).copied().collect(),
+                ExprType::Difference => lh_sources.difference(&rh_sources).copied().collect(),
+                other => {
+                    return Err(GraphError::Malformed(format!(
+                    "Expr chain must be of type union, intersection or difference, got {other:?}"
+                )))
+                }
+            })
+        }
+        ExpressionsChain::Field {
+            association,
+            fieldname,
+        } => {
+            let opposite = association.get_opposite_fieldname(fieldname)?;
+            Ok(follow_field_expr_chain(model, target_assets, &opposite))
+        }
+        ExpressionsChain::Transitive { sub } => {
+            let mut accumulated = target_assets.clone();
+            loop {
+                let stepped = follow_reverse_expr_chain(model, &accumulated, Some(sub))?;
+                let new_assets: HashSet<i64> = stepped.difference(&accumulated).copied().collect();
+                if new_assets.is_empty() {
+                    break;
+                }
+                accumulated.extend(new_assets);
+            }
+            Ok(accumulated)
+        }
+        ExpressionsChain::SubType { sub, subtype } => {
+            let selected: HashSet<i64> = target_assets
+                .iter()
+                .copied()
+                .filter(|&asset_id| {
+                    model.get_asset_by_id(asset_id).is_some_and(|asset| {
+                        model.lang_graph.is_subasset_of(asset.lg_asset, *subtype)
+                    })
+                })
+                .collect();
+            follow_reverse_expr_chain(model, &selected, Some(sub))
+        }
+        other => Err(GraphError::Malformed(format!(
+            "Unknown attack expressions chain type: {:?}",
             other.expr_type()
         ))),
     }

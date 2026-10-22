@@ -808,6 +808,75 @@ fn partial_regeneration_shared_assoc_sibling() {
 }
 
 #[test]
+fn partial_regeneration_subtype_hop_new_assoc() {
+    // A step chain passes through a `[Subtype]` hop and then an
+    // association that gets a new asset. The parent asset must be found by
+    // walking back from the changed asset, with the subtype filter applied
+    // to the changed end, not to the parent end.
+    let lang_graph = compile_lang("subtype_hop_new_assoc.mal");
+    let mut model = Model::new("Test Model", lang_graph.clone());
+
+    let f = model
+        .add_asset("File", Some("F".into()), None, None, None, true)
+        .unwrap();
+    let p = model
+        .add_asset("Pipe", Some("P".into()), None, None, None, true)
+        .unwrap();
+    let fd = model
+        .add_asset("FileDescriptor", Some("FD".into()), None, None, None, true)
+        .unwrap();
+    let pd = model
+        .add_asset("FileDescriptor", Some("PD".into()), None, None, None, true)
+        .unwrap();
+    model
+        .add_associated_assets(fd, "io", HashSet::from([f]))
+        .unwrap();
+    model
+        .add_associated_assets(pd, "io", HashSet::from([p]))
+        .unwrap();
+    let mut ag = AttackGraph::from_model(&model).unwrap();
+
+    let x = model
+        .add_asset("Xattr", Some("X".into()), None, None, None, true)
+        .unwrap();
+    model
+        .add_associated_assets(f, "xattrs", HashSet::from([x]))
+        .unwrap();
+    ag.partially_regenerate_graph(
+        &model,
+        &HashSet::from([x]),
+        &HashSet::from([(f, "xattrs".to_string(), x)]),
+        &HashMap::new(),
+        &HashSet::new(),
+    )
+    .unwrap();
+    let regenerated = AttackGraph::from_model(&model).unwrap();
+    check_graph_equivalence(&model, &regenerated, &ag);
+
+    let fd_setxattr = ag.full_name_to_node["FD:setxattr"];
+    let children: HashSet<String> = ag.nodes[fd_setxattr]
+        .children
+        .iter()
+        .map(|&c| ag.full_name_of(c, Some(&model)))
+        .collect();
+    assert_eq!(children, HashSet::from(["X:setxattr".to_string()]));
+
+    model
+        .remove_associated_assets(f, "xattrs", &HashSet::from([x]))
+        .unwrap();
+    ag.partially_regenerate_graph(
+        &model,
+        &HashSet::new(),
+        &HashSet::new(),
+        &HashMap::new(),
+        &HashSet::from([(f, "xattrs".to_string(), x)]),
+    )
+    .unwrap();
+    let regenerated = AttackGraph::from_model(&model).unwrap();
+    check_graph_equivalence(&model, &regenerated, &ag);
+}
+
+#[test]
 fn partial_regeneration_corelang() {
     let lang_graph = corelang();
     let mut model = Model::new("Test Model", lang_graph.clone());
