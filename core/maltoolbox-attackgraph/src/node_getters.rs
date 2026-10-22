@@ -2,10 +2,8 @@
 //! `levenshtein_distance` helper from `maltoolbox/str_utils.py` (inlined
 //! here since it has no other caller in this crate).
 
-use indexmap::IndexMap;
-
 use crate::ids::AttackGraphNodeId;
-use crate::GraphError;
+use crate::{FxIndexMap, GraphError};
 
 fn levenshtein_distance(a: &str, b: &str) -> usize {
     if a == b {
@@ -36,7 +34,7 @@ fn levenshtein_distance(a: &str, b: &str) -> usize {
 }
 
 pub fn get_similar_full_names(
-    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
+    full_name_to_node: &FxIndexMap<String, AttackGraphNodeId>,
     query: &str,
 ) -> Vec<String> {
     let mut shortest_dist = 100usize;
@@ -56,7 +54,7 @@ pub fn get_similar_full_names(
 }
 
 pub fn get_node_by_full_name(
-    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
+    full_name_to_node: &FxIndexMap<String, AttackGraphNodeId>,
     full_name: &str,
 ) -> Result<AttackGraphNodeId, GraphError> {
     full_name_to_node.get(full_name).copied().ok_or_else(|| {

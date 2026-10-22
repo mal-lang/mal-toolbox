@@ -158,7 +158,7 @@ pub fn language_graph_from_dict(serialized: &Value) -> Result<LanguageGraph, Gra
         let node = LanguageGraphAsset {
             name: (*name).clone(),
             own_associations: IndexMap::new(),
-            attack_steps: IndexMap::new(),
+            attack_steps: IndexMap::default(),
             info: str_map(&asset["info"]),
             own_super_asset: None,
             own_sub_assets: Vec::new(),

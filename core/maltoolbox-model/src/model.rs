@@ -1,7 +1,7 @@
 //! Port of `maltoolbox/model.py`.
 //!
 //! Assets are keyed by their stable, user-facing integer id in a plain
-//! `HashMap`, rather than the generational-key arena used by the
+//! `FxHashMap`, rather than the generational-key arena used by the
 //! language/attack graphs - a `Model` has no partial-regeneration churn
 //! that would risk a stale reference aliasing a reused slot, so that
 //! extra machinery isn't needed here. See `PORTING_NOTES.md` for the
@@ -10,6 +10,7 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use rustc_hash::FxHashMap;
 use serde_json::{json, Map, Value};
 
 use maltoolbox_language::graph::LanguageGraph;
@@ -127,8 +128,8 @@ pub struct Model {
     pub name: String,
     pub maltoolbox_version: String,
     pub next_id: i64,
-    pub assets: HashMap<i64, ModelAsset>,
-    pub name_to_asset_id: HashMap<String, i64>,
+    pub assets: FxHashMap<i64, ModelAsset>,
+    pub name_to_asset_id: FxHashMap<String, i64>,
     /// Insertion order of assets. Attack graph generation iterates
     /// assets in this order to assign node ids deterministically, so it
     /// must match Python dict iteration order rather than `HashMap`'s
@@ -143,8 +144,8 @@ impl Model {
             name: name.into(),
             maltoolbox_version: MALTOOLBOX_VERSION.to_string(),
             next_id: 0,
-            assets: HashMap::new(),
-            name_to_asset_id: HashMap::new(),
+            assets: FxHashMap::default(),
+            name_to_asset_id: FxHashMap::default(),
             asset_order: Vec::new(),
             lang_graph,
         }

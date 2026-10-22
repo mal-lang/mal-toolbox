@@ -10,7 +10,8 @@
 //! interprets them.
 
 use std::collections::HashMap;
-use std::collections::HashSet;
+
+use rustc_hash::FxHashSet;
 
 use serde_json::{Map, Value};
 
@@ -33,8 +34,8 @@ pub struct AttackGraphNode {
     pub subtractive_model_effects: Option<Vec<LanguageGraphModelEffect>>,
     pub model_asset: Option<i64>,
     pub existence_status: Option<bool>,
-    pub children: HashSet<AttackGraphNodeId>,
-    pub parents: HashSet<AttackGraphNodeId>,
+    pub children: FxHashSet<AttackGraphNodeId>,
+    pub parents: FxHashSet<AttackGraphNodeId>,
     pub extras: Map<String, Value>,
     pub detectors: HashMap<String, Detector>,
     /// Explicitly-set full name, used when a node is loaded from a file

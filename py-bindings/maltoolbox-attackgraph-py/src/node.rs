@@ -331,7 +331,7 @@ impl PyAttackGraphNode {
     /// Shared `Owned`-only implementation for `set_children`/`set_parents`
     /// (`is_children` picks which side): resolves `value` (an iterable of
     /// `AttackGraphNode`s) to core `AttackGraphNodeId`s, writes them into
-    /// the live node's `children`/`parents` `HashSet`, then refreshes
+    /// the live node's `children`/`parents` `FxHashSet`, then refreshes
     /// this id's `node_edges_cache` entry so the getter's cached `PySet`
     /// reflects the write immediately (see `edges_sets`'s doc comment).
     fn set_edge_field(
@@ -355,7 +355,10 @@ impl PyAttackGraphNode {
         {
             let mut graph = owner.inner.borrow_mut();
             let key = self.node_key(&graph, id)?;
-            let mut new_keys = std::collections::HashSet::with_capacity(new_ids.len());
+            let mut new_keys = std::collections::HashSet::with_capacity_and_hasher(
+                new_ids.len(),
+                Default::default(),
+            );
             for nid in &new_ids {
                 new_keys.insert(self.node_key(&graph, *nid)?);
             }
@@ -579,7 +582,7 @@ impl PyAttackGraphNode {
     /// no linking method, so this applies to `Owned` nodes too; e.g.
     /// `analyzers.py`'s apriori viability/necessity propagation reassigns
     /// `.parents` directly on live, owned nodes. For `Owned`, writes
-    /// through to the core's `HashSet<AttackGraphNodeId>` *and* refreshes
+    /// through to the core's `FxHashSet<AttackGraphNodeId>` *and* refreshes
     /// `node_edges_cache` for this id so the cached `PySet` returned by the
     /// getter reflects the new value (see `edges_sets`'s doc comment).
     #[setter]

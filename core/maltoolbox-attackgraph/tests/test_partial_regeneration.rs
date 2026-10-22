@@ -16,7 +16,6 @@
 //! little over that. Two cheap error-path unit tests are kept
 //! (`switch_fieldname`/`nodes_to_be_removed` raising on bad input).
 
-use indexmap::IndexMap;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -102,11 +101,12 @@ fn check_graph_equivalence(model: &Model, expected: &AttackGraph, actual: &Attac
         actual_names.difference(&expected_names)
     );
 
-    let names_of = |graph: &AttackGraph, ids: &HashSet<AttackGraphNodeId>| -> HashSet<String> {
-        ids.iter()
-            .map(|&id| graph.full_name_of(id, Some(model)))
-            .collect()
-    };
+    let names_of =
+        |graph: &AttackGraph, ids: &rustc_hash::FxHashSet<AttackGraphNodeId>| -> HashSet<String> {
+            ids.iter()
+                .map(|&id| graph.full_name_of(id, Some(model)))
+                .collect()
+        };
 
     for (full_name, &expected_key) in &expected.full_name_to_node {
         let actual_key = *actual
@@ -1587,7 +1587,7 @@ fn nodes_to_be_removed_missing_node_raises() {
     let err = maltoolbox_attackgraph::partially_generate::nodes_to_be_removed(
         &snapshot(&model, &HashSet::from([network])),
         &model,
-        &IndexMap::new(),
+        &maltoolbox_attackgraph::FxIndexMap::default(),
     )
     .unwrap_err();
     assert!(err.to_string().contains("Failed to find"));

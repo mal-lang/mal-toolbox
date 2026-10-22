@@ -4,7 +4,7 @@
 //! [`Model`]'s actual asset-association links, resolving a starting set
 //! of model assets to the set of model assets reached by that chain.
 
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 
 use maltoolbox_language::graph::{ExprType, ExpressionsChain};
 use maltoolbox_model::Model;
@@ -13,10 +13,10 @@ use crate::GraphError;
 
 pub fn follow_field_expr_chain(
     model: &Model,
-    target_assets: &HashSet<i64>,
+    target_assets: &FxHashSet<i64>,
     fieldname: &str,
-) -> HashSet<i64> {
-    let mut result = HashSet::new();
+) -> FxHashSet<i64> {
+    let mut result = FxHashSet::default();
     for &asset_id in target_assets {
         if let Some(asset) = model.get_asset_by_id(asset_id) {
             if let Some(linked) = asset.associated_assets.get(fieldname) {
@@ -29,13 +29,13 @@ pub fn follow_field_expr_chain(
 
 pub fn follow_transitive_expr_chain(
     model: &Model,
-    target_assets: &HashSet<i64>,
+    target_assets: &FxHashSet<i64>,
     sub_link: &ExpressionsChain,
-) -> Result<HashSet<i64>, GraphError> {
+) -> Result<FxHashSet<i64>, GraphError> {
     let mut accumulated = target_assets.clone();
     loop {
         let stepped = follow_expr_chain(model, &accumulated, Some(sub_link))?;
-        let new_assets: HashSet<i64> = stepped.difference(&accumulated).copied().collect();
+        let new_assets: FxHashSet<i64> = stepped.difference(&accumulated).copied().collect();
         if new_assets.is_empty() {
             break;
         }
@@ -46,12 +46,12 @@ pub fn follow_transitive_expr_chain(
 
 pub fn follow_subtype_expr_chain(
     model: &Model,
-    target_assets: &HashSet<i64>,
+    target_assets: &FxHashSet<i64>,
     sub_link: &ExpressionsChain,
     subtype: maltoolbox_language::graph::AssetId,
-) -> Result<HashSet<i64>, GraphError> {
+) -> Result<FxHashSet<i64>, GraphError> {
     let candidates = follow_expr_chain(model, target_assets, Some(sub_link))?;
-    let mut selected = HashSet::new();
+    let mut selected = FxHashSet::default();
     for asset_id in candidates {
         let Some(asset) = model.get_asset_by_id(asset_id) else {
             continue;
@@ -65,11 +65,11 @@ pub fn follow_subtype_expr_chain(
 
 pub fn follow_set_op_expr_chain(
     model: &Model,
-    target_assets: &HashSet<i64>,
+    target_assets: &FxHashSet<i64>,
     op: ExprType,
     left: Option<&ExpressionsChain>,
     right: Option<&ExpressionsChain>,
-) -> Result<HashSet<i64>, GraphError> {
+) -> Result<FxHashSet<i64>, GraphError> {
     let lh_targets = follow_expr_chain(model, target_assets, left)?;
     let rh_targets = follow_expr_chain(model, target_assets, right)?;
 
@@ -87,14 +87,14 @@ pub fn follow_set_op_expr_chain(
 
 pub fn follow_collect_expr_chain(
     model: &Model,
-    target_assets: &HashSet<i64>,
+    target_assets: &FxHashSet<i64>,
     left: Option<&ExpressionsChain>,
     right: Option<&ExpressionsChain>,
-) -> Result<HashSet<i64>, GraphError> {
+) -> Result<FxHashSet<i64>, GraphError> {
     let lh_targets = follow_expr_chain(model, target_assets, left)?;
-    let mut rh_targets = HashSet::new();
+    let mut rh_targets = FxHashSet::default();
     for lh_target in lh_targets {
-        let singleton = HashSet::from([lh_target]);
+        let singleton = FxHashSet::from_iter([lh_target]);
         rh_targets.extend(follow_expr_chain(model, &singleton, right)?);
     }
     Ok(rh_targets)
@@ -102,9 +102,9 @@ pub fn follow_collect_expr_chain(
 
 pub fn follow_expr_chain(
     model: &Model,
-    target_assets: &HashSet<i64>,
+    target_assets: &FxHashSet<i64>,
     expr_chain: Option<&ExpressionsChain>,
-) -> Result<HashSet<i64>, GraphError> {
+) -> Result<FxHashSet<i64>, GraphError> {
     let Some(chain) = expr_chain else {
         return Ok(target_assets.clone());
     };

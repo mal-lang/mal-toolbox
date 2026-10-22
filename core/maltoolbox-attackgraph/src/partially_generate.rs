@@ -4,7 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use indexmap::IndexMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use maltoolbox_language::graph::{AssetId, ExprType, ExpressionsChain};
 use maltoolbox_model::{AssetSnapshot, Model};
@@ -13,11 +13,11 @@ use slotmap::SlotMap;
 use crate::expr_follow::{follow_expr_chain, follow_field_expr_chain};
 use crate::ids::AttackGraphNodeId;
 use crate::node::AttackGraphNode;
-use crate::GraphError;
+use crate::{FxIndexMap, GraphError};
 
 /// `affected_assoc_dict`: per model-asset-id, per-fieldname, the set of
 /// other asset ids an association add/remove touched.
-pub type AssocAffectedDict = HashMap<i64, HashMap<String, HashSet<i64>>>;
+pub type AssocAffectedDict = FxHashMap<i64, FxHashMap<String, FxHashSet<i64>>>;
 
 pub fn switch_fieldname(
     model: &Model,
@@ -86,7 +86,7 @@ pub fn correct_node_children_on_modified_assoc(
     model: &Model,
     nodes: &mut SlotMap<AttackGraphNodeId, AttackGraphNode>,
     affected_key: AttackGraphNodeId,
-    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
+    full_name_to_node: &FxIndexMap<String, AttackGraphNodeId>,
 ) -> Result<(), GraphError> {
     let (model_asset_id, lg_attack_step_id) = {
         let node = &nodes[affected_key];
@@ -101,12 +101,15 @@ pub fn correct_node_children_on_modified_assoc(
         .step(lg_attack_step_id)
         .children(&model.lang_graph);
 
-    let mut correct_children: HashSet<AttackGraphNodeId> = HashSet::new();
+    let mut correct_children: FxHashSet<AttackGraphNodeId> = FxHashSet::default();
     for (child_lg_step, chains) in children {
         let child_step_name = model.lang_graph.step(child_lg_step).name.clone();
         for chain in chains {
-            let target_assets =
-                follow_expr_chain(model, &HashSet::from([model_asset_id]), chain.as_ref())?;
+            let target_assets = follow_expr_chain(
+                model,
+                &FxHashSet::from_iter([model_asset_id]),
+                chain.as_ref(),
+            )?;
             for target_asset_id in target_assets {
                 let target_asset = model
                     .get_asset_by_id(target_asset_id)
@@ -129,14 +132,27 @@ pub fn correct_node_children_on_modified_assoc(
         }
     }
 
-    let current_children = nodes[affected_key].children.clone();
-
-    for &target_key in correct_children.difference(&current_children) {
-        nodes[affected_key].children.insert(target_key);
+    // Reconcile in place rather than cloning `children` to diff against:
+    // this runs once per affected node, and hub nodes have large child sets.
+    let mut removed = Vec::new();
+    let mut added = Vec::new();
+    let children = &mut nodes[affected_key].children;
+    children.retain(|target_key| {
+        let keep = correct_children.contains(target_key);
+        if !keep {
+            removed.push(*target_key);
+        }
+        keep
+    });
+    for target_key in correct_children {
+        if children.insert(target_key) {
+            added.push(target_key);
+        }
+    }
+    for target_key in added {
         nodes[target_key].parents.insert(affected_key);
     }
-    for &target_key in current_children.difference(&correct_children) {
-        nodes[affected_key].children.remove(&target_key);
+    for target_key in removed {
         nodes[target_key].parents.remove(&affected_key);
     }
 
@@ -144,14 +160,14 @@ pub fn correct_node_children_on_modified_assoc(
 }
 
 /// `removed_assets` carries a [`AssetSnapshot`] per id rather than a bare
-/// `HashSet<i64>` so this works for ids already gone from `model`; only
+/// `FxHashSet<i64>` so this works for ids already gone from `model`; only
 /// `model.lang_graph` (unaffected by instance-model mutation) is needed.
 pub fn nodes_to_be_removed(
     removed_assets: &HashMap<i64, AssetSnapshot>,
     model: &Model,
-    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
-) -> Result<HashSet<AttackGraphNodeId>, GraphError> {
-    let mut removal_candidates = HashSet::new();
+    full_name_to_node: &FxIndexMap<String, AttackGraphNodeId>,
+) -> Result<FxHashSet<AttackGraphNodeId>, GraphError> {
+    let mut removal_candidates = FxHashSet::default();
     for snapshot in removed_assets.values() {
         let lg_step_ids: Vec<_> = model
             .lang_graph
@@ -178,7 +194,7 @@ pub fn nodes_to_be_removed(
 
 pub fn assoc_affected_expr_chain(
     model: &Model,
-    instigating_assets: &HashSet<i64>,
+    instigating_assets: &FxHashSet<i64>,
     affected_assoc_dict: &AssocAffectedDict,
     expr_chain: Option<&ExpressionsChain>,
 ) -> Result<bool, GraphError> {
@@ -197,7 +213,7 @@ pub fn assoc_affected_expr_chain(
 
 fn assoc_affected_expr_chain_inner(
     model: &Model,
-    instigating_assets: &HashSet<i64>,
+    instigating_assets: &FxHashSet<i64>,
     affected_assoc_dict: &AssocAffectedDict,
     expr_chain: Option<&ExpressionsChain>,
     modified_fieldnames: &HashSet<String>,
@@ -270,7 +286,7 @@ fn assoc_affected_expr_chain_inner(
         ),
         ExpressionsChain::Transitive { sub } => {
             let mut frontier = instigating_assets.clone();
-            let mut visited: HashSet<i64> = HashSet::new();
+            let mut visited: FxHashSet<i64> = FxHashSet::default();
             while !frontier.is_empty() {
                 if assoc_affected_expr_chain_inner(
                     model,
@@ -299,12 +315,12 @@ pub fn assoc_left_assets(
     affected_assoc_dict: &AssocAffectedDict,
     expr_chain: Option<&ExpressionsChain>,
     modified_fieldnames: &HashSet<String>,
-) -> Result<HashSet<i64>, GraphError> {
+) -> Result<FxHashSet<i64>, GraphError> {
     let Some(chain) = expr_chain else {
-        return Ok(HashSet::new());
+        return Ok(FxHashSet::default());
     };
     if chain.fieldnames().is_disjoint(modified_fieldnames) {
-        return Ok(HashSet::new());
+        return Ok(FxHashSet::default());
     }
 
     use maltoolbox_language::graph::expr_chain::chain_fieldnames;
@@ -347,7 +363,7 @@ pub fn assoc_left_assets(
             Ok(result)
         }
         ExpressionsChain::Binary { op, left, right } if *op == ExprType::Collect => {
-            let mut roots = HashSet::new();
+            let mut roots = FxHashSet::default();
             if !chain_fieldnames(left.as_deref()).is_disjoint(modified_fieldnames) {
                 roots.extend(assoc_left_assets(
                     model,
@@ -404,9 +420,9 @@ pub fn assoc_left_assets(
 /// [`reverse_expr_chain`]: maltoolbox_language::graph::step_expr::reverse_expr_chain
 fn follow_reverse_expr_chain(
     model: &Model,
-    target_assets: &HashSet<i64>,
+    target_assets: &FxHashSet<i64>,
     expr_chain: Option<&ExpressionsChain>,
-) -> Result<HashSet<i64>, GraphError> {
+) -> Result<FxHashSet<i64>, GraphError> {
     let Some(chain) = expr_chain else {
         return Ok(target_assets.clone());
     };
@@ -441,7 +457,8 @@ fn follow_reverse_expr_chain(
             let mut accumulated = target_assets.clone();
             loop {
                 let stepped = follow_reverse_expr_chain(model, &accumulated, Some(sub))?;
-                let new_assets: HashSet<i64> = stepped.difference(&accumulated).copied().collect();
+                let new_assets: FxHashSet<i64> =
+                    stepped.difference(&accumulated).copied().collect();
                 if new_assets.is_empty() {
                     break;
                 }
@@ -450,7 +467,7 @@ fn follow_reverse_expr_chain(
             Ok(accumulated)
         }
         ExpressionsChain::SubType { sub, subtype } => {
-            let selected: HashSet<i64> = target_assets
+            let selected: FxHashSet<i64> = target_assets
                 .iter()
                 .copied()
                 .filter(|&asset_id| {
@@ -471,24 +488,24 @@ fn follow_reverse_expr_chain(
 pub fn assoc_affected_nodes(
     model: &Model,
     affected_assoc_dict: &AssocAffectedDict,
-    full_name_to_node: &IndexMap<String, AttackGraphNodeId>,
-) -> Result<HashSet<AttackGraphNodeId>, GraphError> {
+    full_name_to_node: &FxIndexMap<String, AttackGraphNodeId>,
+) -> Result<FxHashSet<AttackGraphNodeId>, GraphError> {
     let modified_fieldnames: HashSet<String> = affected_assoc_dict
         .values()
         .flat_map(|fields| fields.keys().cloned())
         .collect();
 
     let candidate_map = model.lang_graph.fieldname_to_candidate_steps();
-    let mut candidate_steps: HashSet<(String, String)> = HashSet::new();
+    let mut candidate_steps: FxHashSet<(String, String)> = FxHashSet::default();
     for fieldname in &modified_fieldnames {
         if let Some(steps) = candidate_map.get(fieldname) {
             candidate_steps.extend(steps.iter().cloned());
         }
     }
 
-    let mut assets_by_type: Option<HashMap<String, Vec<i64>>> = None;
+    let mut assets_by_type: Option<FxHashMap<String, Vec<i64>>> = None;
 
-    let mut ret_nodes = HashSet::new();
+    let mut ret_nodes = FxHashSet::default();
     for (asset_type, step_name) in candidate_steps {
         let Some(asset_type_id) = model.lang_graph.asset_id(&asset_type) else {
             continue;
@@ -503,7 +520,7 @@ pub fn assoc_affected_nodes(
         };
         let lg_step = model.lang_graph.step(lg_step_id);
 
-        let mut affected_assets: HashSet<i64> = HashSet::new();
+        let mut affected_assets: FxHashSet<i64> = FxHashSet::default();
         for chains in lg_step.children(&model.lang_graph).values() {
             for chain in chains {
                 let Some(chain) = chain else { continue };
@@ -517,7 +534,7 @@ pub fn assoc_affected_nodes(
                     continue;
                 }
                 if assets_by_type.is_none() {
-                    let mut by_type: HashMap<String, Vec<i64>> = HashMap::new();
+                    let mut by_type: FxHashMap<String, Vec<i64>> = FxHashMap::default();
                     for &asset_id in &model.asset_order {
                         let asset = &model.assets[&asset_id];
                         by_type
@@ -531,7 +548,7 @@ pub fn assoc_affected_nodes(
                     for &asset_id in candidates {
                         if assoc_affected_expr_chain(
                             model,
-                            &HashSet::from([asset_id]),
+                            &FxHashSet::from_iter([asset_id]),
                             affected_assoc_dict,
                             Some(chain),
                         )? {

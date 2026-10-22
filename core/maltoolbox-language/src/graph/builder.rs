@@ -49,7 +49,7 @@ fn create_lg_assets(graph: &mut LanguageGraph) -> Result<(), GraphError> {
         let node = LanguageGraphAsset {
             name: name.clone(),
             own_associations: IndexMap::new(),
-            attack_steps: IndexMap::new(),
+            attack_steps: IndexMap::default(),
             info: meta_map(&asset_dict["meta"]),
             own_super_asset: None,
             own_sub_assets: Vec::new(),

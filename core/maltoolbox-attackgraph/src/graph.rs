@@ -15,9 +15,9 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use indexmap::IndexMap;
 use maltoolbox_language::graph::LanguageGraph;
 use maltoolbox_model::Model;
+use rustc_hash::FxHashSet;
 use serde_json::{json, Map, Value};
 use slotmap::SlotMap;
 
@@ -26,7 +26,7 @@ use crate::ids::AttackGraphNodeId;
 use crate::node::AttackGraphNode;
 use crate::node_getters::get_node_by_full_name;
 use crate::partially_generate::{self, AssocAffectedDict};
-use crate::GraphError;
+use crate::{FxIndexMap, GraphError};
 
 /// `Clone` deep-copies node storage (the `SlotMap`/`IndexMap`s, each holding
 /// `Clone`-able `AttackGraphNode`s) while cheaply sharing `lang_graph` (an
@@ -43,8 +43,8 @@ pub struct AttackGraph {
     /// consumers rely on deterministic, insertion-matching order. A plain
     /// `HashMap`'s randomized per-process order would make attack-graph
     /// generation output nondeterministic.
-    pub id_to_node: IndexMap<i64, AttackGraphNodeId>,
-    pub full_name_to_node: IndexMap<String, AttackGraphNodeId>,
+    pub id_to_node: FxIndexMap<i64, AttackGraphNodeId>,
+    pub full_name_to_node: FxIndexMap<String, AttackGraphNodeId>,
     pub attack_steps: Vec<AttackGraphNodeId>,
     pub defense_steps: Vec<AttackGraphNodeId>,
     pub next_node_id: i64,
@@ -57,8 +57,8 @@ impl AttackGraph {
         AttackGraph {
             lang_graph,
             nodes: SlotMap::with_key(),
-            id_to_node: IndexMap::new(),
-            full_name_to_node: IndexMap::new(),
+            id_to_node: FxIndexMap::default(),
+            full_name_to_node: FxIndexMap::default(),
             attack_steps: Vec::new(),
             defense_steps: Vec::new(),
             next_node_id: 0,
@@ -140,7 +140,7 @@ impl AttackGraph {
             generate::link_node_children(model, &mut self.nodes, key, &self.full_name_to_node)?;
         }
 
-        let mut removed_assoc_dict: AssocAffectedDict = HashMap::new();
+        let mut removed_assoc_dict: AssocAffectedDict = AssocAffectedDict::default();
         for (left_id, fieldname, right_id) in removed_associations {
             removed_assoc_dict
                 .entry(*left_id)
@@ -164,7 +164,7 @@ impl AttackGraph {
                 .insert(*left_id);
         }
 
-        let mut new_assoc_dict: AssocAffectedDict = HashMap::new();
+        let mut new_assoc_dict: AssocAffectedDict = AssocAffectedDict::default();
         for (left_id, fieldname, right_id) in new_associations {
             new_assoc_dict
                 .entry(*left_id)
@@ -188,7 +188,7 @@ impl AttackGraph {
                 .insert(*left_id);
         }
 
-        let mut affected_assoc_dict: AssocAffectedDict = HashMap::new();
+        let mut affected_assoc_dict: AssocAffectedDict = AssocAffectedDict::default();
         for assoc_dict in [&new_assoc_dict, &removed_assoc_dict] {
             for (asset_id, fields) in assoc_dict {
                 let dest_fields = affected_assoc_dict.entry(*asset_id).or_default();
@@ -474,11 +474,11 @@ impl AttackGraph {
         }
 
         // Re-establish links between nodes, now that every node exists.
-        let resolve_relation = |id_to_node: &IndexMap<i64, AttackGraphNodeId>,
+        let resolve_relation = |id_to_node: &FxIndexMap<i64, AttackGraphNodeId>,
                                 node_dict: &Value,
                                 relation: &'static str|
-         -> Result<HashSet<AttackGraphNodeId>, GraphError> {
-            let mut resolved = HashSet::new();
+         -> Result<FxHashSet<AttackGraphNodeId>, GraphError> {
+            let mut resolved = FxHashSet::default();
             if let Some(entries) = node_dict.get(relation).and_then(Value::as_object) {
                 for id_str in entries.keys() {
                     let id: i64 = id_str.parse().map_err(|_| {

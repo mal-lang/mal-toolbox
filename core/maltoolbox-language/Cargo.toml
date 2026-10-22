@@ -11,6 +11,7 @@ maltoolbox-io = { workspace = true }
 tree-sitter = { workspace = true }
 tree-sitter-mal = { workspace = true }
 indexmap = { workspace = true }
+rustc-hash = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }

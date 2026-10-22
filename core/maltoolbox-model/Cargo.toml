@@ -9,6 +9,7 @@ publish.workspace = true
 [dependencies]
 maltoolbox-io = { workspace = true }
 maltoolbox-language = { workspace = true }
+rustc-hash = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = { workspace = true }

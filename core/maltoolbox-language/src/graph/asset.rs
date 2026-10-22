@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
+use rustc_hash::FxBuildHasher;
 use serde_json::json;
 
 use super::assoc::LanguageGraphAssociation;
@@ -30,7 +31,7 @@ pub struct LanguageGraphAsset {
     /// Iteration order feeds attack-graph node id assignment
     /// (`generate.rs`'s `create_nodes_for`), so this must stay an
     /// `IndexMap`.
-    pub attack_steps: IndexMap<String, AttackStepId>,
+    pub attack_steps: IndexMap<String, AttackStepId, FxBuildHasher>,
     pub info: HashMap<String, String>,
     pub own_super_asset: Option<AssetId>,
     pub own_sub_assets: Vec<AssetId>,

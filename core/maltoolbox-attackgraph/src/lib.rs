@@ -28,6 +28,11 @@ pub use graph::AttackGraph;
 pub use ids::AttackGraphNodeId;
 pub use node::AttackGraphNode;
 
+/// Insertion-ordered map hashed with FxHash, for the graph's node lookup
+/// tables: order stays deterministic (see `AttackGraph::id_to_node`), and
+/// their keys are trusted, so SipHash's DoS resistance buys nothing.
+pub type FxIndexMap<K, V> = indexmap::IndexMap<K, V, rustc_hash::FxBuildHasher>;
+
 #[derive(Debug, thiserror::Error)]
 pub enum GraphError {
     #[error("{0}")]
