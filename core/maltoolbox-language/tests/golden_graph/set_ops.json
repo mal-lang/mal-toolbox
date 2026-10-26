@@ -1,0 +1,276 @@
+{
+  "Origin": {
+    "associations": {
+      "setA": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetA",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetA",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setA",
+          "max": null,
+          "min": 0
+        }
+      },
+      "setB": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetB",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetB",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setB",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "check": {
+        "asset": "Origin",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "check",
+        "overrides": true,
+        "own_children": {
+          "Target:differenceResult": [
+            {
+              "difference": {
+                "left": {
+                  "HasSetA": {
+                    "asset type": "Target",
+                    "fieldname": "setA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "HasSetB": {
+                    "asset type": "Target",
+                    "fieldname": "setB"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "difference"
+            }
+          ],
+          "Target:intersectionResult": [
+            {
+              "intersection": {
+                "left": {
+                  "HasSetA": {
+                    "asset type": "Target",
+                    "fieldname": "setA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "HasSetB": {
+                    "asset type": "Target",
+                    "fieldname": "setB"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "intersection"
+            }
+          ],
+          "Target:unionResult": [
+            {
+              "type": "union",
+              "union": {
+                "left": {
+                  "HasSetA": {
+                    "asset type": "Target",
+                    "fieldname": "setA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "HasSetB": {
+                    "asset type": "Target",
+                    "fieldname": "setB"
+                  },
+                  "type": "field"
+                }
+              }
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Origin",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Target": {
+    "associations": {
+      "inSetA": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetA",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetA",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setA",
+          "max": null,
+          "min": 0
+        }
+      },
+      "inSetB": {
+        "info": {},
+        "left": {
+          "asset": "Origin",
+          "fieldname": "inSetB",
+          "max": null,
+          "min": 0
+        },
+        "name": "HasSetB",
+        "right": {
+          "asset": "Target",
+          "fieldname": "setB",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "differenceResult": {
+        "asset": "Target",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "differenceResult",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Origin:check": [
+            {
+              "difference": {
+                "left": {
+                  "HasSetA": {
+                    "asset type": "Origin",
+                    "fieldname": "inSetA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "HasSetB": {
+                    "asset type": "Origin",
+                    "fieldname": "inSetB"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "difference"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "intersectionResult": {
+        "asset": "Target",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "intersectionResult",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Origin:check": [
+            {
+              "intersection": {
+                "left": {
+                  "HasSetA": {
+                    "asset type": "Origin",
+                    "fieldname": "inSetA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "HasSetB": {
+                    "asset type": "Origin",
+                    "fieldname": "inSetB"
+                  },
+                  "type": "field"
+                }
+              },
+              "type": "intersection"
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      },
+      "unionResult": {
+        "asset": "Target",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "unionResult",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Origin:check": [
+            {
+              "type": "union",
+              "union": {
+                "left": {
+                  "HasSetA": {
+                    "asset type": "Origin",
+                    "fieldname": "inSetA"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "HasSetB": {
+                    "asset type": "Origin",
+                    "fieldname": "inSetB"
+                  },
+                  "type": "field"
+                }
+              }
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Target",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

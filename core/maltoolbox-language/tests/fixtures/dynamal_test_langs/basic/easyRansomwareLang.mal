@@ -1,0 +1,33 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "easyRansomwareLang"
+#version: "0.1.0"
+category easyRansomwareLang {
+	asset Data {}
+
+	asset LockedData extends Data {}
+
+	asset Host {
+		| connect
+			-> ransomware.attack
+	}
+
+	asset Ransomware {
+		| attack
+			A> host / data.locked,
+			host / ~host.data.locked.victim
+			R> host / data
+	}
+
+}
+
+associations {
+	Host [host] * <-- containment --> * [data] Data
+	Host [host] 1 <-- infection --> * [ransomware] Ransomware
+	Data [plain] 1 <-- encryption --> 0..1 [locked] LockedData
+	Host [victim] 1 <-- victim --> * [infected] LockedData
+}

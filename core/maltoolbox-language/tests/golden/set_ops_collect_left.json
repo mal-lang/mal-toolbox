@@ -1,0 +1,166 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "check",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "lhs": {
+                    "lhs": {
+                      "name": "setA",
+                      "type": "field"
+                    },
+                    "rhs": {
+                      "name": "setB",
+                      "type": "field"
+                    },
+                    "type": "difference"
+                  },
+                  "rhs": {
+                    "name": "next",
+                    "type": "field"
+                  },
+                  "type": "collect"
+                },
+                "rhs": {
+                  "name": "reach",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Origin",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Node",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "reach",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Target",
+      "superAsset": null,
+      "variables": []
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "Origin",
+      "leftField": "inSetA",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "HasSetA",
+      "rightAsset": "Node",
+      "rightField": "setA",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Origin",
+      "leftField": "inSetB",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "HasSetB",
+      "rightAsset": "Node",
+      "rightField": "setB",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Node",
+      "leftField": "nodeOf",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "HasNext",
+      "rightAsset": "Target",
+      "rightField": "next",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "Test"
+    }
+  ],
+  "defines": {
+    "id": "test",
+    "version": "0.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

@@ -1,0 +1,25 @@
+// vim:ft=mal
+#id: "test"
+#version: "0.0.0"
+
+category Test{
+  asset Dummy {
+    | step
+  }
+
+  asset Parent {
+    let parent_var = dummies
+  }
+
+  asset Child extends Parent {
+    let child_var = parent_var() \/ more_dummies
+
+    | hack
+      -> child_var().step
+  }
+}
+
+associations {
+  Parent [parents] * <-- Assoc1 --> * [dummies] Dummy
+  Child [children] * <-- Assoc2 --> * [more_dummies] Dummy
+}

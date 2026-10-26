@@ -1,0 +1,222 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "target1",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "target2",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "target3",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "target4",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        },
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "attack_step_with_child",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "name": "target1",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "EmptyParent",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "attackstep",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Child1",
+      "superAsset": "EmptyParent",
+      "variables": []
+    },
+    {
+      "attackSteps": [],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Child2",
+      "superAsset": "Child1",
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "attackstep",
+          "reaches": {
+            "overrides": false,
+            "stepExpressions": [
+              {
+                "name": "target1",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Child3",
+      "superAsset": "Child2",
+      "variables": []
+    },
+    {
+      "attackSteps": [],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Child4",
+      "superAsset": "Child3",
+      "variables": []
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "attackstep",
+          "reaches": {
+            "overrides": false,
+            "stepExpressions": [
+              {
+                "name": "target1",
+                "type": "attackStep"
+              },
+              {
+                "name": "target2",
+                "type": "attackStep"
+              },
+              {
+                "name": "target3",
+                "type": "attackStep"
+              },
+              {
+                "name": "target4",
+                "type": "attackStep"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "FinalChild",
+      "superAsset": "Child4",
+      "variables": []
+    }
+  ],
+  "associations": [],
+  "categories": [
+    {
+      "meta": {},
+      "name": "Test"
+    }
+  ],
+  "defines": {
+    "id": "test",
+    "version": "0.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

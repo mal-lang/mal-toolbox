@@ -1,0 +1,49 @@
+// vim:ft=mal
+#id: "test-associations"
+#version: "0.0.0"
+
+category Test{
+    asset AssetA {
+      | attackC
+        -> c_of_A.hack
+      | attackB
+        -> b_of_A.hack
+    }
+
+    asset AssetB {
+      | hack
+
+      | attackC
+        -> c_of_B.hack
+      | attackB
+        -> b_of_B.hack
+    }
+
+    asset AssetC {
+      | hack
+
+      | attackC
+        -> c_of_C.hack
+      | attackB
+        -> b_of_C.hack
+    }
+
+    asset AssetD {
+      | attackC
+        -> c_of_D.hack
+      | attackB
+        -> b_of_D.hack
+    }
+}
+
+associations {
+  AssetA [a] * <-- AssocAC --> * [c_of_A] AssetC
+  AssetB [b] * <-- AssocBC --> * [c_of_B] AssetC
+  AssetC [c] * <-- AssocCC --> * [c_of_C] AssetC
+  AssetD [d] * <-- AssocDC --> * [c_of_D] AssetC
+
+  AssetA [a] * <-- AssocAB --> * [b_of_A] AssetB
+  AssetB [b] * <-- AssocBB --> * [b_of_B] AssetB
+  AssetC [c] * <-- AssocCB --> * [b_of_C] AssetB
+  AssetD [d] * <-- AssocDB --> * [b_of_D] AssetB
+}

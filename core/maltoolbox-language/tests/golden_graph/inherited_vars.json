@@ -1,0 +1,211 @@
+{
+  "Child": {
+    "associations": {
+      "more_dummies": {
+        "info": {},
+        "left": {
+          "asset": "Child",
+          "fieldname": "children",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc2",
+        "right": {
+          "asset": "Dummy",
+          "fieldname": "more_dummies",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "hack": {
+        "asset": "Child",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "hack",
+        "overrides": true,
+        "own_children": {
+          "Dummy:step": [
+            {
+              "type": "union",
+              "union": {
+                "left": {
+                  "Assoc1": {
+                    "asset type": "Dummy",
+                    "fieldname": "dummies"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "Assoc2": {
+                    "asset type": "Dummy",
+                    "fieldname": "more_dummies"
+                  },
+                  "type": "field"
+                }
+              }
+            }
+          ]
+        },
+        "own_parents": {},
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Child",
+    "sub_assets": [],
+    "super_asset": "Parent",
+    "variables": {
+      "child_var": [
+        "Dummy",
+        {
+          "type": "union",
+          "union": {
+            "left": {
+              "Assoc1": {
+                "asset type": "Dummy",
+                "fieldname": "dummies"
+              },
+              "type": "field"
+            },
+            "right": {
+              "Assoc2": {
+                "asset type": "Dummy",
+                "fieldname": "more_dummies"
+              },
+              "type": "field"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "Dummy": {
+    "associations": {
+      "children": {
+        "info": {},
+        "left": {
+          "asset": "Child",
+          "fieldname": "children",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc2",
+        "right": {
+          "asset": "Dummy",
+          "fieldname": "more_dummies",
+          "max": null,
+          "min": 0
+        }
+      },
+      "parents": {
+        "info": {},
+        "left": {
+          "asset": "Parent",
+          "fieldname": "parents",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc1",
+        "right": {
+          "asset": "Dummy",
+          "fieldname": "dummies",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {
+      "step": {
+        "asset": "Dummy",
+        "detectors": {},
+        "info": {},
+        "inherits": null,
+        "name": "step",
+        "overrides": false,
+        "own_children": {},
+        "own_parents": {
+          "Child:hack": [
+            {
+              "type": "union",
+              "union": {
+                "left": {
+                  "Assoc1": {
+                    "asset type": "Parent",
+                    "fieldname": "parents"
+                  },
+                  "type": "field"
+                },
+                "right": {
+                  "Assoc2": {
+                    "asset type": "Child",
+                    "fieldname": "children"
+                  },
+                  "type": "field"
+                }
+              }
+            }
+          ]
+        },
+        "tags": [],
+        "ttc": null,
+        "type": "or"
+      }
+    },
+    "info": {},
+    "is_abstract": false,
+    "name": "Dummy",
+    "sub_assets": [],
+    "super_asset": "",
+    "variables": {}
+  },
+  "Parent": {
+    "associations": {
+      "dummies": {
+        "info": {},
+        "left": {
+          "asset": "Parent",
+          "fieldname": "parents",
+          "max": null,
+          "min": 0
+        },
+        "name": "Assoc1",
+        "right": {
+          "asset": "Dummy",
+          "fieldname": "dummies",
+          "max": null,
+          "min": 0
+        }
+      }
+    },
+    "attack_steps": {},
+    "info": {},
+    "is_abstract": false,
+    "name": "Parent",
+    "sub_assets": [
+      "Child"
+    ],
+    "super_asset": "",
+    "variables": {
+      "parent_var": [
+        "Dummy",
+        {
+          "Assoc1": {
+            "asset type": "Dummy",
+            "fieldname": "dummies"
+          },
+          "type": "field"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "id": "test",
+    "version": "0.0.0"
+  }
+}

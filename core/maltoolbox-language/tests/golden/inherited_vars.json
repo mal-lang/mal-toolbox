@@ -1,0 +1,144 @@
+{
+  "assets": [
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "step",
+          "reaches": null,
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Dummy",
+      "superAsset": null,
+      "variables": []
+    },
+    {
+      "attackSteps": [],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Parent",
+      "superAsset": null,
+      "variables": [
+        {
+          "name": "parent_var",
+          "stepExpression": {
+            "name": "dummies",
+            "type": "field"
+          }
+        }
+      ]
+    },
+    {
+      "attackSteps": [
+        {
+          "append_reaches": null,
+          "causal_mode": null,
+          "detectors": {},
+          "meta": {},
+          "name": "hack",
+          "reaches": {
+            "overrides": true,
+            "stepExpressions": [
+              {
+                "lhs": {
+                  "name": "child_var",
+                  "type": "variable"
+                },
+                "rhs": {
+                  "name": "step",
+                  "type": "attackStep"
+                },
+                "type": "collect"
+              }
+            ]
+          },
+          "remove_reaches": null,
+          "requires": null,
+          "risk": null,
+          "tags": [],
+          "ttc": null,
+          "type": "or"
+        }
+      ],
+      "category": "Test",
+      "isAbstract": false,
+      "meta": {},
+      "name": "Child",
+      "superAsset": "Parent",
+      "variables": [
+        {
+          "name": "child_var",
+          "stepExpression": {
+            "lhs": {
+              "name": "parent_var",
+              "type": "variable"
+            },
+            "rhs": {
+              "name": "more_dummies",
+              "type": "field"
+            },
+            "type": "union"
+          }
+        }
+      ]
+    }
+  ],
+  "associations": [
+    {
+      "leftAsset": "Parent",
+      "leftField": "parents",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "Assoc1",
+      "rightAsset": "Dummy",
+      "rightField": "dummies",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    },
+    {
+      "leftAsset": "Child",
+      "leftField": "children",
+      "leftMultiplicity": {
+        "max": null,
+        "min": 0
+      },
+      "meta": {},
+      "name": "Assoc2",
+      "rightAsset": "Dummy",
+      "rightField": "more_dummies",
+      "rightMultiplicity": {
+        "max": null,
+        "min": 0
+      }
+    }
+  ],
+  "categories": [
+    {
+      "meta": {},
+      "name": "Test"
+    }
+  ],
+  "defines": {
+    "id": "test",
+    "version": "0.0.0"
+  },
+  "formatVersion": "1.0.0"
+}

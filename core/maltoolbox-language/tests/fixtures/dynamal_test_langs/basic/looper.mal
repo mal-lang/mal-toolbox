@@ -1,0 +1,20 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "looper"
+#version: "0.1.0"
+category looper {
+	asset Looper {
+		| loop
+			A> self / next
+			-> next.loop
+	}
+
+}
+
+associations {
+	Looper [previous] 0..1 <-- link --> 0..1 [next] Looper
+}

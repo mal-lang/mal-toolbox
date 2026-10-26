@@ -1,0 +1,32 @@
+/**
+  * Created by Viktor Engström
+  * Repo: https://gitlab.com/kth-ssas/dynamal-group/dynamaltestlangs.git
+  * Converted by Sandor Berglund
+  */
+
+#id: "intDynamicTestLang7"
+#version: "0.1.0"
+category intDynamicTestLang7 {
+	asset Table {
+		| access
+			-> bowls.appleToOrange, bowls.orangeToApple
+	}
+	asset Bowl {
+		| appleToOrange
+			R> self / fruit[Apple]
+			A> self / fruit[Orange]
+		| orangeToApple
+			R> self / fruit[Orange]
+			A> self / fruit[Apple]
+	}
+
+	abstract asset Fruit {}
+	asset Apple extends Fruit {}
+	asset Orange extends Fruit {}
+
+}
+
+associations {
+	Bowl [bowls] * <-- placement --> 1 [table] Table
+	Bowl [container] * <-- acontains --> * [fruit] Fruit
+}
