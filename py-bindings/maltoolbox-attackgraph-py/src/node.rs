@@ -733,7 +733,7 @@ impl PyAttackGraphNode {
             let rc = owner.lang_graph_py.borrow(py).inner.clone();
             rc
         };
-        let graph = lang_graph.borrow();
+        let graph = lang_graph.as_ref();
         let dict = PyDict::new(py);
         for (k, v) in &graph.step(step_id).info {
             dict.set_item(k, v)?;

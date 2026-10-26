@@ -2,7 +2,6 @@
 //! The one "container" type in this crate - see
 //! PYTHON_BINDINGS_IMPLEMENTATION.md's "Container / handle pattern" section.
 
-use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -24,13 +23,12 @@ use crate::handle::{cached_handle, LangGraphCaches, SharedLangGraphCaches};
 
 /// Mirrors `maltoolbox.language.languagegraph.LanguageGraph`.
 ///
-/// `unsendable`: holds `Rc<RefCell<_>>`, not `Arc<Mutex<_>>` - the GIL
-/// already serializes access from Python; see
-/// PYTHON_BINDINGS_IMPLEMENTATION.md's "Rc<RefCell<_>> vs Arc<Mutex<_>>"
-/// note.
+/// `unsendable`: holds an `Rc`, not an `Arc` - the GIL already serializes
+/// access from Python. The graph is immutable after construction, so it
+/// needs no `RefCell` and is shared with `Model` directly.
 #[pyclass(name = "LanguageGraph", module = "maltoolbox._native", unsendable)]
 pub struct PyLanguageGraph {
-    pub inner: Rc<RefCell<LanguageGraph>>,
+    pub inner: Rc<LanguageGraph>,
     /// Per-owner asset/attack-step handle caches, shared (same `Rc`) with
     /// every `PyLanguageGraphAsset`/`PyLanguageGraphAttackStep`/
     /// `PyLanguageGraphAssociation`(`Field`) this graph hands out, so
@@ -42,7 +40,7 @@ pub struct PyLanguageGraph {
 impl PyLanguageGraph {
     pub fn wrap(graph: LanguageGraph) -> Self {
         PyLanguageGraph {
-            inner: Rc::new(RefCell::new(graph)),
+            inner: Rc::new(graph),
             caches: LangGraphCaches::new(),
         }
     }
@@ -110,12 +108,12 @@ impl PyLanguageGraph {
     }
 
     fn save_to_file(&self, path: PathBuf) -> PyResult<()> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         lang_file::save_to_file(&graph, path).map_err(load_error_to_py)
     }
 
     fn to_mar_archive(&self, path: PathBuf) -> PyResult<()> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         lang_file::to_mar_archive(&graph, path).map_err(load_error_to_py)
     }
 
@@ -123,7 +121,7 @@ impl PyLanguageGraph {
     /// the Python original (`json.dump(self.lang_spec, file, indent=4)`
     /// unconditionally).
     fn save_language_specification_to_json(&self, filename: PathBuf) -> PyResult<()> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         let json = serde_json::to_string_pretty(&graph.lang_spec).map_err(|e| {
             graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
                 e.to_string(),
@@ -133,21 +131,19 @@ impl PyLanguageGraph {
             .map_err(|e| pyo3::exceptions::PyOSError::new_err(e.to_string()))
     }
 
-    /// Rebuilds `.assets` from the `lang_spec` given at construction time
-    /// (or loaded from a `.mal`/`.mar` file) - *not* available on a graph
-    /// rebuilt via `from_dict`/a plain JSON/YAML load, matching the
-    /// Python original's same gap.
-    fn regenerate_graph(&self) -> PyResult<()> {
-        let lang_spec = self.inner.borrow().lang_spec.clone();
-        let regenerated =
-            maltoolbox_language::generate_graph(lang_spec).map_err(graph_error_to_py)?;
-        *self.inner.borrow_mut() = regenerated;
-        Ok(())
+    /// Deprecated no-op kept so callers of the old API don't break.
+    fn regenerate_graph(&self, py: Python<'_>) -> PyResult<()> {
+        PyErr::warn(
+            py,
+            &py.get_type::<pyo3::exceptions::PyDeprecationWarning>(),
+            c"LanguageGraph.regenerate_graph() is deprecated and does nothing; it will be removed in a future release.",
+            1,
+        )
     }
 
     #[getter]
     fn metadata<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         let dict = PyDict::new(py);
         dict.set_item("version", &graph.metadata.version)?;
         dict.set_item("id", &graph.metadata.id)?;
@@ -156,7 +152,7 @@ impl PyLanguageGraph {
 
     #[getter]
     fn lang_spec<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         pythonize::pythonize(py, &graph.lang_spec).map_err(|e| {
             graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
                 e.to_string(),
@@ -167,7 +163,7 @@ impl PyLanguageGraph {
     #[getter]
     fn assets<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let names: Vec<(String, AssetId)> = {
-            let graph = self.inner.borrow();
+            let graph = self.inner.as_ref();
             graph
                 .asset_order
                 .iter()
@@ -184,7 +180,7 @@ impl PyLanguageGraph {
     /// All associations in the language graph, as a Python `set`.
     #[getter]
     fn associations<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PySet>> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         let set = PySet::empty(py)?;
         for &asset_id in &graph.asset_order {
             for assoc in graph.asset(asset_id).own_associations.values() {
@@ -202,7 +198,7 @@ impl PyLanguageGraph {
     #[getter]
     fn attack_steps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PySet>> {
         let step_ids: Vec<AttackStepId> = {
-            let graph = self.inner.borrow();
+            let graph = self.inner.as_ref();
             graph
                 .asset_order
                 .iter()
@@ -229,7 +225,7 @@ impl PyLanguageGraph {
     /// `LanguageGraph::fieldname_to_candidate_steps` in the core crate.
     #[getter]
     fn fieldname_to_candidate_steps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         let dict = PyDict::new(py);
         for (fieldname, pairs) in graph.fieldname_to_candidate_steps() {
             let set = PySet::empty(py)?;
@@ -242,7 +238,7 @@ impl PyLanguageGraph {
     }
 
     fn _to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         let dict = language_graph_to_dict(&graph).map_err(graph_error_to_py)?;
         pythonize::pythonize(py, &dict).map_err(|e| {
             graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(
@@ -252,7 +248,7 @@ impl PyLanguageGraph {
     }
 
     fn __repr__(&self) -> String {
-        let graph = self.inner.borrow();
+        let graph = self.inner.as_ref();
         format!(
             "LanguageGraph(id: \"{}\", version: \"{}\")",
             graph.metadata.id, graph.metadata.version

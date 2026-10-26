@@ -6,7 +6,6 @@
 //! No identity caching, `__richcmp__`, or `__hash__` - these are plain,
 //! freely-constructible value snapshots, not owner+id handles.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
@@ -26,7 +25,7 @@ use crate::handle::SharedLangGraphCaches;
 /// value into its Python wrapper.
 #[derive(Clone)]
 struct Ctx {
-    owner: Rc<RefCell<LanguageGraph>>,
+    owner: Rc<LanguageGraph>,
     caches: SharedLangGraphCaches,
 }
 
@@ -302,7 +301,7 @@ fn chain_to_pylist<'py>(
 /// resolves its `PyLanguageGraphAsset` handles against.
 pub fn model_effect_to_py(
     py: Python<'_>,
-    owner: Rc<RefCell<LanguageGraph>>,
+    owner: Rc<LanguageGraph>,
     caches: SharedLangGraphCaches,
     effect: &LanguageGraphModelEffect,
 ) -> PyResult<Py<PyLanguageGraphModelEffect>> {

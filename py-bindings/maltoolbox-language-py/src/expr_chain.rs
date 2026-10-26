@@ -12,7 +12,6 @@
 //! through the owning graph's real handles/caches for consistency with
 //! every other path to the same asset/association.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
@@ -26,7 +25,7 @@ use crate::handle::{cached_handle, SharedLangGraphCaches};
 
 #[derive(Clone)]
 struct Ctx {
-    owner: Rc<RefCell<LanguageGraph>>,
+    owner: Rc<LanguageGraph>,
     caches: SharedLangGraphCaches,
 }
 
@@ -147,7 +146,7 @@ fn chain_to_py(
 /// resolve their handles against.
 pub fn expr_chain_to_py(
     py: Python<'_>,
-    owner: Rc<RefCell<LanguageGraph>>,
+    owner: Rc<LanguageGraph>,
     caches: SharedLangGraphCaches,
     chain: &ExpressionsChain,
 ) -> PyResult<Py<PyExpressionsChain>> {

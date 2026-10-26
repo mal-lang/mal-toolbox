@@ -7,7 +7,6 @@
 //! freely-constructible value snapshots rather than owner+id handles:
 //! no identity caching, `__richcmp__`, or `__hash__`.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use pyo3::prelude::*;
@@ -22,7 +21,7 @@ use crate::handle::{cached_handle, SharedLangGraphCaches};
 
 #[derive(Clone)]
 struct Ctx {
-    owner: Rc<RefCell<LanguageGraph>>,
+    owner: Rc<LanguageGraph>,
     caches: SharedLangGraphCaches,
 }
 
@@ -153,7 +152,7 @@ impl PyLanguageGraphDetector {
 /// should resolve its handles against.
 pub fn detector_to_py(
     py: Python<'_>,
-    owner: Rc<RefCell<LanguageGraph>>,
+    owner: Rc<LanguageGraph>,
     caches: SharedLangGraphCaches,
     detector: &LanguageGraphDetector,
 ) -> PyResult<Py<PyLanguageGraphDetector>> {

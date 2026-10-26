@@ -11,7 +11,6 @@
 //! = assoc; right_asset.own_associations[...] = assoc` (the same object
 //! on both sides).
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use pyo3::basic::CompareOp;
@@ -46,7 +45,7 @@ fn struct_hash<T: std::hash::Hash>(value: &T) -> isize {
 )]
 #[derive(Clone)]
 pub struct PyLanguageGraphAssociationField {
-    pub owner: Rc<RefCell<LanguageGraph>>,
+    pub owner: Rc<LanguageGraph>,
     pub field: LanguageGraphAssociationField,
     pub caches: SharedLangGraphCaches,
 }
@@ -79,7 +78,7 @@ impl PyLanguageGraphAssociationField {
     }
 
     pub fn __repr__(&self) -> String {
-        let asset_name = self.owner.borrow().asset(self.field.asset).name.clone();
+        let asset_name = self.owner.as_ref().asset(self.field.asset).name.clone();
         format!(
             "LanguageGraphAssociationField(asset: LanguageGraphAsset(name: \"{}\"), fieldname: \"{}\", minimum: {}, maximum: {:?})",
             asset_name,
@@ -111,14 +110,14 @@ impl PyLanguageGraphAssociationField {
 #[pyclass(name = "LanguageGraphAssociation", unsendable, skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyLanguageGraphAssociation {
-    pub owner: Rc<RefCell<LanguageGraph>>,
+    pub owner: Rc<LanguageGraph>,
     pub assoc: Rc<LanguageGraphAssociation>,
     pub caches: SharedLangGraphCaches,
 }
 
 impl PyLanguageGraphAssociation {
     pub fn new(
-        owner: Rc<RefCell<LanguageGraph>>,
+        owner: Rc<LanguageGraph>,
         assoc: Rc<LanguageGraphAssociation>,
         caches: SharedLangGraphCaches,
     ) -> Self {
@@ -178,7 +177,7 @@ impl PyLanguageGraphAssociation {
     }
 
     fn contains_asset(&self, asset: &PyLanguageGraphAsset) -> bool {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         self.assoc.contains_asset(&graph, asset.id)
     }
 
@@ -189,7 +188,7 @@ impl PyLanguageGraphAssociation {
     }
 
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         let dict = self.assoc.to_dict(&graph);
         pythonize::pythonize(py, &dict).map_err(|e| {
             graph_error_to_py(maltoolbox_language::graph::GraphError::Malformed(

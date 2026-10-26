@@ -296,20 +296,8 @@ impl PyAttackGraph {
         dict
     }
 
-    fn bare_lang_graph(
-        py: Python<'_>,
-        lang_graph_py: &Py<PyLanguageGraph>,
-        model_py: Option<&Py<PyModel>>,
-    ) -> Rc<LanguageGraph> {
-        if let Some(m) = model_py {
-            // Reuse the model's own bare `Rc<LanguageGraph>` - an `Rc`
-            // clone, no data copy.
-            return m.borrow(py).inner.borrow().lang_graph.clone();
-        }
-        // No model to borrow from - clone the data out of
-        // `lang_graph_py`'s `Rc<RefCell<_>>` once (same technique as
-        // `PyModel::new`).
-        Rc::new(lang_graph_py.borrow(py).inner.borrow().clone())
+    fn bare_lang_graph(py: Python<'_>, lang_graph_py: &Py<PyLanguageGraph>) -> Rc<LanguageGraph> {
+        lang_graph_py.borrow(py).inner.clone()
     }
 
     /// Extracts `.id` from every `ModelAsset` in an arbitrary Python
@@ -406,7 +394,7 @@ impl PyAttackGraph {
                 let core_model = model_ref.inner.borrow();
                 AttackGraph::from_model(&core_model).map_err(graph_error_to_py)?
             }
-            None => AttackGraph::empty(Self::bare_lang_graph(py, &lang_graph, None)),
+            None => AttackGraph::empty(Self::bare_lang_graph(py, &lang_graph)),
         };
         Ok(Self::wrap(inner, lang_graph, model))
     }
@@ -991,7 +979,7 @@ impl PyAttackGraph {
         lang_graph: Py<PyLanguageGraph>,
         model: Option<Py<PyModel>>,
     ) -> PyResult<Self> {
-        let bare_lang_graph = Self::bare_lang_graph(py, &lang_graph, model.as_ref());
+        let bare_lang_graph = Self::bare_lang_graph(py, &lang_graph);
         let inner = match &model {
             Some(m) => {
                 let model_ref = m.borrow(py);
@@ -1064,7 +1052,7 @@ impl PyAttackGraph {
 
         let value: serde_json::Value = pythonize::depythonize(state)
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
-        let bare_lang_graph = Self::bare_lang_graph(py, &lang_graph_py, model_py.as_ref());
+        let bare_lang_graph = Self::bare_lang_graph(py, &lang_graph_py);
         let model_ref = model_py.as_ref().map(|m| m.borrow(py));
         let core_model = model_ref.as_ref().map(|m| m.inner.borrow());
         let inner = AttackGraph::from_dict(&value, bare_lang_graph, core_model.as_deref())

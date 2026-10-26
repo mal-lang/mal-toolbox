@@ -25,6 +25,8 @@ submodules at ``maltoolbox._native.language``,
 from collections.abc import Mapping
 from typing import Any
 
+from typing_extensions import deprecated
+
 # ---------------------------------------------------------------------------
 # Exceptions (maltoolbox-language-py/src/exceptions.rs, Phase 1 hierarchy;
 # maltoolbox-model-py/src/exceptions.rs, Phase 2 hierarchy;
@@ -318,10 +320,9 @@ class LanguageGraph:
         can be loaded with `from_mar_archive`."""
     def save_language_specification_to_json(self, filename: str) -> None:
         """Save the MAL language specification dictionary to a JSON file."""
+    @deprecated('LanguageGraph.regenerate_graph() does nothing and will be removed.')
     def regenerate_graph(self) -> None:
-        """Rebuild `.assets` from the `lang_spec` given at construction
-        time (or loaded from a `.mal`/`.mar` file) - not available on a
-        graph rebuilt via a plain JSON/YAML load with no `lang_spec`."""
+        """Deprecated: does nothing and emits a `DeprecationWarning`."""
     @property
     def metadata(self) -> dict[str, str]: ...
     @property

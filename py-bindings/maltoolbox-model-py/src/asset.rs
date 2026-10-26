@@ -86,10 +86,8 @@ pub struct PyModelAsset {
     pub id: i64,
     /// The owning `PyModel`'s language graph, shared (same `Rc`) so
     /// `.lg_asset` handles compare equal via the usual owner-pointer
-    /// scheme - see `model.rs` for why this can't just be derived from
-    /// `owner.borrow().lang_graph` (that's a bare `Rc<LanguageGraph>`,
-    /// not `Rc<RefCell<LanguageGraph>>`).
-    pub lang_graph: Rc<RefCell<LanguageGraph>>,
+    /// scheme.
+    pub lang_graph: Rc<LanguageGraph>,
     /// The owning `PyModel`'s `PyLanguageGraph.caches`, needed so
     /// `.lg_asset` resolves to the same per-owner-cached
     /// `PyLanguageGraphAsset` handle as every other path to it.
@@ -106,7 +104,7 @@ impl PyModelAsset {
     pub fn new(
         owner: Rc<RefCell<Model>>,
         id: i64,
-        lang_graph: Rc<RefCell<LanguageGraph>>,
+        lang_graph: Rc<LanguageGraph>,
         lang_caches: SharedLangGraphCaches,
         tombstones: Tombstones,
         handle_cache: HandleCache<i64, PyModelAsset>,

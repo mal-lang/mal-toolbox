@@ -2,16 +2,11 @@
 //! this crate - see PYTHON_BINDINGS_IMPLEMENTATION.md's "Container /
 //! handle pattern" section.
 //!
-//! Holds both `inner` (the core `maltoolbox_model::Model`, which needs
-//! a bare `Rc<LanguageGraph>` with no `RefCell`) and `lang_graph_py`
-//! (the actual `Py<PyLanguageGraph>` object passed to the constructor,
-//! stored so `.lang_graph` returns the same Python object every time).
-//! Building `inner` requires cloning the `LanguageGraph` data out of
-//! `lang_graph_py`'s `Rc<RefCell<_>>` once at construction time, since
-//! the two Rc flavors can't otherwise compose; see
-//! `core/maltoolbox-language/src/graph/mod.rs`'s `Clone` doc comment
-//! on `LanguageGraph` for the rationale and the narrow divergence this
-//! introduces around `regenerate_graph`.
+//! Holds both `inner` (the core `maltoolbox_model::Model`) and
+//! `lang_graph_py` (the actual `Py<PyLanguageGraph>` object passed to the
+//! constructor, stored so `.lang_graph` returns the same Python object
+//! every time). Both share one `Rc<LanguageGraph>`; the graph is
+//! immutable after construction, so no `RefCell` or copy is needed.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -67,7 +62,7 @@ impl PyModel {
     fn lang_graph_rc(
         py: Python<'_>,
         lang_graph_py: &Py<PyLanguageGraph>,
-    ) -> Rc<RefCell<maltoolbox_language::graph::LanguageGraph>> {
+    ) -> Rc<maltoolbox_language::graph::LanguageGraph> {
         lang_graph_py.borrow(py).inner.clone()
     }
 
@@ -165,8 +160,7 @@ impl PyModel {
         mt_version: Option<String>,
     ) -> PyResult<Self> {
         let lg_rc = Self::lang_graph_rc(py, &lang_graph);
-        let cloned_graph = lg_rc.borrow().clone();
-        let mut model = Model::new(name, Rc::new(cloned_graph));
+        let mut model = Model::new(name, lg_rc);
         model.maltoolbox_version = match mt_version {
             Some(v) => v,
             None => Self::live_version(py)?,
@@ -340,9 +334,7 @@ impl PyModel {
         lang_graph: Py<PyLanguageGraph>,
     ) -> PyResult<Self> {
         let lg_rc = Self::lang_graph_rc(py, &lang_graph);
-        let cloned_graph = lg_rc.borrow().clone();
-        let mut model = model_file::load_from_file(filename, Rc::new(cloned_graph))
-            .map_err(load_error_to_py)?;
+        let mut model = model_file::load_from_file(filename, lg_rc).map_err(load_error_to_py)?;
         if model.maltoolbox_version == maltoolbox_model::MALTOOLBOX_VERSION {
             model.maltoolbox_version = Self::live_version(py)?;
         }
@@ -373,9 +365,8 @@ impl PyModel {
         let value: serde_json::Value = pythonize::depythonize(&serialized)
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
         let lg_rc = Self::lang_graph_rc(py, &lang_graph);
-        let cloned_graph = lg_rc.borrow().clone();
         let mut model =
-            model_file::from_dict(&value, Rc::new(cloned_graph)).map_err(from_dict_error_to_py)?;
+            model_file::from_dict(&value, lg_rc).map_err(from_dict_error_to_py)?;
         if model.maltoolbox_version == maltoolbox_model::MALTOOLBOX_VERSION {
             model.maltoolbox_version = Self::live_version(py)?;
         }
@@ -440,7 +431,7 @@ impl PyModel {
 
     fn __repr__(&self, py: Python<'_>) -> String {
         let lg = self.lang_graph_py.borrow(py);
-        let graph = lg.inner.borrow();
+        let graph = lg.inner.as_ref();
         format!(
             "Model(name: \"{}\", language: LanguageGraph(id: \"{}\", version: \"{}\"))",
             self.name(),

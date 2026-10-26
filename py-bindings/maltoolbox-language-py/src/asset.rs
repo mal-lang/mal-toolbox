@@ -3,7 +3,6 @@
 //! (`caches.assets`) so repeated lookups for the same id return the
 //! identical Python object; see `handle.rs`.
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use pyo3::basic::CompareOp;
@@ -24,14 +23,14 @@ use crate::handle::{cached_handle, composite_hash, SharedLangGraphCaches};
 #[pyclass(name = "LanguageGraphAsset", unsendable, skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyLanguageGraphAsset {
-    pub owner: Rc<RefCell<LanguageGraph>>,
+    pub owner: Rc<LanguageGraph>,
     pub id: AssetId,
     pub caches: SharedLangGraphCaches,
 }
 
 impl PyLanguageGraphAsset {
     pub fn new(
-        owner: Rc<RefCell<LanguageGraph>>,
+        owner: Rc<LanguageGraph>,
         id: AssetId,
         caches: SharedLangGraphCaches,
     ) -> Self {
@@ -71,17 +70,17 @@ impl PyLanguageGraphAsset {
 impl PyLanguageGraphAsset {
     #[getter]
     fn name(&self) -> String {
-        self.owner.borrow().asset(self.id).name.clone()
+        self.owner.as_ref().asset(self.id).name.clone()
     }
 
     #[getter]
     fn is_abstract(&self) -> bool {
-        self.owner.borrow().asset(self.id).is_abstract
+        self.owner.as_ref().asset(self.id).is_abstract
     }
 
     #[getter]
     fn info<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         let dict = PyDict::new(py);
         for (k, v) in &graph.asset(self.id).info {
             dict.set_item(k, v)?;
@@ -93,7 +92,7 @@ impl PyLanguageGraphAsset {
     /// `.associations` for that).
     #[getter]
     fn own_associations<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         let dict = PyDict::new(py);
         for (fieldname, assoc) in &graph.asset(self.id).own_associations {
             dict.set_item(
@@ -116,7 +115,7 @@ impl PyLanguageGraphAsset {
     fn attack_steps<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let steps: Vec<(String, maltoolbox_language::graph::ids::AttackStepId)> = self
             .owner
-            .borrow()
+            .as_ref()
             .asset(self.id)
             .attack_steps
             .iter()
@@ -131,13 +130,13 @@ impl PyLanguageGraphAsset {
 
     #[getter]
     fn own_super_asset(&self, py: Python<'_>) -> PyResult<Option<Py<PyLanguageGraphAsset>>> {
-        let super_id = self.owner.borrow().asset(self.id).own_super_asset;
+        let super_id = self.owner.as_ref().asset(self.id).own_super_asset;
         super_id.map(|id| self.asset_handle(py, id)).transpose()
     }
 
     #[getter]
     fn own_sub_assets(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphAsset>>> {
-        let ids: Vec<AssetId> = self.owner.borrow().asset(self.id).own_sub_assets.clone();
+        let ids: Vec<AssetId> = self.owner.as_ref().asset(self.id).own_sub_assets.clone();
         ids.into_iter()
             .map(|id| self.asset_handle(py, id))
             .collect()
@@ -150,7 +149,7 @@ impl PyLanguageGraphAsset {
     /// itself is not.
     #[getter]
     fn sub_assets(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphAsset>>> {
-        let ids = self.owner.borrow().sub_assets(self.id);
+        let ids = self.owner.as_ref().sub_assets(self.id);
         ids.into_iter()
             .map(|id| self.asset_handle(py, id))
             .collect()
@@ -160,7 +159,7 @@ impl PyLanguageGraphAsset {
     /// closest ancestor first.
     #[getter]
     fn super_assets(&self, py: Python<'_>) -> PyResult<Vec<Py<PyLanguageGraphAsset>>> {
-        let ids = self.owner.borrow().super_assets(self.id);
+        let ids = self.owner.as_ref().super_assets(self.id);
         ids.into_iter()
             .map(|id| self.asset_handle(py, id))
             .collect()
@@ -169,7 +168,7 @@ impl PyLanguageGraphAsset {
     /// Own + inherited associations, by fieldname.
     #[getter]
     fn associations<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         let dict = PyDict::new(py);
         for (fieldname, assoc) in graph.associations(self.id) {
             dict.set_item(
@@ -185,7 +184,7 @@ impl PyLanguageGraphAsset {
         py: Python<'py>,
         asset_type: &PyLanguageGraphAsset,
     ) -> PyResult<Bound<'py, PyDict>> {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         let dict = PyDict::new(py);
         for (fieldname, assoc) in graph.associations_to(self.id, asset_type.id) {
             dict.set_item(
@@ -202,7 +201,7 @@ impl PyLanguageGraphAsset {
     /// `.right_link.fieldname` directly on it.
     #[getter]
     fn variables<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         let dict = PyDict::new(py);
         for (name, (asset_id, expr)) in graph.variables(self.id) {
             let asset_handle = self.asset_handle(py, asset_id)?;
@@ -218,7 +217,7 @@ impl PyLanguageGraphAsset {
     }
 
     fn is_subasset_of(&self, target_asset: &PyLanguageGraphAsset) -> bool {
-        self.owner.borrow().is_subasset_of(self.id, target_asset.id)
+        self.owner.as_ref().is_subasset_of(self.id, target_asset.id)
     }
 
     fn get_all_common_superassets(
@@ -226,12 +225,12 @@ impl PyLanguageGraphAsset {
         other: &PyLanguageGraphAsset,
     ) -> std::collections::HashSet<String> {
         self.owner
-            .borrow()
+            .as_ref()
             .get_all_common_superassets(self.id, other.id)
     }
 
     fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let graph = self.owner.borrow();
+        let graph = self.owner.as_ref();
         let dict = graph
             .asset(self.id)
             .to_dict(&graph)
@@ -266,7 +265,7 @@ impl PyLanguageGraphAsset {
     }
 
     /// Pickles as `(owner, ffi_id)`, where `owner` is a fresh temporary
-    /// `PyLanguageGraph` wrapping the same `Rc<RefCell<_>>` and `ffi_id`
+    /// `PyLanguageGraph` wrapping the same `Rc<LanguageGraph>` and `ffi_id`
     /// is the `AssetId` round-tripped through slotmap's stable `KeyData`
     /// ffi representation (since `AssetId` itself isn't picklable).
     /// Pickle recursively pickles the temporary owner via its own

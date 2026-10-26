@@ -35,11 +35,6 @@ pub fn load_from_file(
     from_dict(&dict, lang_graph).map_err(|e| LoadError::Malformed(e.to_string()))
 }
 
-/// Port of `Model._from_dict`.
-///
-/// Reads the `"MAL-Toolbox Version"` (hyphenated) metadata key, matching
-/// what `to_dict` (`model.rs`) writes; see `PORTING_NOTES.md` for why
-/// this diverges from the Python original.
 pub fn from_dict(serialized: &Value, lang_graph: Rc<LanguageGraph>) -> Result<Model, LoadError> {
     let metadata = &serialized["metadata"];
     let name = metadata["name"]

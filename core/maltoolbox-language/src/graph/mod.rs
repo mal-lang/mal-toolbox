@@ -54,13 +54,6 @@ pub struct Metadata {
     pub id: String,
 }
 
-/// `Clone` is needed because `maltoolbox_model::Model` holds a bare
-/// `Rc<LanguageGraph>`, while the PyO3 wrapper holds `Rc<RefCell<
-/// LanguageGraph>>` (so it can be mutated via `regenerate_graph`); the two
-/// don't compose without copying the data once. Note that this means a
-/// `Model` already built from a graph won't see later mutations to that
-/// graph.
-#[derive(Clone)]
 pub struct LanguageGraph {
     pub assets: SlotMap<AssetId, LanguageGraphAsset>,
     pub steps: SlotMap<AttackStepId, LanguageGraphAttackStep>,
