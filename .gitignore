@@ -87,3 +87,4 @@ uv.lock
 
 # Profiling Data
 prof/
+.langs/
